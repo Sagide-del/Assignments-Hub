@@ -22,11 +22,23 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ============================================================
-  // SERVE FRONTEND STATIC FILES
+  // ✅ SERVE FRONTEND STATIC FILES (BEFORE global prefix)
   // ============================================================
   const frontendPath = join(__dirname, '..', '..', 'frontend');
   console.log(`Serving frontend from: ${frontendPath}`);
   app.use(express.static(frontendPath));
+
+  // ============================================================
+  // ✅ FALLBACK: Send login page for any unknown route (except API)
+  // ============================================================
+  app.use((req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    // Send the login page for any other route
+    res.sendFile(join(frontendPath, 'unified-dashboard', 'index.html'));
+  });
 
   // Validation
   app.useGlobalPipes(
