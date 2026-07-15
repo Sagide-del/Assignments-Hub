@@ -5,28 +5,25 @@
 // page read instead of hardcoding a URL.
 //
 // TO DEPLOY: set DEPLOYED_API_BASE_URL below to your live backend's URL
-// (e.g. "https://api.yourdomain.com/api/v1") and leave it as a non-empty
-// string. Until you do that, every environment — local dev, a LAN preview,
-// this desktop app's preview, anywhere — falls back to the local backend at
-// http://localhost:3000/api/v1 so "Failed to fetch" can't be caused by this
-// file guessing a domain that doesn't exist yet.
+// and leave it as a non-empty string.
 
 (function () {
-  const DEPLOYED_API_BASE_URL = ''; // e.g. 'https://api.yourdomain.com/api/v1'
+  // ============================================================
+  // 🔧 PRODUCTION BACKEND URL (Railway)
+  // ============================================================
+  const DEPLOYED_API_BASE_URL = 'https://hub-v1.up.railway.app/api/v1';
+  
+  // For local development (keep as is)
   const LOCAL_API_BASE_URL = 'http://localhost:3000/api/v1';
 
   window.API_BASE_URL = DEPLOYED_API_BASE_URL || LOCAL_API_BASE_URL;
 
-  // Pages use this to decide whether to pre-fill demo login credentials and
-  // show the "Demo Credentials" hint box. On by default (safe for local dev
-  // and staging); turns off automatically once DEPLOYED_API_BASE_URL above
-  // is set, since that means this is pointed at a real deployment.
+  // Pages use this to decide whether to pre-fill demo login credentials
   window.IS_LOCAL_ENV = !DEPLOYED_API_BASE_URL;
 
-  // Publishable (public) payment key used by the School Admin dashboard's
-  // subscription checkout. Safe to expose client-side — it identifies the
-  // merchant account, it does not authorize charges on its own. Falls back
-  // to the backend's /payment/publishable-key endpoint if unset here, so it
-  // always matches whatever IntaSend account the backend is configured for.
-  window.INTASEND_PUBLISHABLE_KEY = '';
+  // IntaSend Publishable Key
+  window.INTASEND_PUBLISHABLE_KEY = 'ISPubKey_live_f3fc8520-a127-4ff0-9270-c1e8bb009b6b';
+
+  console.log(`[Config] API_BASE_URL: ${window.API_BASE_URL}`);
+  console.log(`[Config] Environment: ${window.IS_LOCAL_ENV ? 'Local' : 'Production'}`);
 })();

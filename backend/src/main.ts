@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import { join } from 'path';
-import * as fs from 'fs';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -23,30 +22,21 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ============================================================
-  // ✅ FIND AND SERVE FRONTEND FILES
+  // ✅ SERVE FRONTEND STATIC FILES (for Railway)
   // ============================================================
-  // Try multiple possible paths
-  const possiblePaths = [
-    join(__dirname, '..', '..', 'frontend'),
-    join(process.cwd(), 'frontend'),
-    join(__dirname, '..', 'frontend'),
-    join(process.cwd(), '..', 'frontend'),
-  ];
+  const frontendPath = join(__dirname, '..', '..', 'frontend');
+  console.log(`Serving frontend from: ${frontendPath}`);
+  app.use(express.static(frontendPath));
 
-  let frontendPath = null;
-  for (const path of possiblePaths) {
-    if (fs.existsSync(path)) {
-      frontendPath = path;
-      console.log(`✅ Found frontend at: ${frontendPath}`);
-      break;
+  // ============================================================
+  // ✅ FALLBACK ROUTE FOR ROOT
+  // ============================================================
+  app.use((req: any, res: any, next: any) => {
+    if (req.path.startsWith('/api')) {
+      return next();
     }
-  }
-
-  if (frontendPath) {
-    app.use(express.static(frontendPath));
-  } else {
-    console.warn('⚠️ Frontend folder not found! Please check the path.');
-  }
+    res.sendFile(join(frontendPath, 'unified-dashboard', 'index.html'));
+  });
 
   // Validation
   app.useGlobalPipes(
