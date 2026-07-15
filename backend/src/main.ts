@@ -30,11 +30,17 @@ async function bootstrap() {
   // attachments/images being fetched from a different frontend origin.
   // Relax it only for the /uploads path.
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  
   // Serves files written by UploadsController (POST /api/v1/uploads/single)
   // at their returned URL, e.g. /uploads/167...-abc.pdf. Deliberately not
   // under the /api/v1 prefix (that's set below and only applies to
   // controller routes) so upload URLs stay short and stable.
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+
+  // ============================================================
+  // ✅ SERVE FRONTEND STATIC FILES
+  // ============================================================
+  app.use(express.static(join(__dirname, '..', '..', 'frontend')));
 
   // Strip unknown fields and reject requests with extra/invalid properties.
   app.useGlobalPipes(
@@ -56,3 +62,4 @@ async function bootstrap() {
 }
 
 bootstrap();
+
