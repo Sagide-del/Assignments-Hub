@@ -22,7 +22,7 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ============================================================
-  // ✅ SERVE FRONTEND STATIC FILES
+  // SERVE FRONTEND STATIC FILES
   // ============================================================
   const frontendPath = join(__dirname, '..', '..', 'frontend');
   console.log(`Serving frontend from: ${frontendPath}`);
