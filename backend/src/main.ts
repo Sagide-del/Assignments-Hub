@@ -5,7 +5,6 @@ import { join } from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,23 +22,11 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ============================================================
-  // ✅ SERVE FRONTEND STATIC FILES (BEFORE global prefix)
+  // ✅ SERVE FRONTEND STATIC FILES
   // ============================================================
   const frontendPath = join(__dirname, '..', '..', 'frontend');
   console.log(`Serving frontend from: ${frontendPath}`);
   app.use(express.static(frontendPath));
-
-  // ============================================================
-  // ✅ FALLBACK: Send login page for any unknown route (except API)
-  // ============================================================
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    // Skip API routes
-    if (req.path.startsWith('/api')) {
-      return next();
-    }
-    // Send the login page for any other route
-    res.sendFile(join(frontendPath, 'unified-dashboard', 'index.html'));
-  });
 
   // Validation
   app.useGlobalPipes(
