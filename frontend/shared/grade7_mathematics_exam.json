@@ -1,0 +1,220 @@
+{
+  "title": "Grade 7 Mathematics End Term Assessment — Term 2",
+  "description": "End of term summative assessment covering numbers, algebra, geometry, measurement, and data handling as per the CBC Grade 7 Mathematics curriculum.",
+  "subject": "Mathematics",
+  "grade": "Grade 7",
+  "type": "TEACHER_MARKED",
+  "dueDate": "2026-08-05",
+  "timeAllowedMinutes": 90,
+  "totalMarks": 100,
+  "instructions": "Answer ALL questions in Sections A, B, C, D and E. Show your working clearly in Section E for full marks. Calculators are NOT allowed. This paper carries 100 marks and the exam is 90 minutes long.",
+  "sections": [
+    {
+      "name": "Section A: Multiple Choice",
+      "description": "Choose the single best answer for each question. (2 marks each — 20 marks total)",
+      "questions": [
+        {
+          "id": "a1",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "What is 3/4 + 1/8?",
+          "points": 2,
+          "hint": "Give both fractions a common denominator of 8 first.",
+          "options": ["7/8", "5/8", "3/8", "1 2/8"],
+          "correctAnswer": "7/8"
+        },
+        {
+          "id": "a2",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "Round 4,678 to the nearest hundred.",
+          "points": 2,
+          "options": ["4,600", "4,700", "4,680", "4,000"],
+          "correctAnswer": "4,700"
+        },
+        {
+          "id": "a3",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "What is 15% of 200?",
+          "points": 2,
+          "hint": "10% of 200 is 20 — use that to find 15%.",
+          "options": ["15", "20", "30", "35"],
+          "correctAnswer": "30"
+        },
+        {
+          "id": "a4",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "Simplify: 5x + 3x",
+          "points": 2,
+          "options": ["8x", "15x", "8x²", "2x"],
+          "correctAnswer": "8x"
+        },
+        {
+          "id": "a5",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "The sum of the interior angles of a triangle is:",
+          "points": 2,
+          "options": ["90°", "180°", "270°", "360°"],
+          "correctAnswer": "180°"
+        },
+        {
+          "id": "a6",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "Convert 2.5 km to metres.",
+          "points": 2,
+          "options": ["25 m", "250 m", "2,500 m", "25,000 m"],
+          "correctAnswer": "2,500 m"
+        },
+        {
+          "id": "a7",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "What is the Lowest Common Multiple (LCM) of 4 and 6?",
+          "points": 2,
+          "options": ["10", "12", "24", "2"],
+          "correctAnswer": "12"
+        },
+        {
+          "id": "a8",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "A shopkeeper buys an item for KES 800 and sells it for KES 950. What is the profit?",
+          "points": 2,
+          "options": ["KES 100", "KES 150", "KES 200", "KES 50"],
+          "correctAnswer": "KES 150"
+        },
+        {
+          "id": "a9",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "What is -8 + 5?",
+          "points": 2,
+          "options": ["-3", "3", "-13", "13"],
+          "correctAnswer": "-3"
+        },
+        {
+          "id": "a10",
+          "type": "MULTIPLE_CHOICE",
+          "questionText": "Which of the following is a prime number?",
+          "points": 2,
+          "options": ["21", "29", "33", "45"],
+          "correctAnswer": "29"
+        }
+      ]
+    },
+    {
+      "name": "Section B: True/False and Fill in the Blank",
+      "description": "Answer each question briefly. (2 marks each — 10 marks total)",
+      "questions": [
+        {
+          "id": "b1",
+          "type": "TRUE_FALSE",
+          "questionText": "A square is a special type of rectangle.",
+          "points": 2,
+          "correctAnswer": "true"
+        },
+        {
+          "id": "b2",
+          "type": "TRUE_FALSE",
+          "questionText": "The product of two negative integers is negative.",
+          "points": 2,
+          "correctAnswer": "false"
+        },
+        {
+          "id": "b3",
+          "type": "FILL_BLANK",
+          "questionText": "The perimeter of a rectangle with length 12 cm and width 7 cm is ____ cm.",
+          "points": 2,
+          "hint": "Perimeter = 2 × (length + width)",
+          "correctAnswer": "38"
+        },
+        {
+          "id": "b4",
+          "type": "FILL_BLANK",
+          "questionText": "3/5 expressed as a decimal is ____.",
+          "points": 2,
+          "correctAnswer": "0.6"
+        },
+        {
+          "id": "b5",
+          "type": "FILL_BLANK",
+          "questionText": "If a train travels 240 km in 4 hours, its average speed is ____ km/h.",
+          "points": 2,
+          "hint": "Speed = distance ÷ time",
+          "correctAnswer": "60"
+        }
+      ]
+    },
+    {
+      "name": "Section C: Matching",
+      "description": "Match each shape to its correct number of sides. (10 marks)",
+      "questions": [
+        {
+          "id": "c1",
+          "type": "MATCHING",
+          "questionText": "Match each shape on the left to its number of sides on the right.",
+          "points": 10,
+          "options": {
+            "left": ["Triangle", "Quadrilateral", "Pentagon", "Hexagon", "Heptagon"],
+            "right": ["7", "4", "3", "6", "5"]
+          },
+          "correctAnswer": { "0": "2", "1": "1", "2": "4", "3": "3", "4": "0" }
+        }
+      ]
+    },
+    {
+      "name": "Section D: Ordering",
+      "description": "Arrange the steps in the correct order. (10 marks)",
+      "questions": [
+        {
+          "id": "d1",
+          "type": "ORDERING",
+          "questionText": "Arrange the following steps in the correct order to solve the equation 2x + 3 = 11.",
+          "points": 10,
+          "hint": "What do you do to both sides first — add/subtract, or multiply/divide?",
+          "options": [
+            "Divide both sides by 2 to get x = 4",
+            "Subtract 3 from both sides to get 2x = 8",
+            "Start with the equation 2x + 3 = 11",
+            "Check: 2(4) + 3 = 11 ✓"
+          ],
+          "correctAnswer": [
+            "Start with the equation 2x + 3 = 11",
+            "Subtract 3 from both sides to get 2x = 8",
+            "Divide both sides by 2 to get x = 4",
+            "Check: 2(4) + 3 = 11 ✓"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Section E: Structured Questions",
+      "description": "Show ALL your working. Marks are awarded for correct method even if the final answer is wrong. (50 marks total)",
+      "questions": [
+        {
+          "id": "e1",
+          "type": "ESSAY",
+          "questionText": "Amina's family bought a piece of land measuring 120 m by 85 m.\n(a) Calculate the area of the land in square metres. (4 marks)\n(b) If the land costs KES 2,500 per square metre, calculate the total cost of the land. (4 marks)\n(c) The family sells 1/4 of the land. How many square metres remain? (4 marks)",
+          "points": 12,
+          "hint": "Area of a rectangle = length × width. Use your answer from (a) in (b) and (c)."
+        },
+        {
+          "id": "e2",
+          "type": "ESSAY",
+          "questionText": "The table below shows the number of mangoes a trader sold over 5 days:\nMonday: 24, Tuesday: 18, Wednesday: 30, Thursday: 24, Friday: 26.\n(a) Calculate the mean number of mangoes sold per day. (4 marks)\n(b) State the mode of the data. (2 marks)\n(c) Calculate the range of the data. (2 marks)\n(d) If mangoes are sold at KES 12 each, how much did the trader earn on Wednesday? (4 marks)",
+          "points": 12,
+          "hint": "Mean = total ÷ number of days. Mode = the value that appears most often. Range = highest − lowest."
+        },
+        {
+          "id": "e3",
+          "type": "ESSAY",
+          "questionText": "A water tank holds 4,500 litres when full. A pump fills it at a rate of 150 litres per minute.\n(a) How long, in minutes, will it take to fill an empty tank? (4 marks)\n(b) Give your answer to (a) in hours and minutes. (3 marks)\n(c) If the tank is already half full, how long will it take to fill the remaining half? (3 marks)\n(d) If the pump breaks down after filling 2,700 litres, how many litres are still needed to fill the tank? (3 marks)",
+          "points": 13,
+          "hint": "Time = volume ÷ rate."
+        },
+        {
+          "id": "e4",
+          "type": "ESSAY",
+          "questionText": "Kiptoo is 3 years older than twice his sister's age. His sister is 9 years old.\n(a) Write an algebraic expression for Kiptoo's age in terms of his sister's age, s. (4 marks)\n(b) Calculate Kiptoo's actual age. (4 marks)\n(c) In 5 years' time, what will be the sum of their ages? (5 marks)",
+          "points": 13,
+          "hint": "Let the sister's age be s. Kiptoo's age = 2s + 3."
+        }
+      ]
+    }
+  ]
+}
