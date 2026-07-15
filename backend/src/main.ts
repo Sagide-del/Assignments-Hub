@@ -9,34 +9,28 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Registered before helmet/static below so CORS headers apply uniformly
-  // to every response, including static /uploads files — Express
-  // middleware runs in registration order, and a response sent by an
-  // earlier middleware (e.g. express.static) never picks up headers from
-  // one registered after it.
-  // exposedHeaders lets frontend JS read Content-Disposition on file
-  // downloads (e.g. the Excel import template) — browsers hide it from
-  // fetch() Response.headers by default on cross-origin requests.
-  // CORS_ORIGIN can be a comma-separated list of allowed origins for
-  // production (e.g. "https://app.example.com,https://admin.example.com").
-  // Left unset it falls back to "*" for local development.
+  // CORS configuration
   const corsOrigin = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
     : '*';
   app.enableCors({ origin: corsOrigin, exposedHeaders: ['Content-Disposition'] });
 
-  // Helmet blocks cross-origin loading of static assets by default
-  // (crossOriginResourcePolicy: same-origin), which breaks uploaded
-  // attachments/images being fetched from a different frontend origin.
-  // Relax it only for the /uploads path.
+  // Helmet
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-  // Serves files written by UploadsController (POST /api/v1/uploads/single)
-  // at their returned URL, e.g. /uploads/167...-abc.pdf. Deliberately not
-  // under the /api/v1 prefix (that's set below and only applies to
-  // controller routes) so upload URLs stay short and stable.
+  
+  // Serve uploaded files
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
-  // Strip unknown fields and reject requests with extra/invalid properties.
+  // ============================================================
+  // ✅ SERVE FRONTEND STATIC FILES
+  // ============================================================
+  // This serves all files from the frontend folder
+  // So when you go to https://assignmenthub.co.ke/
+  // It will serve frontend/unified-dashboard/index.html
+  const frontendPath = join(__dirname, '..', '..', 'frontend');
+  app.use(express.static(frontendPath));
+
+  // Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -51,7 +45,6 @@ async function bootstrap() {
 
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   await app.listen(port);
-  // eslint-disable-next-line no-console
   console.log(`Assignments Hub API listening on port ${port}`);
 }
 
