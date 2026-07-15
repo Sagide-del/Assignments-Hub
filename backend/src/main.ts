@@ -18,12 +18,20 @@ async function bootstrap() {
   // Helmet
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   
+<<<<<<< HEAD
   // Serve uploaded files
+=======
+  // Serves files written by UploadsController (POST /api/v1/uploads/single)
+  // at their returned URL, e.g. /uploads/167...-abc.pdf. Deliberately not
+  // under the /api/v1 prefix (that's set below and only applies to
+  // controller routes) so upload URLs stay short and stable.
+>>>>>>> b03b4d5eaa4fa80bed9138fad967d1836bdac2ef
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ============================================================
   // ✅ SERVE FRONTEND STATIC FILES
   // ============================================================
+<<<<<<< HEAD
   // This serves all files from the frontend folder
   // So when you go to https://assignmenthub.co.ke/
   // It will serve frontend/unified-dashboard/index.html
@@ -31,6 +39,11 @@ async function bootstrap() {
   app.use(express.static(frontendPath));
 
   // Validation
+=======
+  app.use(express.static(join(__dirname, '..', '..', 'frontend')));
+
+  // Strip unknown fields and reject requests with extra/invalid properties.
+>>>>>>> b03b4d5eaa4fa80bed9138fad967d1836bdac2ef
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -48,4 +61,9 @@ async function bootstrap() {
   console.log(`Assignments Hub API listening on port ${port}`);
 }
 
+<<<<<<< HEAD
 bootstrap();
+=======
+bootstrap();
+
+>>>>>>> b03b4d5eaa4fa80bed9138fad967d1836bdac2ef
