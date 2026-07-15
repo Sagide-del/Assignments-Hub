@@ -5,13 +5,14 @@ import { join } from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // CORS configuration
   const corsOrigin = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+    ? process.env.CORS_ORIGIN.split(',').map((origin: string) => origin.trim())
     : '*';
   app.enableCors({ origin: corsOrigin, exposedHeaders: ['Content-Disposition'] });
 
@@ -31,7 +32,7 @@ async function bootstrap() {
   // ============================================================
   // ✅ FALLBACK: Send login page for any unknown route (except API)
   // ============================================================
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     // Skip API routes
     if (req.path.startsWith('/api')) {
       return next();
