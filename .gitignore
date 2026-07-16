@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+# Contains live secrets (DB credentials, JWT secret, IntaSend payment keys).
+# Never commit this — commit .env.example instead.
+.env
+.env.*
+!.env.example
+
+*.log
+
+# User-uploaded assignment attachments / submission files (served statically
+# by main.ts from ./uploads at runtime — not part of source control).
+uploads/*
+!uploads/.gitkeep
