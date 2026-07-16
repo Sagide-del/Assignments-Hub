@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assignments Hub — Super Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        :root {
+            /* Logo Colors: Lime Green #BBD125, Charcoal Black #212428 */
+            --primary: #212428;
+            --primary-light: #3a3f46;
+            --primary-dark: #151718;
+            --primary-gradient: linear-gradient(135deg, #212428 0%, #3a3f46 100%);
+            --secondary: #BBD125;
+            --secondary-light: #d0e24a;
+            --secondary-dark: #a0b820;
+            --accent: #2d8f5a;
+            --accent-light: #4ab87a;
+            --background: #f7f8fa;
+            --surface: #ffffff;
+            --text-primary: #212428;
+            --text-secondary: #4a5568;
+            --text-light: #a0aec0;
+            --shadow: 0 4px 20px rgba(33, 36, 40, 0.08);
+            --shadow-hover: 0 8px 32px rgba(33, 36, 40, 0.12);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-header {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px 28px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .app-header .header-left { display: flex; align-items: center; gap: 16px; }
+        .app-header .header-left .logo-container { display: flex; align-items: center; text-decoration: none; }
+        .app-header .header-left .logo-container img { height: 52px; width: auto; object-fit: contain; }
+        .app-header .header-right { display: flex; align-items: center; gap: 12px; }
+
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 50px;
+            background: var(--primary-gradient);
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .user-badge {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 16px 8px 10px; background: var(--background);
+            border-radius: 50px; font-size: 14px; font-weight: 500; color: var(--text-secondary);
+        }
+
+        .user-badge .avatar {
+            width: 32px; height: 32px; background: var(--secondary); color: var(--primary-dark);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px;
+        }
+
+        .btn-outline {
+            background: transparent; color: var(--text-secondary); border: 1.5px solid #e2e8f0;
+            padding: 8px 18px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px;
+            cursor: pointer; transition: var(--transition); font-family: 'Poppins', sans-serif;
+        }
+        .btn-outline:hover { background: #fed7d7; border-color: #e53e3e; color: #e53e3e; }
+
+        .btn-primary {
+            background: var(--secondary); color: var(--primary-dark); border: none;
+            padding: 10px 22px; border-radius: var(--radius-sm); font-weight: 700; font-size: 14px;
+            cursor: pointer; transition: var(--transition); font-family: 'Poppins', sans-serif;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(187, 209, 37, 0.35); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .btn-dark {
+            background: var(--primary-gradient); color: white; border: none;
+            padding: 8px 18px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px;
+            cursor: pointer; transition: var(--transition); font-family: 'Poppins', sans-serif;
+        }
+        .btn-dark:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(33, 36, 40, 0.3); }
+
+        .btn-danger {
+            background: transparent; color: #9b2c2c; border: 1.5px solid #fed7d7;
+            padding: 6px 14px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px;
+            cursor: pointer; transition: var(--transition);
+        }
+        .btn-danger:hover { background: #fed7d7; }
+
+        .tab-container {
+            display: flex; gap: 4px; margin-bottom: 24px; background: var(--surface);
+            border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow);
+            overflow-x: auto; flex-wrap: nowrap;
+        }
+        .tab-btn {
+            padding: 12px 22px; background: transparent; border: none; border-radius: var(--radius-sm);
+            font-weight: 600; font-size: 14px; color: var(--text-secondary); cursor: pointer;
+            transition: var(--transition); white-space: nowrap; display: flex; align-items: center;
+            gap: 8px; font-family: 'Poppins', sans-serif;
+        }
+        .tab-btn:hover { color: var(--primary); background: var(--background); }
+        .tab-btn.active { background: var(--secondary); color: var(--primary-dark); box-shadow: 0 4px 20px rgba(187, 209, 37, 0.35); }
+
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: var(--surface); border-radius: var(--radius); padding: 24px;
+            margin-bottom: 20px; box-shadow: var(--shadow); transition: var(--transition);
+        }
+        .card:hover { box-shadow: var(--shadow-hover); }
+        .card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+        .card .hint { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); padding: 20px; border-radius: var(--radius-sm); text-align: center; box-shadow: var(--shadow); border-top: 4px solid var(--secondary); }
+        .stat-card .number { font-size: 30px; font-weight: 800; color: var(--primary); }
+        .stat-card .label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; }
+        .badge-active, .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-trial, .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-expired, .badge-past_due, .badge-suspended, .badge-cancelled, .badge-danger { background: #fed7d7; color: #9b2c2c; }
+        .badge-draft { background: #e2e8f0; color: #4a5568; }
+
+        .hidden { display: none !important; }
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table th { text-align: left; padding: 12px 16px; background: var(--background); color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        table td { padding: 12px 16px; border-bottom: 1px solid #edf2f7; }
+        table tr:hover td { background: #f7fafc; }
+
+        .loading-spinner { text-align: center; padding: 60px 20px; }
+        .loading-spinner .spinner { width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error { background: #fed7d7; color: #9b2c2c; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px; display: none; font-size: 14px; border-left: 3px solid #9b2c2c; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 6px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0; border-radius: var(--radius-sm);
+            font-size: 14px; font-family: 'Poppins', sans-serif; transition: var(--transition); background: #fafbfc;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: var(--secondary); background: white; box-shadow: 0 0 0 4px rgba(187, 209, 37, 0.15);
+        }
+        .form-group textarea { resize: vertical; min-height: 70px; }
+
+        .report-output { margin-top: 16px; }
+        .report-logo-header { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 2px solid var(--secondary); }
+        .report-logo-header img { height: 56px; width: auto; object-fit: contain; }
+        .report-logo-header .report-title { font-size: 18px; font-weight: 800; color: var(--primary); }
+        .report-logo-header .report-meta { font-size: 12px; color: var(--text-secondary); }
+
+        .footer { text-align: center; margin-top: 24px; font-size: 12px; color: var(--text-light); letter-spacing: 0.3px; padding: 12px 0; border-top: 1px solid #edf2f7; }
+        .footer span { color: var(--secondary-dark); font-weight: 600; }
+
+        .toast-anchor { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+
+        @media (max-width: 768px) {
+            .app-header { flex-direction: column; align-items: stretch; }
+            .app-header .header-right { justify-content: flex-start; }
+            .tab-container { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .tab-btn { padding: 10px 16px; font-size: 13px; }
+            .card { padding: 16px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .app-header .header-left .logo-container img { height: 40px; }
+        }
+
+        @media print {
+            .tab-container, .btn-primary, .btn-dark, .btn-danger, .app-header .header-right, .card-header button { display: none !important; }
+            .card { box-shadow: none !important; border: 1px solid #e2e8f0; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="header-left">
+            <div class="logo-container">
+                <img src="../shared/school-logo.png" alt="Assignments Hub" />
+            </div>
+            <span class="platform-badge hidden" id="platformBadge"><i class="fas fa-shield-halved"></i> Super Admin</span>
+        </div>
+        <div class="header-right">
+            <div class="user-badge hidden" id="userBadge">
+                <span class="avatar" id="userAvatar">A</span>
+                <span id="userName">Platform Admin</span>
+            </div>
+            <button class="btn-outline" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Loading -->
+        <div id="loadingView" class="card">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p style="font-weight:600;color:var(--primary);">Loading super admin console...</p>
+                <p style="font-size:14px;color:var(--text-secondary);margin-top:8px;" id="loadingStatus">Initializing...</p>
+            </div>
+        </div>
+
+        <!-- Login -->
+        <div id="loginView" class="card hidden">
+            <h2>Super Admin Login</h2>
+            <p class="hint">Platform administrator access only. Log in with your platform admin email and password.</p>
+            <div id="loginError" class="error"></div>
+            <div class="form-group">
+                <label for="schoolCode">School Code</label>
+                <input id="schoolCode" value="PLATFORM" readonly />
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input id="email" placeholder="admin@assignmentshub.co.ke" />
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input id="password" type="password" placeholder="Enter your password" />
+            </div>
+            <button class="btn-primary" id="loginBtn" style="width:100%;justify-content:center;padding:14px;">
+                <i class="fas fa-arrow-right"></i> Log in
+            </button>
+            <div style="margin-top:15px;text-align:center;">
+                <a href="../unified-dashboard/index.html" onclick="AuthClient.logout(); localStorage.clear();" style="color:var(--primary);text-decoration:none;font-weight:600;font-size:14px;">
+                    <i class="fas fa-arrow-left"></i> Back to Login
+                </a>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboardView" class="hidden">
+
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card"><div class="number" id="statSchools">0</div><div class="label"><i class="fas fa-school"></i> Schools</div></div>
+                <div class="stat-card"><div class="number" id="statUsers">0</div><div class="label"><i class="fas fa-users"></i> Total Users</div></div>
+                <div class="stat-card"><div class="number" id="statStudents">0</div><div class="label"><i class="fas fa-user-graduate"></i> Students</div></div>
+                <div class="stat-card" style="border-top-color:var(--accent);"><div class="number" id="statRevenue">KES 0</div><div class="label"><i class="fas fa-money-bill-wave"></i> Est. Monthly Revenue</div></div>
+            </div>
+
+            <div class="tab-container">
+                <button class="tab-btn active" data-tab="overview"><i class="fas fa-chart-pie"></i> Overview</button>
+                <button class="tab-btn" data-tab="schools"><i class="fas fa-school"></i> Schools</button>
+                <button class="tab-btn" data-tab="subscriptions"><i class="fas fa-credit-card"></i> Subscriptions</button>
+                <button class="tab-btn" data-tab="labs"><i class="fas fa-flask"></i> Labs &amp; Practicals</button>
+                <button class="tab-btn" data-tab="reports"><i class="fas fa-file-alt"></i> Reports</button>
+            </div>
+
+            <!-- OVERVIEW -->
+            <div id="tab-overview" class="tab-content active">
+                <div class="card">
+                    <h2><i class="fas fa-school" style="color:var(--secondary-dark);"></i> Schools by Subscription Status</h2>
+                    <p class="hint">Across the whole platform.</p>
+                    <div id="statusBreakdown">Loading...</div>
+                </div>
+                <div class="card">
+                    <h2><i class="fas fa-bolt" style="color:var(--secondary-dark);"></i> Payments</h2>
+                    <p class="hint">IntaSend integration status.</p>
+                    <div id="paymentStatus">Checking...</div>
+                </div>
+                <div class="card">
+                    <h2><i class="fas fa-route" style="color:var(--secondary-dark);"></i> Career Pathways</h2>
+                    <p class="hint">Senior School (Grade 10-12) track selections, platform-wide.</p>
+                    <div id="pathwayStatsOverview">Loading...</div>
+                </div>
+            </div>
+
+            <!-- SCHOOLS -->
+            <div id="tab-schools" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-plus-circle" style="color:var(--secondary-dark);"></i> Add School</h2>
+                    </div>
+                    <form id="createSchoolForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="newSchoolName">School Name</label>
+                                <input id="newSchoolName" placeholder="e.g. Green Valley Academy" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="newSchoolCode">School Code</label>
+                                <input id="newSchoolCode" placeholder="e.g. GVA01" style="text-transform:uppercase;" required />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Create School</button>
+                    </form>
+                    <div id="createSchoolResult" class="hidden" style="margin-top:14px;padding:12px;background:#d1fae5;border-radius:var(--radius-sm);color:#065f46;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-list" style="color:var(--secondary-dark);"></i> All Schools</h2>
+                        <button class="btn-dark" onclick="renderSchools()"><i class="fas fa-rotate"></i> Refresh</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Name</th><th>Code</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
+                            <tbody id="schoolsBody"></tbody>
+                        </table>
+                    </div>
+                    <p id="schoolsEmpty" class="hint hidden" style="text-align:center;padding:20px;">No schools yet.</p>
+                </div>
+            </div>
+
+            <!-- SUBSCRIPTIONS -->
+            <div id="tab-subscriptions" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-file-invoice-dollar" style="color:var(--secondary-dark);"></i> Record / Adjust Subscription</h2>
+                    </div>
+                    <p class="hint">Use this to grant or correct a school's plan — e.g. after confirming an off-platform payment. Successful IntaSend checkouts activate automatically via webhook.</p>
+                    <form id="createSubscriptionForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="subSchool">School</label>
+                                <select id="subSchool" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="subPlan">Tier</label>
+                                <select id="subPlan" required>
+                                    <option value="Free">Free</option>
+                                    <option value="Starter">Starter</option>
+                                    <option value="Standard" selected>Standard</option>
+                                    <option value="Premium">Premium</option>
+                                    <option value="Enterprise">Enterprise</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="subStatus">Status</label>
+                                <select id="subStatus">
+                                    <option value="TRIAL">Trial</option>
+                                    <option value="ACTIVE" selected>Active</option>
+                                    <option value="PAST_DUE">Past Due</option>
+                                    <option value="SUSPENDED">Suspended</option>
+                                    <option value="CANCELLED">Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="subAmount">Amount charged (KES, optional)</label>
+                                <input id="subAmount" type="number" min="0" placeholder="e.g. 12000 — for off-platform payments" />
+                            </div>
+                            <div class="form-group">
+                                <label for="subExpiry">Expires</label>
+                                <input id="subExpiry" type="date" />
+                            </div>
+                        </div>
+                        <p class="hint">Tier is normally auto-assigned from a school's student count — only use this to manually grant/correct a plan (e.g. after an off-platform payment). Enter the amount actually charged so it's counted in revenue reports.</p>
+                        <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Save Subscription</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-history" style="color:var(--secondary-dark);"></i> Subscription History</h2>
+                        <button class="btn-dark" onclick="renderSubscriptions()"><i class="fas fa-rotate"></i> Refresh</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>School</th><th>Plan</th><th>Amount</th><th>Status</th><th>Started</th><th>Expires</th></tr></thead>
+                            <tbody id="subscriptionsBody"></tbody>
+                        </table>
+                    </div>
+                    <p id="subscriptionsEmpty" class="hint hidden" style="text-align:center;padding:20px;">No subscription records yet.</p>
+                </div>
+            </div>
+
+            <!-- LABS -->
+            <div id="tab-labs" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-flask" style="color:var(--secondary-dark);"></i> Add Lab / Practical</h2>
+                    </div>
+                    <p class="hint">Published labs immediately appear in every school's STEM Labs catalog.</p>
+                    <form id="createLabForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="labKey">Key (unique, e.g. "cell-division-lab")</label>
+                                <input id="labKey" placeholder="lowercase-with-hyphens" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="labTitle">Title</label>
+                                <input id="labTitle" placeholder="e.g. Cell Division Lab" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="labSubject">Subject</label>
+                                <input id="labSubject" placeholder="e.g. Science" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="labGrade">Grade (which students see this)</label>
+                                <input id="labGrade" placeholder="e.g. Grade 7" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="labTopicArea">Topic Area (optional)</label>
+                                <input id="labTopicArea" placeholder="e.g. Cell Biology" />
+                            </div>
+                            <div class="form-group">
+                                <label for="labCompetency">CBC Competency</label>
+                                <input id="labCompetency" placeholder="e.g. Cell biology" />
+                            </div>
+                            <div class="form-group">
+                                <label for="labDurationMinutes">Video/Duration (minutes, optional)</label>
+                                <input id="labDurationMinutes" type="number" min="1" max="300" placeholder="e.g. 6" />
+                            </div>
+                            <div class="form-group">
+                                <label for="labType">Type</label>
+                                <select id="labType">
+                                    <option value="SIMULATION">Virtual simulation</option>
+                                    <option value="PRACTICAL">Practical</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="labResourceUrl">Video Link (optional)</label>
+                                <input id="labResourceUrl" placeholder="https://youtube.com/watch?v=... — students watch this before the quiz" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="labDescription">Description (optional)</label>
+                            <textarea id="labDescription" placeholder="What students will do in this lab/practical"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary"><i class="fas fa-upload"></i> Publish Lab</button>
+                    </form>
+                    <div id="createLabResult" class="hidden" style="margin-top:14px;padding:12px;background:#d1fae5;border-radius:var(--radius-sm);color:#065f46;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-list" style="color:var(--secondary-dark);"></i> Lab Catalog</h2>
+                        <button class="btn-dark" onclick="renderLabs()"><i class="fas fa-rotate"></i> Refresh</button>
+                    </div>
+                    <p class="hint">Grouped by grade — this is what "Grade 7", "Grade 8", etc. actually look like once the catalog spans Grades 7-12.</p>
+                    <div id="labsByGrade"></div>
+                    <p id="labsEmpty" class="hint hidden" style="text-align:center;padding:20px;">No labs in the catalog yet.</p>
+                </div>
+            </div>
+
+            <!-- REPORTS -->
+            <div id="tab-reports" class="tab-content">
+                <div class="card">
+                    <h2><i class="fas fa-file-alt" style="color:var(--secondary-dark);"></i> Platform Reports</h2>
+                    <p class="hint">Generate a report across every school, then print or save as PDF (the logo prints with it).</p>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0;">
+                        <button class="btn-dark" onclick="generateReport('financial')" style="padding:14px;"><i class="fas fa-money-bill-wave"></i> Financial / Income</button>
+                        <button class="btn-dark" onclick="generateReport('users')" style="padding:14px;"><i class="fas fa-users"></i> Users by School</button>
+                        <button class="btn-dark" onclick="generateReport('assignments')" style="padding:14px;"><i class="fas fa-tasks"></i> Assignments</button>
+                        <button class="btn-dark" onclick="generateReport('labs')" style="padding:14px;"><i class="fas fa-flask"></i> Lab Completions</button>
+                    </div>
+                    <div id="reportOutput" class="report-output"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer">Developed by <span>SA Technologies</span> 2026 &bull; v1.0</div>
+    </main>
+
+    <script src="../shared/config.js"></script>
+    <script src="../shared/auth-client.js"></script>
+    <script>
+        const API_BASE = window.API_BASE_URL;
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromUnified = urlParams.get('from') === 'unified';
+
+        if (window.IS_LOCAL_ENV) {
+            document.getElementById('email').value = 'admin@assignmentshub.co.ke';
+            document.getElementById('password').value = 'ChangeMe123!';
+        }
+
+        const loadingView = document.getElementById('loadingView');
+        const loginView = document.getElementById('loginView');
+        const dashboardView = document.getElementById('dashboardView');
+        const loadingStatus = document.getElementById('loadingStatus');
+
+        function getToken() { return localStorage.getItem('token'); }
+
+        function checkAuth() {
+            const token = getToken();
+            const role = localStorage.getItem('userRole');
+            return !!(token && (role === 'platform_admin' || role === 'PLATFORM_ADMIN'));
+        }
+
+        async function logout() {
+            await AuthClient.logout();
+            localStorage.clear();
+            window.location.href = '../unified-dashboard/index.html';
+        }
+
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const colors = { success: 'var(--accent)', error: '#e53e3e', info: 'var(--primary)' };
+            const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <div style="position:fixed;bottom:30px;right:30px;background:white;padding:16px 24px;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.15);z-index:9999;border-left:4px solid ${colors[type]};max-width:400px;display:flex;align-items:center;gap:12px;">
+                    <i class="fas ${icons[type]}" style="font-size:20px;color:${colors[type]};"></i>
+                    <span style="font-weight:500;">${message}</span>
+                </div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        async function api(method, path, body) {
+            const token = getToken();
+            const res = await fetch(`${API_BASE}${path}`, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: body !== undefined ? JSON.stringify(body) : undefined
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || 'Request failed');
+            return data;
+        }
+
+        function unwrap(data) {
+            return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        }
+
+        // ==================== TABS ====================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+                const tab = this.dataset.tab;
+                if (tab === 'overview') await renderOverview();
+                if (tab === 'schools') await renderSchools();
+                if (tab === 'subscriptions') await renderSubscriptions();
+                if (tab === 'labs') await renderLabs();
+            });
+        });
+
+        // ==================== INIT ====================
+        async function initDashboard() {
+            loadingStatus.textContent = 'Checking authentication...';
+            loadingView.classList.remove('hidden');
+            loginView.classList.add('hidden');
+            dashboardView.classList.add('hidden');
+
+            if (checkAuth()) {
+                loadingStatus.textContent = 'Authenticated, loading platform data...';
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                document.getElementById('userName').textContent = user.name || 'Platform Admin';
+                document.getElementById('userAvatar').textContent = (user.name || 'A')[0].toUpperCase();
+                document.getElementById('userBadge').classList.remove('hidden');
+                document.getElementById('platformBadge').classList.remove('hidden');
+                await renderOverview();
+                await populateSchoolOptions();
+                loadingView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+            } else if (fromUnified) {
+                window.location.href = '../unified-dashboard/index.html';
+            } else {
+                loadingView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+            }
+        }
+
+        // ==================== OVERVIEW ====================
+        async function renderOverview() {
+            try {
+                const [usersReport, financialReport] = await Promise.all([
+                    api('GET', '/reports/users'),
+                    api('GET', '/reports/financial'),
+                ]);
+
+                document.getElementById('statSchools').textContent = usersReport.schools?.length ?? 0;
+                document.getElementById('statUsers').textContent = usersReport.totals?.total ?? 0;
+                document.getElementById('statStudents').textContent = usersReport.totals?.students ?? 0;
+                document.getElementById('statRevenue').textContent = 'KES ' + (financialReport.estimatedMonthlyRevenueKES ?? 0).toLocaleString();
+
+                const byStatus = financialReport.byStatus || {};
+                const statusEntries = Object.entries(byStatus);
+                document.getElementById('statusBreakdown').innerHTML = statusEntries.length
+                    ? `<div style="display:flex;gap:10px;flex-wrap:wrap;">${statusEntries.map(([status, count]) =>
+                        `<span class="badge badge-${status.toLowerCase()}">${status}: ${count}</span>`).join('')}</div>`
+                    : '<p class="hint">No subscription records yet.</p>';
+
+                document.getElementById('paymentStatus').innerHTML = `
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span class="badge badge-success"><i class="fas fa-check"></i> ${financialReport.activeSubscriptions} active subscription(s)</span>
+                        <span class="hint">${financialReport.note}</span>
+                    </div>`;
+            } catch (err) {
+                console.error('Overview error:', err);
+                showToast('Could not load overview: ' + err.message, 'error');
+            }
+
+            // Separate try/catch: pathway stats depend on a migration the
+            // school may not have run yet, so a failure here shouldn't take
+            // down the rest of the overview tab.
+            try {
+                await loadPathwayStatsOverview();
+            } catch (err) {
+                console.error('Pathway stats error:', err);
+                document.getElementById('pathwayStatsOverview').innerHTML =
+                    '<p class="hint">Career pathway data is not available yet.</p>';
+            }
+        }
+
+        // No schoolId param — for PLATFORM_ADMIN, PathwaysService.getStats()
+        // treats an omitted schoolId as "no filter", returning true
+        // platform-wide totals across every school in one call.
+        async function loadPathwayStatsOverview() {
+            const stats = await api('GET', '/pathways/selections/stats');
+            const el = document.getElementById('pathwayStatsOverview');
+
+            const pct = stats.totalSeniorStudents
+                ? Math.round((stats.totalWithSelection / stats.totalSeniorStudents) * 100)
+                : 0;
+
+            const topPathways = (stats.byPathway || []).slice(0, 3);
+            const breakdown = topPathways.length
+                ? `<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">${topPathways.map((p) => `
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="width:10px;height:10px;border-radius:50%;background:${p.colorHex || 'var(--secondary-dark)'};flex-shrink:0;"></span>
+                        <span style="flex:1;font-weight:500;">${p.name}</span>
+                        <span class="hint">${p.count}</span>
+                    </div>`).join('')}</div>`
+                : '<p class="hint" style="margin-top:12px;">No students have selected a pathway yet.</p>';
+
+            el.innerHTML = `
+                <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                    <div><div style="font-size:24px;font-weight:700;color:var(--primary);">${stats.totalWithSelection}</div><div class="hint">of ${stats.totalSeniorStudents} Senior School students (${pct}%)</div></div>
+                </div>
+                ${breakdown}`;
+        }
+
+        // ==================== SCHOOLS ====================
+        let schoolsCache = [];
+
+        async function renderSchools() {
+            try {
+                const data = await api('GET', '/schools');
+                schoolsCache = unwrap(data);
+                const body = document.getElementById('schoolsBody');
+                body.innerHTML = '';
+                document.getElementById('schoolsEmpty').classList.toggle('hidden', schoolsCache.length > 0);
+
+                schoolsCache.forEach(s => {
+                    const tr = document.createElement('tr');
+                    const statusClass = (s.subscriptionStatus || 'trial').toLowerCase();
+                    tr.innerHTML = `
+                        <td><strong>${s.name}</strong></td>
+                        <td>${s.code}</td>
+                        <td>${s.type === 'BOARDING' ? 'Boarding' : 'Day'}</td>
+                        <td><span class="badge badge-${statusClass}">${s.subscriptionStatus}</span></td>
+                        <td>${s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—'}</td>
+                    `;
+                    body.appendChild(tr);
+                });
+
+                await populateSchoolOptions();
+            } catch (err) {
+                showToast('Could not load schools: ' + err.message, 'error');
+            }
+        }
+
+        async function populateSchoolOptions() {
+            if (!schoolsCache.length) {
+                try { schoolsCache = unwrap(await api('GET', '/schools')); } catch { /* handled elsewhere */ }
+            }
+            const select = document.getElementById('subSchool');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = schoolsCache
+                .filter(s => s.code !== 'PLATFORM')
+                .map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+            if (currentValue) select.value = currentValue;
+        }
+
+        document.getElementById('createSchoolForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('newSchoolName').value.trim();
+            const code = document.getElementById('newSchoolCode').value.trim().toUpperCase();
+            if (!name || !code) return;
+
+            try {
+                await api('POST', '/schools', { name, code });
+                const result = document.getElementById('createSchoolResult');
+                result.textContent = `✅ School "${name}" created.`;
+                result.className = '';
+                this.reset();
+                setTimeout(() => { result.className = 'hidden'; }, 5000);
+                showToast('School created successfully!', 'success');
+                await renderSchools();
+                await renderOverview();
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        });
+
+        // ==================== SUBSCRIPTIONS ====================
+        async function renderSubscriptions() {
+            try {
+                const data = await api('GET', '/subscriptions');
+                const subs = unwrap(data);
+                const body = document.getElementById('subscriptionsBody');
+                body.innerHTML = '';
+                document.getElementById('subscriptionsEmpty').classList.toggle('hidden', subs.length > 0);
+
+                subs.forEach(s => {
+                    const school = schoolsCache.find(sc => sc.id === s.schoolId);
+                    const statusClass = (s.status || 'trial').toLowerCase();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${school ? school.name : 'School #' + s.schoolId}</td>
+                        <td>${s.plan}</td>
+                        <td>${s.amountKES != null ? 'KES ' + Number(s.amountKES).toLocaleString() + '/mo' : '<span class="hint">—</span>'}</td>
+                        <td><span class="badge badge-${statusClass}">${s.status}</span></td>
+                        <td>${s.startedAt ? new Date(s.startedAt).toLocaleDateString() : '—'}</td>
+                        <td>${s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : '—'}</td>
+                    `;
+                    body.appendChild(tr);
+                });
+            } catch (err) {
+                showToast('Could not load subscriptions: ' + err.message, 'error');
+            }
+        }
+
+        document.getElementById('createSubscriptionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const schoolId = Number(document.getElementById('subSchool').value);
+            const plan = document.getElementById('subPlan').value;
+            const status = document.getElementById('subStatus').value;
+            const expiresAt = document.getElementById('subExpiry').value || undefined;
+            const amountRaw = document.getElementById('subAmount').value;
+            const amountKES = amountRaw !== '' ? Number(amountRaw) : undefined;
+
+            if (!schoolId || !plan) {
+                showToast('Pick a school and a tier.', 'error');
+                return;
+            }
+
+            try {
+                await api('POST', '/subscriptions', { schoolId, plan, status, expiresAt, amountKES });
+                showToast('Subscription saved!', 'success');
+                this.reset();
+                document.getElementById('subStatus').value = 'ACTIVE';
+                document.getElementById('subPlan').value = 'Standard';
+                await renderSubscriptions();
+                await renderSchools();
+                await renderOverview();
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        });
+
+        // ==================== LABS ====================
+        // Sorts "Grade 7", "Grade 8", ... "Grade 12" numerically (not
+        // alphabetically, which would put "Grade 10" before "Grade 7").
+        // Anything without a parseable grade number sorts last.
+        function compareGradeLabels(a, b) {
+            const na = parseInt(a.replace(/\D/g, ''), 10);
+            const nb = parseInt(b.replace(/\D/g, ''), 10);
+            if (isNaN(na) && isNaN(nb)) return a.localeCompare(b);
+            if (isNaN(na)) return 1;
+            if (isNaN(nb)) return -1;
+            return na - nb;
+        }
+
+        async function renderLabs() {
+            try {
+                const data = await api('GET', '/labs');
+                const labs = unwrap(data);
+                const container = document.getElementById('labsByGrade');
+                container.innerHTML = '';
+                document.getElementById('labsEmpty').classList.toggle('hidden', labs.length > 0);
+
+                // Grouped by grade so a catalog spanning Grade 7-12 (50+
+                // labs) is actually organized, not one long flat list.
+                const byGrade = new Map();
+                labs.forEach((lab) => {
+                    const grade = lab.grade || 'Ungraded';
+                    if (!byGrade.has(grade)) byGrade.set(grade, []);
+                    byGrade.get(grade).push(lab);
+                });
+
+                Array.from(byGrade.keys()).sort(compareGradeLabels).forEach((grade) => {
+                    const gradeLabs = byGrade.get(grade);
+                    const section = document.createElement('div');
+                    section.style.marginBottom = '20px';
+                    section.innerHTML = `
+                        <h3 style="font-size:15px;color:var(--primary);margin:16px 0 8px;display:flex;align-items:center;gap:8px;">
+                            <span class="badge badge-info">${grade}</span> ${gradeLabs.length} lab${gradeLabs.length === 1 ? '' : 's'}
+                        </h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>Title</th><th>Subject</th><th>Type</th><th>Status</th><th></th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    `;
+                    const tbody = section.querySelector('tbody');
+                    gradeLabs.forEach((lab) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>${lab.title}</strong><br><span class="hint">${lab.key}</span></td>
+                            <td>${lab.subject}</td>
+                            <td>${lab.type === 'PRACTICAL' ? 'Practical' : 'Simulation'}</td>
+                            <td><span class="badge ${lab.isPublished ? 'badge-active' : 'badge-draft'}">${lab.isPublished ? 'Published' : 'Draft'}</span></td>
+                            <td style="white-space:nowrap;">
+                                <button class="btn-dark" onclick="toggleLabPublish(${lab.id}, ${!lab.isPublished})" style="padding:6px 12px;font-size:12px;">
+                                    ${lab.isPublished ? 'Unpublish' : 'Publish'}
+                                </button>
+                                <button class="btn-danger" onclick="deleteLab(${lab.id})" style="margin-left:6px;">Delete</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    container.appendChild(section);
+                });
+            } catch (err) {
+                showToast('Could not load labs: ' + err.message, 'error');
+            }
+        }
+
+        document.getElementById('createLabForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const durationRaw = document.getElementById('labDurationMinutes').value;
+            const dto = {
+                key: document.getElementById('labKey').value.trim().toLowerCase(),
+                title: document.getElementById('labTitle').value.trim(),
+                subject: document.getElementById('labSubject').value.trim(),
+                grade: document.getElementById('labGrade').value.trim(),
+                topicArea: document.getElementById('labTopicArea').value.trim() || undefined,
+                competency: document.getElementById('labCompetency').value.trim() || undefined,
+                durationMinutes: durationRaw ? parseInt(durationRaw, 10) : undefined,
+                type: document.getElementById('labType').value,
+                resourceUrl: document.getElementById('labResourceUrl').value.trim() || undefined,
+                description: document.getElementById('labDescription').value.trim() || undefined,
+                isPublished: true,
+            };
+            if (!dto.key || !dto.title || !dto.subject || !dto.grade) {
+                showToast('Key, title, subject and grade are required.', 'error');
+                return;
+            }
+
+            try {
+                await api('POST', '/labs', dto);
+                const result = document.getElementById('createLabResult');
+                result.textContent = `✅ "${dto.title}" published to the STEM Labs catalog.`;
+                result.className = '';
+                this.reset();
+                setTimeout(() => { result.className = 'hidden'; }, 5000);
+                showToast('Lab published!', 'success');
+                await renderLabs();
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        });
+
+        window.toggleLabPublish = async function(id, isPublished) {
+            try {
+                await api('PATCH', `/labs/${id}`, { isPublished });
+                showToast(isPublished ? 'Lab published.' : 'Lab unpublished.', 'success');
+                await renderLabs();
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        };
+
+        window.deleteLab = async function(id) {
+            if (!confirm('Delete this lab from the catalog? This cannot be undone.')) return;
+            try {
+                await api('DELETE', `/labs/${id}`);
+                showToast('Lab deleted.', 'success');
+                await renderLabs();
+            } catch (err) {
+                showToast('Error: ' + err.message, 'error');
+            }
+        };
+
+        // ==================== REPORTS ====================
+        const REPORT_TITLES = {
+            financial: 'Financial / Income Report',
+            users: 'Users by School Report',
+            assignments: 'Assignments Report',
+            labs: 'Lab Completions Report',
+        };
+
+        window.generateReport = async function(type) {
+            const output = document.getElementById('reportOutput');
+            output.innerHTML = '<p class="hint">Generating...</p>';
+            try {
+                const data = await api('GET', `/reports/${type}`);
+                output.innerHTML = `
+                    <div class="report-logo-header">
+                        <img src="../shared/school-logo.png" alt="Assignments Hub" />
+                        <div>
+                            <div class="report-title">${REPORT_TITLES[type] || 'Report'}</div>
+                            <div class="report-meta">Platform-wide &bull; Generated ${new Date(data.generatedAt || Date.now()).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-bottom:16px;">
+                        <button class="btn-dark" onclick="window.print()"><i class="fas fa-print"></i> Print / Save as PDF</button>
+                    </div>
+                    <pre style="background:var(--background);padding:16px;border-radius:var(--radius-sm);overflow-x:auto;font-size:13px;max-height:500px;overflow-y:auto;">${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (err) {
+                output.innerHTML = `<div style="background:#fed7d7;padding:16px;border-radius:var(--radius-sm);color:#9b2c2c;"><i class="fas fa-exclamation-circle"></i> ${err.message}</div>`;
+            }
+        };
+
+        // ==================== LOGIN ====================
+        document.getElementById('loginBtn')?.addEventListener('click', async () => {
+            const errorEl = document.getElementById('loginError');
+            errorEl.style.display = 'none';
+            const schoolCode = 'PLATFORM';
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                errorEl.textContent = 'Enter your email and password.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/staff/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schoolCode, email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Login failed');
+
+                if (data.user?.role !== 'PLATFORM_ADMIN') {
+                    throw new Error('This account is not a platform administrator.');
+                }
+
+                if (data.accessToken) {
+                    AuthClient.storeSession(data);
+                    localStorage.setItem('schoolCode', schoolCode);
+                    localStorage.setItem('userRole', data.user.role);
+                    localStorage.setItem('userEmail', email);
+                    localStorage.setItem('userName', data.user?.name || 'Platform Admin');
+                    window.location.reload();
+                }
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
+        });
+
+        initDashboard();
+    </script>
+
+</body>
+</html>
