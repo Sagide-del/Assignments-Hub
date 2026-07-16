@@ -1,0 +1,12 @@
+{
+  "name": "assignments-hub",
+  "private": true,
+  "description": "Monorepo root — present only so Railway's builder detects a Node runtime to install. The real app lives in backend/ (NestJS API, also serves frontend/ statically — see backend/src/main.ts) and frontend/ (static dashboards, no build step). Railway's Build/Start Commands cd into backend/ for the actual install/build/run.",
+  "scripts": {
+    "build": "cd backend && npm ci && npx prisma generate && npm run build",
+    "start": "cd backend && npx prisma migrate deploy && node dist/src/main.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
