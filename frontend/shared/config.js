@@ -9,9 +9,9 @@
 
 (function () {
   // ============================================================
-  // 🔧 PRODUCTION BACKEND URL (Railway)
+  // 🔧 PRODUCTION BACKEND URL (Railway via api subdomain)
   // ============================================================
-  const DEPLOYED_API_BASE_URL = 'https://hub-v1.up.railway.app/api/v1';
+  const DEPLOYED_API_BASE_URL = 'https://api.assignmenthub.co.ke/api/v1';
   
   // For local development (keep as is)
   const LOCAL_API_BASE_URL = 'http://localhost:3000/api/v1';
