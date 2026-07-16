@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In — Assignments Hub</title>
+    <meta name="description" content="Sign in to Assignments Hub — the Kenyan CBC/KICD school platform." />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="../shared/design-system.css" />
+    <style>
+        /* Page-specific layout only — tokens, resets, buttons, forms, and
+           alerts all come from shared/design-system.css. */
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-5);
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 48px 40px 40px;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: var(--space-8);
+        }
+
+        .logo-section img {
+            height: 152px;
+            width: auto;
+            object-fit: contain;
+            margin: 0 auto;
+        }
+
+        /* ===== ROLE SELECTOR ===== */
+        .role-selector {
+            display: flex;
+            gap: var(--space-2);
+            margin-bottom: var(--space-5);
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: var(--space-3) var(--space-2);
+            border: 1.5px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            cursor: pointer;
+            font-weight: var(--font-semibold);
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            transition: var(--transition);
+            font-family: var(--font-family);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .role-btn:hover { border-color: var(--secondary-dark); color: var(--primary); }
+        .role-btn.active {
+            border-color: var(--secondary-dark);
+            background: var(--secondary-50);
+            color: var(--primary);
+            box-shadow: 0 0 0 1px var(--secondary-dark) inset;
+        }
+        .role-btn .role-icon { font-size: 18px; }
+        .role-btn.active .role-icon { color: var(--secondary-dark); }
+
+        /* ===== STAFF / STUDENT FIELD GROUPS ===== */
+        .staff-fields { display: none; }
+        .student-fields { display: block; }
+
+        .student-hint {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            background: var(--secondary-50);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-sm);
+            font-size: var(--text-sm);
+            color: var(--primary);
+            border-left: 3px solid var(--secondary-dark);
+        }
+
+        .btn-login { margin-top: var(--space-2); }
+
+        /* ===== DEMO CREDENTIALS ===== */
+        .demo-credentials {
+            background: var(--gray-50);
+            padding: var(--space-4) var(--space-5);
+            border-radius: var(--radius-sm);
+            margin-top: var(--space-5);
+            border: 1px solid var(--gray-200);
+        }
+
+        .demo-credentials .demo-title {
+            font-weight: var(--font-bold);
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .demo-credentials .demo-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            padding: 4px 0;
+        }
+
+        .demo-credentials .demo-row strong { color: var(--text-primary); }
+
+        .demo-credentials .demo-badge {
+            display: inline-block;
+            padding: 1px 10px;
+            border-radius: var(--radius-full);
+            font-size: 10px;
+            font-weight: var(--font-semibold);
+            background: var(--secondary);
+            color: var(--primary-dark);
+        }
+        .demo-credentials .demo-badge.no-password { background: var(--success-bg); color: var(--success-text); }
+
+        .footer {
+            text-align: center;
+            margin-top: var(--space-6);
+            font-size: var(--text-xs);
+            color: var(--text-light);
+            letter-spacing: 0.3px;
+        }
+        .footer span { color: var(--secondary-dark); font-weight: var(--font-semibold); }
+
+        @media (max-width: 480px) {
+            .login-card { padding: 28px 18px 24px; }
+            .logo-section img { height: 110px; }
+            .role-btn { font-size: 11px; padding: var(--space-2); }
+            .role-btn .role-icon { font-size: 16px; }
+            body { padding: var(--space-3); align-items: flex-start; }
+            .login-wrapper { max-width: 100%; padding-top: var(--space-4); }
+        }
+    </style>
+</head>
+<body>
+
+<a href="#loginForm" class="skip-link">Skip to sign-in form</a>
+
+<div class="login-wrapper animate-fade-in">
+    <div class="login-card">
+
+        <div class="logo-section">
+            <img src="../shared/school-logo.png" alt="Assignments Hub logo" />
+        </div>
+
+        <div id="sessionExpiredNotice" class="alert alert-info hidden" role="status">
+            <i class="fas fa-circle-info"></i>
+            <span>Your session expired for your security. Please sign in again.</span>
+        </div>
+
+        <div id="error" class="alert alert-danger hidden" role="alert" aria-live="assertive">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span id="errorText"></span>
+        </div>
+
+        <form id="loginForm">
+
+            <div class="form-group">
+                <label for="schoolCode">School Code</label>
+                <input type="text" id="schoolCode" placeholder="Enter school code" autocomplete="organization" required />
+            </div>
+
+            <div class="role-selector" role="group" aria-label="I am signing in as">
+                <button type="button" class="role-btn" data-role="staff" aria-pressed="false">
+                    <i class="fas fa-user role-icon"></i>
+                    Staff
+                </button>
+                <button type="button" class="role-btn active" data-role="student" aria-pressed="true">
+                    <i class="fas fa-graduation-cap role-icon"></i>
+                    Student
+                </button>
+                <button type="button" class="role-btn" data-role="admin" aria-pressed="false">
+                    <i class="fas fa-shield-halved role-icon"></i>
+                    Super Admin
+                </button>
+            </div>
+
+            <div id="staffFields" class="staff-fields">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="Enter your email" autocomplete="username" />
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" />
+                </div>
+            </div>
+
+            <div id="studentFields" class="student-fields">
+                <div class="form-group">
+                    <label for="admissionNumber">Admission Number</label>
+                    <input type="text" id="admissionNumber" placeholder="Enter admission number" autocomplete="username" />
+                </div>
+                <div class="student-hint">
+                    <i class="fas fa-circle-info"></i> Students use admission number — no password required
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block btn-login" id="submitBtn">
+                <i class="fas fa-arrow-right"></i> Sign In
+            </button>
+        </form>
+
+        <div class="demo-credentials" id="demoCredentials">
+            <div class="demo-title"><i class="fas fa-key"></i> Demo Credentials</div>
+            <div class="demo-row">
+                <strong>Student:</strong> DEMO01 / ADM001
+                <span class="demo-badge no-password">No password</span>
+            </div>
+            <div class="demo-row">
+                <strong>Teacher:</strong> DEMO01 / teacher@demo.school
+                <span class="demo-badge">DemoTeacher123!</span>
+            </div>
+            <div class="demo-row">
+                <strong>School Admin:</strong> DEMO01 / admin@demo.school
+                <span class="demo-badge">DemoAdmin123!</span>
+            </div>
+            <div class="demo-row">
+                <strong>Super Admin:</strong> PLATFORM / admin@assignmentshub.co.ke
+                <span class="demo-badge">ChangeMe123!</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            Developed by <span>SA Technologies</span> 2026 &bull; v1.0
+        </div>
+
+    </div>
+</div>
+
+<script src="../shared/config.js"></script>
+<script src="../shared/auth-client.js"></script>
+<script>
+    const API_BASE = window.API_BASE_URL;
+    let currentRole = 'student';
+
+    // Demo credentials are a local-dev/staging convenience only — never
+    // show them or pre-fill the form on a real production deployment.
+    if (window.IS_LOCAL_ENV) {
+        document.getElementById('schoolCode').value = 'DEMO01';
+        document.getElementById('admissionNumber').value = 'ADM001';
+    } else {
+        document.getElementById('demoCredentials')?.remove();
+    }
+
+    // A silent-refresh failure elsewhere in the app redirects here with
+    // ?expired=1 — greet the user with why they landed back on login
+    // instead of leaving them to wonder if they were just logged out for
+    // no reason.
+    if (new URLSearchParams(window.location.search).get('expired') === '1') {
+        document.getElementById('sessionExpiredNotice').classList.remove('hidden');
+    }
+
+    // Role selector
+    let schoolCodeBeforeAdmin = '';
+    document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.role-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+            this.classList.add('active');
+            this.setAttribute('aria-pressed', 'true');
+            const previousRole = currentRole;
+            currentRole = this.dataset.role;
+
+            document.getElementById('staffFields').style.display = currentRole === 'student' ? 'none' : 'block';
+            document.getElementById('studentFields').style.display = currentRole === 'student' ? 'block' : 'none';
+
+            const schoolCodeInput = document.getElementById('schoolCode');
+            if (currentRole === 'admin') {
+                // Super admin accounts live under the platform's own "PLATFORM"
+                // school record (see prisma/seed.ts) — not a real school code.
+                schoolCodeBeforeAdmin = previousRole === 'admin' ? schoolCodeBeforeAdmin : schoolCodeInput.value;
+                schoolCodeInput.value = 'PLATFORM';
+                schoolCodeInput.readOnly = true;
+            } else if (previousRole === 'admin') {
+                schoolCodeInput.value = schoolCodeBeforeAdmin;
+                schoolCodeInput.readOnly = false;
+            }
+        });
+    });
+
+    function setLoading(isLoading) {
+        const btn = document.getElementById('submitBtn');
+        btn.classList.toggle('is-loading', isLoading);
+        btn.setAttribute('aria-busy', String(isLoading));
+        btn.disabled = isLoading;
+    }
+
+    function showError(message) {
+        const errorEl = document.getElementById('error');
+        document.getElementById('errorText').textContent = message;
+        errorEl.classList.remove('hidden');
+    }
+
+    function hideError() {
+        document.getElementById('error').classList.add('hidden');
+    }
+
+    // Login form
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        hideError();
+        document.getElementById('sessionExpiredNotice').classList.add('hidden');
+        setLoading(true);
+
+        const schoolCode = document.getElementById('schoolCode').value.trim().toUpperCase();
+
+        try {
+            let role = 'student';
+
+            if (currentRole === 'student') {
+                const admissionNumber = document.getElementById('admissionNumber').value.trim();
+                if (!admissionNumber) throw new Error('Please enter your admission number');
+
+                const res = await fetch(`${API_BASE}/auth/student/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schoolCode, admissionNumber })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Login failed');
+
+                if (data.accessToken) {
+                    AuthClient.storeSession(data);
+                    localStorage.setItem('schoolCode', schoolCode);
+                    localStorage.setItem('admissionNumber', admissionNumber);
+                    // The backend already returns the real user record (real
+                    // id, name, grade) as `data.user` — store it like the
+                    // staff branch below does. Previously this branch never
+                    // set the `user` key at all, so AH.Auth.getUser() (used
+                    // on the STEM Labs page and elsewhere) returned null for
+                    // every student and crashed on first use, which forced a
+                    // logout back to this screen.
+                    if (data.user) {
+                        localStorage.setItem('userName', data.user.name || 'Student');
+                    } else {
+                        localStorage.setItem('userName', 'Student');
+                    }
+                    localStorage.setItem('userRole', 'student');
+                    role = 'student';
+                }
+
+            } else {
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value.trim();
+
+                if (!email || !password) throw new Error('Please enter email and password');
+
+                const res = await fetch(`${API_BASE}/auth/staff/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schoolCode, email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Login failed');
+
+                if (data.accessToken) {
+                    AuthClient.storeSession(data);
+                    localStorage.setItem('schoolCode', schoolCode);
+                    localStorage.setItem('userEmail', email);
+                    localStorage.setItem('userName', data.user?.name || 'Staff');
+                    role = data.user?.role || 'staff';
+                    localStorage.setItem('userRole', role);
+                }
+            }
+
+            const roleMap = {
+                'student': '../student-dashboard/index.html',
+                'teacher': '../teacher-dashboard/index.html',
+                'school_admin': '../school-admin-dashboard/index.html',
+                'platform_admin': '../super-admin-dashboard/index.html',
+                'TEACHER': '../teacher-dashboard/index.html',
+                'SCHOOL_ADMIN': '../school-admin-dashboard/index.html',
+                'PLATFORM_ADMIN': '../super-admin-dashboard/index.html',
+                'STUDENT': '../student-dashboard/index.html'
+            };
+
+            const dashboard = roleMap[role] || '../student-dashboard/index.html';
+            window.location.href = dashboard + '?from=unified';
+
+        } catch (err) {
+            showError(err.message || 'Login failed. Please check your credentials.');
+            setLoading(false);
+        }
+    });
+
+    // Check existing session
+    const token = localStorage.getItem('token');
+    if (token) {
+        const role = localStorage.getItem('userRole');
+        if (role) {
+            const roleMap = {
+                'student': '../student-dashboard/index.html',
+                'teacher': '../teacher-dashboard/index.html',
+                'school_admin': '../school-admin-dashboard/index.html',
+                'platform_admin': '../super-admin-dashboard/index.html',
+                'TEACHER': '../teacher-dashboard/index.html',
+                'SCHOOL_ADMIN': '../school-admin-dashboard/index.html',
+                'PLATFORM_ADMIN': '../super-admin-dashboard/index.html',
+                'STUDENT': '../student-dashboard/index.html'
+            };
+            window.location.href = (roleMap[role] || '../student-dashboard/index.html') + '?from=unified';
+        }
+    }
+</script>
+
+</body>
+</html>
