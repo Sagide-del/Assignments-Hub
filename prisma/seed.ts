@@ -42,82 +42,92 @@ async function main() {
     },
   });
 
-  // Demo school with a school admin, teacher and student for local testing.
-  const demoSchool = await prisma.school.upsert({
-    where: { code: 'DEMO01' },
-    update: {},
-    create: {
-      name: 'Demo Junior School',
-      code: 'DEMO01',
-      subscriptionStatus: SubscriptionStatus.TRIAL,
-    },
-  });
+  // Demo school with a school admin, teacher and student for local testing
+  // ONLY — these are well-known, hardcoded credentials, so they must never
+  // exist on a production database (anyone who's read this file, which is
+  // the whole point of a demo, could log into a live production account).
+  // Tenant isolation means they couldn't see any *other* school's data even
+  // if created, but there's no reason to accept that risk in prod when the
+  // seed's real job there is the platform admin + shared catalogs below.
+  const isProduction = process.env.NODE_ENV === 'production';
 
-  const demoAdminPasswordHash = await bcrypt.hash('DemoAdmin123!', 12);
-  await prisma.user.upsert({
-    where: { schoolId_email: { schoolId: demoSchool.id, email: 'admin@demo.school' } },
-    update: {},
-    create: {
-      schoolId: demoSchool.id,
-      name: 'Demo School Admin',
-      role: Role.SCHOOL_ADMIN,
-      email: 'admin@demo.school',
-      passwordHash: demoAdminPasswordHash,
-    },
-  });
+  if (!isProduction) {
+    const demoSchool = await prisma.school.upsert({
+      where: { code: 'DEMO01' },
+      update: {},
+      create: {
+        name: 'Demo Junior School',
+        code: 'DEMO01',
+        subscriptionStatus: SubscriptionStatus.TRIAL,
+      },
+    });
 
-  const demoTeacherPasswordHash = await bcrypt.hash('DemoTeacher123!', 12);
-  await prisma.user.upsert({
-    where: { schoolId_email: { schoolId: demoSchool.id, email: 'teacher@demo.school' } },
-    update: {},
-    create: {
-      schoolId: demoSchool.id,
-      name: 'Demo Teacher',
-      role: Role.TEACHER,
-      email: 'teacher@demo.school',
-      passwordHash: demoTeacherPasswordHash,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { schoolId_admissionNumber: { schoolId: demoSchool.id, admissionNumber: 'ADM001' } },
-    update: {},
-    create: {
-      schoolId: demoSchool.id,
-      name: 'Demo Student',
-      role: Role.STUDENT,
-      admissionNumber: 'ADM001',
-      grade: 'Grade 7',
-    },
-  });
-
-  const existingAssignment = await prisma.assignment.findFirst({
-    where: { schoolId: demoSchool.id, title: 'Fractions Worksheet 1' },
-  });
-  if (!existingAssignment) {
-    await prisma.assignment.create({
-      data: {
+    const demoAdminPasswordHash = await bcrypt.hash('DemoAdmin123!', 12);
+    await prisma.user.upsert({
+      where: { schoolId_email: { schoolId: demoSchool.id, email: 'admin@demo.school' } },
+      update: {},
+      create: {
         schoolId: demoSchool.id,
-        title: 'Fractions Worksheet 1',
-        subject: 'Mathematics',
+        name: 'Demo School Admin',
+        role: Role.SCHOOL_ADMIN,
+        email: 'admin@demo.school',
+        passwordHash: demoAdminPasswordHash,
+      },
+    });
+
+    const demoTeacherPasswordHash = await bcrypt.hash('DemoTeacher123!', 12);
+    await prisma.user.upsert({
+      where: { schoolId_email: { schoolId: demoSchool.id, email: 'teacher@demo.school' } },
+      update: {},
+      create: {
+        schoolId: demoSchool.id,
+        name: 'Demo Teacher',
+        role: Role.TEACHER,
+        email: 'teacher@demo.school',
+        passwordHash: demoTeacherPasswordHash,
+      },
+    });
+
+    await prisma.user.upsert({
+      where: { schoolId_admissionNumber: { schoolId: demoSchool.id, admissionNumber: 'ADM001' } },
+      update: {},
+      create: {
+        schoolId: demoSchool.id,
+        name: 'Demo Student',
+        role: Role.STUDENT,
+        admissionNumber: 'ADM001',
         grade: 'Grade 7',
-        type: 'TEACHER_MARKED',
       },
     });
-  }
 
-  const existingSubscription = await prisma.subscription.findFirst({
-    where: { schoolId: demoSchool.id },
-  });
-  if (!existingSubscription) {
-    await prisma.subscription.create({
-      data: {
-        schoolId: demoSchool.id,
-        plan: 'Junior School — Trial',
-        status: SubscriptionStatus.TRIAL,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
-      },
+    const existingAssignment = await prisma.assignment.findFirst({
+      where: { schoolId: demoSchool.id, title: 'Fractions Worksheet 1' },
     });
+    if (!existingAssignment) {
+      await prisma.assignment.create({
+        data: {
+          schoolId: demoSchool.id,
+          title: 'Fractions Worksheet 1',
+          subject: 'Mathematics',
+          grade: 'Grade 7',
+          type: 'TEACHER_MARKED',
+        },
+      });
+    }
+
+    const existingSubscription = await prisma.subscription.findFirst({
+      where: { schoolId: demoSchool.id },
+    });
+    if (!existingSubscription) {
+      await prisma.subscription.create({
+        data: {
+          schoolId: demoSchool.id,
+          plan: 'Junior School — Trial',
+          status: SubscriptionStatus.TRIAL,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
+        },
+      });
+    }
   }
 
   // STEM Labs catalog — platform-wide, not tied to demoSchool. Upserted by
@@ -264,15 +274,23 @@ async function main() {
 
   console.log('Seed complete.');
   console.log(`Platform admin: ${platformAdminEmail} / ${platformAdminPassword}`);
-  console.log('Demo school code: DEMO01');
-  console.log('Demo school admin: admin@demo.school / DemoAdmin123!');
-  console.log('Demo teacher: teacher@demo.school / DemoTeacher123!');
-  console.log('Demo student: admission number ADM001 (Grade 7)');
-  console.log('Demo assignment: "Fractions Worksheet 1" (Grade 7, Mathematics)');
+  if (isProduction) {
+    console.log('NODE_ENV=production — skipped creating the demo school/admin/teacher/student.');
+  } else {
+    console.log('Demo school code: DEMO01');
+    console.log('Demo school admin: admin@demo.school / DemoAdmin123!');
+    console.log('Demo teacher: teacher@demo.school / DemoTeacher123!');
+    console.log('Demo student: admission number ADM001 (Grade 7)');
+    console.log('Demo assignment: "Fractions Worksheet 1" (Grade 7, Mathematics)');
+  }
   console.log(`STEM Labs catalog: ${labsCreated} new / ${LAB_CATALOG.length} total (upserted by key)`);
-  console.log('Pilot lab with video + quiz: "demo-volcano-1" (Grade 7) — try it as the demo student');
+  if (!isProduction) {
+    console.log('Pilot lab with video + quiz: "demo-volcano-1" (Grade 7) — try it as the demo student');
+  }
   console.log(`CSL activity catalog: ${cslCreated} new / ${CSL_ACTIVITY_CATALOG.length} total (upserted by key)`);
-  console.log('Required Grade 7 CSL activity: "grade7-environmental-cleaning" — try submitting evidence as the demo student');
+  if (!isProduction) {
+    console.log('Required Grade 7 CSL activity: "grade7-environmental-cleaning" — try submitting evidence as the demo student');
+  }
   console.log(
     `Career Pathways catalog: ${pathwaysCreated} new pathways / ${PATHWAY_CATALOG.length} total, ${tracksCreated} new tracks (upserted by key)`,
   );

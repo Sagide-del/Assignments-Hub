@@ -7,8 +7,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Pooled connection (e.g. Supabase's PgBouncer on :6543) — used for all
+  // normal runtime queries, where a large number of short-lived connections
+  // from the app is exactly what a pooler is for.
+  url       = env("DATABASE_URL")
+  // Direct, unpooled connection (e.g. Supabase on :5432) — used ONLY by
+  // `prisma migrate deploy` / `prisma migrate dev`. Migrations take an
+  // advisory lock and run DDL, neither of which works reliably through a
+  // transaction-mode PgBouncer pooler; pointing migrations at the pooled
+  // URL is what causes `migrate deploy` to hang or fail silently.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
