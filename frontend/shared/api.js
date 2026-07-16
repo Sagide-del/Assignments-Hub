@@ -98,7 +98,13 @@
     const responseData = await response.json();
 
     if (!response.ok) {
-      throw new Error(responseData.message || responseData.error || 'Request failed');
+      // NestJS validation errors (400s from the global ValidationPipe) come
+      // back as message: string[] rather than a single string — join them
+      // so callers always get a readable Error instead of "[object Object]"
+      // or an unreadable Array.toString() dump.
+      const rawMessage = responseData.message || responseData.error || 'Request failed';
+      const message = Array.isArray(rawMessage) ? rawMessage.join('; ') : rawMessage;
+      throw new Error(message);
     }
 
     return responseData;

@@ -146,7 +146,6 @@
   function redirectToLogin() {
     const onLoginPage = /unified-dashboard\/?(index\.html)?$/.test(window.location.pathname) || window.location.pathname === '/' || window.location.pathname === '';
     if (!onLoginPage) {
-      const depth = window.location.pathname.split('/').filter(Boolean).length;
       // Best-effort relative path back to unified-dashboard from any of the
       // sibling dashboard folders (frontend/<page>/index.html).
       window.location.href = '../unified-dashboard/index.html?expired=1';
