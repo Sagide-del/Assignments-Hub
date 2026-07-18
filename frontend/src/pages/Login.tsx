@@ -15,18 +15,29 @@ export default function Login() {
             'linear-gradient(135deg, #101820 0%, #151A1F 55%, #1c2732 100%)',
         }}
       >
-        {/* subtle glow */}
+        {/* subtle glow effects */}
         <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-[#B5E61D] opacity-10 blur-3xl" />
         <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-[#B5E61D] opacity-5 blur-3xl" />
 
         <div className="relative z-10 max-w-xl">
 
-          {/* Logo */}
-          <img
-            src="/logo.png"
-            alt="Assignment Hub"
-            className="w-44 mb-10 object-contain"
-          />
+          {/* Brand Logo */}
+          <div className="flex items-center gap-5 mb-12">
+            <img
+              src="/logo.png"
+              alt="Assignment Hub"
+              className="h-20 w-20 object-contain"
+            />
+
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">
+                Assignment Hub
+              </h2>
+              <p className="text-gray-400 text-sm mt-1">
+                Smart Learning Platform
+              </p>
+            </div>
+          </div>
 
           {/* Main message */}
           <h1 className="text-5xl font-bold leading-tight tracking-tight">
