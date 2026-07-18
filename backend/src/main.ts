@@ -13,30 +13,21 @@ async function bootstrap() {
   const corsOrigin = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((origin: string) => origin.trim())
     : '*';
-  app.enableCors({ origin: corsOrigin, exposedHeaders: ['Content-Disposition'] });
+
+  app.enableCors({
+    origin: corsOrigin,
+    exposedHeaders: ['Content-Disposition'],
+  });
 
   // Helmet
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-  
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+
   // Serve uploaded files
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
-
-  // ============================================================
-  // ✅ SERVE FRONTEND STATIC FILES (for Railway)
-  // ============================================================
-  const frontendPath = join(__dirname, '..', '..', 'frontend');
-  console.log(`Serving frontend from: ${frontendPath}`);
-  app.use(express.static(frontendPath));
-
-  // ============================================================
-  // ✅ FALLBACK ROUTE FOR ROOT
-  // ============================================================
-  app.use((req: any, res: any, next: any) => {
-    if (req.path.startsWith('/api')) {
-      return next();
-    }
-    res.sendFile(join(frontendPath, 'unified-dashboard', 'index.html'));
-  });
 
   // Validation
   app.useGlobalPipes(
@@ -49,10 +40,13 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  // API prefix
   app.setGlobalPrefix('api/v1');
 
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
   await app.listen(port);
+
   console.log(`Assignments Hub API listening on port ${port}`);
 }
 
