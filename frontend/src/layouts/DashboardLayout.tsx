@@ -1,121 +1,511 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+
 import { useAuthStore } from '../store/auth.store';
 import { schoolsApi } from '../api/schools.api';
 import { authApi } from '../api/auth.api';
 import { applySchoolTheme } from '../themes/schoolTheme';
+
 
 interface NavItem {
   to: string;
   label: string;
 }
 
-// Shared shell for every logged-in role. Pulls the caller's school record
-// (name + logo — the only branding fields the backend actually has, see
-// ROADMAP.md) so each school's dashboard is visibly "theirs" even though
-// it's the same React build for every tenant.
+
 export function DashboardLayout({ nav }: { nav: NavItem[] }) {
+
   const user = useAuthStore((s) => s.user);
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const clearSession = useAuthStore((s) => s.clearSession);
+
   const navigate = useNavigate();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const [mobileNavOpen, setMobileNavOpen] =
+    useState(false);
+
+
+  const isPlatformAdmin =
+    user?.role === 'PLATFORM_ADMIN';
+
+
 
   const { data: school } = useQuery({
+
     queryKey: ['school', user?.schoolId],
-    queryFn: () => schoolsApi.findOne(user!.schoolId),
-    enabled: !!user,
+
+    queryFn: () =>
+      schoolsApi.findOne(user!.schoolId),
+
+    enabled:
+      !!user &&
+      !isPlatformAdmin &&
+      !!user.schoolId,
+
   });
 
+
+
+
+
   useEffect(() => {
-    applySchoolTheme(school ?? null);
-    return () => applySchoolTheme(null);
+
+    applySchoolTheme(
+      school ?? null
+    );
+
+    return () => {
+      applySchoolTheme(null);
+    };
+
   }, [school]);
 
+
+
+
+
+
   async function handleLogout() {
+
     if (refreshToken) {
+
       try {
+
         await authApi.logout(refreshToken);
+
       } catch {
-        // Best-effort — clear local session regardless of API result.
+
       }
+
     }
+
+
     clearSession();
-    navigate('/login', { replace: true });
+
+    navigate('/login', {
+      replace: true,
+    });
+
   }
 
+
+
+
+
+
+  const brandTitle =
+    isPlatformAdmin
+      ? 'Assignment Hub'
+      : school?.name ?? 'Assignment Hub';
+
+
+
+  const subtitle =
+    isPlatformAdmin
+      ? 'Platform Console'
+      : school?.code ?? '';
+
+
+
+
+
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Mobile top bar */}
-      <div className="md:hidden flex items-center justify-between bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center gap-2 min-w-0">
-          {school?.logoUrl ? (
-            <img src={school.logoUrl} alt={school.name} className="h-8 w-8 rounded object-cover" />
-          ) : (
-            <div className="h-8 w-8 rounded bg-brand text-white flex items-center justify-center text-sm font-semibold">
-              {school?.name?.[0] ?? 'A'}
-            </div>
-          )}
-          <p className="font-medium text-sm truncate">{school?.name ?? 'Assignments Hub'}</p>
+
+    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
+
+
+
+
+
+      {/* MOBILE HEADER */}
+
+      <div className="
+        md:hidden
+        flex
+        items-center
+        justify-between
+        bg-[#101820]
+        px-5
+        py-4
+      ">
+
+
+        <div className="flex items-center gap-3">
+
+
+          <div className="
+            h-10
+            w-10
+            rounded-xl
+            bg-white
+            flex
+            items-center
+            justify-center
+            shadow-lg
+          ">
+
+            <img
+              src="/logo.png"
+              alt="Assignment Hub"
+              className="
+                h-8
+                w-8
+                object-contain
+              "
+            />
+
+          </div>
+
+
+
+          <div>
+
+            <p className="
+              text-white
+              font-semibold
+              text-sm
+            ">
+
+              {brandTitle}
+
+            </p>
+
+
+            <p className="
+              text-gray-400
+              text-xs
+            ">
+
+              {subtitle}
+
+            </p>
+
+          </div>
+
+
         </div>
+
+
+
+
+
         <button
-          onClick={() => setMobileNavOpen((v) => !v)}
-          aria-label="Toggle menu"
-          className="px-2 py-1 border border-gray-300 rounded text-sm"
+
+          onClick={() =>
+            setMobileNavOpen(
+              !mobileNavOpen
+            )
+          }
+
+          className="
+            text-[#B5E61D]
+            text-xl
+          "
+
         >
+
           {mobileNavOpen ? '✕' : '☰'}
+
         </button>
+
+
       </div>
 
-      <aside className={`md:w-64 bg-white border-r border-gray-200 md:flex md:flex-col ${mobileNavOpen ? 'flex flex-col' : 'hidden'}`}>
-        <div className="hidden md:flex p-4 border-b border-gray-100 items-center gap-3">
-          {school?.logoUrl ? (
-            <img src={school.logoUrl} alt={school.name} className="h-10 w-10 rounded object-cover" />
-          ) : (
-            <div className="h-10 w-10 rounded bg-brand text-white flex items-center justify-center font-semibold">
-              {school?.name?.[0] ?? 'A'}
+
+
+
+
+
+
+
+      {/* SIDEBAR */}
+
+      <aside
+
+        className={`
+          md:w-72
+          bg-[#101820]
+          text-white
+          md:flex
+          md:flex-col
+
+          ${
+            mobileNavOpen
+              ? 'flex flex-col'
+              : 'hidden'
+          }
+        `}
+
+      >
+
+
+
+
+
+
+        {/* PREMIUM BRAND AREA */}
+
+        <div className="
+          p-6
+          border-b
+          border-white/10
+        ">
+
+
+          <div className="
+            flex
+            items-center
+            gap-4
+          ">
+
+
+
+            <div className="
+              h-16
+              w-16
+              rounded-2xl
+              bg-white
+              flex
+              items-center
+              justify-center
+              shadow-xl
+            ">
+
+
+              <img
+
+                src="/logo.png"
+
+                alt="Assignment Hub"
+
+                className="
+                  h-12
+                  w-12
+                  object-contain
+                "
+
+              />
+
+
             </div>
-          )}
-          <div className="min-w-0">
-            <p className="font-medium text-sm truncate">{school?.name ?? 'Assignments Hub'}</p>
-            <p className="text-xs text-gray-500 truncate">{school?.code}</p>
+
+
+
+
+
+
+            <div className="min-w-0">
+
+
+              <h2 className="
+                text-lg
+                font-bold
+                tracking-tight
+              ">
+
+                {brandTitle}
+
+              </h2>
+
+
+
+              <p className="
+                text-sm
+                text-gray-400
+                mt-1
+              ">
+
+                {subtitle}
+
+              </p>
+
+
+
+            </div>
+
+
           </div>
+
+
+
         </div>
 
-        <nav className="flex-1 p-2 flex flex-col gap-1 overflow-y-auto">
+
+
+
+
+
+
+
+
+        {/* NAVIGATION */}
+
+        <nav className="
+          flex-1
+          p-4
+          space-y-2
+        ">
+
+
           {nav.map((item) => (
+
+
             <NavLink
+
               key={item.to}
+
               to={item.to}
+
               end
-              onClick={() => setMobileNavOpen(false)}
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm whitespace-nowrap ${
-                  isActive ? 'bg-brand text-white' : 'text-gray-700 hover:bg-gray-100'
-                }`
+
+              onClick={() =>
+                setMobileNavOpen(false)
               }
+
+
+              className={({isActive}) =>
+
+                `
+
+                flex
+                items-center
+                px-4
+                py-3
+                rounded-xl
+                text-sm
+                transition-all
+
+
+                ${
+                  isActive
+
+                  ?
+
+                  'bg-[#B5E61D] text-[#101820] font-semibold shadow-lg'
+
+                  :
+
+                  'text-gray-300 hover:bg-white/10 hover:text-white'
+
+                }
+
+                `
+
+              }
+
             >
+
               {item.label}
+
+
             </NavLink>
+
+
           ))}
+
+
+
         </nav>
 
-        <div className="p-4 border-t border-gray-100">
-          <p className="text-sm font-medium truncate">{user?.name}</p>
-          <p className="text-xs text-gray-500">{user?.role.replace('_', ' ')}</p>
+
+
+
+
+
+
+
+
+
+        {/* USER FOOTER */}
+
+        <div className="
+          p-6
+          border-t
+          border-white/10
+        ">
+
+
+          <p className="
+            font-semibold
+            truncate
+          ">
+
+            {user?.name}
+
+          </p>
+
+
+
+          <p className="
+            text-xs
+            text-gray-400
+            mt-1
+          ">
+
+            {user?.role.replace('_',' ')}
+
+          </p>
+
+
+
+
+
           <button
+
             onClick={handleLogout}
-            className="mt-3 w-full text-sm text-left text-red-600 hover:text-red-700"
+
+            className="
+              mt-5
+              w-full
+              bg-[#B5E61D]
+              text-[#101820]
+              font-semibold
+              py-3
+              rounded-xl
+              hover:bg-white
+              transition
+            "
+
           >
+
             Log out
+
           </button>
+
+
+
         </div>
+
+
+
       </aside>
 
-      <main className="flex-1 p-4 md:p-8 min-w-0">
+
+
+
+
+
+
+
+
+      {/* MAIN CONTENT */}
+
+      <main className="
+        flex-1
+        p-4
+        md:p-8
+      ">
+
         <Outlet />
+
       </main>
+
+
+
     </div>
+
   );
+
 }
