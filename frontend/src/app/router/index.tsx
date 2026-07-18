@@ -1,10 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { PublicLayout } from '../../layouts/PublicLayout';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 
-import { StudentLogin } from '../../features/authentication/StudentLogin';
-import { StaffLogin } from '../../features/authentication/StaffLogin';
+import Login from '../../pages/Login';
 import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 
 import { StudentDashboard } from '../../features/student/Dashboard';
@@ -55,14 +53,13 @@ const schoolAdminNav = [
 const platformAdminNav = [{ to: '/platform', label: 'Schools' }];
 
 export const router = createBrowserRouter([
-  // Public / auth
-  {
-    element: <PublicLayout />,
-    children: [
-      { path: '/login', element: <StudentLogin /> },
-      { path: '/login/staff', element: <StaffLogin /> },
-    ],
-  },
+  // Public / auth — Login.tsx defines its own full-screen split layout, so
+  // it isn't nested inside PublicLayout (kept around, unused for now, in
+  // case a future public page — pricing, marketing — wants the narrow
+  // centered wrapper it provides).
+  { path: '/login', element: <Login /> },
+  // Old separate /login/staff route is now just the "Staff" tab on /login.
+  { path: '/login/staff', element: <Navigate to="/login" replace /> },
   { path: '/platform-console', element: <PlatformLogin /> },
   { path: '/parent', element: <ParentPortal /> },
 

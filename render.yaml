@@ -35,6 +35,19 @@ services:
         value: "false"
       - key: INTASEND_WEBHOOK_SECRET
         sync: false
+      - key: APP_URL
+        value: https://api.assignmenthub.co.ke
+      - key: PAYMENT_REDIRECT_URL
+        value: https://app.assignmenthub.co.ke/school-admin/subscription
+      # Africa's Talking SMS — read by SmsService via ConfigService. Omit
+      # AFRICASTALKING_API_KEY to leave SMS silently disabled rather than
+      # erroring (SmsService defaults apiKey to '').
+      - key: AFRICASTALKING_USERNAME
+        value: sandbox
+      - key: AFRICASTALKING_API_KEY
+        sync: false
+      - key: AFRICASTALKING_SENDER_ID
+        sync: false
 
   - type: web
     name: assignments-hub-frontend
