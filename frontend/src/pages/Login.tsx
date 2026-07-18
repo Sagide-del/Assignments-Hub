@@ -13,7 +13,7 @@ export default function Login() {
         className="hidden lg:flex w-1/2 relative text-white overflow-hidden"
         style={{
           backgroundImage:
-            "linear-gradient(90deg, rgba(10,15,20,0.96) 0%, rgba(10,15,20,0.82) 45%, rgba(10,15,20,0.45) 100%), url('/learners-bg.png')",
+            "linear-gradient(90deg, rgba(10,15,20,0.78) 0%, rgba(10,15,20,0.65) 55%, rgba(10,15,20,0.45) 100%), url('/learners-bg.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
@@ -21,43 +21,38 @@ export default function Login() {
 
         <div className="relative z-10 px-16 py-14 flex flex-col justify-between w-full">
 
-          {/* BRAND */}
           <div>
 
-            <div className="flex items-center gap-5">
+            {/* TEXT BRAND ONLY - NO LOGO */}
+            <div>
+              <h2 className="text-4xl font-bold tracking-tight">
+                Assignment Hub
+              </h2>
 
-              <img
-                src="/logo.png"
-                alt="Assignment Hub"
-                className="h-28 w-28 object-contain drop-shadow-xl"
-              />
-
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">
-                  Assignment Hub
-                </h2>
-
-                <p className="text-gray-300 mt-1">
-                  Smart Learning Platform
-                </p>
-              </div>
-
+              <p className="text-gray-300 mt-2 text-lg">
+                Smart Learning Platform
+              </p>
             </div>
 
 
-            <h1 className="mt-20 text-5xl font-bold leading-tight">
+            <h1 className="mt-16 text-5xl font-bold leading-[1.15] max-w-xl">
+
               Smarter Assignments.
               <br />
 
               <span className="text-[#B5E61D]">
                 Stronger Learning.
               </span>
+
             </h1>
 
 
             <p className="mt-8 text-lg text-gray-200 leading-relaxed max-w-lg">
-              Connect schools, teachers, students and parents through one
-              intelligent platform built for modern CBC education.
+
+              Connect schools, teachers, students and parents
+              through one intelligent platform built for
+              modern CBC education.
+
             </p>
 
 
@@ -74,10 +69,12 @@ export default function Login() {
           </div>
 
 
-          {/* TRUST CARD */}
+
+          {/* TRUST MESSAGE */}
+
           <div
             className="
-            bg-black/40
+            bg-black/35
             backdrop-blur-md
             border
             border-white/10
@@ -99,46 +96,43 @@ export default function Login() {
               Elevating schools.
             </p>
 
+
           </div>
 
 
         </div>
 
+
       </section>
 
 
 
-      {/* LOGIN PANEL */}
-      <section className="w-full lg:w-1/2 flex items-center justify-center px-8">
 
-        <div className="w-full max-w-md">
+      {/* LOGIN AREA */}
 
-          <div className="text-center mb-10">
+      <section className="w-full lg:w-1/2 flex items-center justify-center px-8 bg-white">
 
-            <img
-              src="/logo.png"
-              alt="Assignment Hub"
-              className="h-24 w-24 mx-auto object-contain mb-6"
-            />
 
-            <h1 className="text-4xl font-bold text-gray-900">
-              Welcome back!
-            </h1>
-
-            <p className="text-gray-500 mt-3">
-              Sign in to your Assignment Hub account
-            </p>
-
-          </div>
-
+        <div
+          className="
+          w-full
+          max-w-md
+          bg-white
+          rounded-3xl
+          shadow-xl
+          border
+          border-gray-100
+          p-10
+          "
+        >
 
           <LoginCard
             loginType={loginType}
             setLoginType={setLoginType}
           />
 
-
         </div>
+
 
       </section>
 
@@ -148,22 +142,30 @@ export default function Login() {
 }
 
 
+
 function Feature({ text }: { text: string }) {
+
   return (
+
     <div className="flex items-center gap-4">
 
-      <div className="
+      <div
+        className="
         w-3
         h-3
         rounded-full
         bg-[#B5E61D]
         shadow-[0_0_12px_#B5E61D]
-      " />
+        "
+      />
 
-      <p className="text-gray-200 text-base">
+      <p className="text-gray-100 text-base">
         {text}
       </p>
 
+
     </div>
+
   );
+
 }
