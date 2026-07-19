@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AiController } from './ai.controller';
+import { AiProviderRouterService } from './ai-provider-router.service';
 import { AiService } from './ai.service';
 import { DeepseekService } from './deepseek.service';
 
@@ -10,6 +11,7 @@ import { DeepseekService } from './deepseek.service';
   providers: [
     AiService,
     DeepseekService,
+    AiProviderRouterService,
   ],
   exports: [
     AiService,

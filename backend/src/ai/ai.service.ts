@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { DeepseekService } from './deepseek.service';
+import { AiProviderRouterService } from './ai-provider-router.service';
 import { GenerateAssignmentDto } from './dto/generate-assignment.dto';
 
 @Injectable()
 export class AiService {
   constructor(
-    private readonly deepseekService: DeepseekService,
+    private readonly aiProviderRouter: AiProviderRouterService,
   ) {}
 
   async generateAssignment(dto: GenerateAssignmentDto) {
@@ -77,6 +77,10 @@ Rules:
 - Do not include markdown.
 `;
 
-    return this.deepseekService.generateAssignment(prompt);
+    const result = await this.aiProviderRouter.generateAssignment(prompt);
+
+    // Unwrap so the HTTP response shape is byte-for-byte identical to
+    // before this refactor — callers still get the raw assignment JSON.
+    return result.content;
   }
 }
