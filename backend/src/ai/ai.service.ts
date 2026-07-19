@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AiProviderRouterService } from './ai-provider-router.service';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { GenerateAssignmentDto } from './dto/generate-assignment.dto';
 
 @Injectable()
@@ -8,7 +9,7 @@ export class AiService {
     private readonly aiProviderRouter: AiProviderRouterService,
   ) {}
 
-  async generateAssignment(dto: GenerateAssignmentDto) {
+  async generateAssignment(dto: GenerateAssignmentDto, user: AuthenticatedUser) {
     const questionTypes = dto.questionTypes.join(', ');
 
     const prompt = `
@@ -77,7 +78,10 @@ Rules:
 - Do not include markdown.
 `;
 
-    const result = await this.aiProviderRouter.generateAssignment(prompt);
+    const result = await this.aiProviderRouter.generateAssignment(prompt, {
+      schoolId: user.schoolId,
+      userId: user.id,
+    });
 
     // Unwrap so the HTTP response shape is byte-for-byte identical to
     // before this refactor — callers still get the raw assignment JSON.

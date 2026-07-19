@@ -9,6 +9,8 @@ import { GenerateAssignmentDto } from './dto/generate-assignment.dto';
 
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 import { AuditAction } from '../common/decorators/audit.decorator';
 
@@ -27,7 +29,8 @@ export class AiController {
   @AuditAction('ai.generate_assignment')
   generateAssignment(
     @Body() dto: GenerateAssignmentDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.aiService.generateAssignment(dto);
+    return this.aiService.generateAssignment(dto, user);
   }
 }
