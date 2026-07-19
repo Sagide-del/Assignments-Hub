@@ -1,9 +1,26 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { AiUsageStatus } from '@prisma/client';
 
+import { AiUsageService } from './ai-usage.service';
 import { ClaudeService } from './claude.service';
 import { DeepseekService } from './deepseek.service';
 import { AiProviderError, AiProviderErrorReason } from './errors/ai-provider.error';
 import { AiGenerationResult, AiProviderService } from './interfaces/ai-provider.interface';
+
+/**
+ * Optional caller context, used only for AI usage logging (AiUsageService).
+ * Both fields are optional because not every current call site supplies
+ * them yet — AiService's existing call, generateAssignment(prompt) with no
+ * second argument, still works unchanged. When schoolId is missing,
+ * AiUsageService.record skips persisting that attempt (AiUsageLog.schoolId
+ * is required in the schema) instead of writing an invalid row. Wiring a
+ * real schoolId/userId through from AiService is a separate, follow-up
+ * change — out of scope here.
+ */
+export interface GenerateAssignmentContext {
+  schoolId?: number | null;
+  userId?: number | null;
+}
 
 /**
  * AI Provider Router.
@@ -14,6 +31,12 @@ import { AiGenerationResult, AiProviderService } from './interfaces/ai-provider.
  * Chain: [DeepSeek, Claude]. DeepSeek is tried first; Claude is only tried
  * when DeepSeek fails for a retryable reason (balance exhausted, rate
  * limited, or unavailable) — anything else surfaces immediately.
+ *
+ * Every attempt (either provider, success or failure) is recorded to
+ * AiUsageLog via AiUsageService — see the try/catch in generateAssignment.
+ * Logging is fire-and-forget (not awaited), matching AuditLogInterceptor's
+ * pattern, so a slow or failing usage write can never add latency to, or
+ * break, the actual generation response.
  *
  * Scope note for this change: deepseek.service.ts is intentionally
  * untouched in this change. AiService was already migrated to use
@@ -38,6 +61,7 @@ export class AiProviderRouterService {
   constructor(
     private readonly deepseekService: DeepseekService,
     private readonly claudeService: ClaudeService,
+    private readonly aiUsageService: AiUsageService,
   ) {
     const deepseekAdapter: AiProviderService = {
       providerName: 'DEEPSEEK',
@@ -59,7 +83,10 @@ export class AiProviderRouterService {
     this.chain = [deepseekAdapter, this.claudeService];
   }
 
-  async generateAssignment(prompt: string): Promise<AiGenerationResult> {
+  async generateAssignment(
+    prompt: string,
+    context?: GenerateAssignmentContext,
+  ): Promise<AiGenerationResult> {
     let lastError: AiProviderError | null = null;
 
     for (let i = 0; i < this.chain.length; i++) {
@@ -67,7 +94,20 @@ export class AiProviderRouterService {
       const isLastProvider = i === this.chain.length - 1;
 
       try {
-        return await provider.generateAssignment(prompt);
+        const result = await provider.generateAssignment(prompt);
+
+        void this.aiUsageService.record({
+          schoolId: context?.schoolId,
+          userId: context?.userId,
+          provider: provider.providerName,
+          status: AiUsageStatus.SUCCESS,
+          model: result.model,
+          promptTokens: result.usage.promptTokens,
+          completionTokens: result.usage.completionTokens,
+          totalTokens: result.usage.totalTokens,
+        });
+
+        return result;
       } catch (err) {
         const aiError =
           err instanceof AiProviderError
@@ -84,6 +124,14 @@ export class AiProviderRouterService {
         this.logger.warn(
           `${provider.providerName} generation failed (${aiError.reason}): ${aiError.message}`,
         );
+
+        void this.aiUsageService.record({
+          schoolId: context?.schoolId,
+          userId: context?.userId,
+          provider: provider.providerName,
+          status: AiUsageStatus.FAILED,
+          errorMessage: `${aiError.reason}: ${aiError.message}`,
+        });
 
         if (!isLastProvider && aiError.retryable) {
           continue; // Fall through to the next provider in the chain.

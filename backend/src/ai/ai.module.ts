@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AiController } from './ai.controller';
 import { AiProviderRouterService } from './ai-provider-router.service';
 import { AiService } from './ai.service';
+import { AiUsageService } from './ai-usage.service';
 import { ClaudeService } from './claude.service';
 import { DeepseekService } from './deepseek.service';
 
@@ -13,6 +14,7 @@ import { DeepseekService } from './deepseek.service';
     AiService,
     DeepseekService,
     ClaudeService,
+    AiUsageService,
     AiProviderRouterService,
   ],
   exports: [
