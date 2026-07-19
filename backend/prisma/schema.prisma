@@ -65,6 +65,19 @@ enum SmsStatus {
   FAILED
 }
 
+// AI Assignment Generator provider router (see backend/src/ai): DeepSeek is
+// primary, Claude is the fallback used when DeepSeek is out of balance,
+// rate-limited, or unavailable. See AiUsageLog / AiProviderRouterService.
+enum AiProvider {
+  DEEPSEEK
+  CLAUDE
+}
+
+enum AiUsageStatus {
+  SUCCESS
+  FAILED
+}
+
 enum CslSubmissionStatus {
   PENDING
   APPROVED
@@ -142,6 +155,7 @@ model School {
   cslSubmissions      CslSubmission[]
   pathwaySelections   StudentPathwaySelection[]
   supportAssessments  StudentSupportAssessment[]
+  aiUsageLogs         AiUsageLog[]
 
   @@map("schools")
 }
@@ -191,6 +205,7 @@ model User {
   pathwaySelections    StudentPathwaySelection[]
   refreshTokens        RefreshToken[]
   supportAssessments   StudentSupportAssessment[]
+  aiUsageLogs          AiUsageLog[]
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -677,6 +692,38 @@ model SmsLog {
   @@index([schoolId])
   @@index([studentId])
   @@map("sms_logs")
+}
+
+// AI Assignment Generator usage tracking (see backend/src/ai,
+// AiProviderRouterService): one row per provider attempt, success or
+// failure, across DeepSeek and Claude. Foundation for a future school-level
+// AI generation limit, per-provider usage reports, token/cost tracking, and
+// admin analytics — none of those are implemented yet, this model only
+// records the data they'll need.
+model AiUsageLog {
+  id               Int           @id @default(autoincrement())
+  schoolId         Int           @map("school_id")
+  school           School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  // Nullable + SetNull (like AuditLog.userId) so the usage row — and any
+  // future billing/report built on it — survives the user being removed.
+  userId           Int?          @map("user_id")
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  provider         AiProvider
+  // Provider's model identifier, e.g. "deepseek-chat" or a dated Claude
+  // snapshot. Nullable — not always known on a failed attempt.
+  model            String?
+  status           AiUsageStatus
+  promptTokens     Int?          @map("prompt_tokens")
+  completionTokens Int?          @map("completion_tokens")
+  totalTokens      Int?          @map("total_tokens")
+  errorMessage     String?       @map("error_message")
+  createdAt        DateTime      @default(now())
+
+  @@index([schoolId])
+  @@index([userId])
+  @@map("ai_usage_logs")
 }
 
 // ============================================================================
