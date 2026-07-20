@@ -38,6 +38,14 @@ export interface GenerateAssignmentContext {
  * pattern, so a slow or failing usage write can never add latency to, or
  * break, the actual generation response.
  *
+ * Before either provider is tried, generateAssignment checks the school's
+ * monthly AI usage quota (AiUsageService.assertWithinMonthlyLimit). Unlike
+ * usage logging, this check IS awaited and DOES throw (ForbiddenException)
+ * — an over-quota school must never reach DeepSeek or Claude. The check
+ * only runs when context.schoolId is supplied; call sites without a school
+ * in scope skip enforcement entirely, matching the same
+ * optional-context/backward-compatible pattern usage logging already uses.
+ *
  * Scope note for this change: deepseek.service.ts is intentionally
  * untouched in this change. AiService was already migrated to use
  * AiProviderRouterService in the previous provider-router integration.
@@ -87,6 +95,14 @@ export class AiProviderRouterService {
     prompt: string,
     context?: GenerateAssignmentContext,
   ): Promise<AiGenerationResult> {
+    if (context?.schoolId != null) {
+      // Throws ForbiddenException if this school is already at its monthly
+      // quota. Intentionally BEFORE the provider chain below, and awaited
+      // (unlike usage logging further down), so an over-quota school incurs
+      // no DeepSeek/Claude call at all.
+      await this.aiUsageService.assertWithinMonthlyLimit(context.schoolId);
+    }
+
     let lastError: AiProviderError | null = null;
 
     for (let i = 0; i < this.chain.length; i++) {
