@@ -28,6 +28,7 @@ import { IntaSendCheckout } from '../../features/payments/IntaSendCheckout';
 
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
+import { AiAnalytics } from '../../features/platform-admin/AiAnalytics';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -117,6 +118,10 @@ const platformAdminNav = [
     to: '/platform/schools',
     label: 'Schools',
   },
+  {
+    to: '/platform/ai-analytics',
+    label: 'AI Analytics',
+  },
 ];
 
 
@@ -143,7 +148,6 @@ export const router = createBrowserRouter([
   },
 
 
-  // STUDENT
   {
     element: <ProtectedRoute allow={['STUDENT']} />,
     children: [
@@ -180,7 +184,6 @@ export const router = createBrowserRouter([
   },
 
 
-  // TEACHER
   {
     element: <ProtectedRoute allow={['TEACHER']} />,
     children: [
@@ -217,7 +220,6 @@ export const router = createBrowserRouter([
   },
 
 
-  // SCHOOL ADMIN
   {
     element: <ProtectedRoute allow={['SCHOOL_ADMIN']} />,
     children: [
@@ -250,7 +252,6 @@ export const router = createBrowserRouter([
   },
 
 
-  // PLATFORM ADMIN
   {
     element:
       <ProtectedRoute
@@ -268,6 +269,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/schools',
             element: <PlatformAdminDashboard />,
+          },
+          {
+            path: '/platform/ai-analytics',
+            element: <AiAnalytics />,
           },
         ],
       },
@@ -294,17 +299,27 @@ export const router = createBrowserRouter([
 
 
 function UnauthorizedPage() {
+
   return (
+
     <div className="min-h-screen flex items-center justify-center">
+
       <div className="text-center">
+
         <h1 className="text-xl font-semibold">
           Not authorized
         </h1>
 
+
         <p className="text-sm text-gray-500 mt-1">
           Your account doesn't have access to this page.
         </p>
+
+
       </div>
+
     </div>
+
   );
+
 }

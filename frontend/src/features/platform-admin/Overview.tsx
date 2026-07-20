@@ -61,8 +61,8 @@ export function PlatformOverview() {
 
         </p>
 
-      </div>
 
+      </div>
 
 
 
@@ -108,7 +108,6 @@ export function PlatformOverview() {
 
 
 
-
       <div className="
         bg-white
         rounded-2xl
@@ -128,7 +127,6 @@ export function PlatformOverview() {
         </h2>
 
 
-
         <div className="
           mt-5
           grid
@@ -137,27 +135,17 @@ export function PlatformOverview() {
         ">
 
 
-          <HealthCard
-            title="Authentication"
-          />
+          <HealthCard title="Authentication" />
 
+          <HealthCard title="School Management" />
 
-          <HealthCard
-            title="School Management"
-          />
-
-
-          <HealthCard
-            title="Learning Platform"
-          />
+          <HealthCard title="Learning Platform" />
 
 
         </div>
 
 
       </div>
-
-
 
 
 
@@ -184,7 +172,6 @@ export function PlatformOverview() {
 
 
 
-
         {isLoading ? (
 
           <p className="mt-5 text-gray-500">
@@ -203,8 +190,7 @@ export function PlatformOverview() {
           ">
 
 
-            {schools.slice(0,5).map((school)=>(
-
+            {schools.slice(0,5).map((school) => (
 
               <div
                 key={school.id}
@@ -218,7 +204,6 @@ export function PlatformOverview() {
                 "
               >
 
-
                 <div>
 
                   <p className="font-semibold">
@@ -228,10 +213,7 @@ export function PlatformOverview() {
                   </p>
 
 
-                  <p className="
-                    text-sm
-                    text-gray-500
-                  ">
+                  <p className="text-sm text-gray-500">
 
                     {school.code}
 
@@ -239,7 +221,6 @@ export function PlatformOverview() {
 
 
                 </div>
-
 
 
 
@@ -258,9 +239,7 @@ export function PlatformOverview() {
                 </span>
 
 
-
               </div>
-
 
             ))}
 
@@ -284,8 +263,6 @@ export function PlatformOverview() {
 
 
 
-
-
 function MetricCard({
 
   title,
@@ -294,9 +271,9 @@ function MetricCard({
 
 }: {
 
-  title:string;
+  title: string;
 
-  value:number|string;
+  value: number | string;
 
 }) {
 
@@ -324,10 +301,7 @@ function MetricCard({
       "/>
 
 
-      <p className="
-        text-sm
-        text-gray-500
-      ">
+      <p className="text-sm text-gray-500">
 
         {title}
 
@@ -356,16 +330,13 @@ function MetricCard({
 
 
 
-
-
-
 function HealthCard({
 
   title,
 
 }: {
 
-  title:string;
+  title: string;
 
 }) {
 
@@ -382,15 +353,11 @@ function HealthCard({
     ">
 
 
-      <span className="
-        text-sm
-        font-medium
-      ">
+      <span className="text-sm font-medium">
 
         {title}
 
       </span>
-
 
 
       <span className="
