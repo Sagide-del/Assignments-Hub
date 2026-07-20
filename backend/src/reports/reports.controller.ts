@@ -46,6 +46,15 @@ export class ReportsController {
     return this.reportsService.financialReport(actor, schoolId);
   }
 
+  @Get('ai-usage')
+  @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
+  aiUsage(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Query('schoolId', new OptionalParseIntPipe()) schoolId?: number,
+  ) {
+    return this.reportsService.aiUsageReport(actor, schoolId);
+  }
+
   // The literal "report card" — one student's grades, used by the student's
   // own dashboard and by teachers/admins looking up a specific student.
   @Get('student/:studentId')

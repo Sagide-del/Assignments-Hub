@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { AiProvider, AiUsageStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveAiMonthlyLimit } from '../common/config/ai-limits';
 
 export interface RecordAiUsageEntry {
   // AiUsageLog.schoolId is required in the schema. This is nullable/optional
@@ -20,33 +21,6 @@ export interface RecordAiUsageEntry {
   totalTokens?: number | null;
   errorMessage?: string | null;
 }
-
-// Monthly AI Assignment Generator quota per subscription tier.
-//
-// There is no dedicated "AI quota" column anywhere today — Subscription.plan
-// just stores the resolved pricing tier name (Free/Starter/Standard/Premium/
-// Enterprise, see backend/src/common/config/plans.ts) as a snapshot string,
-// and neither Subscription, School, nor plans.ts carries anything about AI
-// usage limits. Rather than add a schema column for a single hardcoded
-// business rule, this map lives in application code, keyed by that same
-// tier name string. `null` means unlimited (Enterprise).
-//
-// These numbers are a starting point, not something derived from existing
-// product config — adjust freely if the actual intended limits differ.
-const AI_MONTHLY_LIMITS: Record<string, number | null> = {
-  Free: 20,
-  Starter: 100,
-  Standard: 300,
-  Premium: 1000,
-  Enterprise: null,
-};
-
-// Used when a school has no Subscription row yet (e.g. brand new signup
-// before its first payment/trial record is created) or when its latest
-// plan name doesn't match a known tier. Deliberately the most conservative
-// (Free-tier) limit rather than unlimited, so a missing/unrecognized plan
-// can't accidentally bypass enforcement.
-const DEFAULT_MONTHLY_LIMIT = AI_MONTHLY_LIMITS.Free;
 
 /**
  * Records AI Assignment Generator usage (see backend/src/ai,
@@ -138,19 +112,19 @@ export class AiUsageService {
     }
   }
 
-  /** Resolves schoolId's monthly AI quota from its current subscription tier. Returns null for unlimited. */
+  /**
+   * Resolves schoolId's monthly AI quota from its current subscription
+   * tier. Returns null for unlimited. The tier -> limit mapping itself
+   * lives in ../common/config/ai-limits.ts (single source of truth, also
+   * used by ReportsService.aiUsageReport) — this just does the Subscription
+   * lookup and hands the plan name off to it.
+   */
   private async resolveMonthlyLimit(schoolId: number): Promise<number | null> {
     const latestSubscription = await this.prisma.subscription.findFirst({
       where: { schoolId },
       orderBy: { startedAt: 'desc' },
     });
 
-    const planName = latestSubscription?.plan;
-
-    if (planName && planName in AI_MONTHLY_LIMITS) {
-      return AI_MONTHLY_LIMITS[planName];
-    }
-
-    return DEFAULT_MONTHLY_LIMIT;
+    return resolveAiMonthlyLimit(latestSubscription?.plan);
   }
 }

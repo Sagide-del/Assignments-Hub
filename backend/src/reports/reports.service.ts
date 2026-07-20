@@ -2,7 +2,8 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
-import { SubmissionStatus, SubscriptionStatus } from '@prisma/client';
+import { AiUsageStatus, SubmissionStatus, SubscriptionStatus } from '@prisma/client';
+import { resolveAiMonthlyLimit } from '../common/config/ai-limits';
 
 // Subscription rows created via PaymentService.activateSubscription() store
 // the actual amountKES charged (a snapshot of student count x tier rate at
@@ -208,6 +209,109 @@ export class ReportsService {
     };
   }
 
+  /**
+   * AI Assignment Generator usage/quota report (see backend/src/ai,
+   * AiUsageService, AiProviderRouterService). Same resolveSchoolId split as
+   * every other report here: Platform Admin with no schoolId gets the
+   * platform-wide shape (totals, provider breakdown, top schools, current
+   * month); anyone scoped to a school (School Admin, or Platform Admin
+   * passing ?schoolId=) gets that school's monthly quota standing instead.
+   *
+   * The tier -> monthly-limit mapping is common/config/ai-limits.ts — the
+   * same source AiUsageService.assertWithinMonthlyLimit enforces against,
+   * so what this report shows and what actually blocks generation can't
+   * drift apart.
+   */
+  async aiUsageReport(actor: AuthenticatedUser, schoolId?: number) {
+    const targetSchoolId = this.resolveSchoolId(actor, schoolId);
+    const generatedAt = new Date().toISOString();
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    if (targetSchoolId) {
+      const school = await this.getSchoolOrThrow(targetSchoolId);
+
+      const logsThisMonth = await this.prisma.aiUsageLog.findMany({
+        where: { schoolId: targetSchoolId, createdAt: { gte: startOfMonth } },
+      });
+
+      const successful = logsThisMonth.filter((l) => l.status === AiUsageStatus.SUCCESS);
+      const failed = logsThisMonth.filter((l) => l.status === AiUsageStatus.FAILED);
+
+      const providerBreakdown = this.summarizeByProvider(logsThisMonth);
+
+      const latestSubscription = await this.prisma.subscription.findFirst({
+        where: { schoolId: targetSchoolId },
+        orderBy: { startedAt: 'desc' },
+      });
+      const quotaLimit = resolveAiMonthlyLimit(latestSubscription?.plan);
+      // Only SUCCESS counts against quota (see AiUsageService.assertWithinMonthlyLimit)
+      // — "used" and "successfulGenerations" are deliberately the same number,
+      // named for each field's own context.
+      const used = successful.length;
+      const remaining = quotaLimit === null ? null : Math.max(0, quotaLimit - used);
+
+      return {
+        type: 'ai-usage',
+        generatedAt,
+        scope: 'school',
+        school: { id: school.id, name: school.name, code: school.code },
+        schoolId: school.id,
+        month: { from: startOfMonth.toISOString(), to: generatedAt },
+        plan: latestSubscription?.plan ?? null,
+        quotaLimit,
+        used,
+        remaining,
+        successfulGenerations: used,
+        failedRequests: failed.length,
+        providerBreakdown,
+      };
+    }
+
+    // Platform-wide.
+    const allLogs = await this.prisma.aiUsageLog.findMany({
+      include: { school: { select: { id: true, name: true, code: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const successfulAll = allLogs.filter((l) => l.status === AiUsageStatus.SUCCESS);
+    const failedAll = allLogs.filter((l) => l.status === AiUsageStatus.FAILED);
+    const thisMonth = allLogs.filter((l) => l.createdAt >= startOfMonth);
+
+    const bySchool = allLogs.reduce<
+      Record<number, { school: { id: number; name: string; code: string }; totalRequests: number; successfulRequests: number }>
+    >((acc, l) => {
+      const bucket = (acc[l.schoolId] ??= { school: l.school, totalRequests: 0, successfulRequests: 0 });
+      bucket.totalRequests += 1;
+      if (l.status === AiUsageStatus.SUCCESS) bucket.successfulRequests += 1;
+      return acc;
+    }, {});
+
+    const topSchools = Object.values(bySchool)
+      .sort((a, b) => b.totalRequests - a.totalRequests)
+      .slice(0, 10);
+
+    return {
+      type: 'ai-usage',
+      generatedAt,
+      scope: 'platform',
+      totalRequests: allLogs.length,
+      successfulRequests: successfulAll.length,
+      failedRequests: failedAll.length,
+      providerBreakdown: this.summarizeByProvider(allLogs),
+      topSchools,
+      currentMonthUsage: {
+        from: startOfMonth.toISOString(),
+        to: generatedAt,
+        totalRequests: thisMonth.length,
+        successfulRequests: thisMonth.filter((l) => l.status === AiUsageStatus.SUCCESS).length,
+        failedRequests: thisMonth.filter((l) => l.status === AiUsageStatus.FAILED).length,
+      },
+    };
+  }
+
   /** The actual "report card" — one student's assignment grades, printable with the school logo. */
   async studentReportCard(actor: AuthenticatedUser, studentId: number) {
     const student = await this.prisma.user.findUnique({
@@ -336,6 +440,19 @@ export class ReportsService {
     const school = await this.prisma.school.findUnique({ where: { id } });
     if (!school) throw new NotFoundException('School not found');
     return school;
+  }
+
+  /** Reduces a list of AiUsageLog rows into per-provider total/successful/failed counts, for aiUsageReport. */
+  private summarizeByProvider(logs: { provider: string; status: string }[]) {
+    const byProvider = logs.reduce<Record<string, { total: number; successful: number; failed: number }>>((acc, l) => {
+      const bucket = (acc[l.provider] ??= { total: 0, successful: 0, failed: 0 });
+      bucket.total += 1;
+      if (l.status === AiUsageStatus.SUCCESS) bucket.successful += 1;
+      if (l.status === AiUsageStatus.FAILED) bucket.failed += 1;
+      return acc;
+    }, {});
+
+    return Object.entries(byProvider).map(([provider, counts]) => ({ provider, ...counts }));
   }
 
   private assertCanViewStudent(studentSchoolId: number, studentId: number, actor: AuthenticatedUser) {
