@@ -23,6 +23,7 @@ import { PathwaysStats } from '../../features/teacher/PathwaysStats';
 import { SchoolAdminDashboard } from '../../features/school-admin/Dashboard';
 import { BrandingSettings } from '../../features/school-admin/Branding';
 import { SchoolAdminReports } from '../../features/school-admin/Reports';
+import { AiUsage } from '../../features/school-admin/AiUsage';
 import { IntaSendCheckout } from '../../features/payments/IntaSendCheckout';
 
 import { PlatformOverview } from '../../features/platform-admin/Overview';
@@ -99,6 +100,10 @@ const schoolAdminNav = [
   {
     to: '/school-admin/reports',
     label: 'Reports',
+  },
+  {
+    to: '/school-admin/ai-usage',
+    label: 'AI Usage',
   },
 ];
 
@@ -235,6 +240,10 @@ export const router = createBrowserRouter([
             path: '/school-admin/reports',
             element: <SchoolAdminReports />,
           },
+          {
+            path: '/school-admin/ai-usage',
+            element: <AiUsage />,
+          },
         ],
       },
     ],
@@ -286,25 +295,13 @@ export const router = createBrowserRouter([
 
 function UnauthorizedPage() {
   return (
-    <div className="
-      min-h-screen
-      flex
-      items-center
-      justify-center
-    ">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h1 className="
-          text-xl
-          font-semibold
-        ">
+        <h1 className="text-xl font-semibold">
           Not authorized
         </h1>
 
-        <p className="
-          text-sm
-          text-gray-500
-          mt-1
-        ">
+        <p className="text-sm text-gray-500 mt-1">
           Your account doesn't have access to this page.
         </p>
       </div>
