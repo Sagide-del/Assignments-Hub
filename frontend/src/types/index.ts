@@ -79,6 +79,73 @@ export type QuestionType =
   | 'ORDERING'
   | 'ESSAY'
   | 'FILE_UPLOAD';
+// ---- AI Assignment Generator ----
+// Mirrors backend/src/ai/dto/generate-assignment.dto.ts
+
+export type AiQuestionType =
+  | 'MULTIPLE_CHOICE'
+  | 'ESSAY'
+  | 'TRUE_FALSE'
+  | 'FILL_BLANK';
+
+export interface GenerateAssignmentInput {
+  grade: string;
+  subject: string;
+  topic: string;
+  strand?: string;
+  subStrand?: string;
+  numberOfQuestions: number;
+  questionTypes: AiQuestionType[];
+}
+
+// Raw response returned from AI generation.
+// Converted before sending to assignments/from-json.
+
+export interface GeneratedAssignmentJsonQuestion {
+  questionText: string;
+  questionType: AiQuestionType;
+  points: number;
+  options?: string[];
+  correctAnswer?: string;
+}
+
+export interface GeneratedAssignmentJsonSection {
+  title: string;
+  instructions?: string;
+  questions: GeneratedAssignmentJsonQuestion[];
+}
+
+export interface GeneratedAssignmentJson {
+  title: string;
+  description?: string;
+  subject: string;
+  grade: string;
+  sections: GeneratedAssignmentJsonSection[];
+}
+
+// Backend AssignmentJsonDto format
+
+export interface AssignmentJsonPayloadQuestion {
+  questionText: string;
+  type: AiQuestionType;
+  points: number;
+  options?: string[];
+  correctAnswer?: string;
+}
+
+export interface AssignmentJsonPayloadSection {
+  name: string;
+  description?: string;
+  questions: AssignmentJsonPayloadQuestion[];
+}
+
+export interface AssignmentJsonPayload {
+  title: string;
+  description?: string;
+  subject: string;
+  grade: string;
+  sections: AssignmentJsonPayloadSection[];
+}
 
 // Matches backend/src/submissions/dto/answer-input.dto.ts exactly — what
 // gets POSTed per question when a student submits/saves an assignment.
