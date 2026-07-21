@@ -26,6 +26,35 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
+enum PaymentMethod {
+  INTASEND
+  MPESA
+  EQUITY_PAYBILL
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  AWAITING_VERIFICATION
+  CONFIRMED
+  FAILED
+  REJECTED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+  OVERDUE
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+  ANNUAL
+}
+
 enum AssignmentType {
   AUTO_MARKED
   TEACHER_MARKED
@@ -171,6 +200,9 @@ model School {
   pathwaySelections   StudentPathwaySelection[]
   supportAssessments  StudentSupportAssessment[]
   aiUsageLogs         AiUsageLog[]
+  invoices            Invoice[]
+  paymentTransactions PaymentTransaction[]
+  aiUsageLedgerEntries AIUsageLedger[]
 
   @@map("schools")
 }
@@ -221,6 +253,7 @@ model User {
   refreshTokens        RefreshToken[]
   supportAssessments   StudentSupportAssessment[]
   aiUsageLogs          AiUsageLog[]
+  verifiedPayments     PaymentTransaction[] @relation("PaymentVerifiedBy")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -469,11 +502,152 @@ model Subscription {
   amountKES    Int?               @map("amount_kes")
   studentCount Int?               @map("student_count")
   schoolType   SchoolType?        @map("school_type")
+  interval     SubscriptionInterval @default(MONTHLY)
+  paymentMethod PaymentMethod?    @map("payment_method")
   startedAt    DateTime           @default(now()) @map("started_at")
+  currentPeriodStart DateTime?    @map("current_period_start")
+  currentPeriodEnd   DateTime?    @map("current_period_end")
   expiresAt    DateTime?          @map("expires_at")
+
+  invoices            Invoice[]
+  paymentTransactions PaymentTransaction[]
 
   @@index([schoolId])
   @@map("subscriptions")
+}
+
+model PaymentTransaction {
+  id                 Int           @id @default(autoincrement())
+  schoolId           Int           @map("school_id")
+  school             School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subscriptionId     Int?          @map("subscription_id")
+  subscription       Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  invoiceId          Int?          @map("invoice_id")
+  invoice            Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  method             PaymentMethod
+  status             PaymentStatus @default(PENDING)
+  providerReference  String?       @map("provider_reference")
+  paymentReference   String?       @map("payment_reference")
+  providerName       String?       @map("provider_name")
+  amountKES          Int           @map("amount_kes")
+  currency           String        @default("KES")
+  payerName          String?       @map("payer_name")
+  payerPhone         String?       @map("payer_phone")
+  verifiedById       Int?          @map("verified_by_id")
+  verifiedBy         User?         @relation("PaymentVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt         DateTime?     @map("verified_at")
+  rejectedAt         DateTime?     @map("rejected_at")
+  rejectionReason    String?       @map("rejection_reason")
+  metadata           Json?
+  initiatedAt        DateTime      @default(now()) @map("initiated_at")
+  confirmedAt        DateTime?     @map("confirmed_at")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  webhookEvents      PaymentWebhookEvent[]
+
+  @@index([schoolId])
+  @@index([subscriptionId])
+  @@index([invoiceId])
+  @@index([verifiedById])
+  @@index([method, status])
+  @@map("payment_transactions")
+}
+
+model Invoice {
+  id                  Int                  @id @default(autoincrement())
+  schoolId            Int                  @map("school_id")
+  school              School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subscriptionId      Int?                 @map("subscription_id")
+  subscription        Subscription?        @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  invoiceNumber       String               @unique @map("invoice_number")
+  status              InvoiceStatus        @default(DRAFT)
+  interval            SubscriptionInterval @default(MONTHLY)
+  paymentMethod       PaymentMethod?       @map("payment_method")
+  amountKES           Int                  @map("amount_kes")
+  currency            String               @default("KES")
+  studentCountSnapshot Int?                @map("student_count_snapshot")
+  schoolTypeSnapshot  SchoolType?          @map("school_type_snapshot")
+  planSnapshot        String?              @map("plan_snapshot")
+  issuedAt            DateTime?            @map("issued_at")
+  dueAt               DateTime?            @map("due_at")
+  paidAt              DateTime?            @map("paid_at")
+  voidedAt            DateTime?            @map("voided_at")
+  pdfPath             String?              @map("pdf_path")
+  notes               String?
+  metadata            Json?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  paymentTransactions PaymentTransaction[]
+  aiUsageLedgerEntries AIUsageLedger[]
+
+  @@index([schoolId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model PaymentProviderConfig {
+  id             Int           @id @default(autoincrement())
+  method         PaymentMethod @unique
+  displayName    String        @map("display_name")
+  logoUrl        String?       @map("logo_url")
+  instructions   String?
+  isActive       Boolean       @default(true) @map("is_active")
+  configuration  Json?         @map("configuration")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("payment_provider_configs")
+}
+
+model PaymentWebhookEvent {
+  id                   Int                 @id @default(autoincrement())
+  paymentTransactionId Int?                @map("payment_transaction_id")
+  paymentTransaction   PaymentTransaction? @relation(fields: [paymentTransactionId], references: [id], onDelete: SetNull)
+
+  method               PaymentMethod
+  status               PaymentStatus?
+  eventType            String              @map("event_type")
+  providerReference    String?             @map("provider_reference")
+  payload              Json
+  receivedAt           DateTime            @default(now()) @map("received_at")
+  processedAt          DateTime?           @map("processed_at")
+  processingNotes      String?             @map("processing_notes")
+
+  @@index([paymentTransactionId])
+  @@index([method, eventType])
+  @@map("payment_webhook_events")
+}
+
+model AIUsageLedger {
+  id                  Int           @id @default(autoincrement())
+  schoolId            Int           @map("school_id")
+  school              School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  invoiceId           Int?          @map("invoice_id")
+  invoice             Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  billingPeriodStart  DateTime      @map("billing_period_start")
+  billingPeriodEnd    DateTime      @map("billing_period_end")
+  provider            AiProvider?
+  model               String?
+  promptTokens        Int           @default(0) @map("prompt_tokens")
+  completionTokens    Int           @default(0) @map("completion_tokens")
+  totalTokens         Int           @default(0) @map("total_tokens")
+  amountKES           Int           @default(0) @map("amount_kes")
+  currency            String        @default("KES")
+  notes               String?
+  metadata            Json?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@index([schoolId])
+  @@index([invoiceId])
+  @@index([billingPeriodStart, billingPeriodEnd])
+  @@map("ai_usage_ledger")
 }
 
 // STEM Labs foundation (per backend/modules/stem_labs.md)

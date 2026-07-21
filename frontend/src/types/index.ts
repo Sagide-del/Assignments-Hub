@@ -471,6 +471,143 @@ export interface ComputedPricing {
   amountKES: number;
 }
 
+export type PaymentMethod = 'INTASEND' | 'MPESA' | 'EQUITY_PAYBILL';
+export type PaymentStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'AWAITING_VERIFICATION'
+  | 'CONFIRMED'
+  | 'FAILED'
+  | 'REJECTED'
+  | 'CANCELLED';
+export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'VOID' | 'OVERDUE';
+export type SubscriptionInterval = 'MONTHLY' | 'ANNUAL';
+
+export interface BillingProviderConfig {
+  method: PaymentMethod;
+  displayName: string;
+  logoUrl: string | null;
+  instructions: string | null;
+  isActive: boolean;
+  paymentDetails: Record<string, unknown> | null;
+}
+
+export interface BillingSubscriptionRecord {
+  id: number;
+  schoolId: number;
+  plan: string;
+  status: string;
+  amountKES: number | null;
+  studentCount: number | null;
+  schoolType: 'DAY' | 'BOARDING' | null;
+  interval: SubscriptionInterval;
+  paymentMethod: PaymentMethod | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  expiresAt: string | null;
+  startedAt: string;
+}
+
+export interface BillingInvoice {
+  id: number;
+  schoolId: number;
+  subscriptionId: number | null;
+  invoiceNumber: string;
+  status: InvoiceStatus;
+  interval: SubscriptionInterval;
+  paymentMethod: PaymentMethod | null;
+  amountKES: number;
+  currency: string;
+  studentCountSnapshot: number | null;
+  schoolTypeSnapshot: 'DAY' | 'BOARDING' | null;
+  planSnapshot: string | null;
+  issuedAt: string | null;
+  dueAt: string | null;
+  paidAt: string | null;
+  pdfPath: string | null;
+  metadata?: Record<string, unknown> | null;
+  school?: Pick<School, 'id' | 'name' | 'code'>;
+}
+
+export interface BillingPaymentTransaction {
+  id: number;
+  schoolId: number;
+  subscriptionId: number | null;
+  invoiceId: number | null;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  providerReference: string | null;
+  paymentReference: string | null;
+  providerName: string | null;
+  amountKES: number;
+  currency: string;
+  payerName: string | null;
+  payerPhone: string | null;
+  verifiedById?: number | null;
+  verifiedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  initiatedAt: string;
+  confirmedAt: string | null;
+  createdAt: string;
+  school?: Pick<School, 'id' | 'name' | 'code'>;
+  invoice?: BillingInvoice | null;
+}
+
+export interface SchoolBillingSnapshot {
+  school: School;
+  pricing: ComputedPricing;
+  subscription: BillingSubscriptionRecord | null;
+  aiUsage: {
+    allocatedTokens: number | null;
+    usedTokens: number;
+    remainingTokens: number | null;
+    billingPeriodStart: string | null;
+    billingPeriodEnd: string | null;
+  };
+}
+
+export interface PlatformBillingDashboard {
+  totalRevenueKES: number;
+  activeSubscriptions: number;
+  pendingPayments: number;
+  overdueAccounts: number;
+}
+
+export interface BillingReconciliation {
+  invoices: Array<{ status: string; _count: { status: number }; _sum: { amountKES: number | null } }>;
+  payments: Array<{ status: string; _count: { status: number }; _sum: { amountKES: number | null } }>;
+  subscriptions: Array<{ status: string; _count: { status: number } }>;
+  unreconciledInvoices: BillingInvoice[];
+}
+
+export interface SchoolAiBillingVisibility {
+  scope: 'school';
+  schoolId: number;
+  schoolName: string;
+  allocatedTokens: number | null;
+  tokensUsed: number;
+  remainingTokens: number | null;
+  billingPeriodStart: string | null;
+  billingPeriodEnd: string | null;
+}
+
+export interface PlatformAiBillingVisibility {
+  scope: 'platform';
+  totalTokensUsed: number;
+  usageByFeature: Array<{ feature: string; tokensUsed: number }>;
+  usageBySchool: Array<{ schoolId: number; schoolName: string; tokensUsed: number }>;
+  ledger: Array<{
+    id: number;
+    schoolId: number;
+    billingPeriodStart: string;
+    billingPeriodEnd: string;
+    totalTokens: number;
+    amountKES: number;
+    school?: Pick<School, 'id' | 'name' | 'code'>;
+  }>;
+}
+
 // Generic API error shape thrown by backend/src/common/filters/http-exception.filter.ts
 export interface ApiErrorBody {
   statusCode: number;
