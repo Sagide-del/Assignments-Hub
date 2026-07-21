@@ -9,6 +9,7 @@ import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 import { StudentDashboard } from '../../features/student/Dashboard';
 import { ExamPlayer } from '../../features/student/ExamPlayer';
 import { StemLabsPage } from '../../features/student/StemLabs';
+import { StemLabPlayerPage } from '../../features/student/StemLabPlayer';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
 import { FutureSkillsPage } from '../../features/student/FutureSkills';
 import { MyFuturePage } from '../../features/student/MyFuture';
@@ -182,6 +183,10 @@ export const router = createBrowserRouter([
           {
             path: '/student/stem-labs',
             element: <StemLabsPage />,
+          },
+          {
+            path: '/student/stem-labs/:id',
+            element: <StemLabPlayerPage />,
           },
           {
             path: '/student/future-skills',
