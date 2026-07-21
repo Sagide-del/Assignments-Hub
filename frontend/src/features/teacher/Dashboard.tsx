@@ -1,30 +1,24 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { assignmentsApi } from '../../api/assignments.api';
 import { apiErrorMessage } from '../../api/axios';
-
-// Teacher dashboard supports:
-// - Manual assignment creation (/teacher/assignments/new)
-// - AI assignment generation (/teacher/assignments/generate)
-// - JSON upload validation and publishing (/assignments/validate + /assignments/from-json)
+import { ActionCard, EmptyState, MetricCard, PageHeader } from '../../components/ui/Saas';
 
 export function TeacherDashboard() {
   const queryClient = useQueryClient();
-
   const { data: assignments, isLoading } = useQuery({
     queryKey: ['assignments'],
     queryFn: () => assignmentsApi.findAll(),
   });
-
   const [jsonText, setJsonText] = useState('');
   const [validation, setValidation] = useState<{ valid: boolean; errors: string[] } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   const validateMutation = useMutation({
     mutationFn: (json: unknown) => assignmentsApi.validateJson(json),
-    onSuccess: (res) => setValidation(res),
-    onError: (err) => setStatus(apiErrorMessage(err, 'Validation failed')),
+    onSuccess: (response) => setValidation(response),
+    onError: (error) => setStatus(apiErrorMessage(error, 'Validation failed')),
   });
 
   const createMutation = useMutation({
@@ -35,7 +29,7 @@ export function TeacherDashboard() {
       setValidation(null);
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
     },
-    onError: (err) => setStatus(apiErrorMessage(err, 'Could not create assignment')),
+    onError: (error) => setStatus(apiErrorMessage(error, 'Could not create assignment')),
   });
 
   function parsedOrNull(): unknown | null {
@@ -47,178 +41,93 @@ export function TeacherDashboard() {
     }
   }
 
+  const publishedCount = (assignments ?? []).filter((assignment) => assignment.isPublished).length;
+  const draftCount = (assignments ?? []).length - publishedCount;
+
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Teaching workspace"
+        actions={
+          <>
+            <Link to="/teacher/assignments/new" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-[#101820]">New assignment</Link>
+            <Link to="/teacher/assignments/generate" className="rounded-xl bg-[#101820] px-4 py-2 text-sm font-semibold text-white">AI generator</Link>
+            <Link to="/teacher/marking" className="rounded-xl bg-[#B5E61D] px-4 py-2 text-sm font-semibold text-[#101820]">Marking</Link>
+          </>
+        }
+      />
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          Teacher Dashboard
-        </h1>
+      <section className="grid gap-4 sm:grid-cols-3">
+        <MetricCard label="Assignments" value={isLoading ? '-' : assignments?.length ?? 0} />
+        <MetricCard label="Published" value={isLoading ? '-' : publishedCount} />
+        <MetricCard label="Drafts" value={isLoading ? '-' : draftCount} />
+      </section>
 
-        <div className="flex gap-2">
-
-          <Link
-            to="/teacher/assignments/new"
-            className="px-3 py-2 text-sm rounded border border-gray-300"
-          >
-            + Manual assignment
-          </Link>
-
-          <Link
-            to="/teacher/assignments/generate"
-            className="px-3 py-2 text-sm rounded bg-purple-600 text-white"
-          >
-            ✨ Generate with AI
-          </Link>
-
-          <Link
-            to="/teacher/marking"
-            className="px-3 py-2 text-sm rounded bg-brand text-white"
-          >
-            Marking
-          </Link>
-
-        </div>
-      </div>
-
-
-      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-
-        <h2 className="font-medium text-sm">
-          Upload Assignment (JSON)
-        </h2>
-
+      <ActionCard title="JSON import" meta="Validate and publish an assignment payload">
         <textarea
           value={jsonText}
-          onChange={(e) => setJsonText(e.target.value)}
-          rows={8}
-          placeholder="Paste an exam JSON payload (see frontend/shared/assignment_template.json for the shape)"
-          className="w-full text-xs font-mono border border-gray-300 rounded p-3"
+          onChange={(event) => setJsonText(event.target.value)}
+          rows={7}
+          placeholder="Paste assignment JSON"
+          className="w-full rounded-xl border border-slate-300 p-3 font-mono text-xs focus:border-[#101820] focus:outline-none"
         />
-
-
-        <div className="flex gap-2">
-
+        <div className="mt-3 flex gap-2">
           <button
+            type="button"
             onClick={() => {
               const parsed = parsedOrNull();
-              if (parsed) {
-                validateMutation.mutate(parsed);
-              }
+              if (parsed) validateMutation.mutate(parsed);
             }}
-            className="px-3 py-2 text-sm rounded border border-gray-300"
+            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-[#101820]"
           >
             Validate
           </button>
-
-
           <button
+            type="button"
             onClick={() => {
               const parsed = parsedOrNull();
-              if (parsed) {
-                createMutation.mutate(parsed);
-              }
+              if (parsed) createMutation.mutate(parsed);
             }}
             disabled={createMutation.isPending}
-            className="px-3 py-2 text-sm rounded bg-brand text-white disabled:opacity-60"
+            className="rounded-xl bg-[#101820] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {createMutation.isPending ? 'Publishing...' : 'Publish'}
           </button>
-
         </div>
-
-
-        {validation && (
-          <div
-            className={`text-sm ${
-              validation.valid
-                ? 'text-green-700'
-                : 'text-red-600'
-            }`}
-          >
-
-            {validation.valid ? (
-              'Valid — ready to publish.'
-            ) : (
+        {validation ? (
+          <div className={`mt-3 text-sm ${validation.valid ? 'text-emerald-700' : 'text-red-700'}`}>
+            {validation.valid ? 'Valid. Ready to publish.' : (
               <ul className="list-disc pl-5">
-                {validation.errors.map((e, i) => (
-                  <li key={i}>
-                    {e}
-                  </li>
-                ))}
+                {validation.errors.map((validationError, index) => <li key={index}>{validationError}</li>)}
               </ul>
             )}
-
           </div>
+        ) : null}
+        {status ? <p className="mt-3 text-sm text-slate-600">{status}</p> : null}
+      </ActionCard>
+
+      <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_34px_rgba(16,24,32,0.05)]">
+        <div className="border-b border-slate-200 px-5 py-4"><h2 className="font-semibold text-[#101820]">Assignments</h2></div>
+        {isLoading ? (
+          <div className="p-5"><EmptyState title="Loading assignments..." /></div>
+        ) : (assignments ?? []).length === 0 ? (
+          <div className="p-5"><EmptyState title="No assignments created yet." /></div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {(assignments ?? []).map((assignment) => (
+              <li key={assignment.id} className="flex items-center justify-between gap-4 px-5 py-4 text-sm">
+                <div>
+                  <p className="font-semibold text-[#101820]">{assignment.title}</p>
+                  <p className="mt-1 text-slate-500">{assignment.subject} · Grade {assignment.grade}</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${assignment.isPublished ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                  {assignment.isPublished ? 'Published' : 'Draft'}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
-
-
-        {status && (
-          <p className="text-sm text-gray-600">
-            {status}
-          </p>
-        )}
-
-      </div>
-
-
-      <div className="bg-white rounded-lg border border-gray-200">
-
-        <div className="px-4 py-3 border-b border-gray-100">
-          <h2 className="font-medium text-sm">
-            Your Assignments
-          </h2>
-        </div>
-
-
-        {isLoading && (
-          <p className="p-4 text-sm text-gray-500">
-            Loading...
-          </p>
-        )}
-
-
-        <ul className="divide-y divide-gray-100">
-
-          {(assignments ?? []).map((a) => (
-
-            <li
-              key={a.id}
-              className="px-4 py-3 flex items-center justify-between text-sm"
-            >
-
-              <div>
-
-                <p className="font-medium">
-                  {a.title}
-                </p>
-
-                <p className="text-gray-500">
-                  {a.subject} · Grade {a.grade}
-                </p>
-
-              </div>
-
-
-              <span
-                className={`text-xs px-2 py-1 rounded ${
-                  a.isPublished
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {a.isPublished ? 'Published' : 'Draft'}
-              </span>
-
-
-            </li>
-
-          ))}
-
-        </ul>
-
-      </div>
-
+      </section>
     </div>
   );
 }

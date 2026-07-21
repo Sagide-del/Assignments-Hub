@@ -4,16 +4,7 @@ import { usersApi } from '../../api/users.api';
 import { paymentApi } from '../../api/subscriptions.api';
 import { useAuthStore } from '../../store/auth.store';
 import { apiErrorMessage } from '../../api/axios';
-
-function PeopleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
-      <circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.7" />
-      <circle cx="17" cy="10" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M4.5 18a4.5 4.5 0 0 1 9 0M14.5 18a3.5 3.5 0 0 1 5 0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { PageHeader } from '../../components/ui/Saas';
 
 function StudentIcon() {
   return (
@@ -49,7 +40,6 @@ type ImportErrorDetail = {
 
 type ImportSectionProps = {
   title: string;
-  description: string;
   icon: ReactNode;
   templateLabel: string;
   importLabel: string;
@@ -178,11 +168,8 @@ export function SchoolAdminDashboard() {
     <div className="space-y-6">
       <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#101820] text-[#B5E61D]">
-            <PeopleIcon />
-          </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[#101820]">People Management</h1>
+            <PageHeader title="People management" />
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
               Manage school onboarding with isolated student and teacher imports. Every import is scoped to the
               authenticated school admin, so one school’s upload cannot affect another school’s data.
@@ -201,7 +188,6 @@ export function SchoolAdminDashboard() {
       <div className="grid gap-6 xl:grid-cols-2">
         <ImportSection
           title="Students"
-          description="Upload student records with a dedicated onboarding template for admissions, grade placement, and guardian contact support."
           icon={<StudentIcon />}
           templateLabel="Download Student Template"
           importLabel="Import Students"
@@ -240,7 +226,6 @@ export function SchoolAdminDashboard() {
 
         <ImportSection
           title="Teachers"
-          description="Upload teacher accounts with a dedicated staffing template for email-based access, teaching subject, and assignment context."
           icon={<TeacherIcon />}
           templateLabel="Download Teacher Template"
           importLabel="Import Teachers"
@@ -312,7 +297,6 @@ export function SchoolAdminDashboard() {
 
 function ImportSection({
   title,
-  description,
   icon,
   templateLabel,
   importLabel,
@@ -341,7 +325,6 @@ function ImportSection({
         </div>
         <div>
           <h2 className="text-xl font-semibold text-[#101820]">{title}</h2>
-          <p className="mt-2 text-sm leading-7 text-slate-500">{description}</p>
         </div>
       </div>
 
