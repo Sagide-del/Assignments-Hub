@@ -26,8 +26,8 @@ import { AuditAction } from '../common/decorators/audit.decorator';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 
 const EXCEL_MIMETYPES = new Set([
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-  'application/vnd.ms-excel', // .xls (best-effort; exceljs reads xlsx format)
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
 ]);
 
 @Controller('users')
@@ -44,29 +44,52 @@ export class UsersController {
     return this.usersService.create(dto, actor);
   }
 
-  // Registered ahead of the GET/PATCH ':id' routes purely for readability —
-  // Nest/Express disambiguate by segment count so ordering isn't load-bearing
-  // here (/users/import/template has 2 segments, /users/:id has 1).
   @Post('import')
   @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
   @AuditAction('user.import')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+      limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
   async importUsers(
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    if (!file) {
-      throw new BadRequestException('Attach an .xlsx file under the "file" field');
-    }
-    if (!EXCEL_MIMETYPES.has(file.mimetype) && !file.originalname.match(/\.xlsx?$/i)) {
-      throw new BadRequestException('Only .xlsx/.xls files are supported');
-    }
-
+    this.assertImportFile(file);
     return this.usersImportService.importFromExcel(file.buffer, actor);
+  }
+
+  @Post('import/students')
+  @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
+  @AuditAction('user.import.students')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async importStudents(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    this.assertImportFile(file);
+    return this.usersImportService.importStudentsFromExcel(file.buffer, actor);
+  }
+
+  @Post('import/teachers')
+  @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
+  @AuditAction('user.import.teachers')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async importTeachers(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    this.assertImportFile(file);
+    return this.usersImportService.importTeachersFromExcel(file.buffer, actor);
   }
 
   @Get('import/template')
@@ -102,5 +125,14 @@ export class UsersController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.usersService.update(id, dto, actor);
+  }
+
+  private assertImportFile(file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Attach an .xlsx file under the "file" field');
+    }
+    if (!EXCEL_MIMETYPES.has(file.mimetype) && !file.originalname.match(/\.xlsx?$/i)) {
+      throw new BadRequestException('Only .xlsx/.xls files are supported');
+    }
   }
 }
