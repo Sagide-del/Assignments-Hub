@@ -13,8 +13,12 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { LabType } from '@prisma/client';
+import { LabStatus, LabType } from '@prisma/client';
 import { CreateLabQuestionDto } from './create-lab-question.dto';
+import { CreateLabMediaDto } from './create-lab-media.dto';
+import { CreateLabStepDto } from './create-lab-step.dto';
+import { CreateLabReflectionPromptDto } from './create-lab-reflection-prompt.dto';
+import { CreateLabCompletionReportTemplateDto } from './create-lab-completion-report-template.dto';
 
 export class CreateLabDto {
   // Slug-like identifier a LabSession.labKey refers to, e.g. "volcano-simulation".
@@ -36,6 +40,26 @@ export class CreateLabDto {
   @MaxLength(100)
   subject: string;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  categoryId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  category?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  stemSubjectId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  stemSubject?: number;
+
   // Student grade/class this lab targets, e.g. "Grade 7" — matches
   // User.grade/Assignment.grade. Students only see labs for their own grade
   // (see LabsService.findAll).
@@ -48,6 +72,11 @@ export class CreateLabDto {
   @IsString()
   @MaxLength(100)
   topicArea?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  topic?: string;
 
   // Senior School pathway grouping, e.g. "Pure Sciences", "Applied Sciences
   // - Agriculture", "Technical Studies". Omit for Junior School labs.
@@ -78,12 +107,31 @@ export class CreateLabDto {
   @IsEnum(LabType)
   type?: LabType;
 
+  @IsOptional()
+  @IsEnum(LabStatus)
+  status?: LabStatus;
+
   // A YouTube URL (watch or embed link — the frontend normalizes it) the
   // student watches before taking the quiz.
   @IsOptional()
   @IsString()
   @MaxLength(500)
   resourceUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  introVideoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  animationUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  voiceAudioUrl?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -106,4 +154,27 @@ export class CreateLabDto {
   @ValidateNested({ each: true })
   @Type(() => CreateLabQuestionDto)
   questions?: CreateLabQuestionDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLabMediaDto)
+  media?: CreateLabMediaDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLabStepDto)
+  steps?: CreateLabStepDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLabReflectionPromptDto)
+  reflectionPrompts?: CreateLabReflectionPromptDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateLabCompletionReportTemplateDto)
+  completionReportTemplate?: CreateLabCompletionReportTemplateDto;
 }

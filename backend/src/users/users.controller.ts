@@ -178,11 +178,11 @@ export class UsersController {
     }
   }
 
-  private sendWorkbook(res: Response, buffer: Buffer, filename: string) {
+  private sendWorkbook(res: Response, buffer: Awaited<ReturnType<UsersImportService['buildTemplate']>>, filename: string) {
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${filename}"`,
     });
-    res.send(buffer);
+    res.send(Buffer.from(buffer));
   }
 }

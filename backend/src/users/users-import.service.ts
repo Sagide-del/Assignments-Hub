@@ -3,11 +3,13 @@ import * as ExcelJS from 'exceljs';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import * as crypto from 'crypto';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { Role } from '../common/enums/role.enum';
+
+type ImportRole = typeof Role.STUDENT | typeof Role.TEACHER;
 
 export interface ImportRowResult {
   row: number;
@@ -131,7 +133,7 @@ interface ParsedImportRow {
 }
 
 interface ProcessWorkbookOptions {
-  allowedRoles: Array<Role.STUDENT | Role.TEACHER>;
+  allowedRoles: ImportRole[];
   previewOnly: boolean;
 }
 
@@ -405,7 +407,7 @@ export class UsersImportService {
       let generatedPassword: string | undefined;
 
       try {
-        if (!options.allowedRoles.includes(raw.role as Role.STUDENT | Role.TEACHER)) {
+        if (!options.allowedRoles.includes(raw.role as ImportRole)) {
           throw this.createRowError(
             rowNumber,
             raw.name || undefined,
@@ -518,7 +520,7 @@ export class UsersImportService {
   private readRow(
     row: ExcelJS.Row,
     columnMap: ColumnMap,
-    allowedRoles: Array<Role.STUDENT | Role.TEACHER>,
+    allowedRoles: ImportRole[],
   ): ParsedImportRow {
     const inferredRole =
       allowedRoles.length === 1 ? allowedRoles[0] : this.cell(row, columnMap.role).toUpperCase();
@@ -578,7 +580,7 @@ export class UsersImportService {
   private createRowError(row: number, name: string | undefined, field: string | undefined, message: string) {
     const error = new Error(message) as Error & ImportErrorDetail;
     error.row = row;
-    error.name = name;
+    error.name = name ?? 'Unknown row';
     error.field = field;
     return error;
   }

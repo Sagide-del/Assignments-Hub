@@ -37,6 +37,12 @@ enum LabType {
   PRACTICAL
 }
 
+enum LabStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
@@ -494,6 +500,10 @@ model LabSession {
   // never teacher-graded, unlike assignment submissions.
   answers       Json?
   quizCompletedAt DateTime? @map("quiz_completed_at")
+  reflectionAnswers Json?    @map("reflection_answers")
+  stepProgress      Json?    @map("step_progress")
+  completionSummary Json?    @map("completion_summary")
+  timeSpentSeconds  Int?     @map("time_spent_seconds")
 
   createdAt     DateTime  @default(now())
 
@@ -510,6 +520,10 @@ model Lab {
   id            Int       @id @default(autoincrement())
   key           String    @unique
   title         String
+  categoryId    Int?      @map("category_id")
+  category      StemCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stemSubjectId Int?      @map("stem_subject_id")
+  stemSubject   StemSubject? @relation(fields: [stemSubjectId], references: [id], onDelete: SetNull)
   subject       String
   // Student's grade/class level this lab targets (e.g. "Grade 7"), matching
   // User.grade / Assignment.grade — students only see labs for their own
@@ -522,6 +536,7 @@ model Lab {
   // - Agriculture", "Technical Studies"). Null for Junior School labs, which
   // aren't organized by pathway.
   pathway       String?
+  topic         String?
   competency    String?
   // Human-readable description of the lab shown in the catalog (what the
   // student will watch/do).
@@ -532,10 +547,14 @@ model Lab {
   // without at least watching through (see frontend/stem-labs/index.html).
   durationMinutes Int?    @map("duration_minutes")
   type          LabType   @default(SIMULATION)
+  status        LabStatus @default(PUBLISHED)
   // A YouTube video URL (embed or watch link — the frontend normalizes it)
   // the student watches before taking the quiz. Null for labs that haven't
   // had real content added yet.
   resourceUrl   String?   @map("resource_url")
+  introVideoUrl String?   @map("intro_video_url")
+  animationUrl  String?   @map("animation_url")
+  voiceAudioUrl String?   @map("voice_audio_url")
   isPublished   Boolean   @default(true) @map("is_published")
 
   // Ordered list of narration lines the frontend's female text-to-speech
@@ -552,9 +571,108 @@ model Lab {
   updatedAt     DateTime  @updatedAt
 
   questions     LabQuestion[]
+  media         LabMedia[]
+  steps         LabStep[]
+  reflectionPrompts LabReflectionPrompt[]
+  completionReportTemplate LabCompletionReportTemplate?
 
+  @@index([categoryId])
+  @@index([stemSubjectId])
   @@index([grade])
   @@map("labs")
+}
+
+model StemCategory {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  name        String   @unique
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subjects    StemSubject[]
+  labs        Lab[]
+
+  @@map("stem_categories")
+}
+
+model StemSubject {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int      @map("category_id")
+  category    StemCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  key         String   @unique
+  name        String   @unique
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  labs        Lab[]
+
+  @@index([categoryId])
+  @@map("stem_subjects")
+}
+
+model LabMedia {
+  id          Int      @id @default(autoincrement())
+  labId       Int      @map("lab_id")
+  lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  type        String
+  title       String?
+  caption     String?
+  url         String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([labId])
+  @@map("lab_media")
+}
+
+model LabStep {
+  id              Int      @id @default(autoincrement())
+  labId           Int      @map("lab_id")
+  lab             Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  title           String
+  instruction     String
+  mediaUrl        String?  @map("media_url")
+  interactionType String?  @map("interaction_type")
+  expectedOutcome String?  @map("expected_outcome")
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([labId])
+  @@map("lab_steps")
+}
+
+model LabReflectionPrompt {
+  id        Int      @id @default(autoincrement())
+  labId     Int      @map("lab_id")
+  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  prompt    String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId])
+  @@map("lab_reflection_prompts")
+}
+
+model LabCompletionReportTemplate {
+  id           Int      @id @default(autoincrement())
+  labId        Int      @unique @map("lab_id")
+  lab          Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  title        String?
+  summary      String?
+  outcomesJson Json?    @map("outcomes_json")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("lab_completion_report_templates")
 }
 
 // Knowledge/competency check shown after a student finishes a lab's

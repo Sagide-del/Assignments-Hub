@@ -1,14 +1,39 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateLabDto } from './dto/create-lab.dto';
-import { UpdateLabDto } from './dto/update-lab.dto';
+import { QuestionType } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
-import { QuestionType } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateLabDto } from './dto/create-lab.dto';
+import { CreateLabMediaBatchDto } from './dto/create-lab-media-batch.dto';
+import { CreateLabReflectionsBatchDto } from './dto/create-lab-reflections-batch.dto';
+import { CreateLabStepsBatchDto } from './dto/create-lab-steps-batch.dto';
+import { UpdateLabDto } from './dto/update-lab.dto';
 
 @Injectable()
 export class LabsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly labCmsInclude = {
+    category: true,
+    stemSubject: {
+      include: {
+        category: true,
+      },
+    },
+    media: {
+      orderBy: { order: 'asc' as const },
+    },
+    steps: {
+      orderBy: { order: 'asc' as const },
+    },
+    reflectionPrompts: {
+      orderBy: { order: 'asc' as const },
+    },
+    completionReportTemplate: true,
+    questions: {
+      orderBy: { order: 'asc' as const },
+    },
+  };
 
   async create(dto: CreateLabDto, actor: AuthenticatedUser) {
     const existing = await this.prisma.lab.findUnique({ where: { key: dto.key } });
@@ -18,43 +43,82 @@ export class LabsService {
       data: {
         key: dto.key,
         title: dto.title,
+        categoryId: dto.categoryId ?? dto.category,
+        stemSubjectId: dto.stemSubjectId ?? dto.stemSubject,
         subject: dto.subject,
         grade: dto.grade,
         topicArea: dto.topicArea,
         pathway: dto.pathway,
+        topic: dto.topic,
         competency: dto.competency,
         description: dto.description,
         durationMinutes: dto.durationMinutes,
         type: dto.type,
+        status: dto.status,
         resourceUrl: dto.resourceUrl,
+        introVideoUrl: dto.introVideoUrl,
+        animationUrl: dto.animationUrl,
+        voiceAudioUrl: dto.voiceAudioUrl,
         isPublished: dto.isPublished ?? true,
-        guidanceSteps: dto.guidanceSteps && dto.guidanceSteps.length ? (dto.guidanceSteps as any) : undefined,
+        guidanceSteps: dto.guidanceSteps?.length ? (dto.guidanceSteps as any) : undefined,
         createdById: actor.id,
-        // Nested create, same pattern as AssignmentsService.create: the lab
-        // and its quiz questions are written in one transaction.
         questions: dto.questions?.length
           ? {
               create: dto.questions.map((q, index) => ({
                 questionText: q.questionText,
                 questionType: q.questionType ?? QuestionType.MULTIPLE_CHOICE,
-                options: q.options && q.options.length ? (q.options as any) : undefined,
+                options: q.options?.length ? (q.options as any) : undefined,
                 correctAnswer: q.correctAnswer,
                 points: q.points ?? 10,
                 order: q.order ?? index,
               })),
             }
           : undefined,
+        media: dto.media?.length
+          ? {
+              create: dto.media.map((item, index) => ({
+                type: item.type,
+                title: item.title,
+                caption: item.caption,
+                url: item.url,
+                order: item.order ?? index,
+              })),
+            }
+          : undefined,
+        steps: dto.steps?.length
+          ? {
+              create: dto.steps.map((item, index) => ({
+                title: item.title,
+                instruction: item.instruction,
+                mediaUrl: item.mediaUrl,
+                interactionType: item.interactionType,
+                expectedOutcome: item.expectedOutcome,
+                order: item.order ?? index,
+              })),
+            }
+          : undefined,
+        reflectionPrompts: dto.reflectionPrompts?.length
+          ? {
+              create: dto.reflectionPrompts.map((item, index) => ({
+                prompt: item.prompt,
+                order: item.order ?? index,
+              })),
+            }
+          : undefined,
+        completionReportTemplate: dto.completionReportTemplate
+          ? {
+              create: {
+                title: dto.completionReportTemplate.title,
+                summary: dto.completionReportTemplate.summary,
+                outcomesJson: dto.completionReportTemplate.outcomesJson as any,
+              },
+            }
+          : undefined,
       },
-      include: { questions: { orderBy: { order: 'asc' } } },
+      include: this.labCmsInclude,
     });
   }
 
-  /**
-   * Students only see published labs for their own grade. Teachers/school
-   * admins see every published lab (optionally filtered by `grade`) so they
-   * can browse the whole catalog. Platform admins see everything, including
-   * unpublished drafts.
-   */
   findAll(actor: AuthenticatedUser, grade?: string) {
     const isStudent = actor.role === Role.STUDENT;
     const isPlatformAdmin = actor.role === Role.PLATFORM_ADMIN;
@@ -71,48 +135,111 @@ export class LabsService {
     });
   }
 
-  /**
-   * `actor` is optional so internal callers (update/remove) can fetch a lab
-   * without a user in scope. Pass it from the controller whenever a student
-   * might see the result — GET /labs/:id is how the frontend loads a lab's
-   * quiz questions before the student takes it, so correctAnswer must never
-   * reach a student's browser (see stripAnswersForStudent).
-   */
   async findOne(id: number, actor?: AuthenticatedUser) {
     const lab = await this.prisma.lab.findUnique({
       where: { id },
-      include: { questions: { orderBy: { order: 'asc' } } },
+      include: this.labCmsInclude,
     });
     if (!lab) throw new NotFoundException('Lab not found');
 
     return actor?.role === Role.STUDENT ? this.stripAnswersForStudent(lab) : lab;
   }
 
+  async findOneCms(id: number) {
+    return this.findOne(id);
+  }
+
   async update(id: number, dto: UpdateLabDto) {
     await this.findOne(id);
 
-    // Deliberately flat/scalar-only, same rule as AssignmentsService.update:
-    // editing individual quiz questions after creation isn't supported in
-    // this build. `key` and `questions`, if present in the DTO, are ignored
-    // rather than spread into Prisma's `data` (which would error on the
-    // `questions` array — it isn't valid nested-update syntax).
-    return this.prisma.lab.update({
-      where: { id },
-      data: {
-        title: dto.title,
-        subject: dto.subject,
-        grade: dto.grade,
-        topicArea: dto.topicArea,
-        pathway: dto.pathway,
-        competency: dto.competency,
-        description: dto.description,
-        durationMinutes: dto.durationMinutes,
-        type: dto.type,
-        resourceUrl: dto.resourceUrl,
-        isPublished: dto.isPublished,
-        guidanceSteps: dto.guidanceSteps as any,
-      },
-      include: { questions: { orderBy: { order: 'asc' } } },
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.media !== undefined) {
+        await tx.labMedia.deleteMany({ where: { labId: id } });
+      }
+      if (dto.steps !== undefined) {
+        await tx.labStep.deleteMany({ where: { labId: id } });
+      }
+      if (dto.reflectionPrompts !== undefined) {
+        await tx.labReflectionPrompt.deleteMany({ where: { labId: id } });
+      }
+
+      await tx.lab.update({
+        where: { id },
+        data: {
+          title: dto.title,
+          categoryId: dto.categoryId ?? dto.category,
+          stemSubjectId: dto.stemSubjectId ?? dto.stemSubject,
+          subject: dto.subject,
+          grade: dto.grade,
+          topicArea: dto.topicArea,
+          pathway: dto.pathway,
+          topic: dto.topic,
+          competency: dto.competency,
+          description: dto.description,
+          durationMinutes: dto.durationMinutes,
+          type: dto.type,
+          status: dto.status,
+          resourceUrl: dto.resourceUrl,
+          introVideoUrl: dto.introVideoUrl,
+          animationUrl: dto.animationUrl,
+          voiceAudioUrl: dto.voiceAudioUrl,
+          isPublished: dto.isPublished,
+          guidanceSteps: dto.guidanceSteps as any,
+          media: dto.media?.length
+            ? {
+                create: dto.media.map((item, index) => ({
+                  type: item.type,
+                  title: item.title,
+                  caption: item.caption,
+                  url: item.url,
+                  order: item.order ?? index,
+                })),
+              }
+            : undefined,
+          steps: dto.steps?.length
+            ? {
+                create: dto.steps.map((item, index) => ({
+                  title: item.title,
+                  instruction: item.instruction,
+                  mediaUrl: item.mediaUrl,
+                  interactionType: item.interactionType,
+                  expectedOutcome: item.expectedOutcome,
+                  order: item.order ?? index,
+                })),
+              }
+            : undefined,
+          reflectionPrompts: dto.reflectionPrompts?.length
+            ? {
+                create: dto.reflectionPrompts.map((item, index) => ({
+                  prompt: item.prompt,
+                  order: item.order ?? index,
+                })),
+              }
+            : undefined,
+          completionReportTemplate:
+            dto.completionReportTemplate !== undefined
+              ? {
+                  upsert: {
+                    create: {
+                      title: dto.completionReportTemplate?.title,
+                      summary: dto.completionReportTemplate?.summary,
+                      outcomesJson: dto.completionReportTemplate?.outcomesJson as any,
+                    },
+                    update: {
+                      title: dto.completionReportTemplate?.title,
+                      summary: dto.completionReportTemplate?.summary,
+                      outcomesJson: dto.completionReportTemplate?.outcomesJson as any,
+                    },
+                  },
+                }
+              : undefined,
+        },
+      });
+
+      return tx.lab.findUniqueOrThrow({
+        where: { id },
+        include: this.labCmsInclude,
+      });
     });
   }
 
@@ -122,9 +249,55 @@ export class LabsService {
     return { deleted: true };
   }
 
-  // Removes correctAnswer from every question so students can't read it out
-  // of the API response before submitting the quiz — mirrors
-  // AssignmentsService.stripAnswersForStudent.
+  async addMedia(id: number, dto: CreateLabMediaBatchDto) {
+    await this.findOne(id);
+
+    await this.prisma.labMedia.createMany({
+      data: dto.media.map((item, index) => ({
+        labId: id,
+        type: item.type,
+        title: item.title,
+        caption: item.caption,
+        url: item.url,
+        order: item.order ?? index,
+      })),
+    });
+
+    return this.findOne(id);
+  }
+
+  async addSteps(id: number, dto: CreateLabStepsBatchDto) {
+    await this.findOne(id);
+
+    await this.prisma.labStep.createMany({
+      data: dto.steps.map((item, index) => ({
+        labId: id,
+        title: item.title,
+        instruction: item.instruction,
+        mediaUrl: item.mediaUrl,
+        interactionType: item.interactionType,
+        expectedOutcome: item.expectedOutcome,
+        order: item.order ?? index,
+      })),
+    });
+
+    return this.findOne(id);
+  }
+
+  async addReflections(id: number, dto: CreateLabReflectionsBatchDto) {
+    await this.findOne(id);
+
+    await this.prisma.labReflectionPrompt.createMany({
+      data: dto.reflectionPrompts.map((item, index) => ({
+        labId: id,
+        prompt: item.prompt,
+        order: item.order ?? index,
+      })),
+    });
+
+    return this.findOne(id);
+  }
+
   private stripAnswersForStudent<T extends { questions: { correctAnswer: string | null }[] }>(lab: T): T {
     return {
       ...lab,

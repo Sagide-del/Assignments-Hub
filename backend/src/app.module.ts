@@ -28,6 +28,7 @@ import { SmsModule } from './sms/sms.module';
 
 import { PathwaysModule } from './pathways/pathways.module';
 import { SupportNeedsModule } from './support-needs/support-needs.module';
+import { StemModule } from './stem/stem.module';
 
 import { AiModule } from './ai/ai.module';
 
@@ -84,6 +85,8 @@ import { TenantGuard } from './common/guards/tenant.guard';
     PathwaysModule,
 
     SupportNeedsModule,
+
+    StemModule,
 
     AiModule,
   ],
