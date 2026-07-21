@@ -16,6 +16,7 @@ export const schoolsApi = {
     name: string;
     code: string;
     type?: 'DAY' | 'BOARDING';
+    themeTemplate?: School['themeTemplate'];
     logoUrl?: string;
     address?: string;
     phone?: string;
@@ -29,6 +30,6 @@ export const schoolsApi = {
   // UpdateSchoolDto omits `code` (immutable after creation) — never send it.
   update: (
     id: number,
-    dto: Partial<Pick<School, 'name' | 'logoUrl' | 'address' | 'phone' | 'contactEmail' | 'type'>>,
+    dto: Partial<Pick<School, 'name' | 'logoUrl' | 'address' | 'phone' | 'contactEmail' | 'type' | 'themeTemplate'>>,
   ) => api.patch<School>(`/schools/${id}`, dto).then((r) => r.data),
 };

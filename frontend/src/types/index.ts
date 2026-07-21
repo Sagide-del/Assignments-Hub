@@ -32,6 +32,12 @@ export interface School {
   name: string;
   code: string;
   type: 'DAY' | 'BOARDING';
+  themeTemplate:
+    | 'ACADEMIC_NAVY'
+    | 'ROYAL_BLUE'
+    | 'MODERN_TEAL'
+    | 'EMERALD_EDUCATION'
+    | 'MAROON_PROFESSIONAL';
   logoUrl?: string | null;
   address?: string | null;
   phone?: string | null;

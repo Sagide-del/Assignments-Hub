@@ -93,6 +93,14 @@ enum SchoolType {
   BOARDING
 }
 
+enum SchoolThemeTemplate {
+  ACADEMIC_NAVY
+  ROYAL_BLUE
+  MODERN_TEAL
+  EMERALD_EDUCATION
+  MAROON_PROFESSIONAL
+}
+
 // How a student ended up with a given track selection — did they pick it
 // themselves, or accept the recommendation engine's top suggestion.
 enum SelectionSource {
@@ -143,6 +151,7 @@ model School {
   contactEmail        String?            @map("contact_email")
   subscriptionStatus  SubscriptionStatus @default(TRIAL)
   type                SchoolType         @default(DAY) @map("school_type")
+  themeTemplate       SchoolThemeTemplate @default(ACADEMIC_NAVY) @map("theme_template")
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 

@@ -22,7 +22,10 @@ type ProgressStat = {
 
 function DashboardIconFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#101820] text-[#B5E61D] shadow-sm">
+    <div
+      className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm"
+      style={{ backgroundColor: 'var(--school-primary, #101820)', color: 'var(--school-accent, #B5E61D)' }}
+    >
       {children}
     </div>
   );
@@ -131,7 +134,7 @@ function ArrowIcon() {
 }
 
 function TimelineDot() {
-  return <span className="mt-1.5 h-2.5 w-2.5 rounded-full bg-[#B5E61D]" />;
+  return <span className="mt-1.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--school-accent, #B5E61D)' }} />;
 }
 
 export function StudentDashboard() {
@@ -236,11 +239,17 @@ export function StudentDashboard() {
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
-        <div className="grid gap-6 bg-[#101820] px-6 py-8 text-white md:grid-cols-[1.2fr_0.8fr] md:px-8 md:py-10">
+        <div
+          className="grid gap-6 px-6 py-8 text-white md:grid-cols-[1.2fr_0.8fr] md:px-8 md:py-10"
+          style={{ backgroundColor: 'var(--school-primary, #101820)' }}
+        >
           <div className="relative">
             <div className="absolute inset-y-0 right-0 hidden w-40 bg-[radial-gradient(circle_at_center,rgba(181,230,29,0.2),transparent_70%)] md:block" />
             <div className="relative max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">
+              <p
+                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                style={{ color: 'var(--school-accent, #B5E61D)' }}
+              >
                 Assignment Hub Student Portal
               </p>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
@@ -282,8 +291,11 @@ export function StudentDashboard() {
               </div>
               <div className="mt-6 h-3 rounded-full bg-white/10">
                 <div
-                  className="h-3 rounded-full bg-[#B5E61D]"
-                  style={{ width: `${progressPercentage}%` }}
+                  className="h-3 rounded-full"
+                  style={{
+                    width: `${progressPercentage}%`,
+                    backgroundColor: 'var(--school-accent, #B5E61D)',
+                  }}
                 />
               </div>
               <p className="mt-3 text-sm text-slate-300">
@@ -303,7 +315,10 @@ export function StudentDashboard() {
           >
             <div className="flex items-start justify-between gap-4">
               <DashboardIconFrame>{card.icon}</DashboardIconFrame>
-              <span className="rounded-full bg-[#F3F7D7] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#5B6B11]">
+              <span
+                className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#101820]"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--school-accent, #B5E61D) 20%, white)' }}
+              >
                 {card.value}
               </span>
             </div>
@@ -312,7 +327,7 @@ export function StudentDashboard() {
             <p className="mt-4 text-sm font-medium text-slate-700">{card.meta}</p>
             <Link
               to={card.to}
-              className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:text-[#6D8F08]"
+              className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:opacity-80"
             >
               {card.actionLabel}
               <ArrowIcon />
@@ -332,7 +347,8 @@ export function StudentDashboard() {
             </div>
             <Link
               to="/student/my-assignments"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-[#101820] transition hover:border-[#B5E61D] hover:bg-[#F8FAFC]"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-[#101820] transition hover:bg-[#F8FAFC]"
+              style={{ borderColor: 'color-mix(in srgb, var(--school-accent, #B5E61D) 32%, #e2e8f0)' }}
             >
               View all
               <ArrowIcon />
@@ -424,9 +440,14 @@ export function StudentDashboard() {
                   key={stat.label}
                   className={`rounded-3xl border p-5 ${
                     stat.tone === 'primary'
-                      ? 'border-[#D7E89A] bg-[#FAFDEB]'
+                      ? 'bg-[#FAFDEB]'
                       : 'border-slate-200 bg-[#F8FAFC]'
                   }`}
+                  style={
+                    stat.tone === 'primary'
+                      ? { borderColor: 'color-mix(in srgb, var(--school-accent, #B5E61D) 35%, white)' }
+                      : undefined
+                  }
                 >
                   <p className="text-sm text-slate-500">{stat.label}</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-[#101820]">{stat.value}</p>
@@ -477,7 +498,7 @@ export function StudentDashboard() {
           </div>
           <Link
             to="/student/my-activities"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:text-[#6D8F08]"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:opacity-80"
           >
             Open activity center
             <ArrowIcon />
@@ -497,7 +518,10 @@ export function StudentDashboard() {
           ))}
         </div>
 
-        <div className="mt-6 rounded-3xl border border-[#D7E89A] bg-[#FAFDEB] p-4">
+        <div
+          className="mt-6 rounded-3xl bg-[#FAFDEB] p-4"
+          style={{ border: '1px solid color-mix(in srgb, var(--school-accent, #B5E61D) 35%, white)' }}
+        >
           <p className="text-sm font-semibold text-[#101820]">Need extra support?</p>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             Explore the support-guidance space if you need learning accommodations or extra help.
@@ -560,7 +584,7 @@ function AssignmentTile({
       <button
         type="button"
         onClick={onAction}
-        className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:text-[#6D8F08]"
+        className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:opacity-80"
       >
         {actionLabel}
         <ArrowIcon />

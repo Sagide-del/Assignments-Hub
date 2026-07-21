@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
-import { SubscriptionStatus, SchoolType } from '@prisma/client';
+import { SubscriptionStatus, SchoolThemeTemplate, SchoolType } from '@prisma/client';
 
 export class CreateSchoolDto {
   @IsString()
@@ -17,6 +17,9 @@ export class CreateSchoolDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/\.png(?:\?.*)?$/i, {
+    message: 'logoUrl must point to a PNG file',
+  })
   logoUrl?: string;
 
   @IsOptional()
@@ -44,4 +47,8 @@ export class CreateSchoolDto {
   @IsOptional()
   @IsEnum(SchoolType)
   type?: SchoolType;
+
+  @IsOptional()
+  @IsEnum(SchoolThemeTemplate)
+  themeTemplate?: SchoolThemeTemplate;
 }

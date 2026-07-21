@@ -99,7 +99,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const isStudentPortal = nav.some((item) => item.to.startsWith('/student'));
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] md:flex">
+    <div className="min-h-screen md:flex" style={{ backgroundColor: 'var(--school-background, #F8FAFC)' }}>
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur md:hidden">
         <div className="flex min-w-0 items-center gap-3">
           <SchoolMark src={logoSrc} title={brandTitle} />
@@ -114,7 +114,8 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         <button
           type="button"
           onClick={() => setMobileNavOpen((open) => !open)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[#101820] shadow-sm transition hover:border-[#B5E61D] hover:text-[#101820]"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[#101820] shadow-sm transition hover:text-[#101820]"
+          style={{ borderColor: mobileNavOpen ? 'var(--school-accent, #B5E61D)' : '#e2e8f0' }}
           aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
         >
           {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
@@ -124,7 +125,8 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
       <aside
         className={`${
           mobileNavOpen ? 'flex' : 'hidden'
-        } border-r border-white/10 bg-[#101820] text-white md:flex md:min-h-screen md:w-80 md:flex-col`}
+        } border-r border-white/10 text-white md:flex md:min-h-screen md:w-80 md:flex-col`}
+        style={{ backgroundColor: 'var(--school-primary, #101820)' }}
       >
         <div className="border-b border-white/10 px-6 pb-6 pt-7">
           <div className="flex items-center gap-4">
@@ -160,10 +162,15 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                 className={({ isActive }) =>
                   [
                     'group flex items-center rounded-2xl px-4 py-3.5 text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-[#B5E61D] text-[#101820] shadow-[0_12px_30px_rgba(181,230,29,0.22)]'
-                      : 'text-white/72 hover:bg-white/7 hover:text-white',
+                    isActive ? 'text-[#101820] shadow-[0_12px_30px_rgba(16,24,32,0.16)]' : 'text-white/72 hover:bg-white/7 hover:text-white',
                   ].join(' ')
+                }
+                style={({ isActive }) =>
+                  isActive
+                    ? {
+                        backgroundColor: 'var(--school-accent, #B5E61D)',
+                      }
+                    : undefined
                 }
               >
                 <span className="truncate">{item.label}</span>
@@ -181,7 +188,8 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-[#B5E61D] px-4 py-3 text-sm font-semibold text-[#101820] transition hover:bg-[#c7f255]"
+            className="mt-4 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-[#101820] transition hover:opacity-95"
+            style={{ backgroundColor: 'var(--school-accent, #B5E61D)' }}
           >
             Log out
           </button>
