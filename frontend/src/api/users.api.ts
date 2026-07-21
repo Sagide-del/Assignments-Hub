@@ -27,6 +27,28 @@ export interface ImportErrorDetail {
   message: string;
 }
 
+export interface StudentImportPreviewResponse {
+  success: boolean;
+  preview: {
+    detected: number;
+    valid: number;
+    duplicates: number;
+    missingRequiredFields: number;
+  };
+  errors: ImportErrorDetail[];
+}
+
+export interface TeacherImportPreviewResponse {
+  success: boolean;
+  preview: {
+    detected: number;
+    valid: number;
+    duplicates: number;
+    missingRequiredFields: number;
+  };
+  errors: ImportErrorDetail[];
+}
+
 export interface StudentImportResponse {
   success: boolean;
   summary: {
@@ -71,11 +93,31 @@ export const usersApi = {
       .then((r) => r.data);
   },
 
+  previewStudentsExcel: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api
+      .post<StudentImportPreviewResponse>('/users/import/students/preview', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data);
+  },
+
   importStudentsExcel: (file: File) => {
     const form = new FormData();
     form.append('file', file);
     return api
       .post<StudentImportResponse>('/users/import/students', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data);
+  },
+
+  previewTeachersExcel: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api
+      .post<TeacherImportPreviewResponse>('/users/import/teachers/preview', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then((r) => r.data);
@@ -93,6 +135,12 @@ export const usersApi = {
 
   downloadTemplate: () =>
     api.get('/users/import/template', { responseType: 'blob' }).then((r) => r.data as Blob),
+
+  downloadStudentTemplate: () =>
+    api.get('/users/import/template/students', { responseType: 'blob' }).then((r) => r.data as Blob),
+
+  downloadTeacherTemplate: () =>
+    api.get('/users/import/template/teachers', { responseType: 'blob' }).then((r) => r.data as Blob),
 };
 
 export type { AuthenticatedUser };

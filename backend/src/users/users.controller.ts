@@ -60,6 +60,22 @@ export class UsersController {
     return this.usersImportService.importFromExcel(file.buffer, actor);
   }
 
+  @Post('import/students/preview')
+  @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
+  @AuditAction('user.import.students.preview')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async previewStudents(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    this.assertImportFile(file);
+    return this.usersImportService.previewStudentsFromExcel(file.buffer, actor);
+  }
+
   @Post('import/students')
   @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
   @AuditAction('user.import.students')
@@ -74,6 +90,22 @@ export class UsersController {
   ) {
     this.assertImportFile(file);
     return this.usersImportService.importStudentsFromExcel(file.buffer, actor);
+  }
+
+  @Post('import/teachers/preview')
+  @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
+  @AuditAction('user.import.teachers.preview')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async previewTeachers(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    this.assertImportFile(file);
+    return this.usersImportService.previewTeachersFromExcel(file.buffer, actor);
   }
 
   @Post('import/teachers')
@@ -96,11 +128,21 @@ export class UsersController {
   @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
   async downloadTemplate(@Res() res: Response) {
     const buffer = await this.usersImportService.buildTemplate();
-    res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename="assignments-hub-user-import-template.xlsx"',
-    });
-    res.send(buffer);
+    this.sendWorkbook(res, buffer, 'assignments-hub-user-import-template.xlsx');
+  }
+
+  @Get('import/template/students')
+  @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
+  async downloadStudentTemplate(@Res() res: Response) {
+    const buffer = await this.usersImportService.buildStudentTemplate();
+    this.sendWorkbook(res, buffer, 'assignments-hub-student-import-template.xlsx');
+  }
+
+  @Get('import/template/teachers')
+  @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN)
+  async downloadTeacherTemplate(@Res() res: Response) {
+    const buffer = await this.usersImportService.buildTeacherTemplate();
+    this.sendWorkbook(res, buffer, 'assignments-hub-teacher-import-template.xlsx');
   }
 
   @Get()
@@ -134,5 +176,13 @@ export class UsersController {
     if (!EXCEL_MIMETYPES.has(file.mimetype) && !file.originalname.match(/\.xlsx?$/i)) {
       throw new BadRequestException('Only .xlsx/.xls files are supported');
     }
+  }
+
+  private sendWorkbook(res: Response, buffer: Buffer, filename: string) {
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(buffer);
   }
 }
