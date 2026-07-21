@@ -33,6 +33,7 @@ import { IntaSendCheckout } from '../../features/payments/IntaSendCheckout';
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
 import { AiAnalytics } from '../../features/platform-admin/AiAnalytics';
+import { StemContentStudio } from '../../features/platform-admin/StemContentStudio';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -125,6 +126,10 @@ const platformAdminNav = [
   {
     to: '/platform/schools',
     label: 'Schools',
+  },
+  {
+    to: '/platform/stem-content',
+    label: 'STEM Studio',
   },
   {
     to: '/platform/ai-analytics',
@@ -293,6 +298,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/schools',
             element: <PlatformAdminDashboard />,
+          },
+          {
+            path: '/platform/stem-content',
+            element: <StemContentStudio />,
           },
           {
             path: '/platform/ai-analytics',

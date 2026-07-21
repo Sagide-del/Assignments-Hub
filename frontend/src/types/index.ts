@@ -196,6 +196,69 @@ export interface Answer {
 
 // ---- STEM Labs ----
 
+export interface StemCategory {
+  id: number;
+  key: string;
+  name: string;
+  description: string | null;
+  order: number;
+  isActive: boolean;
+  _count?: {
+    labs: number;
+  };
+  subjects?: StemSubject[];
+}
+
+export interface StemSubject {
+  id: number;
+  categoryId: number;
+  key: string;
+  name: string;
+  description: string | null;
+  order: number;
+  isActive: boolean;
+  category?: StemCategory;
+  _count?: {
+    labs: number;
+  };
+}
+
+export interface LabMedia {
+  id: number;
+  labId: number;
+  type: string;
+  title: string | null;
+  caption: string | null;
+  url: string;
+  order: number;
+}
+
+export interface LabStep {
+  id: number;
+  labId: number;
+  title: string;
+  instruction: string;
+  mediaUrl: string | null;
+  interactionType: string | null;
+  expectedOutcome: string | null;
+  order: number;
+}
+
+export interface LabReflectionPrompt {
+  id: number;
+  labId: number;
+  prompt: string;
+  order: number;
+}
+
+export interface LabCompletionReportTemplate {
+  id: number;
+  labId: number;
+  title: string | null;
+  summary: string | null;
+  outcomesJson: unknown;
+}
+
 export interface LabQuestion {
   id: number;
   labId: number;
@@ -210,17 +273,33 @@ export interface Lab {
   id: number;
   key: string;
   title: string;
+  categoryId?: number | null;
+  category?: StemCategory | null;
+  stemSubjectId?: number | null;
+  stemSubject?: StemSubject | null;
   subject: string;
   grade: string;
   topicArea: string | null;
+  topic?: string | null;
   pathway: string | null;
   competency: string | null;
   description: string | null;
   durationMinutes: number | null;
   type: 'SIMULATION' | 'VIDEO' | 'PRACTICAL' | string;
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | string;
   resourceUrl: string | null;
+  introVideoUrl?: string | null;
+  animationUrl?: string | null;
+  voiceAudioUrl?: string | null;
   isPublished: boolean;
+  media?: LabMedia[];
+  steps?: LabStep[];
+  reflectionPrompts?: LabReflectionPrompt[];
+  completionReportTemplate?: LabCompletionReportTemplate | null;
   questions?: LabQuestion[];
+  _count?: {
+    questions: number;
+  };
 }
 
 export interface LabSession {
