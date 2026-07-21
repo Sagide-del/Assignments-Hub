@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { QuestionType } from '@prisma/client';
+import { LabStatus, QuestionType } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
 import { PrismaService } from '../prisma/prisma.service';
@@ -124,7 +124,7 @@ export class LabsService {
     const isPlatformAdmin = actor.role === Role.PLATFORM_ADMIN;
 
     const where = {
-      ...(isPlatformAdmin ? {} : { isPublished: true }),
+      ...(isPlatformAdmin ? {} : isStudent ? { isPublished: true, status: LabStatus.PUBLISHED } : { isPublished: true }),
       ...(isStudent ? { grade: actor.grade ?? '__none__' } : grade ? { grade } : {}),
     };
 
@@ -141,6 +141,16 @@ export class LabsService {
       include: this.labCmsInclude,
     });
     if (!lab) throw new NotFoundException('Lab not found');
+    if (actor?.role === Role.STUDENT) {
+      const studentGrade = actor.grade ?? '__none__';
+      const isPublished = lab.isPublished === true;
+      const hasPublishedStatus = lab.status === LabStatus.PUBLISHED;
+      const gradeMatches = lab.grade === studentGrade;
+
+      if (!isPublished || !hasPublishedStatus || !gradeMatches) {
+        throw new NotFoundException('Lab not found');
+      }
+    }
 
     return actor?.role === Role.STUDENT ? this.stripAnswersForStudent(lab) : lab;
   }
