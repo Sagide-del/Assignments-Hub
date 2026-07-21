@@ -27,9 +27,9 @@ import { PathwaysStats } from '../../features/teacher/PathwaysStats';
 
 import { SchoolAdminDashboard } from '../../features/school-admin/Dashboard';
 import { BrandingSettings } from '../../features/school-admin/Branding';
+import { SchoolAdminBilling } from '../../features/school-admin/Billing';
 import { SchoolAdminReports } from '../../features/school-admin/Reports';
 import { AiUsage } from '../../features/school-admin/AiUsage';
-import { IntaSendCheckout } from '../../features/payments/IntaSendCheckout';
 
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
@@ -106,7 +106,7 @@ const schoolAdminNav = [
     label: 'Branding',
   },
   {
-    to: '/school-admin/subscription',
+    to: '/school-admin/billing',
     label: 'Subscription',
   },
   {
@@ -275,7 +275,11 @@ export const router = createBrowserRouter([
           },
           {
             path: '/school-admin/subscription',
-            element: <IntaSendCheckout />,
+            element: <Navigate to="/school-admin/billing" replace />,
+          },
+          {
+            path: '/school-admin/billing',
+            element: <SchoolAdminBilling />,
           },
           {
             path: '/school-admin/reports',
