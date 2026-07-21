@@ -9,6 +9,10 @@ import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 import { StudentDashboard } from '../../features/student/Dashboard';
 import { ExamPlayer } from '../../features/student/ExamPlayer';
 import { StemLabsPage } from '../../features/student/StemLabs';
+import { MyAssignmentsPage } from '../../features/student/MyAssignments';
+import { FutureSkillsPage } from '../../features/student/FutureSkills';
+import { MyFuturePage } from '../../features/student/MyFuture';
+import { MyActivitiesPage } from '../../features/student/MyActivities';
 import { CareerPathwaysPage } from '../../features/student/CareerPathways';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
@@ -36,23 +40,27 @@ import { ParentPortal } from '../../features/parent/ParentPortal';
 const studentNav = [
   {
     to: '/student',
-    label: 'Dashboard',
+    label: 'Home',
+  },
+  {
+    to: '/student/my-assignments',
+    label: 'My Assignments',
   },
   {
     to: '/student/stem-labs',
-    label: 'STEM Labs & CSL',
+    label: 'STEM Labs',
   },
   {
-    to: '/student/pathways',
-    label: 'Career Pathways',
+    to: '/student/future-skills',
+    label: 'Future Skills',
   },
   {
-    to: '/student/support-needs',
-    label: 'Support Needs',
+    to: '/student/my-future',
+    label: 'My Future',
   },
   {
-    to: '/student/reports',
-    label: 'My Reports',
+    to: '/student/my-activities',
+    label: 'My Activities',
   },
 ];
 
@@ -159,12 +167,28 @@ export const router = createBrowserRouter([
             element: <StudentDashboard />,
           },
           {
+            path: '/student/my-assignments',
+            element: <MyAssignmentsPage />,
+          },
+          {
             path: '/student/assignments/:id',
             element: <ExamPlayer />,
           },
           {
             path: '/student/stem-labs',
             element: <StemLabsPage />,
+          },
+          {
+            path: '/student/future-skills',
+            element: <FutureSkillsPage />,
+          },
+          {
+            path: '/student/my-future',
+            element: <MyFuturePage />,
+          },
+          {
+            path: '/student/my-activities',
+            element: <MyActivitiesPage />,
           },
           {
             path: '/student/pathways',
