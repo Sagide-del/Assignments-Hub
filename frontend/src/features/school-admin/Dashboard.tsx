@@ -8,8 +8,12 @@ import { apiErrorMessage } from '../../api/axios';
 export function SchoolAdminDashboard() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const studentFileInput = useRef<HTMLInputElement>(null);
+  const teacherFileInput = useRef<HTMLInputElement>(null);
+  const [studentImportStatus, setStudentImportStatus] = useState<string | null>(null);
+  const [teacherImportStatus, setTeacherImportStatus] = useState<string | null>(null);
+  const [showStudentErrors, setShowStudentErrors] = useState(false);
+  const [showTeacherErrors, setShowTeacherErrors] = useState(false);
 
   const { data: staffAndStudents } = useQuery({
     queryKey: ['users', user?.schoolId],
@@ -22,16 +26,31 @@ export function SchoolAdminDashboard() {
     enabled: !!user,
   });
 
-  const importMutation = useMutation({
-    mutationFn: (file: File) => usersApi.importExcel(file),
-    onSuccess: (summary) => {
-      setImportStatus(
-        `${summary.createdStudents} students, ${summary.createdTeachers} teachers imported.` +
-          (summary.errors.length ? ` ${summary.errors.length} rows skipped.` : ''),
+  const studentImportMutation = useMutation({
+    mutationFn: (file: File) => usersApi.importStudentsExcel(file),
+    onSuccess: (response) => {
+      setStudentImportStatus(
+        `Student import completed. ${response.summary.created} created.` +
+          (response.summary.failed ? ` ${response.summary.failed} failed.` : '') +
+          (response.summary.duplicates ? ` ${response.summary.duplicates} duplicates detected.` : ''),
       );
+      setShowStudentErrors(response.errors.length > 0);
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: (err) => setImportStatus(apiErrorMessage(err, 'Import failed')),
+    onError: (err) => setStudentImportStatus(apiErrorMessage(err, 'Student import failed')),
+  });
+
+  const teacherImportMutation = useMutation({
+    mutationFn: (file: File) => usersApi.importTeachersExcel(file),
+    onSuccess: (response) => {
+      setTeacherImportStatus(
+        `Teacher import completed. ${response.summary.created} created.` +
+          (response.summary.failed ? ` ${response.summary.failed} failed.` : ''),
+      );
+      setShowTeacherErrors(response.errors.length > 0);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (err) => setTeacherImportStatus(apiErrorMessage(err, 'Teacher import failed')),
   });
 
   const teachers = (staffAndStudents ?? []).filter((u) => u.role === 'TEACHER');
@@ -51,53 +70,118 @@ export function SchoolAdminDashboard() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">School Admin Dashboard</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Teachers" value={teachers.length} />
         <StatCard label="Students" value={students.length} />
-        <StatCard label="Plan" value={pricing?.tier.name ?? '—'} />
-        <StatCard label="Monthly" value={pricing ? `KES ${pricing.amountKES.toLocaleString()}` : '—'} />
+        <StatCard label="Plan" value={pricing?.tier.name ?? '-'} />
+        <StatCard label="Monthly" value={pricing ? `KES ${pricing.amountKES.toLocaleString()}` : '-'} />
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-        <h2 className="font-medium text-sm">Bulk Import Teachers &amp; Students</h2>
+      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-5">
+        <h2 className="font-medium text-sm">People Management</h2>
         <p className="text-xs text-gray-500">
-          Upload the standard .xlsx template — see backend/src/users/users-import.service.ts for the exact
-          columns it expects. Teachers without a password in the sheet get one auto-generated.
+          Student and teacher imports are isolated by school. The backend always derives the tenant from the
+          authenticated school admin, so one school's import cannot target another school's data.
         </p>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={handleDownloadTemplate} className="px-3 py-2 text-sm rounded border border-gray-300">
-            Download template
-          </button>
-          <button
-            onClick={() => fileInput.current?.click()}
-            disabled={importMutation.isPending}
-            className="px-3 py-2 text-sm rounded bg-brand text-white disabled:opacity-60"
-          >
-            {importMutation.isPending ? 'Importing…' : 'Upload .xlsx'}
-          </button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) importMutation.mutate(file);
-              e.target.value = '';
-            }}
-          />
+
+        <button onClick={handleDownloadTemplate} className="px-3 py-2 text-sm rounded border border-gray-300">
+          Download template
+        </button>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+            <h3 className="font-medium text-sm">Students</h3>
+            <p className="text-xs text-gray-500">
+              Import student records only. Supported fields remain name, admission number, grade, and parent phone.
+            </p>
+            <button
+              onClick={() => studentFileInput.current?.click()}
+              disabled={studentImportMutation.isPending}
+              className="px-3 py-2 text-sm rounded bg-brand text-white disabled:opacity-60"
+            >
+              {studentImportMutation.isPending ? 'Importing…' : 'Import Students'}
+            </button>
+            <input
+              ref={studentFileInput}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) studentImportMutation.mutate(file);
+                e.target.value = '';
+              }}
+            />
+            {studentImportStatus ? <p className="text-sm text-gray-600">{studentImportStatus}</p> : null}
+            {studentImportMutation.data ? (
+              <div className="grid grid-cols-3 gap-3">
+                <StatCard label="Created" value={studentImportMutation.data.summary.created} />
+                <StatCard label="Failed" value={studentImportMutation.data.summary.failed} />
+                <StatCard label="Duplicates" value={studentImportMutation.data.summary.duplicates} />
+              </div>
+            ) : null}
+            {studentImportMutation.data?.errors.length ? (
+              <ErrorPanel
+                title="Student import errors"
+                expanded={showStudentErrors}
+                onToggle={() => setShowStudentErrors((prev) => !prev)}
+                errors={studentImportMutation.data.errors}
+              />
+            ) : null}
+          </section>
+
+          <section className="rounded-lg border border-gray-200 p-4 space-y-3">
+            <h3 className="font-medium text-sm">Teachers</h3>
+            <p className="text-xs text-gray-500">
+              Import teacher records only. Blank teacher passwords still trigger secure auto-generation.
+            </p>
+            <button
+              onClick={() => teacherFileInput.current?.click()}
+              disabled={teacherImportMutation.isPending}
+              className="px-3 py-2 text-sm rounded bg-brand text-white disabled:opacity-60"
+            >
+              {teacherImportMutation.isPending ? 'Importing…' : 'Import Teachers'}
+            </button>
+            <input
+              ref={teacherFileInput}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) teacherImportMutation.mutate(file);
+                e.target.value = '';
+              }}
+            />
+            {teacherImportStatus ? <p className="text-sm text-gray-600">{teacherImportStatus}</p> : null}
+            {teacherImportMutation.data ? (
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard label="Created" value={teacherImportMutation.data.summary.created} />
+                <StatCard label="Failed" value={teacherImportMutation.data.summary.failed} />
+              </div>
+            ) : null}
+            {teacherImportMutation.data?.errors.length ? (
+              <ErrorPanel
+                title="Teacher import errors"
+                expanded={showTeacherErrors}
+                onToggle={() => setShowTeacherErrors((prev) => !prev)}
+                errors={teacherImportMutation.data.errors}
+              />
+            ) : null}
+            {teacherImportMutation.data?.generatedPasswords.length ? (
+              <div className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2">
+                <p className="font-medium mb-1">Generated teacher passwords (shown once):</p>
+                <ul className="space-y-0.5">
+                  {teacherImportMutation.data.generatedPasswords.map((entry) => (
+                    <li key={`${entry.row}-${entry.email}`}>
+                      {entry.email}: <span className="font-mono">{entry.password}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
         </div>
-        {importStatus && <p className="text-sm text-gray-600">{importStatus}</p>}
-        {importMutation.data?.generatedPasswords?.length ? (
-          <div className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2">
-            <p className="font-medium mb-1">Generated teacher passwords (shown once):</p>
-            <ul className="space-y-0.5">
-              {importMutation.data.generatedPasswords.map((p) => (
-                <li key={p.email}>{p.email}: <span className="font-mono">{p.password}</span></li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -115,6 +199,40 @@ export function SchoolAdminDashboard() {
           checkout UI itself is a Phase 2 build, see ROADMAP.md.
         </p>
       </div>
+    </div>
+  );
+}
+
+function ErrorPanel({
+  title,
+  expanded,
+  onToggle,
+  errors,
+}: {
+  title: string;
+  expanded: boolean;
+  onToggle: () => void;
+  errors: { row: number; name?: string; field?: string; message: string }[];
+}) {
+  return (
+    <div className="text-xs bg-red-50 border border-red-200 rounded p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-medium text-red-700">{title}</p>
+        <button type="button" onClick={onToggle} className="text-red-700 underline">
+          {expanded ? 'Hide details' : 'View error details'}
+        </button>
+      </div>
+      {expanded ? (
+        <ul className="mt-2 space-y-1 text-red-700">
+          {errors.map((error) => (
+            <li key={`${error.row}-${error.field ?? 'general'}-${error.message}`}>
+              Row {error.row}
+              {error.name ? ` (${error.name})` : ''}
+              {error.field ? ` - ${error.field}` : ''}: {error.message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

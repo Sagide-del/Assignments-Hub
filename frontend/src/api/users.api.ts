@@ -20,7 +20,38 @@ export interface ImportSummary {
   errors: string[];
 }
 
-// Matches backend/src/users/users.controller.ts.
+export interface ImportErrorDetail {
+  row: number;
+  name?: string;
+  field?: string;
+  message: string;
+}
+
+export interface StudentImportResponse {
+  success: boolean;
+  summary: {
+    created: number;
+    failed: number;
+    duplicates: number;
+  };
+  errors: ImportErrorDetail[];
+}
+
+export interface TeacherImportResponse {
+  success: boolean;
+  summary: {
+    created: number;
+    failed: number;
+  };
+  generatedPasswords: {
+    row: number;
+    name?: string;
+    email: string;
+    password: string;
+  }[];
+  errors: ImportErrorDetail[];
+}
+
 export const usersApi = {
   create: (dto: Partial<UserRecord> & { password?: string }) =>
     api.post<UserRecord>('/users', dto).then((r) => r.data),
@@ -32,9 +63,6 @@ export const usersApi = {
 
   update: (id: number, dto: Partial<UserRecord>) => api.patch<UserRecord>(`/users/${id}`, dto).then((r) => r.data),
 
-  // POST /users/import — multipart .xlsx, field name "file". Bulk-creates
-  // teachers/students; teacher accounts without a password in the sheet get
-  // one auto-generated (returned once, here, never stored in plaintext).
   importExcel: (file: File) => {
     const form = new FormData();
     form.append('file', file);
@@ -43,7 +71,26 @@ export const usersApi = {
       .then((r) => r.data);
   },
 
-  // GET /users/import/template — returns an .xlsx blob to download.
+  importStudentsExcel: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api
+      .post<StudentImportResponse>('/users/import/students', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data);
+  },
+
+  importTeachersExcel: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api
+      .post<TeacherImportResponse>('/users/import/teachers', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data);
+  },
+
   downloadTemplate: () =>
     api.get('/users/import/template', { responseType: 'blob' }).then((r) => r.data as Blob),
 };
