@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { assignmentsApi } from '../../api/assignments.api';
-import { schoolsApi } from '../../api/schools.api';
+import { MetricCard, PageHeader } from '../../components/ui/Saas';
 import { useAuthStore } from '../../store/auth.store';
 
 function BookIcon() {
@@ -17,20 +17,6 @@ function BookIcon() {
       />
       <path
         d="M7.5 4A2.5 2.5 0 0 0 5 6.5V20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function FilterIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path
-        d="M4 6h16M7 12h10M10 18h4"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.7"
@@ -91,14 +77,6 @@ function classifySubject(subject: string) {
   return 'Other Subjects';
 }
 
-function inferLearningArea(subject: string) {
-  const value = slugifySubject(subject);
-  if (['mathematics', 'biology', 'chemistry', 'physics', 'computer studies'].includes(value)) {
-    return 'Science, Technology, Engineering and Mathematics';
-  }
-  return 'Curriculum learning area';
-}
-
 function StatusBadge({ status }: { status: string }) {
   const className =
     status === 'Available'
@@ -111,15 +89,6 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${className}`}>
       {status}
     </span>
-  );
-}
-
-function ContextItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">{label}</p>
-      <p className="mt-2 text-sm font-medium text-white">{value}</p>
-    </div>
   );
 }
 
@@ -176,12 +145,6 @@ export function MyAssignmentsPage() {
     queryFn: () => assignmentsApi.findAll(),
   });
 
-  const { data: school } = useQuery({
-    queryKey: ['school', user?.schoolId],
-    queryFn: () => schoolsApi.findOne(user!.schoolId),
-    enabled: !!user?.schoolId,
-  });
-
   const published = (assignments ?? []).filter((assignment) => assignment.isPublished);
 
   const subjectOptions = useMemo(() => {
@@ -228,69 +191,18 @@ export function MyAssignmentsPage() {
   }, [filteredAssignments]);
 
   const subjectGroupEntries = Object.entries(groupedAssignments);
-  const firstName = user?.name?.split(' ')[0] ?? 'Student';
-
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
-        <div className="grid gap-6 bg-[#101820] px-6 py-8 text-white md:grid-cols-[1.2fr_0.8fr] md:px-8 md:py-10">
-          <div className="relative">
-            <div className="absolute inset-y-0 right-0 hidden w-40 bg-[radial-gradient(circle_at_center,rgba(181,230,29,0.2),transparent_70%)] md:block" />
-            <div className="relative max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">My Assignments</p>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">My Assignments</h1>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 md:text-base">
-                Your curriculum-based learning tasks organized by subject and pathway.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">
-                  {published.length} published assignments
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">
-                  CBC-ready academic workspace
-                </span>
-              </div>
-            </div>
-          </div>
+      <PageHeader title="My Assignments" />
 
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Student context</p>
-            <div className="mt-5 grid gap-3">
-              <ContextItem label="Student" value={user?.name ?? `${firstName} account`} />
-              <ContextItem label="School" value={school?.name ?? 'School profile available when loaded'} />
-              <ContextItem label="Grade" value={user?.grade ? `Grade ${user.grade}` : 'Grade not assigned'} />
-              <ContextItem label="Pathway" value="Pathway profile will appear here when available" />
-            </div>
-          </div>
-        </div>
+      <section className="grid gap-4 sm:max-w-xs">
+        <MetricCard label="Assignments" value={isLoading ? '-' : published.length} compact />
       </section>
 
       <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#101820] text-[#B5E61D]">
-                <FilterIcon />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Filters</p>
-                <h2 className="mt-1 text-xl font-semibold text-[#101820]">Organize your coursework</h2>
-              </div>
-            </div>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500">
-              View assignments by subject today, with the layout prepared for future filtering by grade,
-              pathway, and learning area.
-            </p>
-          </div>
+        <h2 className="text-lg font-semibold text-[#101820]">Subjects</h2>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <FutureSelect label="Grade" value={user?.grade ? `Grade ${user.grade}` : 'All Grades'} />
-            <FutureSelect label="Pathway" value="All Pathways" />
-            <FutureSelect label="Learning Area" value="All Areas" />
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-4 flex flex-wrap gap-3">
           {subjectOptions.map((option) => (
             <FilterPill
               key={option}
@@ -304,7 +216,7 @@ export function MyAssignmentsPage() {
 
       {isLoading ? (
         <section className="rounded-[28px] border border-slate-200 bg-white p-10 text-sm text-slate-500 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
-          Loading your academic workspace...
+          Loading assignments...
         </section>
       ) : error ? (
         <section className="rounded-[28px] border border-red-200 bg-red-50 p-10 text-sm text-red-700 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
@@ -317,10 +229,6 @@ export function MyAssignmentsPage() {
               <BookIcon />
             </div>
             <h2 className="mt-6 text-2xl font-semibold text-[#101820]">No assignments available yet</h2>
-            <p className="mt-3 text-sm leading-7 text-slate-500">
-              Your teachers will publish curriculum activities here. When assignments are available,
-              they will be organized by subject for easier learning progress.
-            </p>
           </div>
         </section>
       ) : (
@@ -331,16 +239,9 @@ export function MyAssignmentsPage() {
               className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_36px_rgba(16,24,32,0.06)]"
             >
               <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Subject group</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-[#101820]">{subject}</h2>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {inferLearningArea(subject)} · {subjectAssignments.length}{' '}
-                    {subjectAssignments.length === 1 ? 'assignment' : 'assignments'}
-                  </p>
-                </div>
+                <h2 className="text-2xl font-semibold text-[#101820]">{subject}</h2>
                 <div className="rounded-full bg-[#F8FAFC] px-4 py-2 text-sm font-medium text-slate-600">
-                  Curriculum tasks organized by subject
+                  {subjectAssignments.length} {subjectAssignments.length === 1 ? 'assignment' : 'assignments'}
                 </div>
               </div>
 
@@ -365,13 +266,8 @@ export function MyAssignmentsPage() {
                         <StatusBadge status={status} />
                       </div>
 
-                      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                        <InfoRow label="Learning area" value={inferLearningArea(assignment.subject)} />
-                        <InfoRow label="Topic" value="Topic details will appear when available" />
-                        <InfoRow label="Competency" value="Competency mapping will appear here" />
-                        <InfoRow label="Teacher" value="Teacher details not yet available in this view" />
+                      <div className="mt-5">
                         <InfoRow label="Date posted" value={formatDate(assignment.createdAt)} icon={<CalendarIcon />} />
-                        <InfoRow label="Due date" value="Due date not yet available" icon={<CalendarIcon />} />
                       </div>
 
                       <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -404,15 +300,6 @@ export function MyAssignmentsPage() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function FutureSelect({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-700">{value}</p>
     </div>
   );
 }

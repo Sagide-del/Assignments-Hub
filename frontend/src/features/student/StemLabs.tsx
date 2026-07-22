@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { labsApi, stemApi } from '../../api/labs.api';
-import { schoolsApi } from '../../api/schools.api';
-import { useAuthStore } from '../../store/auth.store';
+import { MetricCard, PageHeader } from '../../components/ui/Saas';
 
 function LibraryIcon() {
   return (
@@ -45,14 +44,6 @@ function ArrowIcon() {
   );
 }
 
-function formatStatus(status?: string) {
-  return (status ?? 'PUBLISHED').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function formatMinutes(value?: number | null) {
-  return value ? `${value} min` : 'Duration set by studio';
-}
-
 function dashboardCardClass(active: boolean) {
   return active
     ? 'border-[#B5E61D] bg-[#FAFDEB] shadow-[0_14px_28px_rgba(16,24,32,0.06)]'
@@ -60,15 +51,9 @@ function dashboardCardClass(active: boolean) {
 }
 
 export function StemLabsPage() {
-  const user = useAuthStore((s) => s.user);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [activeSubjectId, setActiveSubjectId] = useState<number | null>(null);
 
-  const { data: school } = useQuery({
-    queryKey: ['school', user?.schoolId],
-    queryFn: () => schoolsApi.findOne(user!.schoolId),
-    enabled: !!user?.schoolId,
-  });
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['stem-categories'],
     queryFn: stemApi.findCategories,
@@ -127,45 +112,12 @@ export function StemLabsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
-        <div
-          className="grid gap-6 px-6 py-8 text-white md:grid-cols-[1.2fr_0.8fr] md:px-8 md:py-10"
-          style={{ backgroundColor: 'var(--school-primary, #101820)' }}
-        >
-          <div className="relative">
-            <div className="absolute inset-y-0 right-0 hidden w-40 bg-[radial-gradient(circle_at_center,rgba(181,230,29,0.2),transparent_70%)] md:block" />
-            <div className="relative max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: 'var(--school-accent, #B5E61D)' }}>
-                STEM Labs
-              </p>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">Your practical learning catalogue</h1>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 md:text-base">
-                Explore structured STEM experiences by category, subject, and lab. Everything shown here is already aligned to your grade.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">
-                  {user?.grade ?? 'Grade profile'}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">
-                  {school?.name ?? 'School-linked STEM access'}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">
-                  {labs.length} labs available
-                </span>
-              </div>
-            </div>
-          </div>
+      <PageHeader title="STEM Labs" />
 
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Learning access</p>
-            <div className="mt-5 grid gap-3">
-              <ContextItem label="Categories" value={`${categoriesWithLabs.length}`} />
-              <ContextItem label="Subjects" value={`${subjects.length}`} />
-              <ContextItem label="Labs" value={`${labs.length}`} />
-              <ContextItem label="Grade filtering" value="Applied by backend" />
-            </div>
-          </div>
-        </div>
+      <section className="grid gap-4 sm:grid-cols-3">
+        <MetricCard label="Categories" value={categoriesLoading ? '-' : categoriesWithLabs.length} compact />
+        <MetricCard label="Subjects" value={categoriesLoading ? '-' : subjects.length} compact />
+        <MetricCard label="Labs" value={labsLoading ? '-' : labs.length} compact />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">
@@ -183,7 +135,6 @@ export function StemLabsPage() {
               <LibraryIcon />
             </div>
             <h2 className="mt-5 text-xl font-semibold tracking-tight text-[#101820]">{category.name}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{category.description ?? 'Platform-curated practical learning category.'}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {category.subjects.length} subjects
@@ -231,7 +182,6 @@ export function StemLabsPage() {
                     className={`w-full rounded-[24px] border p-4 text-left transition ${dashboardCardClass(activeSubject?.id === subject.id)}`}
                   >
                     <p className="text-sm font-semibold text-[#101820]">{subject.name}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">{subject.description ?? 'Curriculum-linked subject learning pathway.'}</p>
                     <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                       {subjectLabCount} labs available
                     </p>
@@ -267,22 +217,24 @@ export function StemLabsPage() {
                     <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                       {lab.subject}
                     </span>
-                    <span className="rounded-full bg-[#FAFDEB] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#556A10]">
-                      {formatStatus(lab.status)}
-                    </span>
-                    <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      {formatMinutes(lab.durationMinutes)}
-                    </span>
+                    {lab.durationMinutes ? (
+                      <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {lab.durationMinutes} min
+                      </span>
+                    ) : null}
                   </div>
                   <h3 className="mt-4 text-xl font-semibold tracking-tight text-[#101820]">{lab.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    {lab.topic ?? lab.topicArea ?? lab.description ?? 'Structured practical learning experience'}
-                  </p>
-                  <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <LabMeta label="Topic" value={lab.topic ?? lab.topicArea ?? 'Configured in studio'} />
-                    <LabMeta label="Competency" value={lab.competency ?? 'Competency configured in studio'} />
-                    <LabMeta label="Pathway" value={lab.pathway ?? 'Grade-level STEM pathway'} />
-                  </div>
+                  {lab.topic ?? lab.topicArea ?? lab.description ? (
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {lab.topic ?? lab.topicArea ?? lab.description}
+                    </p>
+                  ) : null}
+                  {lab.competency || lab.pathway ? (
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {lab.competency ? <LabMeta label="Competency" value={lab.competency} /> : null}
+                      {lab.pathway ? <LabMeta label="Pathway" value={lab.pathway} /> : null}
+                    </div>
+                  ) : null}
                   <Link
                     to={`/student/stem-labs/${lab.id}`}
                     className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:opacity-80"
@@ -296,15 +248,6 @@ export function StemLabsPage() {
           )}
         </div>
       </section>
-    </div>
-  );
-}
-
-function ContextItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">{label}</p>
-      <p className="mt-2 text-sm font-medium text-white">{value}</p>
     </div>
   );
 }
