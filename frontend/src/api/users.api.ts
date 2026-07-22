@@ -10,6 +10,20 @@ export interface UserRecord {
   grade: string | null;
   isActive: boolean;
   schoolId: number;
+  studentProfile: StudentProfileRecord | null;
+}
+
+export interface StudentProfileRecord {
+  id: number;
+  userId: number;
+  admissionNumber: string | null;
+  grade: string | null;
+  className: string | null;
+  stream: string | null;
+  pathway: string | null;
+  parentName: string | null;
+  parentPhone: string | null;
+  parentEmail: string | null;
 }
 
 export interface ImportSummary {

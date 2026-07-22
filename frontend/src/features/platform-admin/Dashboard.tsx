@@ -8,29 +8,7 @@ import {
 import { schoolsApi } from '../../api/schools.api';
 import { apiErrorMessage } from '../../api/axios';
 import type { School } from '../../types';
-
-
-function suggestCode(name: string): string {
-
-  const initials = name
-    .replace(/[^a-zA-Z ]/g, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 4) || 'SCH';
-
-
-  const number =
-    Math.floor(10000 + Math.random() * 89999);
-
-
-  return `${initials}${number}`;
-
-}
-
-
+import { PageHeader } from '../../components/ui/Saas';
 
 
 export function PlatformAdminDashboard() {
@@ -56,8 +34,6 @@ export function PlatformAdminDashboard() {
 
 
   const [name, setName] = useState('');
-
-  const [code, setCode] = useState('');
 
   const [type, setType] =
     useState<'DAY' | 'BOARDING'>('DAY');
@@ -128,8 +104,6 @@ export function PlatformAdminDashboard() {
 
         name,
 
-        code,
-
         type,
 
         contactEmail,
@@ -155,8 +129,6 @@ export function PlatformAdminDashboard() {
 
 
       setName('');
-
-      setCode('');
 
       setContactEmail('');
 
@@ -294,11 +266,13 @@ export function PlatformAdminDashboard() {
 
     <div className="space-y-8">
 
+      <PageHeader title="Schools" />
+
 
 
       {/* HEADER */}
 
-      <div>
+      <div className="hidden" aria-hidden="true">
 
         <h1 className="
           text-3xl
@@ -331,6 +305,7 @@ export function PlatformAdminDashboard() {
       {/* STAT CARDS */}
 
       <div className="
+        hidden
         grid
         grid-cols-1
         md:grid-cols-3
@@ -422,46 +397,9 @@ export function PlatformAdminDashboard() {
 
             value={name}
 
-            onChange={(e)=>{
-
-              setName(e.target.value);
-
-
-              if(!code){
-
-                setCode(
-                  suggestCode(
-                    e.target.value
-                  )
-                );
-
-              }
-
-            }}
+            onChange={(e)=> setName(e.target.value)}
 
             placeholder="School name"
-
-            className="input"
-
-          />
-
-
-
-
-
-          <input
-
-            value={code}
-
-            onChange={(e)=>
-
-              setCode(
-                e.target.value.toUpperCase()
-              )
-
-            }
-
-            placeholder="School code"
 
             className="input"
 
@@ -586,8 +524,7 @@ export function PlatformAdminDashboard() {
 
           disabled={
             createMutation.isPending ||
-            !name ||
-            !code
+            !name
           }
 
 

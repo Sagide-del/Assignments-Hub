@@ -54,6 +54,26 @@ export class CreateUserDto {
   @IsString()
   parentPhone?: string;
 
+  @IsOptional()
+  @IsString()
+  studentClass?: string;
+
+  @IsOptional()
+  @IsString()
+  stream?: string;
+
+  @IsOptional()
+  @IsString()
+  pathway?: string;
+
+  @IsOptional()
+  @IsString()
+  parentName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  parentEmail?: string;
+
   // Teacher credential allocation metadata — meaningful only for TEACHER.
   @IsOptional()
   @IsString()

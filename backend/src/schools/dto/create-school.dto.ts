@@ -7,13 +7,14 @@ export class CreateSchoolDto {
   @MaxLength(255)
   name: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(20)
   @Matches(/^[A-Z0-9]+$/, {
     message: 'code must be uppercase letters/numbers only, e.g. "GHSCH01"',
   })
-  code: string;
+  code?: string;
 
   @IsOptional()
   @IsString()

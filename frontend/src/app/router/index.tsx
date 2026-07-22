@@ -42,10 +42,6 @@ import { ParentPortal } from '../../features/parent/ParentPortal';
 
 const studentNav = [
   {
-    to: '/student',
-    label: 'Home',
-  },
-  {
     to: '/student/my-assignments',
     label: 'My Assignments',
   },

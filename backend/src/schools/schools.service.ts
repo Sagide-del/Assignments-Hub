@@ -10,10 +10,19 @@ export class SchoolsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateSchoolDto) {
-    const existing = await this.prisma.school.findUnique({ where: { code: dto.code } });
-    if (existing) throw new ConflictException('A school with this code already exists');
+    const suppliedCode = dto.code?.trim().toUpperCase();
 
-    return this.prisma.school.create({ data: dto });
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const code = suppliedCode ?? this.generateSchoolCode(dto.name);
+      try {
+        return await this.prisma.school.create({ data: { ...dto, code } });
+      } catch (error) {
+        if (!this.isUniqueConstraintError(error)) throw error;
+        if (suppliedCode) throw new ConflictException('A school with this code already exists');
+      }
+    }
+
+    throw new ConflictException('Could not generate a unique school code');
   }
 
   /** Platform admins only — used for the platform-wide schools directory. */
@@ -43,5 +52,18 @@ export class SchoolsService {
     if (user.schoolId !== schoolId) {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
+  }
+
+  private generateSchoolCode(name: string) {
+    const words = name.toUpperCase().replace(/[^A-Z0-9 ]/g, '').split(/\s+/).filter(Boolean);
+    const initials = words.map((word) => word[0]).join('');
+    const fallback = words.join('').slice(0, 4);
+    const prefix = (initials.length >= 2 ? initials : fallback).slice(0, 6).padEnd(2, 'S');
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    return `${prefix}${suffix}`;
+  }
+
+  private isUniqueConstraintError(error: unknown) {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
   }
 }

@@ -14,7 +14,7 @@ import type { School } from '../types';
 export const schoolsApi = {
   create: (dto: {
     name: string;
-    code: string;
+    code?: string;
     type?: 'DAY' | 'BOARDING';
     themeTemplate?: School['themeTemplate'];
     logoUrl?: string;

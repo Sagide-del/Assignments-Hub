@@ -254,11 +254,35 @@ model User {
   supportAssessments   StudentSupportAssessment[]
   aiUsageLogs          AiUsageLog[]
   verifiedPayments     PaymentTransaction[] @relation("PaymentVerifiedBy")
+  studentProfile       StudentProfile?
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
   @@index([schoolId])
   @@map("users")
+}
+
+model StudentProfile {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  admissionNumber String?  @map("admission_number")
+  grade           String?
+  className       String?  @map("class_name")
+  stream          String?
+  pathway         String?
+  parentName      String?  @map("parent_name")
+  parentPhone     String?  @map("parent_phone")
+  parentEmail     String?  @map("parent_email")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([admissionNumber])
+  @@index([grade])
+  @@index([pathway])
+  @@map("student_profiles")
 }
 
 // Opaque (non-JWT) refresh tokens, stored hashed so a DB leak alone can't be

@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 // Role, schoolId, email, and admissionNumber are immutable via this endpoint
 // to avoid accidentally moving a user between tenants or credential types.
@@ -25,6 +25,26 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   parentPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  studentClass?: string;
+
+  @IsOptional()
+  @IsString()
+  stream?: string;
+
+  @IsOptional()
+  @IsString()
+  pathway?: string;
+
+  @IsOptional()
+  @IsString()
+  parentName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  parentEmail?: string;
 
   @IsOptional()
   @IsString()

@@ -139,6 +139,13 @@ export function SchoolAdminBilling() {
     return new Map((providersQuery.data ?? []).map((provider) => [provider.method, provider]));
   }, [providersQuery.data]);
 
+  const orderedProviders = useMemo(() => {
+    const order = ['INTASEND', 'EQUITY_PAYBILL', 'MPESA'];
+    return [...(providersQuery.data ?? [])].sort(
+      (left, right) => order.indexOf(left.method) - order.indexOf(right.method),
+    );
+  }, [providersQuery.data]);
+
   async function downloadInvoice(invoiceId: number, invoiceNumber: string) {
     try {
       const blob = await paymentApi.downloadInvoice(invoiceId);
@@ -170,9 +177,6 @@ export function SchoolAdminBilling() {
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#101820]">
                 Billing and subscription management
               </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500">
-                Manage subscription payments, invoice history, and AI billing visibility from one school-scoped workspace.
-              </p>
             </div>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-[#F8FAFC] p-5 lg:w-[340px]">
@@ -224,9 +228,6 @@ export function SchoolAdminBilling() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[#101820]">Payment methods</h2>
-              <p className="mt-2 text-sm text-slate-500">
-                Payment branding and instructions are loaded from backend-managed provider configuration.
-              </p>
             </div>
             <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-[#F8FAFC] px-3 py-2 text-xs text-slate-500">
               Due now: <span className="font-semibold text-[#101820]">{formatCurrency(current?.pricing.amountKES)}</span>
@@ -234,7 +235,13 @@ export function SchoolAdminBilling() {
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {(providersQuery.data ?? []).map((provider) => (
+            {providersQuery.isLoading ? (
+              <p className="text-sm text-slate-500">Loading payment methods...</p>
+            ) : providersQuery.isError ? (
+              <p className="text-sm text-red-700">Payment methods are temporarily unavailable.</p>
+            ) : orderedProviders.length === 0 ? (
+              <p className="text-sm text-slate-500">No payment methods are configured.</p>
+            ) : orderedProviders.map((provider) => (
               <ProviderCard
                 key={provider.method}
                 provider={provider}

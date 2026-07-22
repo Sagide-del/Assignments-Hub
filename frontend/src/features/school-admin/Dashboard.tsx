@@ -4,7 +4,7 @@ import { usersApi } from '../../api/users.api';
 import { paymentApi } from '../../api/subscriptions.api';
 import { useAuthStore } from '../../store/auth.store';
 import { apiErrorMessage } from '../../api/axios';
-import { PageHeader } from '../../components/ui/Saas';
+import { MetricCard, PageHeader } from '../../components/ui/Saas';
 
 function StudentIcon() {
   return (
@@ -170,7 +170,7 @@ export function SchoolAdminDashboard() {
         <div className="flex items-start gap-4">
           <div>
             <PageHeader title="People management" />
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
+            <p className="hidden" aria-hidden="true">
               Manage school onboarding with isolated student and teacher imports. Every import is scoped to the
               authenticated school admin, so one school’s upload cannot affect another school’s data.
             </p>
@@ -179,10 +179,10 @@ export function SchoolAdminDashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Teachers" value={teachers.length} />
-        <StatCard label="Students" value={students.length} />
-        <StatCard label="Plan" value={pricing?.tier.name ?? '-'} />
-        <StatCard label="Monthly" value={pricing ? `KES ${pricing.amountKES.toLocaleString()}` : '-'} />
+        <MetricCard label="Teachers" value={teachers.length} compact />
+        <MetricCard label="Students" value={students.length} compact />
+        <MetricCard label="Plan" value={pricing?.tier.name ?? '-'} compact />
+        <MetricCard label="Monthly" value={pricing ? `KES ${pricing.amountKES.toLocaleString()}` : '-'} compact />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -276,7 +276,7 @@ export function SchoolAdminDashboard() {
         />
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="hidden" aria-hidden="true">
         <h2 className="font-medium text-sm mb-2">Subscription</h2>
         {pricing ? (
           <p className="text-sm text-gray-600">

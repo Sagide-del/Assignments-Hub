@@ -127,7 +127,12 @@ interface ParsedImportRow {
   password: string;
   admissionNumber: string;
   grade: string;
+  studentClass: string;
+  stream: string;
+  pathway: string;
+  parentName: string;
   parentPhone: string;
+  parentEmail: string;
   subject: string;
   assignedClass: string;
 }
@@ -449,7 +454,12 @@ export class UsersImportService {
           password: raw.password || generatedPassword,
           admissionNumber: raw.admissionNumber || undefined,
           grade: raw.grade || undefined,
+          studentClass: raw.studentClass || undefined,
+          stream: raw.stream || undefined,
+          pathway: raw.pathway || undefined,
+          parentName: raw.parentName || undefined,
           parentPhone: raw.parentPhone || undefined,
+          parentEmail: raw.parentEmail || undefined,
           subject: raw.subject || undefined,
           assignedClass: raw.assignedClass || undefined,
         });
@@ -532,7 +542,12 @@ export class UsersImportService {
       password: this.cell(row, columnMap.password),
       admissionNumber: this.cell(row, columnMap.admissionNumber),
       grade: this.cell(row, columnMap.grade),
+      studentClass: this.cell(row, columnMap.studentClass),
+      stream: this.cell(row, columnMap.stream),
+      pathway: this.cell(row, columnMap.pathway),
+      parentName: this.cell(row, columnMap.parentName),
       parentPhone: this.cell(row, columnMap.parentPhone),
+      parentEmail: this.cell(row, columnMap.parentEmail),
       subject: this.cell(row, columnMap.subject),
       assignedClass: this.cell(row, columnMap.assignedClass),
     };

@@ -22,6 +22,7 @@ const SAFE_SELECT = {
   parentPhone: true,
   subject: true,
   assignedClass: true,
+  studentProfile: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -54,6 +55,18 @@ export class UsersService {
           admissionNumber: dto.admissionNumber,
           grade: dto.grade,
           parentPhone: dto.parentPhone,
+          studentProfile: {
+            create: {
+              admissionNumber: dto.admissionNumber,
+              grade: dto.grade,
+              className: dto.studentClass,
+              stream: dto.stream,
+              pathway: dto.pathway,
+              parentName: dto.parentName,
+              parentPhone: dto.parentPhone,
+              parentEmail: dto.parentEmail,
+            },
+          },
         },
         select: SAFE_SELECT,
       });
@@ -135,6 +148,45 @@ export class UsersService {
     if (dto.parentPhone !== undefined && user.role === Role.STUDENT) data.parentPhone = dto.parentPhone;
     if (dto.subject !== undefined && user.role === Role.TEACHER) data.subject = dto.subject;
     if (dto.assignedClass !== undefined && user.role === Role.TEACHER) data.assignedClass = dto.assignedClass;
+
+    const profileChanged =
+      dto.grade !== undefined ||
+      dto.parentPhone !== undefined ||
+      dto.studentClass !== undefined ||
+      dto.stream !== undefined ||
+      dto.pathway !== undefined ||
+      dto.parentName !== undefined ||
+      dto.parentEmail !== undefined;
+
+    if (user.role === Role.STUDENT && profileChanged) {
+      return this.prisma.$transaction(async (transaction) => {
+        await transaction.studentProfile.upsert({
+          where: { userId: id },
+          create: {
+            userId: id,
+            admissionNumber: user.admissionNumber,
+            grade: dto.grade ?? user.grade,
+            className: dto.studentClass,
+            stream: dto.stream,
+            pathway: dto.pathway,
+            parentName: dto.parentName,
+            parentPhone: dto.parentPhone ?? user.parentPhone,
+            parentEmail: dto.parentEmail,
+          },
+          update: {
+            grade: dto.grade,
+            className: dto.studentClass,
+            stream: dto.stream,
+            pathway: dto.pathway,
+            parentName: dto.parentName,
+            parentPhone: dto.parentPhone,
+            parentEmail: dto.parentEmail,
+          },
+        });
+
+        return transaction.user.update({ where: { id }, data, select: SAFE_SELECT });
+      });
+    }
 
     return this.prisma.user.update({ where: { id }, data, select: SAFE_SELECT });
   }
