@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { assignmentsApi } from '../../api/assignments.api';
+import { skillsApi } from '../../api/skills.api';
 import { ActionCard, EmptyState, MetricCard, PageHeader } from '../../components/ui/Saas';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -27,11 +28,21 @@ export function StudentDashboard() {
     queryKey: ['assignments', user?.schoolId],
     queryFn: () => assignmentsApi.findAll(),
   });
+  const { data: skillCourses = [] } = useQuery({
+    queryKey: ['skill-courses'],
+    queryFn: () => skillsApi.getCourses(),
+  });
+  const { data: skillEnrollments = [] } = useQuery({
+    queryKey: ['skill-enrollments'],
+    queryFn: skillsApi.getStudentEnrollments,
+  });
 
   const published = (assignments ?? []).filter((assignment) => assignment.isPublished);
   const latestAssignment = [...published].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
   const firstName = user?.name?.split(' ')[0] ?? 'Student';
   const gradeLabel = user?.grade ? `Grade ${user.grade}` : 'Grade pending';
+  const activeSkill = skillEnrollments.find((enrollment) => enrollment.status === 'ACTIVE');
+  const latestSkillEnrollment = skillEnrollments[0];
 
   return (
     <div className="space-y-6">
@@ -71,6 +82,29 @@ export function StudentDashboard() {
         ) : (
           <EmptyState title="No assignments available yet." />
         )}
+      </ActionCard>
+
+      <ActionCard
+        title="Learn a Skill"
+        meta={`${skillCourses.length} courses available`}
+        action={
+          <Link to="/student/learn-skills" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#101820] hover:bg-slate-50">
+            Browse skills
+            <ArrowIcon />
+          </Link>
+        }
+      >
+        <div className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              {activeSkill ? 'Continue learning' : 'Enrollment status'}
+            </p>
+            <p className="mt-1 font-semibold text-[#101820]">
+              {activeSkill?.course?.title ?? latestSkillEnrollment?.status.replace(/_/g, ' ') ?? 'No enrollment requests'}
+            </p>
+          </div>
+          {activeSkill ? <Link to={`/student/learn-skills/${activeSkill.courseId}`} className="w-fit rounded-xl bg-[#101820] px-4 py-2 text-sm font-semibold text-white">Open course</Link> : null}
+        </div>
       </ActionCard>
     </div>
   );

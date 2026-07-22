@@ -608,6 +608,96 @@ export interface PlatformAiBillingVisibility {
   }>;
 }
 
+export type SkillContentStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type SkillEnrollmentStatus = 'REQUESTED' | 'AWAITING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+
+export interface SkillCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  imageUrl: string | null;
+  displayOrder: number;
+  status: SkillContentStatus;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { courses: number };
+}
+
+export interface SkillProvider {
+  id: number;
+  name: string;
+  description: string | null;
+  logoUrl: string | null;
+  website: string | null;
+  contactEmail: string | null;
+  verified: boolean;
+  status: SkillContentStatus;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { courses: number };
+}
+
+export interface SkillCourse {
+  id: number;
+  categoryId: number;
+  providerId: number;
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  durationWeeks: number;
+  level: SkillLevel;
+  costKES: number;
+  certificateAvailable: boolean;
+  thumbnailUrl: string | null;
+  learningOutcomes: string[] | null;
+  courseStructure: string[] | null;
+  status: SkillContentStatus;
+  createdAt: string;
+  updatedAt: string;
+  category: SkillCategory;
+  provider: SkillProvider;
+  enrollment?: SkillEnrollment | null;
+  _count?: { enrollments: number };
+}
+
+export interface SkillEnrollment {
+  id: number;
+  studentId: number;
+  courseId: number;
+  status: SkillEnrollmentStatus;
+  paymentStatus: PaymentStatus;
+  requestedAt: string;
+  approvedAt: string | null;
+  completedAt: string | null;
+  course?: SkillCourse;
+  student?: { id: number; name: string; school?: Pick<School, 'id' | 'name' | 'code'> };
+}
+
+export interface SkillPayment {
+  id: number;
+  studentId: number;
+  courseId: number;
+  paymentMethod: PaymentMethod;
+  amountKES: number;
+  transactionReference: string | null;
+  status: PaymentStatus;
+  createdAt: string;
+  course?: Pick<SkillCourse, 'id' | 'title'>;
+  student?: { id: number; name: string; school?: Pick<School, 'id' | 'name' | 'code'> };
+}
+
+export interface SkillAdminSummary {
+  totalCourses: number;
+  draftCourses: number;
+  publishedCourses: number;
+  categories: number;
+  providers: number;
+  pendingEnrollments: number;
+  confirmedRevenueKES: number;
+}
+
 // Generic API error shape thrown by backend/src/common/filters/http-exception.filter.ts
 export interface ApiErrorBody {
   statusCode: number;

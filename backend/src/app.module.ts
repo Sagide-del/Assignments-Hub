@@ -31,6 +31,7 @@ import { SupportNeedsModule } from './support-needs/support-needs.module';
 import { StemModule } from './stem/stem.module';
 
 import { AiModule } from './ai/ai.module';
+import { SkillsModule } from './skills/skills.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -89,6 +90,8 @@ import { TenantGuard } from './common/guards/tenant.guard';
     StemModule,
 
     AiModule,
+
+    SkillsModule,
   ],
 
   providers: [

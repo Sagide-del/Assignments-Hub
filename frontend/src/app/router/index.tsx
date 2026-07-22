@@ -11,7 +11,8 @@ import { ExamPlayer } from '../../features/student/ExamPlayer';
 import { StemLabsPage } from '../../features/student/StemLabs';
 import { StemLabPlayerPage } from '../../features/student/StemLabPlayer';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
-import { FutureSkillsPage } from '../../features/student/FutureSkills';
+import { LearnSkillsPage } from '../../features/student/LearnSkills';
+import { SkillDetailPage } from '../../features/student/SkillDetail';
 import { MyFuturePage } from '../../features/student/MyFuture';
 import { MyActivitiesPage } from '../../features/student/MyActivities';
 import { CareerPathwaysPage } from '../../features/student/CareerPathways';
@@ -36,6 +37,7 @@ import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard'
 import { AiAnalytics } from '../../features/platform-admin/AiAnalytics';
 import { StemContentStudio } from '../../features/platform-admin/StemContentStudio';
 import { PlatformBilling } from '../../features/platform-admin/Billing';
+import { SkillStudio } from '../../features/platform-admin/SkillStudio';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -50,8 +52,8 @@ const studentNav = [
     label: 'STEM Labs',
   },
   {
-    to: '/student/future-skills',
-    label: 'Future Skills',
+    to: '/student/learn-skills',
+    label: 'Learn a Skill',
   },
   {
     to: '/student/my-future',
@@ -59,7 +61,7 @@ const studentNav = [
   },
   {
     to: '/student/my-activities',
-    label: 'My Activities',
+    label: 'My Activity',
   },
 ];
 
@@ -130,6 +132,10 @@ const platformAdminNav = [
     label: 'STEM Studio',
   },
   {
+    to: '/platform/skill-studio',
+    label: 'Skill Studio',
+  },
+  {
     to: '/platform/billing',
     label: 'Billing',
   },
@@ -191,7 +197,15 @@ export const router = createBrowserRouter([
           },
           {
             path: '/student/future-skills',
-            element: <FutureSkillsPage />,
+            element: <Navigate to="/student/learn-skills" replace />,
+          },
+          {
+            path: '/student/learn-skills',
+            element: <LearnSkillsPage />,
+          },
+          {
+            path: '/student/learn-skills/:id',
+            element: <SkillDetailPage />,
           },
           {
             path: '/student/my-future',
@@ -312,6 +326,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/stem-content',
             element: <StemContentStudio />,
+          },
+          {
+            path: '/platform/skill-studio',
+            element: <SkillStudio />,
           },
           {
             path: '/platform/billing',

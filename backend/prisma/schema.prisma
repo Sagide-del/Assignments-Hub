@@ -72,6 +72,27 @@ enum LabStatus {
   ARCHIVED
 }
 
+enum SkillContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum SkillEnrollmentStatus {
+  REQUESTED
+  AWAITING_PAYMENT
+  ACTIVE
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
@@ -255,6 +276,8 @@ model User {
   aiUsageLogs          AiUsageLog[]
   verifiedPayments     PaymentTransaction[] @relation("PaymentVerifiedBy")
   studentProfile       StudentProfile?
+  skillEnrollments     SkillEnrollment[] @relation("SkillEnrollmentStudent")
+  skillPayments        SkillPayment[] @relation("SkillPaymentStudent")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -283,6 +306,102 @@ model StudentProfile {
   @@index([grade])
   @@index([pathway])
   @@map("student_profiles")
+}
+
+model SkillCategory {
+  id           Int                @id @default(autoincrement())
+  name         String             @unique
+  description  String?
+  icon         String?
+  imageUrl     String?            @map("image_url")
+  displayOrder Int                @default(0) @map("display_order")
+  status       SkillContentStatus @default(DRAFT)
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  courses      SkillCourse[]
+
+  @@index([status, displayOrder])
+  @@map("skill_categories")
+}
+
+model SkillProvider {
+  id           Int                @id @default(autoincrement())
+  name         String             @unique
+  description  String?
+  logoUrl      String?            @map("logo_url")
+  website      String?
+  contactEmail String?            @map("contact_email")
+  verified     Boolean            @default(false)
+  status       SkillContentStatus @default(DRAFT)
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  courses      SkillCourse[]
+
+  @@index([status])
+  @@map("skill_providers")
+}
+
+model SkillCourse {
+  id                   Int                @id @default(autoincrement())
+  categoryId           Int                @map("category_id")
+  category             SkillCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  providerId           Int                @map("provider_id")
+  provider             SkillProvider      @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  title                String
+  shortDescription     String             @map("short_description")
+  fullDescription      String             @map("full_description")
+  durationWeeks        Int                @map("duration_weeks")
+  level                SkillLevel
+  costKES              Int                @map("cost_kes")
+  certificateAvailable Boolean            @default(false) @map("certificate_available")
+  thumbnailUrl         String?            @map("thumbnail_url")
+  learningOutcomes     Json?              @map("learning_outcomes")
+  courseStructure      Json?              @map("course_structure")
+  status               SkillContentStatus @default(DRAFT)
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  enrollments          SkillEnrollment[]
+  payments             SkillPayment[]
+
+  @@index([categoryId, status])
+  @@index([providerId])
+  @@index([status])
+  @@map("skill_courses")
+}
+
+model SkillEnrollment {
+  id            Int                   @id @default(autoincrement())
+  studentId     Int                   @map("student_id")
+  student       User                  @relation("SkillEnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  courseId      Int                   @map("course_id")
+  course        SkillCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status        SkillEnrollmentStatus @default(REQUESTED)
+  paymentStatus PaymentStatus         @default(PENDING) @map("payment_status")
+  requestedAt   DateTime              @default(now()) @map("requested_at")
+  approvedAt    DateTime?             @map("approved_at")
+  completedAt   DateTime?             @map("completed_at")
+
+  @@unique([studentId, courseId])
+  @@index([courseId, status])
+  @@index([studentId, status])
+  @@map("skill_enrollments")
+}
+
+model SkillPayment {
+  id                   Int           @id @default(autoincrement())
+  studentId            Int           @map("student_id")
+  student              User          @relation("SkillPaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  courseId             Int           @map("course_id")
+  course               SkillCourse   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  paymentMethod        PaymentMethod @map("payment_method")
+  amountKES            Int           @map("amount_kes")
+  transactionReference String?       @map("transaction_reference")
+  status               PaymentStatus @default(PENDING)
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  @@index([studentId, courseId])
+  @@index([status])
+  @@map("skill_payments")
 }
 
 // Opaque (non-JWT) refresh tokens, stored hashed so a DB leak alone can't be
