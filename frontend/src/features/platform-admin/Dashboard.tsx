@@ -6,9 +6,23 @@ import {
 } from '@tanstack/react-query';
 
 import { schoolsApi } from '../../api/schools.api';
+import { usersApi } from '../../api/users.api';
 import { apiErrorMessage } from '../../api/axios';
 import type { School } from '../../types';
 import { PageHeader } from '../../components/ui/Saas';
+
+// Generates a random password that satisfies the backend's CreateUserDto
+// rule for staff roles (@MinLength(8)) — same idea as
+// UsersImportService.generateTempPassword, just client-side so the platform
+// admin can see and copy it immediately after creating a school admin.
+function generateSecurePassword(): string {
+  const bytes = new Uint8Array(9);
+  crypto.getRandomValues(bytes);
+  const random = btoa(String.fromCharCode(...bytes))
+    .replace(/[+/=]/g, '')
+    .slice(0, 10);
+  return `${random}Aa1!`;
+}
 
 
 export function PlatformAdminDashboard() {
@@ -66,6 +80,29 @@ export function PlatformAdminDashboard() {
 
   const [editingSchool, setEditingSchool] =
     useState<School | null>(null);
+
+
+  // "Create School Admin" modal — opened either manually via the Schools
+  // Directory (any existing school) or automatically right after a new
+  // school is created, so there's always a clear path from "school exists"
+  // to "someone can actually log into it".
+  const [adminModalSchool, setAdminModalSchool] =
+    useState<School | null>(null);
+
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError, setAdminError] = useState<string | null>(null);
+
+  // Set once creation succeeds. The password can never be fetched back from
+  // the API afterwards (only a hash is stored), so this is the one moment
+  // to show it for the platform admin to copy and relay.
+  const [createdAdminCreds, setCreatedAdminCreds] = useState<{
+    schoolName: string;
+    schoolCode: string;
+    email: string;
+    password: string;
+  } | null>(null);
 
 
 
@@ -139,12 +176,16 @@ export function PlatformAdminDashboard() {
 
 
       setSuccess(
-        `${school.name} created successfully`
+        `${school.name} created successfully — school code ${school.code}`
       );
 
 
       setError(null);
 
+
+      // Guide straight into "who logs in as this school's admin?" instead
+      // of leaving that as a separate, easy-to-miss step.
+      openAdminModal(school);
 
     },
 
@@ -252,6 +293,69 @@ export function PlatformAdminDashboard() {
 
     },
 
+
+  });
+
+
+  function openAdminModal(school: School) {
+    setAdminModalSchool(school);
+    setAdminName('');
+    setAdminEmail('');
+    setAdminPassword('');
+    setAdminError(null);
+    setCreatedAdminCreds(null);
+  }
+
+  function closeAdminModal() {
+    setAdminModalSchool(null);
+    setCreatedAdminCreds(null);
+  }
+
+  const createAdminMutation = useMutation({
+
+    mutationFn: () => {
+      if (!adminModalSchool) {
+        throw new Error('No school selected');
+      }
+
+      // Matches backend/src/users/dto/create-user.dto.ts exactly for a
+      // staff role: name, role, schoolId, email, password. This reuses the
+      // existing POST /users endpoint (UsersService.create) — only
+      // PLATFORM_ADMIN may set schoolId to place a user outside their own
+      // school, and only PLATFORM_ADMIN may assign the SCHOOL_ADMIN role,
+      // both already enforced server-side.
+      return usersApi.create({
+        name: adminName,
+        role: 'SCHOOL_ADMIN',
+        schoolId: adminModalSchool.id,
+        email: adminEmail,
+        password: adminPassword,
+      });
+
+    },
+
+    onSuccess: () => {
+
+      if (!adminModalSchool) return;
+
+      setCreatedAdminCreds({
+        schoolName: adminModalSchool.name,
+        schoolCode: adminModalSchool.code,
+        email: adminEmail,
+        password: adminPassword,
+      });
+
+      setAdminError(null);
+
+    },
+
+    onError: (err) => {
+
+      setAdminError(
+        apiErrorMessage(err, 'Could not create school admin')
+      );
+
+    },
 
   });
 
@@ -732,33 +836,63 @@ export function PlatformAdminDashboard() {
 
 
 
-                <button
+                <div className="flex items-center gap-2">
 
-                  onClick={()=>
-                    setEditingSchool(
-                      school
-                    )
-                  }
+                  <button
 
-                  className="
-                    border
-                    border-[#101820]
-                    text-[#101820]
-                    px-5
-                    py-2
-                    rounded-xl
-                    text-sm
-                    font-semibold
-                    hover:bg-[#101820]
-                    hover:text-white
-                    transition
-                  "
+                    onClick={()=>
+                      openAdminModal(school)
+                    }
 
-                >
+                    className="
+                      border
+                      border-[#B5E61D]
+                      text-[#101820]
+                      bg-[#B5E61D]/10
+                      px-5
+                      py-2
+                      rounded-xl
+                      text-sm
+                      font-semibold
+                      hover:bg-[#B5E61D]
+                      transition
+                    "
 
-                  Edit
+                  >
 
-                </button>
+                    Create Admin
+
+                  </button>
+
+                  <button
+
+                    onClick={()=>
+                      setEditingSchool(
+                        school
+                      )
+                    }
+
+                    className="
+                      border
+                      border-[#101820]
+                      text-[#101820]
+                      px-5
+                      py-2
+                      rounded-xl
+                      text-sm
+                      font-semibold
+                      hover:bg-[#101820]
+                      hover:text-white
+                      transition
+                    "
+
+                  >
+
+                    Edit
+
+                  </button>
+
+                </div>
 
 
               </div>
@@ -1084,12 +1218,192 @@ export function PlatformAdminDashboard() {
       )}
 
 
+      {/* CREATE SCHOOL ADMIN MODAL */}
+
+      {adminModalSchool && (
+
+        <div className="
+          fixed
+          inset-0
+          bg-black/50
+          flex
+          items-center
+          justify-center
+          p-5
+          z-50
+        ">
+
+          <div className="
+            bg-white
+            rounded-3xl
+            shadow-2xl
+            w-full
+            max-w-lg
+            p-8
+          ">
+
+            {createdAdminCreds ? (
+
+              <>
+
+                <h2 className="text-2xl font-bold text-[#101820] mb-2">
+                  School admin created
+                </h2>
+
+                <p className="text-sm text-gray-500 mb-6">
+                  Save these details now — the password can't be shown again after you close this. Share them with the school admin for {createdAdminCreds.schoolName}.
+                </p>
+
+                <div className="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-5 text-sm">
+                  <CredentialRow label="School code" value={createdAdminCreds.schoolCode} />
+                  <CredentialRow label="Email" value={createdAdminCreds.email} />
+                  <CredentialRow label="Password" value={createdAdminCreds.password} />
+                </div>
+
+                <div className="flex justify-end mt-8">
+
+                  <button
+                    onClick={closeAdminModal}
+                    className="
+                      px-6
+                      py-3
+                      rounded-xl
+                      bg-[#101820]
+                      text-white
+                      font-semibold
+                      hover:bg-[#B5E61D]
+                      hover:text-[#101820]
+                      transition
+                    "
+                  >
+                    Done
+                  </button>
+
+                </div>
+
+              </>
+
+            ) : (
+
+              <>
+
+                <h2 className="text-2xl font-bold text-[#101820] mb-1">
+                  Create School Admin
+                </h2>
+
+                <p className="text-sm text-gray-500 mb-6">
+                  For {adminModalSchool.name} — school code <span className="font-semibold text-[#101820]">{adminModalSchool.code}</span>
+                </p>
+
+                <div className="space-y-4">
+
+                  <input
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    placeholder="Full name"
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#B5E61D]"
+                  />
+
+                  <input
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="Email address"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#B5E61D]"
+                  />
+
+                  <div className="flex gap-2">
+
+                    <input
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      placeholder="Password (min. 8 characters)"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#B5E61D]"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setAdminPassword(generateSecurePassword())}
+                      className="shrink-0 rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-[#101820] hover:border-[#B5E61D]"
+                    >
+                      Generate
+                    </button>
+
+                  </div>
+
+                </div>
+
+                {adminError && (
+                  <p className="text-red-600 text-sm mt-4">{adminError}</p>
+                )}
+
+                <div className="flex justify-end gap-3 mt-8">
+
+                  <button
+                    onClick={closeAdminModal}
+                    className="px-5 py-3 rounded-xl bg-gray-100 font-semibold"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={() => createAdminMutation.mutate()}
+                    disabled={
+                      createAdminMutation.isPending ||
+                      !adminName ||
+                      !adminEmail ||
+                      adminPassword.length < 8
+                    }
+                    className="
+                      px-6
+                      py-3
+                      rounded-xl
+                      bg-[#101820]
+                      text-white
+                      font-semibold
+                      hover:bg-[#B5E61D]
+                      hover:text-[#101820]
+                      transition
+                      disabled:opacity-50
+                    "
+                  >
+                    {createAdminMutation.isPending ? 'Creating...' : 'Create Admin'}
+                  </button>
+
+                </div>
+
+              </>
+
+            )}
+
+          </div>
+
+        </div>
+
+      )}
+
+
 
     </div>
 
 
   );
 
+}
+
+function CredentialRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-mono font-semibold text-[#101820]">{value}</span>
+    </div>
+  );
 }
 
 
