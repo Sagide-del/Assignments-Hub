@@ -49,6 +49,10 @@ export function PlatformLogin() {
             value={schoolCode}
             onChange={(e) => setSchoolCode(e.target.value)}
             required
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="off"
             className="w-full rounded bg-gray-700 text-white text-sm py-2 px-3 border border-gray-600"
           />
           <p className="text-xs text-gray-500 mt-1">
@@ -63,6 +67,11 @@ export function PlatformLogin() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="email"
+            inputMode="email"
             className="w-full rounded bg-gray-700 text-white text-sm py-2 px-3 border border-gray-600"
           />
         </div>
@@ -74,6 +83,10 @@ export function PlatformLogin() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="current-password"
             className="w-full rounded bg-gray-700 text-white text-sm py-2 px-3 border border-gray-600"
           />
         </div>

@@ -40,6 +40,10 @@ export function StudentLogin() {
           onChange={(e) => setSchoolCode(e.target.value)}
           placeholder="e.g. MBH-74291"
           required
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="off"
           className="w-full rounded border-gray-300 focus:border-brand focus:ring-brand text-sm py-2 px-3 border"
         />
       </div>
@@ -50,6 +54,10 @@ export function StudentLogin() {
           value={admissionNumber}
           onChange={(e) => setAdmissionNumber(e.target.value)}
           required
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="off"
           className="w-full rounded border-gray-300 focus:border-brand focus:ring-brand text-sm py-2 px-3 border"
         />
       </div>

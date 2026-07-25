@@ -6,6 +6,8 @@ import { useAuthStore } from '../store/auth.store';
 import { schoolsApi } from '../api/schools.api';
 import { authApi } from '../api/auth.api';
 import { applySchoolTheme } from '../themes/schoolTheme';
+import { Logo } from '../components/ui/Logo';
+import { Footer } from '../components/ui/Footer';
 
 interface NavItem {
   to: string;
@@ -37,14 +39,6 @@ function CloseIcon() {
         strokeLinecap="round"
       />
     </svg>
-  );
-}
-
-function SchoolMark({ src, title }: { src: string; title: string }) {
-  return (
-    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
-      <img src={src} alt={title} className="h-10 w-10 object-contain" />
-    </div>
   );
 }
 
@@ -80,6 +74,17 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
     };
   }, [school]);
 
+  // Lock body scroll while the mobile nav drawer is open so the page behind
+  // it doesn't scroll along with it (390px-wide phones especially).
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileNavOpen]);
+
   async function handleLogout() {
     if (refreshToken) {
       try {
@@ -94,7 +99,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
 
   const brandTitle = isPlatformAdmin ? 'Assignment Hub' : school?.name ?? 'Assignment Hub';
   const subtitle = isPlatformAdmin ? 'Platform Console' : school?.code ?? 'School code';
-  const logoSrc = school?.logoUrl || '/logo.png';
+  const logoSrc = isPlatformAdmin ? null : school?.logoUrl;
   const footerMeta = isStudent ? user?.grade ?? 'Grade not set' : user?.role.replace('_', ' ');
   const isStudentPortal = nav.some((item) => item.to.startsWith('/student'));
 
@@ -102,7 +107,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
     <div className="min-h-screen md:flex" style={{ backgroundColor: 'var(--school-background, #F8FAFC)' }}>
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur md:hidden">
         <div className="flex min-w-0 items-center gap-3">
-          <SchoolMark src={logoSrc} title={brandTitle} />
+          <Logo src={logoSrc} name={brandTitle} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-[#101820]">{brandTitle}</p>
             <p className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
@@ -117,20 +122,32 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
           className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[#101820] shadow-sm transition hover:text-[#101820]"
           style={{ borderColor: mobileNavOpen ? 'var(--school-accent, #B5E61D)' : '#e2e8f0' }}
           aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={mobileNavOpen}
         >
           {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
       </div>
 
+      {/* Backdrop behind the mobile drawer — tapping it closes the nav,
+          same as tapping a link or the close button. Desktop never renders
+          it (md:hidden) since the sidebar there is static, not an overlay. */}
+      {mobileNavOpen ? (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      ) : null}
+
       <aside
-        className={`${
-          mobileNavOpen ? 'flex' : 'hidden'
-        } border-r border-white/10 text-white md:flex md:min-h-screen md:w-80 md:flex-col`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-80 max-w-[85vw] flex-col text-white transition-transform duration-300 ease-in-out md:static md:z-auto md:min-h-screen md:w-80 md:max-w-none md:translate-x-0 md:border-r md:border-white/10 ${
+          mobileNavOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`}
         style={{ backgroundColor: 'var(--school-primary, #101820)' }}
       >
         <div className="border-b border-white/10 px-6 pb-6 pt-7">
           <div className="flex items-center gap-4">
-            <SchoolMark src={logoSrc} title={brandTitle} />
+            <Logo src={logoSrc} name={brandTitle} size="md" />
             <div className="min-w-0">
               <h2 className="truncate text-lg font-semibold tracking-tight">{brandTitle}</h2>
               <p className="mt-1 text-xs font-medium uppercase tracking-[0.22em] text-white/45">
@@ -150,7 +167,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
           ) : null}
         </div>
 
-        <div className="flex-1 px-4 py-6">
+        <div className="flex-1 overflow-y-auto px-4 py-6">
           <SidebarSectionLabel>Navigation</SidebarSectionLabel>
           <nav className="mt-4 space-y-2">
             {nav.map((item) => (
@@ -196,9 +213,12 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         </div>
       </aside>
 
-      <main className="flex-1 p-4 md:p-8">
-        <Outlet />
-      </main>
+      <div className="flex min-h-screen flex-1 flex-col">
+        <main className="flex-1 p-4 md:p-8">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { uploadsApi } from '../../api/uploads.api';
 import { useAuthStore } from '../../store/auth.store';
 import type { School } from '../../types';
 import { SCHOOL_THEME_TEMPLATES, resolveSchoolTheme, type SchoolThemeTemplate } from '../../themes/schoolTheme';
+import { Logo } from '../../components/ui/Logo';
 
 function ImageIcon() {
   return (
@@ -70,33 +71,10 @@ function CheckIcon() {
   );
 }
 
-function SchoolLogo({
-  src,
-  schoolName,
-  size = 'lg',
-}: {
-  src?: string | null;
-  schoolName: string;
-  size?: 'lg' | 'sm';
-}) {
-  const className = size === 'lg' ? 'h-18 w-18 rounded-3xl' : 'h-12 w-12 rounded-2xl';
-
-  return (
-    <div className={`${className} flex items-center justify-center overflow-hidden border border-black/5 bg-white shadow-sm`}>
-      {src ? (
-        <img src={src} alt={schoolName} className="h-full w-full object-contain p-2" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm font-semibold text-slate-500">
-          {schoolName
-            .split(' ')
-            .slice(0, 2)
-            .map((part) => part[0]?.toUpperCase())
-            .join('') || 'AH'}
-        </div>
-      )}
-    </div>
-  );
-}
+// Logo rendering (image / initials fallback / broken-image fallback) now
+// lives in the shared <Logo> component (src/components/ui/Logo.tsx) so this
+// page, the dashboard sidebar, and the login page all fall back the same
+// way instead of each reimplementing it slightly differently.
 
 function ThemeChip({
   color,
@@ -226,7 +204,7 @@ export function BrandingSettings() {
             </div>
 
             <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
-              <SchoolLogo src={previewLogo} schoolName={schoolName} />
+              <Logo src={previewLogo} name={schoolName} size="lg" />
               <div className="space-y-3">
                 <p className="text-sm leading-6 text-slate-600">
                   Upload a transparent or white-background PNG logo for the student portal, school admin
@@ -350,7 +328,7 @@ export function BrandingSettings() {
               <aside className="flex flex-col justify-between p-6 text-white" style={{ backgroundColor: previewTheme.primary }}>
                 <div>
                   <div className="flex items-center gap-3">
-                    <SchoolLogo src={previewLogo} schoolName={schoolName} size="sm" />
+                    <Logo src={previewLogo} name={schoolName} size="sm" />
                     <div className="min-w-0">
                       <p className="truncate text-base font-semibold">{schoolName}</p>
                       <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-white/60">

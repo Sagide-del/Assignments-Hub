@@ -45,6 +45,10 @@ export function StaffLogin() {
           value={schoolCode}
           onChange={(e) => setSchoolCode(e.target.value)}
           required
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="off"
           className="w-full rounded border-gray-300 focus:border-brand focus:ring-brand text-sm py-2 px-3 border"
         />
       </div>
@@ -56,6 +60,11 @@ export function StaffLogin() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="email"
+          inputMode="email"
           className="w-full rounded border-gray-300 focus:border-brand focus:ring-brand text-sm py-2 px-3 border"
         />
       </div>
@@ -67,6 +76,10 @@ export function StaffLogin() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="current-password"
           className="w-full rounded border-gray-300 focus:border-brand focus:ring-brand text-sm py-2 px-3 border"
         />
       </div>

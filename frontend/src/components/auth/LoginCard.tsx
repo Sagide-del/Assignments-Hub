@@ -7,6 +7,7 @@ import {
   dashboardPathForRole,
 } from '../../services/authService';
 import { apiErrorMessage } from '../../api/axios';
+import { Logo } from '../ui/Logo';
 
 
 interface Props {
@@ -120,17 +121,9 @@ export function LoginCard({
 
       {/* ASSIGNMENT HUB LOGIN LOGO */}
 
-      <img
-        src="/logo.png"
-        alt="Assignment Hub"
-        className="
-          w-36
-          h-36
-          mx-auto
-          mb-8
-          object-contain
-        "
-      />
+      <div className="mx-auto mb-8">
+        <Logo src="/logo.png" name="Assignment Hub" size="xl" />
+      </div>
 
 
 
@@ -189,6 +182,10 @@ export function LoginCard({
           value={form.schoolCode}
           onChange={handleChange}
           required
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="off"
           className="
             w-full
             border
@@ -212,6 +209,10 @@ export function LoginCard({
             value={form.admissionNumber}
             onChange={handleChange}
             required
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="off"
             className="
               w-full
               border
@@ -236,6 +237,11 @@ export function LoginCard({
               value={form.email}
               onChange={handleChange}
               required
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="email"
+              inputMode="email"
               className="
                 w-full
                 border
@@ -257,6 +263,10 @@ export function LoginCard({
               value={form.password}
               onChange={handleChange}
               required
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="current-password"
               className="
                 w-full
                 border
