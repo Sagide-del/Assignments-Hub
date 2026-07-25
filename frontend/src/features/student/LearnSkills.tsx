@@ -106,15 +106,20 @@ export function LearnSkillsPage() {
 
 // Small set of curated fallback icons keyed by keyword match against the
 // category name — used only when a category has no imageUrl configured
-// yet (see CategoryVisual below). This covers the five categories named in
-// the demo brief (AI & Robotics, First Aid, Video Editing, Programming,
-// Public Speaking) but degrades gracefully to a generic graduation-cap
+// yet (see CategoryVisual below). Covers the categories named in the demo
+// brief (AI & Robotics, First Aid, Video Editing, Programming, Public
+// Speaking, Fire Fighting, Robotics & Arduino, Quilling, Research Skills,
+// Intro to Computing) but degrades gracefully to a generic graduation-cap
 // icon for any other category a Platform Admin creates later, since
 // categories are entirely database-driven.
 const CATEGORY_ICON_RULES = [
-  { test: /robot|\bai\b|artificial intelligence/i, icon: RobotIcon },
+  { test: /robot|arduino|\bai\b|artificial intelligence/i, icon: RobotIcon },
   { test: /first aid|health|safety|medic/i, icon: FirstAidIcon },
+  { test: /fire\s*fighting|firefighting/i, icon: FireIcon },
   { test: /video|film|editing/i, icon: VideoIcon },
+  { test: /quilling|craft|art/i, icon: CraftIcon },
+  { test: /research/i, icon: ResearchIcon },
+  { test: /computing|computer/i, icon: ComputerIcon },
   { test: /program|code|software|develop/i, icon: CodeIcon },
   { test: /speak|communication|presentation/i, icon: MicIcon },
 ];
@@ -169,6 +174,61 @@ function MicIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <rect x="9.5" y="3.5" width="5" height="10" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
       <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v3.5M9 20.5h6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function FireIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        d="M12 3.5c1 2 .3 3.3-.6 4.4-1 1.2-2.1 2.4-2.1 4.3a3.7 3.7 0 0 0 7.4 0c0-1.2-.4-2-1-2.7.4 1.6-.2 2.5-.9 3-.1-1.1-.6-1.8-1.4-2.5-1.1-1-1.7-2.2-1.4-3.9Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M9 19.5h6M8.5 17h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CraftIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        d="M6 18c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M6 15c2.5 0 4.5-2 4.5-4.5S8.5 6 6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path d="M12 6.5 19 4l-1.5 6.5L19 17l-7-2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ResearchIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M15 15l5 5M8 10.5h5M10.5 8v5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ComputerIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <rect x="3.5" y="5" width="17" height="11" rx="1.8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8.5 20.5h7M12 16v4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M7.5 9.5 5.5 11l2 1.5M14.5 9.5l2 1.5-2 1.5M12 9l-1 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
