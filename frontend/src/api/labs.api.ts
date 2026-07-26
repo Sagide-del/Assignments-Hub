@@ -122,6 +122,16 @@ export const labsApi = {
 export const stemApi = {
   findCategories: () => api.get<StemCategory[]>('/stem/categories').then((r) => r.data),
   findSubjects: () => api.get<StemSubject[]>('/stem/subjects').then((r) => r.data),
+  createCategory: (dto: { name: string; description?: string; order?: number; isActive?: boolean }) =>
+    api.post<StemCategory>('/stem/categories', dto).then((r) => r.data),
+  updateCategory: (id: number, dto: Partial<{ name: string; description: string; order: number; isActive: boolean }>) =>
+    api.patch<StemCategory>(`/stem/categories/${id}`, dto).then((r) => r.data),
+  createSubject: (dto: { categoryId: number; name: string; description?: string; order?: number; isActive?: boolean }) =>
+    api.post<StemSubject>('/stem/subjects', dto).then((r) => r.data),
+  updateSubject: (
+    id: number,
+    dto: Partial<{ categoryId: number; name: string; description: string; order: number; isActive: boolean }>,
+  ) => api.patch<StemSubject>(`/stem/subjects/${id}`, dto).then((r) => r.data),
 };
 
 export const labSessionsApi = {

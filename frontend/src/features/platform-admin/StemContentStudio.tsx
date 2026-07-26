@@ -335,6 +335,43 @@ export function StemContentStudio() {
     onError: (error) => setStatusMessage(apiErrorMessage(error, 'Could not delete lab')),
   });
 
+  const [categoryDraft, setCategoryDraft] = useState({ name: '', description: '' });
+  const [subjectDraft, setSubjectDraft] = useState<{ name: string; description: string; categoryId: number | '' }>({
+    name: '',
+    description: '',
+    categoryId: '',
+  });
+  const [taxonomyMessage, setTaxonomyMessage] = useState<string | null>(null);
+
+  const createCategoryMutation = useMutation({
+    mutationFn: () =>
+      stemApi.createCategory({ name: categoryDraft.name, description: categoryDraft.description || undefined }),
+    onSuccess: async () => {
+      setTaxonomyMessage('Category created.');
+      setCategoryDraft({ name: '', description: '' });
+      await queryClient.invalidateQueries({ queryKey: ['stem-categories'] });
+    },
+    onError: (error) => setTaxonomyMessage(apiErrorMessage(error, 'Could not create category')),
+  });
+
+  const createSubjectMutation = useMutation({
+    mutationFn: () =>
+      stemApi.createSubject({
+        categoryId: Number(subjectDraft.categoryId),
+        name: subjectDraft.name,
+        description: subjectDraft.description || undefined,
+      }),
+    onSuccess: async () => {
+      setTaxonomyMessage('Subject created.');
+      setSubjectDraft({ name: '', description: '', categoryId: '' });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['stem-subjects'] }),
+        queryClient.invalidateQueries({ queryKey: ['stem-categories'] }),
+      ]);
+    },
+    onError: (error) => setTaxonomyMessage(apiErrorMessage(error, 'Could not create subject')),
+  });
+
   const filteredSubjects = subjects.filter((subject) => {
     if (!draft.category) return true;
     return subject.categoryId === draft.category;
@@ -448,6 +485,96 @@ export function StemContentStudio() {
                   </p>
                 </div>
               ))}
+              {categories.length === 0 ? (
+                <p className="rounded-3xl border border-slate-200 bg-[#F8FAFC] p-5 text-sm text-slate-500">
+                  No STEM categories yet — create one below to start browsing lab content by grade.
+                </p>
+              ) : null}
+            </div>
+
+            {taxonomyMessage ? (
+              <p className="mt-4 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-3 text-sm text-slate-600">{taxonomyMessage}</p>
+            ) : null}
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[24px] border border-dashed border-slate-300 p-4">
+                <p className="text-sm font-semibold text-[#101820]">Create category</p>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <FieldLabel>Name</FieldLabel>
+                    <TextInput
+                      value={categoryDraft.name}
+                      onChange={(e) => setCategoryDraft((current) => ({ ...current, name: e.target.value }))}
+                      placeholder="Physical Sciences"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Description</FieldLabel>
+                    <TextInput
+                      value={categoryDraft.description}
+                      onChange={(e) => setCategoryDraft((current) => ({ ...current, description: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!categoryDraft.name.trim() || createCategoryMutation.isPending}
+                    onClick={() => createCategoryMutation.mutate()}
+                    className="w-full rounded-2xl bg-[#101820] px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {createCategoryMutation.isPending ? 'Creating...' : 'Create category'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-dashed border-slate-300 p-4">
+                <p className="text-sm font-semibold text-[#101820]">Create subject</p>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <FieldLabel>Category</FieldLabel>
+                    <SelectInput
+                      value={subjectDraft.categoryId}
+                      onChange={(e) =>
+                        setSubjectDraft((current) => ({
+                          ...current,
+                          categoryId: e.target.value ? Number(e.target.value) : '',
+                        }))
+                      }
+                    >
+                      <option value="">Select category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </SelectInput>
+                  </div>
+                  <div>
+                    <FieldLabel>Name</FieldLabel>
+                    <TextInput
+                      value={subjectDraft.name}
+                      onChange={(e) => setSubjectDraft((current) => ({ ...current, name: e.target.value }))}
+                      placeholder="Physics"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Description</FieldLabel>
+                    <TextInput
+                      value={subjectDraft.description}
+                      onChange={(e) => setSubjectDraft((current) => ({ ...current, description: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!subjectDraft.name.trim() || !subjectDraft.categoryId || createSubjectMutation.isPending}
+                    onClick={() => createSubjectMutation.mutate()}
+                    className="w-full rounded-2xl bg-[#101820] px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {createSubjectMutation.isPending ? 'Creating...' : 'Create subject'}
+                  </button>
+                </div>
+              </div>
             </div>
           </SectionCard>
         </div>

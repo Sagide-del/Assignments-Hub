@@ -1,9 +1,25 @@
 import { PrismaClient, Role, SubscriptionStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { LAB_CATALOG } from './seed-labs-data';
+import { STEM_CATEGORY_CATALOG } from './seed-stem-taxonomy-data';
 import { CSL_ACTIVITY_CATALOG } from './seed-csl-data';
 import { PATHWAY_CATALOG } from './seed-pathways-data';
 import { SUPPORT_INSTITUTION_CATALOG } from './seed-support-institutions-data';
+
+// Senior School lab keys are formatted "ss-<subject>-10-<n>" — the source
+// curriculum table didn't distinguish which of Grades 10/11/12 each lab
+// belongs to (see comment in seed-labs-data.ts). Rather than leaving all 36
+// of them stacked on Grade 10 (and Grade 11/12 students seeing an empty
+// catalog), spread each subject's labs evenly across Grades 10/11/12 by
+// cycling on the trailing lab number. Non-senior keys are left untouched.
+function resolveLabGrade(lab: { key: string; grade: string }): string {
+  const match = /^ss-[a-z]+-10-(\d+)$/.exec(lab.key);
+  if (!match) return lab.grade;
+
+  const n = Number(match[1]);
+  const gradeByIndex = ['Grade 10', 'Grade 11', 'Grade 12'];
+  return gradeByIndex[(n - 1) % gradeByIndex.length];
+}
 
 const prisma = new PrismaClient();
 
@@ -120,20 +136,60 @@ async function main() {
     });
   }
 
+  // STEM category/subject taxonomy — platform-wide, upserted by key. These
+  // were previously never seeded (no create endpoint existed either), which
+  // is why the STEM Labs page showed 0 categories/subjects for every grade
+  // regardless of how much lab content existed. Subject names intentionally
+  // match the `subject` strings already used in LAB_CATALOG below, so
+  // existing labs become browsable as soon as this runs.
+  let stemCategoriesCreated = 0;
+  let stemSubjectsCreated = 0;
+  for (const category of STEM_CATEGORY_CATALOG) {
+    const existingCategory = await prisma.stemCategory.findUnique({ where: { key: category.key } });
+    const savedCategory = await prisma.stemCategory.upsert({
+      where: { key: category.key },
+      update: {},
+      create: {
+        key: category.key,
+        name: category.name,
+        description: category.description,
+      },
+    });
+    if (!existingCategory) stemCategoriesCreated++;
+
+    for (const subject of category.subjects) {
+      const existingSubject = await prisma.stemSubject.findUnique({ where: { key: subject.key } });
+      await prisma.stemSubject.upsert({
+        where: { key: subject.key },
+        update: {},
+        create: {
+          categoryId: savedCategory.id,
+          key: subject.key,
+          name: subject.name,
+          description: subject.description,
+        },
+      });
+      if (!existingSubject) stemSubjectsCreated++;
+    }
+  }
+
   // STEM Labs catalog — platform-wide, not tied to demoSchool. Upserted by
   // key so re-running the seed never duplicates labs or their questions
-  // (the `update: {}` below is intentionally a no-op on rerun).
+  // (`update` only re-syncs `grade`, so a reseed can correct grade
+  // assignment drift — see resolveLabGrade above — without touching any
+  // other field a Platform Admin may have edited via STEM Studio since).
   let labsCreated = 0;
   for (const lab of LAB_CATALOG) {
     const existingLab = await prisma.lab.findUnique({ where: { key: lab.key } });
+    const grade = resolveLabGrade(lab);
     await prisma.lab.upsert({
       where: { key: lab.key },
-      update: {},
+      update: { grade },
       create: {
         key: lab.key,
         title: lab.title,
         subject: lab.subject,
-        grade: lab.grade,
+        grade,
         topicArea: lab.topicArea,
         pathway: lab.pathway,
         competency: lab.competency,
@@ -269,7 +325,10 @@ async function main() {
   console.log('Demo teacher: teacher@demo.school / DemoTeacher123!');
   console.log('Demo student: admission number ADM001 (Grade 7)');
   console.log('Demo assignment: "Fractions Worksheet 1" (Grade 7, Mathematics)');
-  console.log(`STEM Labs catalog: ${labsCreated} new / ${LAB_CATALOG.length} total (upserted by key)`);
+  console.log(
+    `STEM taxonomy: ${stemCategoriesCreated} new categories / ${STEM_CATEGORY_CATALOG.length} total, ${stemSubjectsCreated} new subjects`,
+  );
+  console.log(`STEM Labs catalog: ${labsCreated} new / ${LAB_CATALOG.length} total (upserted by key, grades resynced)`);
   console.log('Pilot lab with video + quiz: "demo-volcano-1" (Grade 7) — try it as the demo student');
   console.log(`CSL activity catalog: ${cslCreated} new / ${CSL_ACTIVITY_CATALOG.length} total (upserted by key)`);
   console.log('Required Grade 7 CSL activity: "grade7-environmental-cleaning" — try submitting evidence as the demo student');
