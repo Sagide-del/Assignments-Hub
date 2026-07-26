@@ -10,6 +10,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
+import { normalizeGrade } from './grade.util';
 
 const SAFE_SELECT = {
   id: true,
@@ -47,18 +48,20 @@ export class UsersService {
       });
       if (existing) throw new ConflictException('Admission number already in use at this school');
 
+      const grade = normalizeGrade(dto.grade);
+
       return this.prisma.user.create({
         data: {
           schoolId: targetSchoolId,
           name: dto.name,
           role: dto.role,
           admissionNumber: dto.admissionNumber,
-          grade: dto.grade,
+          grade,
           parentPhone: dto.parentPhone,
           studentProfile: {
             create: {
               admissionNumber: dto.admissionNumber,
-              grade: dto.grade,
+              grade,
               className: dto.studentClass,
               stream: dto.stream,
               pathway: dto.pathway,
@@ -132,6 +135,11 @@ export class UsersService {
       }
     }
 
+    // Normalized once so every place that persists a grade this request
+    // (User.grade and StudentProfile.grade below) agrees on the same
+    // "Grade N" format that lab/assignment catalogs match against exactly.
+    const normalizedGrade = dto.grade !== undefined ? normalizeGrade(dto.grade) : undefined;
+
     const data: {
       name?: string;
       isActive?: boolean;
@@ -144,7 +152,7 @@ export class UsersService {
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.password !== undefined) data.passwordHash = await bcrypt.hash(dto.password, 12);
-    if (dto.grade !== undefined && user.role === Role.STUDENT) data.grade = dto.grade;
+    if (dto.grade !== undefined && user.role === Role.STUDENT) data.grade = normalizedGrade;
     if (dto.parentPhone !== undefined && user.role === Role.STUDENT) data.parentPhone = dto.parentPhone;
     if (dto.subject !== undefined && user.role === Role.TEACHER) data.subject = dto.subject;
     if (dto.assignedClass !== undefined && user.role === Role.TEACHER) data.assignedClass = dto.assignedClass;
@@ -165,7 +173,7 @@ export class UsersService {
           create: {
             userId: id,
             admissionNumber: user.admissionNumber,
-            grade: dto.grade ?? user.grade,
+            grade: normalizedGrade ?? user.grade,
             className: dto.studentClass,
             stream: dto.stream,
             pathway: dto.pathway,
@@ -174,7 +182,7 @@ export class UsersService {
             parentEmail: dto.parentEmail,
           },
           update: {
-            grade: dto.grade,
+            grade: normalizedGrade,
             className: dto.studentClass,
             stream: dto.stream,
             pathway: dto.pathway,

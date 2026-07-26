@@ -18,6 +18,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
+    "fix:grades": "ts-node prisma/fix-grade-format.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },
