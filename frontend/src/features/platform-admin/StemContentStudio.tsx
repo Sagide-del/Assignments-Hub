@@ -45,6 +45,22 @@ type LabDraft = {
   animationUrl: string;
   voiceAudioUrl: string;
   isPublished: boolean;
+  // BECF alignment fields — array fields are authored as one item per line
+  // and split/joined on the way in/out (see buildLabPayload and the
+  // selectedLab hydration effect) rather than a dynamic list editor per
+  // field, to keep the form manageable with six of them.
+  learningOutcomesText: string;
+  coreCompetenciesText: string;
+  materialsText: string;
+  safetyChecklistText: string;
+  assessmentCriteriaText: string;
+  pertinentIssuesText: string;
+  juniorVersion: string;
+  seniorVersion: string;
+  adaptationNotes: string;
+  portfolioPrompt: string;
+  communityLink: string;
+  parentActivity: string;
   media: MediaDraft[];
   steps: StepDraft[];
   reflectionPrompts: ReflectionDraft[];
@@ -75,6 +91,18 @@ function emptyDraft(): LabDraft {
     animationUrl: '',
     voiceAudioUrl: '',
     isPublished: false,
+    learningOutcomesText: '',
+    coreCompetenciesText: '',
+    materialsText: '',
+    safetyChecklistText: '',
+    assessmentCriteriaText: '',
+    pertinentIssuesText: '',
+    juniorVersion: '',
+    seniorVersion: '',
+    adaptationNotes: '',
+    portfolioPrompt: '',
+    communityLink: '',
+    parentActivity: '',
     media: [],
     steps: [],
     reflectionPrompts: [],
@@ -84,6 +112,13 @@ function emptyDraft(): LabDraft {
       outcomesText: '',
     },
   };
+}
+
+function linesToArray(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function slugify(value: string) {
@@ -267,6 +302,18 @@ export function StemContentStudio() {
       animationUrl: selectedLab.animationUrl ?? '',
       voiceAudioUrl: selectedLab.voiceAudioUrl ?? '',
       isPublished: selectedLab.isPublished,
+      learningOutcomesText: (selectedLab.learningOutcomes ?? []).join('\n'),
+      coreCompetenciesText: (selectedLab.coreCompetencies ?? []).join('\n'),
+      materialsText: (selectedLab.materials ?? []).join('\n'),
+      safetyChecklistText: (selectedLab.safetyChecklist ?? []).join('\n'),
+      assessmentCriteriaText: (selectedLab.assessmentCriteria ?? []).join('\n'),
+      pertinentIssuesText: (selectedLab.pertinentIssues ?? []).join('\n'),
+      juniorVersion: selectedLab.juniorVersion ?? '',
+      seniorVersion: selectedLab.seniorVersion ?? '',
+      adaptationNotes: selectedLab.adaptationNotes ?? '',
+      portfolioPrompt: selectedLab.portfolioPrompt ?? '',
+      communityLink: selectedLab.communityLink ?? '',
+      parentActivity: selectedLab.parentActivity ?? '',
       media: (selectedLab.media ?? []).map((item, index) => ({
         type: item.type,
         title: item.title ?? '',
@@ -689,6 +736,128 @@ export function StemContentStudio() {
                 </div>
               </div>
             )}
+          </SectionCard>
+
+          <SectionCard icon={<CategoryIcon />} eyebrow="BECF alignment" title="Curriculum framework fields">
+            <p className="text-sm leading-6 text-slate-500">
+              One item per line for the list fields below. All optional — students see these when present and the
+              rest of the lab still works fine when they're left blank.
+            </p>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <FieldLabel>Learning outcomes</FieldLabel>
+                <TextArea
+                  value={draft.learningOutcomesText}
+                  onChange={(e) => setDraft((current) => ({ ...current, learningOutcomesText: e.target.value }))}
+                  rows={4}
+                  placeholder={'Apply Newton\'s Laws to solve problems\nConduct experiments to verify physical laws'}
+                />
+              </div>
+              <div>
+                <FieldLabel>Core competencies</FieldLabel>
+                <TextArea
+                  value={draft.coreCompetenciesText}
+                  onChange={(e) => setDraft((current) => ({ ...current, coreCompetenciesText: e.target.value }))}
+                  rows={4}
+                  placeholder={'Critical Thinking & Problem Solving\nCommunication & Collaboration'}
+                />
+              </div>
+              <div>
+                <FieldLabel>Materials needed</FieldLabel>
+                <TextArea
+                  value={draft.materialsText}
+                  onChange={(e) => setDraft((current) => ({ ...current, materialsText: e.target.value }))}
+                  rows={3}
+                  placeholder={'Safety goggles\nMeasuring cylinder'}
+                />
+              </div>
+              <div>
+                <FieldLabel>Safety checklist</FieldLabel>
+                <TextArea
+                  value={draft.safetyChecklistText}
+                  onChange={(e) => setDraft((current) => ({ ...current, safetyChecklistText: e.target.value }))}
+                  rows={3}
+                  placeholder={'Wear safety goggles\nHandle glassware carefully'}
+                />
+              </div>
+              <div>
+                <FieldLabel>Assessment criteria</FieldLabel>
+                <TextArea
+                  value={draft.assessmentCriteriaText}
+                  onChange={(e) => setDraft((current) => ({ ...current, assessmentCriteriaText: e.target.value }))}
+                  rows={3}
+                  placeholder={'Accurately measures force\nCorrectly applies formula'}
+                />
+              </div>
+              <div>
+                <FieldLabel>Pertinent &amp; Contemporary Issues</FieldLabel>
+                <TextArea
+                  value={draft.pertinentIssuesText}
+                  onChange={(e) => setDraft((current) => ({ ...current, pertinentIssuesText: e.target.value }))}
+                  rows={3}
+                  placeholder={'Environmental Education\nDisaster Risk Reduction'}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <FieldLabel>Junior version (Grades 7-9)</FieldLabel>
+                <TextArea
+                  value={draft.juniorVersion}
+                  onChange={(e) => setDraft((current) => ({ ...current, juniorVersion: e.target.value }))}
+                  rows={3}
+                  placeholder="A simplified version of this lab's content for junior learners."
+                />
+              </div>
+              <div>
+                <FieldLabel>Senior version (Grades 10-12)</FieldLabel>
+                <TextArea
+                  value={draft.seniorVersion}
+                  onChange={(e) => setDraft((current) => ({ ...current, seniorVersion: e.target.value }))}
+                  rows={3}
+                  placeholder="A more advanced version of this lab's content for senior learners."
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <FieldLabel>Adaptation notes (special needs — not shown to students)</FieldLabel>
+              <TextArea
+                value={draft.adaptationNotes}
+                onChange={(e) => setDraft((current) => ({ ...current, adaptationNotes: e.target.value }))}
+                rows={2}
+                placeholder="Guidance for teachers on adapting this lab for learners with special needs."
+              />
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <FieldLabel>Portfolio prompt</FieldLabel>
+                <TextInput
+                  value={draft.portfolioPrompt}
+                  onChange={(e) => setDraft((current) => ({ ...current, portfolioPrompt: e.target.value }))}
+                  placeholder="What should the student capture as evidence for their portfolio?"
+                />
+              </div>
+              <div>
+                <FieldLabel>Community connection</FieldLabel>
+                <TextInput
+                  value={draft.communityLink}
+                  onChange={(e) => setDraft((current) => ({ ...current, communityLink: e.target.value }))}
+                  placeholder="How does this lab connect to a real community issue or project?"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <FieldLabel>Parent activity</FieldLabel>
+                <TextInput
+                  value={draft.parentActivity}
+                  onChange={(e) => setDraft((current) => ({ ...current, parentActivity: e.target.value }))}
+                  placeholder="An activity a parent/guardian can do at home with the student."
+                />
+              </div>
+            </div>
           </SectionCard>
 
           <SectionCard icon={<PublishIcon />} eyebrow="Media management" title="Rich media delivery">
@@ -1196,6 +1365,18 @@ function buildLabPayload(draft: LabDraft) {
     animationUrl: draft.animationUrl || undefined,
     voiceAudioUrl: draft.voiceAudioUrl || undefined,
     isPublished: draft.status === 'PUBLISHED',
+    learningOutcomes: linesToArray(draft.learningOutcomesText),
+    coreCompetencies: linesToArray(draft.coreCompetenciesText),
+    materials: linesToArray(draft.materialsText),
+    safetyChecklist: linesToArray(draft.safetyChecklistText),
+    assessmentCriteria: linesToArray(draft.assessmentCriteriaText),
+    pertinentIssues: linesToArray(draft.pertinentIssuesText),
+    juniorVersion: draft.juniorVersion || undefined,
+    seniorVersion: draft.seniorVersion || undefined,
+    adaptationNotes: draft.adaptationNotes || undefined,
+    portfolioPrompt: draft.portfolioPrompt || undefined,
+    communityLink: draft.communityLink || undefined,
+    parentActivity: draft.parentActivity || undefined,
     media: draft.media
       .filter((item) => item.url.trim())
       .map((item, index) => ({

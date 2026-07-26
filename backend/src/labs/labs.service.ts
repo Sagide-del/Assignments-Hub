@@ -61,6 +61,18 @@ export class LabsService {
         voiceAudioUrl: dto.voiceAudioUrl,
         isPublished: dto.isPublished ?? true,
         guidanceSteps: dto.guidanceSteps?.length ? (dto.guidanceSteps as any) : undefined,
+        learningOutcomes: dto.learningOutcomes ?? [],
+        coreCompetencies: dto.coreCompetencies ?? [],
+        materials: dto.materials ?? [],
+        safetyChecklist: dto.safetyChecklist ?? [],
+        assessmentCriteria: dto.assessmentCriteria ?? [],
+        pertinentIssues: dto.pertinentIssues ?? [],
+        juniorVersion: dto.juniorVersion,
+        seniorVersion: dto.seniorVersion,
+        adaptationNotes: dto.adaptationNotes,
+        portfolioPrompt: dto.portfolioPrompt,
+        communityLink: dto.communityLink,
+        parentActivity: dto.parentActivity,
         createdById: actor.id,
         questions: dto.questions?.length
           ? {
@@ -195,6 +207,18 @@ export class LabsService {
           voiceAudioUrl: dto.voiceAudioUrl,
           isPublished: dto.isPublished,
           guidanceSteps: dto.guidanceSteps as any,
+          learningOutcomes: dto.learningOutcomes,
+          coreCompetencies: dto.coreCompetencies,
+          materials: dto.materials,
+          safetyChecklist: dto.safetyChecklist,
+          assessmentCriteria: dto.assessmentCriteria,
+          pertinentIssues: dto.pertinentIssues,
+          juniorVersion: dto.juniorVersion,
+          seniorVersion: dto.seniorVersion,
+          adaptationNotes: dto.adaptationNotes,
+          portfolioPrompt: dto.portfolioPrompt,
+          communityLink: dto.communityLink,
+          parentActivity: dto.parentActivity,
           media: dto.media?.length
             ? {
                 create: dto.media.map((item, index) => ({

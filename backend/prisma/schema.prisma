@@ -881,6 +881,34 @@ model Lab {
   // `title`/`description`.
   guidanceSteps Json?     @map("guidance_steps")
 
+  // BECF (Kenyan CBC Basic Education Curriculum Framework) alignment
+  // metadata. All additive/optional — a lab authored before these existed
+  // simply has empty arrays / null values here, and every list below
+  // degrades gracefully in the UI when empty.
+  learningOutcomes   String[] @default([]) @map("learning_outcomes")
+  coreCompetencies   String[] @default([]) @map("core_competencies")
+  materials          String[] @default([])
+  safetyChecklist    String[] @default([]) @map("safety_checklist")
+  assessmentCriteria String[] @default([]) @map("assessment_criteria")
+  // Pertinent and Contemporary Issues (PCIs) this lab touches on, e.g.
+  // "Environmental Education", "Disaster Risk Reduction".
+  pertinentIssues    String[] @default([]) @map("pertinent_issues")
+  // Optional simplified/advanced variants of the lab content for
+  // differentiated instruction. When present, the student player shows the
+  // variant matching the student's grade tier (Grade 7-9 -> juniorVersion,
+  // Grade 10-12 -> seniorVersion) alongside the main `description`.
+  juniorVersion      String?  @map("junior_version")
+  seniorVersion      String?  @map("senior_version")
+  // Guidance for adapting this lab for learners with special needs —
+  // authoring/teacher-facing; not surfaced directly to students.
+  adaptationNotes    String?  @map("adaptation_notes")
+  // What the student should capture as evidence for their portfolio.
+  portfolioPrompt    String?  @map("portfolio_prompt")
+  // How this lab connects to a real community issue/project.
+  communityLink      String?  @map("community_link")
+  // An activity a parent/guardian can do at home with the student.
+  parentActivity     String?  @map("parent_activity")
+
   createdById   Int?      @map("created_by_id")
   createdBy     User?     @relation("LabCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 

@@ -58,8 +58,47 @@ function ReportIcon() {
   );
 }
 
+function OutcomesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SafetyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <path d="M12 4 4.5 7v5.5c0 4 3.2 6.9 7.5 7.5 4.3-.6 7.5-3.5 7.5-7.5V7L12 4Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M9 12.2l2 2 4-4.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CommunityIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <circle cx="8.5" cy="9" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="16" cy="9" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3.5 19c.5-3 2.5-4.7 5-4.7s4.5 1.7 5 4.7M14.5 14.9c2 .3 3.5 1.9 4 4.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function formatMinutes(value?: number | null) {
   return value ? `${value} min` : 'Flexible duration';
+}
+
+// Grade 7-9 = Junior School, Grade 10-12 = Senior School (Kenyan CBC/BECF
+// structure) — used to pick which of juniorVersion/seniorVersion to show,
+// if the lab has one configured.
+function gradeTier(grade: string): 'junior' | 'senior' | null {
+  const match = /grade\s*(\d{1,2})/i.exec(grade);
+  if (!match) return null;
+  const n = Number(match[1]);
+  if (n >= 7 && n <= 9) return 'junior';
+  if (n >= 10 && n <= 12) return 'senior';
+  return null;
 }
 
 function normalizeOptions(options: unknown) {
@@ -100,6 +139,14 @@ export function StemLabPlayerPage() {
     },
     onError: (error) => setStatusMessage(apiErrorMessage(error, 'Could not save lab completion')),
   });
+
+  const tierVersionText = useMemo(() => {
+    if (!lab) return null;
+    const tier = gradeTier(lab.grade);
+    if (tier === 'junior') return lab.juniorVersion || null;
+    if (tier === 'senior') return lab.seniorVersion || null;
+    return null;
+  }, [lab]);
 
   const totalSections = 5;
   const progressCount = useMemo(() => {
@@ -188,6 +235,9 @@ export function StemLabPlayerPage() {
             <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 md:text-base">
               {lab.description ?? 'Follow the practical steps, complete the learning tasks, and finish the lab record.'}
             </p>
+            {tierVersionText ? (
+              <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300 md:text-base">{tierVersionText}</p>
+            ) : null}
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">{lab.subject}</span>
               <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">{lab.grade}</span>
@@ -220,7 +270,70 @@ export function StemLabPlayerPage() {
               <OverviewMeta label="Competency" value={lab.competency ?? 'Competency configured'} />
               <OverviewMeta label="Pathway" value={lab.pathway ?? 'Grade-level STEM pathway'} />
             </div>
+            {(lab.coreCompetencies ?? []).length > 0 || (lab.pertinentIssues ?? []).length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {(lab.coreCompetencies ?? []).map((item) => (
+                  <span key={item} className="rounded-full bg-[#101820] px-3 py-1 text-xs font-semibold text-[#B5E61D]">
+                    {item}
+                  </span>
+                ))}
+                {(lab.pertinentIssues ?? []).map((item) => (
+                  <span key={item} className="rounded-full border border-slate-200 bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-slate-500">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </SectionCard>
+
+          {(lab.learningOutcomes ?? []).length > 0 ? (
+            <SectionCard icon={<OutcomesIcon />} title="Learning outcomes">
+              <ul className="space-y-2">
+                {lab.learningOutcomes?.map((item) => (
+                  <li key={item} className="flex items-start gap-3 rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4 text-sm leading-6 text-slate-600">
+                    <OutcomesIcon />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          ) : null}
+
+          {(lab.materials ?? []).length > 0 || (lab.safetyChecklist ?? []).length > 0 ? (
+            <SectionCard icon={<SafetyIcon />} title="Safety &amp; materials">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Materials needed</p>
+                  {(lab.materials ?? []).length > 0 ? (
+                    <ul className="mt-3 space-y-2">
+                      {lab.materials?.map((item) => (
+                        <li key={item} className="rounded-2xl border border-slate-200 bg-[#FCFDFE] px-4 py-2.5 text-sm text-slate-600">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">No materials list configured.</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Safety checklist</p>
+                  {(lab.safetyChecklist ?? []).length > 0 ? (
+                    <ul className="mt-3 space-y-2">
+                      {lab.safetyChecklist?.map((item) => (
+                        <li key={item} className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+                          <SafetyIcon />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">No safety checklist configured.</p>
+                  )}
+                </div>
+              </div>
+            </SectionCard>
+          ) : null}
 
           <SectionCard icon={<MediaIcon />} title="Media viewer">
             <div className="grid gap-4 md:grid-cols-2">
@@ -334,6 +447,43 @@ export function StemLabPlayerPage() {
               <EmptyCard text="No reflection prompts are configured yet." />
             )}
           </SectionCard>
+
+          {(lab.assessmentCriteria ?? []).length > 0 ? (
+            <SectionCard icon={<OutcomesIcon />} title="What you'll be assessed on">
+              <ul className="space-y-2">
+                {lab.assessmentCriteria?.map((item) => (
+                  <li key={item} className="rounded-2xl border border-slate-200 bg-[#FCFDFE] px-4 py-2.5 text-sm text-slate-600">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          ) : null}
+
+          {lab.communityLink || lab.parentActivity || lab.portfolioPrompt ? (
+            <SectionCard icon={<CommunityIcon />} title="Beyond the classroom">
+              <div className="space-y-3">
+                {lab.portfolioPrompt ? (
+                  <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Portfolio prompt</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{lab.portfolioPrompt}</p>
+                  </div>
+                ) : null}
+                {lab.communityLink ? (
+                  <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Community connection</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{lab.communityLink}</p>
+                  </div>
+                ) : null}
+                {lab.parentActivity ? (
+                  <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Try this at home</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{lab.parentActivity}</p>
+                  </div>
+                ) : null}
+              </div>
+            </SectionCard>
+          ) : null}
 
           <SectionCard icon={<ReportIcon />} title="Completion report">
             <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-5">

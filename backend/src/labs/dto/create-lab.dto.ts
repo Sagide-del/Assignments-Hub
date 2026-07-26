@@ -146,6 +146,68 @@ export class CreateLabDto {
   @IsString({ each: true })
   guidanceSteps?: string[];
 
+  // BECF (Kenyan CBC Basic Education Curriculum Framework) alignment
+  // fields — all optional/additive, see schema.prisma's Lab model comment.
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  learningOutcomes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  coreCompetencies?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  materials?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  safetyChecklist?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  assessmentCriteria?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  pertinentIssues?: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  juniorVersion?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  seniorVersion?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  adaptationNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  portfolioPrompt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  communityLink?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  parentActivity?: string;
+
   // Knowledge-check quiz shown after the video. Like assignments' nested
   // questions, this only applies on create — editing individual questions
   // after creation isn't supported (see LabsService.update).

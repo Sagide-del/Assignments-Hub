@@ -292,6 +292,20 @@ export interface Lab {
   animationUrl?: string | null;
   voiceAudioUrl?: string | null;
   isPublished: boolean;
+  // BECF (Kenyan CBC) alignment fields — see backend/prisma/schema.prisma's
+  // Lab model comment. All optional/additive.
+  learningOutcomes?: string[];
+  coreCompetencies?: string[];
+  materials?: string[];
+  safetyChecklist?: string[];
+  assessmentCriteria?: string[];
+  pertinentIssues?: string[];
+  juniorVersion?: string | null;
+  seniorVersion?: string | null;
+  adaptationNotes?: string | null;
+  portfolioPrompt?: string | null;
+  communityLink?: string | null;
+  parentActivity?: string | null;
   media?: LabMedia[];
   steps?: LabStep[];
   reflectionPrompts?: LabReflectionPrompt[];

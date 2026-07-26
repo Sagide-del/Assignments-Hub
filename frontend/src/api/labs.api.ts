@@ -36,6 +36,18 @@ export const labsApi = {
     animationUrl?: string;
     voiceAudioUrl?: string;
     isPublished?: boolean;
+    learningOutcomes?: string[];
+    coreCompetencies?: string[];
+    materials?: string[];
+    safetyChecklist?: string[];
+    assessmentCriteria?: string[];
+    pertinentIssues?: string[];
+    juniorVersion?: string;
+    seniorVersion?: string;
+    adaptationNotes?: string;
+    portfolioPrompt?: string;
+    communityLink?: string;
+    parentActivity?: string;
     media?: Array<{
       type: string;
       title?: string;
@@ -82,6 +94,18 @@ export const labsApi = {
       animationUrl?: string;
       voiceAudioUrl?: string;
       isPublished?: boolean;
+      learningOutcomes?: string[];
+      coreCompetencies?: string[];
+      materials?: string[];
+      safetyChecklist?: string[];
+      assessmentCriteria?: string[];
+      pertinentIssues?: string[];
+      juniorVersion?: string;
+      seniorVersion?: string;
+      adaptationNotes?: string;
+      portfolioPrompt?: string;
+      communityLink?: string;
+      parentActivity?: string;
       media?: Array<{
         type: string;
         title?: string;
