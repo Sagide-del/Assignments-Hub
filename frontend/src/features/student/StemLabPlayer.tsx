@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { apiErrorMessage } from '../../api/axios';
 import { labsApi, labSessionsApi } from '../../api/labs.api';
 import type { LabMedia } from '../../types';
+import { gradeTier } from '../../utils/gradeTier';
 
 function ArrowIcon() {
   return (
@@ -87,18 +88,6 @@ function CommunityIcon() {
 
 function formatMinutes(value?: number | null) {
   return value ? `${value} min` : 'Flexible duration';
-}
-
-// Grade 7-9 = Junior School, Grade 10-12 = Senior School (Kenyan CBC/BECF
-// structure) — used to pick which of juniorVersion/seniorVersion to show,
-// if the lab has one configured.
-function gradeTier(grade: string): 'junior' | 'senior' | null {
-  const match = /grade\s*(\d{1,2})/i.exec(grade);
-  if (!match) return null;
-  const n = Number(match[1]);
-  if (n >= 7 && n <= 9) return 'junior';
-  if (n >= 10 && n <= 12) return 'senior';
-  return null;
 }
 
 function normalizeOptions(options: unknown) {

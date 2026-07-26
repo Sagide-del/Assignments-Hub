@@ -40,7 +40,9 @@ export function StudentDashboard() {
   const published = (assignments ?? []).filter((assignment) => assignment.isPublished);
   const latestAssignment = [...published].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
   const firstName = user?.name?.split(' ')[0] ?? 'Student';
-  const gradeLabel = user?.grade ? `Grade ${user.grade}` : 'Grade pending';
+  // user.grade is stored normalized as "Grade N", but this guards against
+  // any stale/legacy value that's still a bare number.
+  const gradeLabel = user?.grade ? (/^grade\b/i.test(user.grade) ? user.grade : `Grade ${user.grade}`) : 'Grade pending';
   const activeSkill = skillEnrollments.find((enrollment) => enrollment.status === 'ACTIVE');
   const latestSkillEnrollment = skillEnrollments[0];
 
