@@ -712,6 +712,79 @@ export interface SkillAdminSummary {
   confirmedRevenueKES: number;
 }
 
+// ---- My Pathway: Talents & Strengths ----
+// Mirrors backend/src/talents — a single evolving self-report profile per
+// student (not history-versioned), see schema.prisma's comment on
+// StudentTalentProfile.
+
+export interface StudentTalentProfile {
+  id: number;
+  schoolId: number;
+  studentId: number;
+  talents: string[];
+  strengths: string[];
+  interests: string[];
+  reflection: string | null;
+  growthPlan: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---- My Pathway: Mentorship ----
+// Mirrors backend/src/mentorship. Mentors are existing TEACHER-role users —
+// see MentorshipService.findMentorDirectory for why MentorDirectoryEntry is
+// a flattened User+MentorProfile shape rather than a raw MentorProfile.
+
+export type MentorshipStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'COMPLETED';
+
+export interface MentorDirectoryEntry {
+  teacherId: number;
+  name: string;
+  subject: string | null;
+  bio: string | null;
+  expertiseAreas: string[];
+  isAvailable: boolean;
+}
+
+export interface MentorshipLogEntry {
+  id: number;
+  requestId: number;
+  authorId: number;
+  note: string;
+  createdAt: string;
+  author?: { id: number; name: string; role: Role };
+}
+
+export interface MentorshipRequest {
+  id: number;
+  schoolId: number;
+  studentId: number;
+  mentorProfileId: number;
+  topic: string;
+  message: string | null;
+  status: MentorshipStatus;
+  createdAt: string;
+  respondedAt: string | null;
+  mentorProfile?: {
+    id: number;
+    teacherId: number;
+    bio: string | null;
+    expertiseAreas: string[];
+    isAvailable: boolean;
+    teacher?: { id: number; name: string; subject: string | null };
+  };
+  student?: { id: number; name: string; grade: string | null };
+  logEntries?: MentorshipLogEntry[];
+}
+
+export interface MentorshipStats {
+  totalMentors: number;
+  totalRequests: number;
+  pending: number;
+  accepted: number;
+  completed: number;
+}
+
 // Generic API error shape thrown by backend/src/common/filters/http-exception.filter.ts
 export interface ApiErrorBody {
   statusCode: number;

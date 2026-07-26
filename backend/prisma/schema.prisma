@@ -224,6 +224,9 @@ model School {
   invoices            Invoice[]
   paymentTransactions PaymentTransaction[]
   aiUsageLedgerEntries AIUsageLedger[]
+  mentorProfiles      MentorProfile[]
+  mentorshipRequests  MentorshipRequest[]
+  talentProfiles      StudentTalentProfile[]
 
   @@map("schools")
 }
@@ -278,6 +281,12 @@ model User {
   studentProfile       StudentProfile?
   skillEnrollments     SkillEnrollment[] @relation("SkillEnrollmentStudent")
   skillPayments        SkillPayment[] @relation("SkillPaymentStudent")
+  // Set only when role = TEACHER and they've opted into the mentor
+  // directory (see MentorProfile's comment).
+  mentorProfile        MentorProfile?
+  mentorshipRequestsMade MentorshipRequest[] @relation("MentorshipRequestStudent")
+  mentorshipLogEntries MentorshipLogEntry[]
+  talentProfile        StudentTalentProfile?
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -1395,4 +1404,107 @@ model StudentSupportAssessment {
   @@index([schoolId])
   @@index([studentId])
   @@map("student_support_assessments")
+}
+
+// ---- My Pathway: Talents & Strengths ----
+// A single evolving self-report profile per student (not history-versioned
+// like StudentPathwaySelection/StudentSupportAssessment) — a student's list
+// of talents naturally gets edited in place rather than needing a full
+// audit trail, so this is a plain upsert-by-studentId record.
+model StudentTalentProfile {
+  id         Int      @id @default(autoincrement())
+  schoolId   Int      @map("school_id")
+  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId  Int      @unique @map("student_id")
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  talents    String[] @default([])
+  strengths  String[] @default([])
+  interests  String[] @default([])
+  reflection String?
+  // Free text: how the student (or a teacher/mentor) plans to grow this
+  // talent — shown back to them and to staff as a nurturing prompt.
+  growthPlan String?  @map("growth_plan")
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([schoolId])
+  @@map("student_talent_profiles")
+}
+
+// ---- My Pathway: Mentorship ----
+// Mentors are existing TEACHER-role users who opt in to the student-facing
+// directory — no new user type, per the explicit product decision to reuse
+// existing teacher accounts rather than build a separate mentor directory.
+model MentorProfile {
+  id             Int      @id @default(autoincrement())
+  teacherId      Int      @unique @map("teacher_id")
+  teacher        User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  schoolId       Int      @map("school_id")
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  bio            String?
+  expertiseAreas String[] @default([]) @map("expertise_areas")
+  isAvailable    Boolean  @default(true) @map("is_available")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  requests       MentorshipRequest[]
+
+  @@index([schoolId])
+  @@map("mentor_profiles")
+}
+
+enum MentorshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+}
+
+// A student's request to connect with a mentor. One row per student-mentor
+// thread — a student can have several over time (different mentors/topics);
+// this is an ongoing relationship rather than a point-in-time choice, so
+// unlike StudentPathwaySelection it isn't history-versioned via isActive.
+model MentorshipRequest {
+  id              Int               @id @default(autoincrement())
+  schoolId        Int               @map("school_id")
+  school          School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId       Int               @map("student_id")
+  student         User              @relation("MentorshipRequestStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  mentorProfileId Int               @map("mentor_profile_id")
+  mentorProfile   MentorProfile     @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+
+  topic           String
+  message         String?
+  status          MentorshipStatus  @default(PENDING)
+
+  createdAt       DateTime          @default(now())
+  respondedAt     DateTime?         @map("responded_at")
+
+  logEntries      MentorshipLogEntry[]
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([mentorProfileId])
+  @@map("mentorship_requests")
+}
+
+// A dated note on a mentorship thread — either side (student or the
+// mentoring teacher) can add one once the request is ACCEPTED. This is the
+// "mentorship log."
+model MentorshipLogEntry {
+  id          Int                @id @default(autoincrement())
+  requestId   Int                @map("request_id")
+  request     MentorshipRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId    Int                @map("author_id")
+  author      User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  note        String
+
+  createdAt   DateTime           @default(now())
+
+  @@index([requestId])
+  @@map("mentorship_log_entries")
 }

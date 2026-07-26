@@ -412,7 +412,7 @@ function SeniorSpecialistView({
         icon={<CareerIcon />}
         action={
           <Link
-            to="/student/pathways"
+            to="/student/my-pathway"
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#101820] hover:bg-slate-50"
           >
             View pathways

@@ -13,9 +13,8 @@ import { StemLabPlayerPage } from '../../features/student/StemLabPlayer';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
 import { LearnSkillsPage } from '../../features/student/LearnSkills';
 import { SkillDetailPage } from '../../features/student/SkillDetail';
-import { MyFuturePage } from '../../features/student/MyFuture';
+import { MyPathwayPage } from '../../features/student/my-pathway/MyPathwayPage';
 import { MyActivitiesPage } from '../../features/student/MyActivities';
-import { CareerPathwaysPage } from '../../features/student/CareerPathways';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 
@@ -25,6 +24,7 @@ import AiAssignmentGenerator from '../../features/teacher/AiAssignmentGenerator'
 import { Marking } from '../../features/teacher/Marking';
 import { CslReview } from '../../features/teacher/CslReview';
 import { PathwaysStats } from '../../features/teacher/PathwaysStats';
+import { MentorshipInboxPage } from '../../features/teacher/MentorshipInbox';
 
 import { SchoolAdminDashboard } from '../../features/school-admin/Dashboard';
 import { BrandingSettings } from '../../features/school-admin/Branding';
@@ -56,8 +56,8 @@ const studentNav = [
     label: 'Learn a Skill',
   },
   {
-    to: '/student/my-future',
-    label: 'My Future',
+    to: '/student/my-pathway',
+    label: 'My Pathway',
   },
   {
     to: '/student/my-activities',
@@ -90,6 +90,10 @@ const teacherNav = [
   {
     to: '/teacher/pathways-stats',
     label: 'Career Pathways',
+  },
+  {
+    to: '/teacher/mentorship',
+    label: 'Mentorship',
   },
 ];
 
@@ -208,16 +212,24 @@ export const router = createBrowserRouter([
             element: <SkillDetailPage />,
           },
           {
+            // "My Future" was renamed to "My Pathway" — redirect old
+            // bookmarks/links rather than break them.
             path: '/student/my-future',
-            element: <MyFuturePage />,
+            element: <Navigate to="/student/my-pathway" replace />,
+          },
+          {
+            path: '/student/my-pathway',
+            element: <MyPathwayPage />,
           },
           {
             path: '/student/my-activities',
             element: <MyActivitiesPage />,
           },
           {
+            // Career Pathways is now a tab inside My Pathway rather than its
+            // own page — redirect old bookmarks/links.
             path: '/student/pathways',
-            element: <CareerPathwaysPage />,
+            element: <Navigate to="/student/my-pathway" replace />,
           },
           {
             path: '/student/support-needs',
@@ -262,6 +274,10 @@ export const router = createBrowserRouter([
           {
             path: '/teacher/pathways-stats',
             element: <PathwaysStats />,
+          },
+          {
+            path: '/teacher/mentorship',
+            element: <MentorshipInboxPage />,
           },
         ],
       },
