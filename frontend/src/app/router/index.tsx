@@ -41,6 +41,7 @@ import { AiAnalytics } from '../../features/platform-admin/AiAnalytics';
 import { StemContentStudio } from '../../features/platform-admin/StemContentStudio';
 import { PlatformBilling } from '../../features/platform-admin/Billing';
 import { SkillStudio } from '../../features/platform-admin/SkillStudio';
+import { IndependentStudentsPage } from '../../features/platform-admin/IndependentStudents';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -145,6 +146,10 @@ const platformAdminNav = [
   {
     to: '/platform/schools',
     label: 'Schools',
+  },
+  {
+    to: '/platform/independent-students',
+    label: 'Independent Students',
   },
   {
     to: '/platform/stem-content',
@@ -371,6 +376,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/schools',
             element: <PlatformAdminDashboard />,
+          },
+          {
+            path: '/platform/independent-students',
+            element: <IndependentStudentsPage />,
           },
           {
             path: '/platform/stem-content',

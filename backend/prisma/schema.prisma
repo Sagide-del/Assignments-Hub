@@ -254,6 +254,16 @@ model User {
   // student completes an assignment or a new one is posted. Student-only.
   parentPhone     String?   @map("parent_phone")
 
+  // Set only for an "independent" student — one enrolled directly by
+  // PLATFORM_ADMIN under the system's dedicated "Independent Students"
+  // school container rather than through a paying school (see
+  // backend/src/independent-students). Regular school-affiliated students
+  // never set this; their access is governed by their SCHOOL's
+  // subscription instead. Extended forward each time a payment is
+  // recorded (IndependentStudentInvoice); AuthService blocks STUDENT login
+  // once this is in the past.
+  subscriptionExpiresAt DateTime? @map("subscription_expires_at")
+
   // Teacher-only metadata (credential allocation): subject specialty and
   // the class they're assigned to. Not applicable to other roles.
   subject         String?
@@ -294,6 +304,9 @@ model User {
   // GET /messages/admin/* (no send/receive relation needed for them).
   sentMessages         Message[] @relation("MessageSender")
   receivedMessages     Message[] @relation("MessageRecipient")
+  // Independent-student billing — see IndependentStudentInvoice's comment.
+  independentInvoices          IndependentStudentInvoice[] @relation("IndependentInvoiceStudent")
+  recordedIndependentInvoices  IndependentStudentInvoice[] @relation("IndependentInvoiceRecordedBy")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -1560,4 +1573,46 @@ model Message {
   @@index([senderId, recipientId])
   @@index([recipientId, senderId])
   @@map("messages")
+}
+
+// ---- Independent Students (enrolled without a school) ----
+// A student enrolled directly by PLATFORM_ADMIN, not through a paying
+// school — they belong to a single system-wide "Independent Students"
+// School row (lazily created by IndependentStudentsService, code
+// "INDEPENDENT") purely so the rest of the app's schoolId-scoped machinery
+// (assignments, labs, TenantGuard, etc.) keeps working unmodified. Unlike
+// school billing (Subscription/Invoice/PaymentTransaction, all scoped per
+// SCHOOL and priced by enrolled-student-count), each independent student
+// pays for their OWN access individually via M-Pesa Till Number, so this is
+// a separate, per-STUDENT record rather than a reuse of those school-billing
+// tables. One row per payment a platform admin manually records after
+// verifying the M-Pesa confirmation code; recording one extends the
+// student's User.subscriptionExpiresAt and reactivates them.
+model IndependentStudentInvoice {
+  id            Int      @id @default(autoincrement())
+  studentId     Int      @map("student_id")
+  student       User     @relation("IndependentInvoiceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  invoiceNumber String   @unique @map("invoice_number")
+  // Snapshot of the student's name at the time of this invoice, so the
+  // record stays meaningful even if the account is later renamed.
+  studentName   String   @map("student_name")
+  amountKES     Int      @map("amount_kes")
+  interval      SubscriptionInterval @default(MONTHLY)
+  periodStart   DateTime @map("period_start")
+  periodEnd     DateTime @map("period_end")
+
+  // The M-Pesa confirmation code from the Till Number payment, entered by
+  // the platform admin after verifying it — this is the actual proof of
+  // payment, since there's no live payment-gateway integration here.
+  mpesaCode     String   @map("mpesa_code")
+  payerPhone    String?  @map("payer_phone")
+
+  recordedById  Int?     @map("recorded_by_id")
+  recordedBy    User?    @relation("IndependentInvoiceRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime @default(now())
+
+  @@index([studentId])
+  @@map("independent_student_invoices")
 }

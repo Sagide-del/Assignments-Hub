@@ -91,6 +91,16 @@ export class AuthService {
 
     if (!user || !user.isActive || user.role !== Role.STUDENT) throw invalidCredentials();
 
+    // Independent students (enrolled without a school — see
+    // backend/src/independent-students) carry their own paid-through date
+    // instead of riding on a school's subscription. Regular
+    // school-affiliated students never have this set, so this is a no-op
+    // for them. Specific message rather than the generic one above: this
+    // is an expected, non-adversarial account state, not a login guess.
+    if (user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
+      throw new UnauthorizedException('Your subscription has expired. Please contact support to renew your access.');
+    }
+
     await this.auditService.record({
       action: 'auth.login',
       userId: user.id,
@@ -147,6 +157,9 @@ export class AuthService {
 
     if (stored.expiresAt.getTime() < Date.now()) throw invalid();
     if (!stored.user.isActive) throw invalid();
+    // Same independent-student expiry check as loginStudent — a session
+    // shouldn't be able to outlive a lapsed subscription just by refreshing.
+    if (stored.user.subscriptionExpiresAt && stored.user.subscriptionExpiresAt < new Date()) throw invalid();
 
     const user: AuthenticatedUser = {
       id: stored.user.id,

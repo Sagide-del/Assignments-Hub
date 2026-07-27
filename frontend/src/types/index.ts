@@ -833,6 +833,47 @@ export interface MessageConversationSummary {
   messageCount: number;
 }
 
+// ---- Independent Students (enrolled without a school) ----
+// Mirrors backend/src/independent-students. PLATFORM_ADMIN only — students
+// enrolled directly rather than through a paying school, who pay for their
+// own access individually via M-Pesa Till Number.
+
+export type IndependentStudentStatus = 'ACTIVE' | 'EXPIRED' | 'NEVER_PAID';
+
+export interface IndependentStudent {
+  id: number;
+  name: string;
+  admissionNumber: string | null;
+  grade: string | null;
+  parentPhone: string | null;
+  isActive: boolean;
+  subscriptionExpiresAt: string | null;
+  status: IndependentStudentStatus;
+}
+
+export interface IndependentStudentInvoice {
+  id: number;
+  studentId: number;
+  invoiceNumber: string;
+  studentName: string;
+  amountKES: number;
+  interval: 'MONTHLY' | 'ANNUAL';
+  periodStart: string;
+  periodEnd: string;
+  mpesaCode: string;
+  payerPhone: string | null;
+  recordedById: number | null;
+  createdAt: string;
+  student?: { id: number; name: string };
+  recordedBy?: { id: number; name: string } | null;
+}
+
+export interface IndependentStudentPaymentInfo {
+  tillNumber: string;
+  storeNumber: string;
+  instructions: string;
+}
+
 // Generic API error shape thrown by backend/src/common/filters/http-exception.filter.ts
 export interface ApiErrorBody {
   statusCode: number;
