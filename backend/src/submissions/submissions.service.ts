@@ -183,7 +183,10 @@ export class SubmissionsService {
       // "My Submissions" history) must filter status !== 'DRAFT' itself.
       return this.prisma.submission.findMany({
         where: { studentId: actor.id, assignmentId: filters.assignmentId },
-        include: { assignment: true, answers: true },
+        // gradedBy included so a student can see WHO graded their work
+        // (ExamPlayer's already-submitted view) — never anything beyond
+        // id/name, same minimal shape used for `student` below.
+        include: { assignment: true, answers: true, gradedBy: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
       });
     }
@@ -201,6 +204,7 @@ export class SubmissionsService {
       include: {
         assignment: true,
         student: { select: { id: true, name: true } },
+        gradedBy: { select: { id: true, name: true } },
         answers: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -212,6 +216,8 @@ export class SubmissionsService {
       where: { id },
       include: {
         assignment: true,
+        student: { select: { id: true, name: true } },
+        gradedBy: { select: { id: true, name: true } },
         answers: { include: { question: true }, orderBy: { questionId: 'asc' } },
       },
     });
@@ -266,7 +272,11 @@ export class SubmissionsService {
         gradedById: actor.id,
         gradedAt: new Date(),
       },
-      include: { answers: { include: { question: true } } },
+      include: {
+        student: { select: { id: true, name: true } },
+        gradedBy: { select: { id: true, name: true } },
+        answers: { include: { question: true } },
+      },
     });
   }
 

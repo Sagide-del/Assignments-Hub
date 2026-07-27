@@ -93,6 +93,11 @@ function formatElapsed(totalSeconds: number) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 function extractMediaUrl(question: Question) {
   const match = question.questionText.match(/https?:\/\/\S+\.(png|jpe?g|gif|webp|svg)/i);
   return match?.[0] ?? null;
@@ -212,7 +217,8 @@ export function ExamPlayer() {
               {assignment?.subject} · {assignment?.totalMarks} marks
             </p>
           </div>
-          <div className="grid gap-4 p-6 md:grid-cols-3">
+          <div className="grid gap-4 p-6 md:grid-cols-4">
+            <StatTile label="Submitted" value={formatDateTime(existing.completedAt ?? existing.createdAt)} />
             <StatTile label="Submission status" value={existing.status} />
             <StatTile label="Score" value={existing?.score != null ? `${existing.score} / ${assignment?.totalMarks}` : 'Pending'} />
             <StatTile label="Feedback" value={existing?.gradedAt ? 'Available' : 'Awaiting grading'} />
@@ -223,10 +229,34 @@ export function ExamPlayer() {
                 You already submitted this assignment
                 {existing?.gradedAt ? ' and it has been graded.' : ' and it is awaiting grading.'}
               </p>
-              {existing?.feedback ? (
+              {existing?.gradedAt ? (
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-[#101820]">Teacher feedback</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">{existing.feedback}</p>
+                  <p className="text-sm font-semibold text-[#101820]">
+                    Graded by {existing.gradedBy?.name ?? 'your teacher'} on {formatDateTime(existing.gradedAt)}
+                  </p>
+                  {existing?.feedback ? (
+                    <p className="mt-2 text-sm leading-7 text-slate-600">{existing.feedback}</p>
+                  ) : null}
+                </div>
+              ) : null}
+              {existing?.gradedAt && existing.answers?.some((a) => a.pointsAwarded != null || a.feedback) ? (
+                <div className="mt-4 space-y-3">
+                  <p className="text-sm font-semibold text-[#101820]">Question-by-question breakdown</p>
+                  {questionList.map((q, idx) => {
+                    const answer = existing.answers?.find((a) => a.questionId === q.id);
+                    if (!answer || (answer.pointsAwarded == null && !answer.feedback)) return null;
+                    return (
+                      <div key={q.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-[#101820]">Question {idx + 1}</p>
+                          <span className="text-sm text-slate-500">
+                            {answer.pointsAwarded != null ? `${answer.pointsAwarded} / ${q.points} pts` : 'Not scored'}
+                          </span>
+                        </div>
+                        {answer.feedback ? <p className="mt-2 text-sm leading-6 text-slate-600">{answer.feedback}</p> : null}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>

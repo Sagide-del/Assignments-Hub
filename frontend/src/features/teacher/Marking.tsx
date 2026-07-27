@@ -4,7 +4,19 @@ import { assignmentsApi } from '../../api/assignments.api';
 import { submissionsApi } from '../../api/submissions.api';
 import { apiErrorMessage } from '../../api/axios';
 import { RichContent } from '../../components/ui/RichContent';
-import type { Question } from '../../types';
+import type { Question, Submission } from '../../types';
+
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
+function submittedAt(sub: Submission): string {
+  return formatDateTime(sub.completedAt ?? sub.createdAt);
+}
 
 // Real grading UI — PATCH /submissions/:id/grade, per-question points +
 // overall feedback. Auto-gradable question types (multiple choice, true/
@@ -56,8 +68,14 @@ export function Marking() {
                 onClick={() => setOpenSubmissionId(openSubmissionId === sub.id ? null : sub.id)}
                 className="w-full text-left px-4 py-3 flex items-center justify-between text-sm"
               >
-                <span>Student #{sub.studentId} · {sub.status}</span>
-                <span className="text-gray-500">{sub.score != null ? `${sub.score} pts` : 'Ungraded'}</span>
+                <span>
+                  <span className="font-medium">{sub.student?.name ?? `Student #${sub.studentId}`}</span>
+                  <span className="text-gray-400"> · submitted {submittedAt(sub)}{sub.isLate ? ' (late)' : ''} · {sub.status}</span>
+                </span>
+                <span className="text-gray-500">
+                  {sub.score != null ? `${sub.score} pts` : 'Ungraded'}
+                  {sub.gradedBy ? ` · graded by ${sub.gradedBy.name}` : ''}
+                </span>
               </button>
               {openSubmissionId === sub.id && (
                 <GradeForm submissionId={sub.id} questions={questions ?? []} />
@@ -102,6 +120,13 @@ function GradeForm({ submissionId, questions }: { submissionId: number; question
 
   return (
     <div className="px-4 pb-4 space-y-3 bg-gray-50">
+      {submission ? (
+        <div className="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">
+          <span className="font-medium text-gray-700">{submission.student?.name ?? `Student #${submission.studentId}`}</span>
+          {' · submitted '}{submittedAt(submission)}
+          {submission.gradedBy ? ` · last graded by ${submission.gradedBy.name} on ${formatDateTime(submission.gradedAt)}` : ' · not yet graded'}
+        </div>
+      ) : null}
       {questions.map((q) => {
         const answer = submission?.answers?.find((a) => a.questionId === q.id);
         return (

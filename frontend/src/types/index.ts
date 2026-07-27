@@ -64,11 +64,18 @@ export interface Submission {
   id: number;
   assignmentId: number;
   studentId: number;
+  // Present on teacher/admin-facing responses (Marking.tsx) and on a
+  // student's own submissions (ExamPlayer's already-submitted view) — see
+  // SubmissionsService.findAll/findOne. Absent only if the backend hasn't
+  // been redeployed with this include yet.
+  student?: { id: number; name: string };
   score: number | null;
   status: 'DRAFT' | 'SUBMITTED' | 'GRADED' | string;
   isLate: boolean;
   feedback: string | null;
   gradedById: number | null;
+  // The teacher/admin who graded this submission — null until graded.
+  gradedBy?: { id: number; name: string } | null;
   gradedAt: string | null;
   startedAt: string | null;
   timeSpentSeconds: number | null;
