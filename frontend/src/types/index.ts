@@ -165,6 +165,11 @@ export interface Question {
   assignmentId: number;
   sectionId: number | null;
   questionText: string;
+  // Rich-HTML body from the teacher Rich Editor (math/chemistry equations,
+  // embedded images, labeled diagrams) — null/absent for every question
+  // created the older ways. ALWAYS sanitize with RichContent before
+  // rendering; never dangerouslySetInnerHTML this directly.
+  contentHtml?: string | null;
   questionType: QuestionType;
   options: unknown;
   // correctAnswer is deliberately absent here — the backend strips it for

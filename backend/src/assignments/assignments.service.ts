@@ -51,6 +51,7 @@ export class AssignmentsService {
           ? {
               create: dto.questions.map((q, index) => ({
                 questionText: q.questionText,
+                contentHtml: q.contentHtml,
                 questionType: q.questionType ?? QuestionType.ESSAY,
                 options: q.options && q.options.length ? (q.options as any) : undefined,
                 correctAnswer: q.correctAnswer,

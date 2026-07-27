@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentsApi } from '../../api/assignments.api';
 import { submissionsApi } from '../../api/submissions.api';
 import { apiErrorMessage } from '../../api/axios';
+import { RichContent } from '../../components/ui/RichContent';
 import type { Question } from '../../types';
 
 // Real grading UI — PATCH /submissions/:id/grade, per-question points +
@@ -105,7 +106,11 @@ function GradeForm({ submissionId, questions }: { submissionId: number; question
         const answer = submission?.answers?.find((a) => a.questionId === q.id);
         return (
           <div key={q.id} className="bg-white rounded border border-gray-200 p-3">
-            <p className="text-sm font-medium">{q.questionText}</p>
+            {q.contentHtml ? (
+              <RichContent html={q.contentHtml} className="font-medium text-slate-800" />
+            ) : (
+              <p className="text-sm font-medium">{q.questionText}</p>
+            )}
             <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{answer?.studentAnswer || '—'}</p>
             <div className="flex items-center gap-2 mt-2">
               <label className="text-xs text-gray-500">Points (of {q.points})</label>

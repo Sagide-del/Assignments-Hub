@@ -3,6 +3,8 @@ import type { Assignment, Submission, Question, AnswerInput } from '../types';
 
 export interface CreateQuestionInput {
   questionText: string;
+  // See Question.contentHtml — optional rich-HTML body from the Rich Editor.
+  contentHtml?: string;
   questionType?: Question['questionType'];
   options?: string[];
   correctAnswer?: string;

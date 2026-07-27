@@ -1,10 +1,21 @@
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { QuestionType } from '@prisma/client';
 
 export class CreateQuestionDto {
   @IsString()
   @MinLength(1)
   questionText: string;
+
+  // Rich-HTML question body from the teacher Rich Editor (Quill) — bold/
+  // italic/lists, KaTeX-rendered math/chemistry equations, embedded images,
+  // labeled diagrams. Stored verbatim; NEVER rendered without sanitizing
+  // (DOMPurify) on the way out — see RichContent.tsx. Optional so the
+  // existing manual builder / AI generator, which never send this, are
+  // unaffected.
+  @IsOptional()
+  @IsString()
+  @MaxLength(100000)
+  contentHtml?: string;
 
   @IsOptional()
   @IsEnum(QuestionType)

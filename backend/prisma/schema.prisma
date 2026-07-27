@@ -528,6 +528,16 @@ model Question {
   section        Section?     @relation(fields: [sectionId], references: [id], onDelete: SetNull)
 
   questionText   String       @map("question_text")
+  // Optional rich-HTML version of the question body — produced by the
+  // teacher "Rich Editor" (Quill), can contain formatting, KaTeX-rendered
+  // math/chemistry equations, and embedded/labeled diagram images. Nullable
+  // and purely additive: questions created via the older manual builder or
+  // JSON/AI upload never set this, and every render site falls back to the
+  // plain `questionText` when it's null — see ExamPlayer.tsx/Marking.tsx.
+  // ALWAYS sanitized with DOMPurify before being rendered (dangerouslySetInnerHTML)
+  // since it's teacher-authored HTML — never trust it as-is (see
+  // frontend/src/components/ui/RichContent.tsx).
+  contentHtml    String?      @map("content_html")
   questionType   QuestionType @default(ESSAY) @map("question_type")
   // JSON — shape depends on questionType:
   //  MULTIPLE_CHOICE: array of option strings, e.g. ["12", "14", "16", "18"]

@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { assignmentsApi } from '../../api/assignments.api';
 import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
+import { RichContent } from '../../components/ui/RichContent';
 import type { AnswerInput, Question } from '../../types';
 
 function CheckIcon() {
@@ -524,9 +525,18 @@ function QuestionInput({
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-lg font-semibold leading-8 text-[#101820]">
-          {index + 1}. {question.questionText}
-        </p>
+        {question.contentHtml ? (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Question {index + 1}</p>
+            <div className="mt-2">
+              <RichContent html={question.contentHtml} />
+            </div>
+          </div>
+        ) : (
+          <p className="text-lg font-semibold leading-8 text-[#101820]">
+            {index + 1}. {question.questionText}
+          </p>
+        )}
         {question.hint ? (
           <p className="mt-3 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-3 text-sm text-slate-500">
             Hint: {question.hint}
