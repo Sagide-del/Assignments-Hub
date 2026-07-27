@@ -10,7 +10,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
-import { normalizeGrade } from './grade.util';
+import { normalizeGrade } from '../common/utils/grade.util';
 
 const SAFE_SELECT = {
   id: true,

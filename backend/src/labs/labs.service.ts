@@ -8,6 +8,7 @@ import { CreateLabMediaBatchDto } from './dto/create-lab-media-batch.dto';
 import { CreateLabReflectionsBatchDto } from './dto/create-lab-reflections-batch.dto';
 import { CreateLabStepsBatchDto } from './dto/create-lab-steps-batch.dto';
 import { UpdateLabDto } from './dto/update-lab.dto';
+import { normalizeGrade } from '../common/utils/grade.util';
 
 @Injectable()
 export class LabsService {
@@ -46,7 +47,10 @@ export class LabsService {
         categoryId: dto.categoryId ?? dto.category,
         stemSubjectId: dto.stemSubjectId ?? dto.stemSubject,
         subject: dto.subject,
-        grade: dto.grade,
+        // Same exact-match grade filter as AssignmentsService.findAll — a
+        // free-text grade typed here ("12" instead of "Grade 12") would
+        // otherwise never match any student.
+        grade: normalizeGrade(dto.grade) ?? dto.grade,
         topicArea: dto.topicArea,
         pathway: dto.pathway,
         topic: dto.topic,
@@ -192,7 +196,7 @@ export class LabsService {
           categoryId: dto.categoryId ?? dto.category,
           stemSubjectId: dto.stemSubjectId ?? dto.stemSubject,
           subject: dto.subject,
-          grade: dto.grade,
+          grade: dto.grade !== undefined ? (normalizeGrade(dto.grade) ?? dto.grade) : undefined,
           topicArea: dto.topicArea,
           pathway: dto.pathway,
           topic: dto.topic,

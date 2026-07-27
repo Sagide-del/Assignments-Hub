@@ -19,6 +19,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "fix:grades": "ts-node prisma/fix-grade-format.ts",
+    "fix:assignment-grades": "ts-node prisma/fix-assignment-lab-grades.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },

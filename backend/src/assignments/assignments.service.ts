@@ -9,6 +9,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { Role } from '../common/enums/role.enum';
 import { AssignmentType, QuestionType } from '@prisma/client';
 import { SmsService } from '../sms/sms.service';
+import { normalizeGrade } from '../common/utils/grade.util';
 
 @Injectable()
 export class AssignmentsService {
@@ -21,6 +22,11 @@ export class AssignmentsService {
 
   async create(dto: CreateAssignmentDto, actor: AuthenticatedUser) {
     const rubricTotal = dto.rubric?.reduce((sum, c) => sum + (c.points || 0), 0) ?? 0;
+    // Normalize free-text grade input ("12", "grade12") to the canonical
+    // "Grade 12" format that AssignmentsService.findAll's exact-match
+    // `grade: actor.grade` filter (and User.grade) use — otherwise a
+    // published assignment can silently never show up for any student.
+    const grade = normalizeGrade(dto.grade) ?? dto.grade;
 
     const assignment = await this.prisma.assignment.create({
       data: {
@@ -28,7 +34,7 @@ export class AssignmentsService {
         title: dto.title,
         description: dto.description,
         subject: dto.subject,
-        grade: dto.grade,
+        grade,
         type: dto.type,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints ?? 100,
@@ -366,7 +372,7 @@ export class AssignmentsService {
           title: dto.title,
           description: dto.description,
           subject: dto.subject,
-          grade: dto.grade,
+          grade: normalizeGrade(dto.grade) ?? dto.grade,
           type: dto.type ?? AssignmentType.TEACHER_MARKED,
           dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
           maxPoints: dto.totalMarks ?? computedTotalMarks,
@@ -434,7 +440,7 @@ export class AssignmentsService {
         title: dto.title,
         description: dto.description,
         subject: dto.subject,
-        grade: dto.grade,
+        grade: dto.grade !== undefined ? (normalizeGrade(dto.grade) ?? dto.grade) : undefined,
         type: dto.type,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints,

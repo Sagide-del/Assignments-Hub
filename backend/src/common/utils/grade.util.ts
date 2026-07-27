@@ -1,14 +1,20 @@
 /**
- * Normalizes a free-text student grade value into the canonical "Grade N"
- * format that every grade-scoped catalog matches against exactly (STEM Labs
- * — see LabsService.findAll's `grade: actor.grade` filter — and
- * assignments). Without this, a grade typed or imported as a bare number
- * ("12") silently never matches lab/assignment records stored as
- * "Grade 12", and the student sees an empty catalog with no error.
+ * Normalizes a free-text grade value into the canonical "Grade N" format
+ * that every grade-scoped catalog matches against exactly: User.grade,
+ * Assignment.grade (see AssignmentsService.findAll's `grade: actor.grade`
+ * filter), and Lab.grade (see LabsService.findAll's equivalent filter).
+ * Without this, a grade typed or imported as a bare number ("12") silently
+ * never matches records stored as "Grade 12", and the student sees an
+ * empty catalog with no error.
  *
  * Handles the common data-entry variants ("9", "grade9", "GRADE 9",
  * " Grade  12 ") without guessing at unrelated grading schemes (e.g.
  * "Form 3", "PP1"), which are passed through unchanged/untouched.
+ *
+ * Applied at every write path that sets one of these `grade` columns
+ * (student create/import, assignment create/update/from-json, lab
+ * create/update) so the exact-match filters above always line up
+ * regardless of how a teacher/admin typed the grade in.
  */
 export function normalizeGrade(raw: string | null | undefined): string | undefined {
   if (raw == null) return undefined;

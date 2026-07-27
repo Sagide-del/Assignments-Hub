@@ -1,7 +1,7 @@
 // One-time data fix: normalizes any existing STUDENT.grade value that was
 // stored as a bare number ("12") instead of the canonical "Grade 12" format
 // that lab/assignment catalogs match against exactly (see
-// backend/src/users/grade.util.ts and LabsService.findAll). This only
+// backend/src/common/utils/grade.util.ts and LabsService.findAll). This only
 // matters going forward for NEW students because users.service.ts and
 // users-import.service.ts now normalize on create/update/import — this
 // script is purely to repair rows that were already imported before that
@@ -12,7 +12,7 @@
 // Run with: npm run fix:grades (from backend/)
 
 import { PrismaClient, Role } from '@prisma/client';
-import { normalizeGrade } from '../src/users/grade.util';
+import { normalizeGrade } from '../src/common/utils/grade.util';
 
 const prisma = new PrismaClient();
 

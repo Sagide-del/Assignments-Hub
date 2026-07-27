@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { normalizeGrade } from './grade.util';
+import { normalizeGrade } from '../common/utils/grade.util';
 
 type ImportRole = typeof Role.STUDENT | typeof Role.TEACHER;
 
