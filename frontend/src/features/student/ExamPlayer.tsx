@@ -5,6 +5,7 @@ import { assignmentsApi } from '../../api/assignments.api';
 import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
 import { RichContent } from '../../components/ui/RichContent';
+import { ToolsPanel } from './tools/ToolsPanel';
 import type { AnswerInput, Question } from '../../types';
 
 function CheckIcon() {
@@ -143,6 +144,7 @@ export function ExamPlayer() {
   const [uploadingFor, setUploadingFor] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const startTime = useMemo(() => Date.now(), []);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -290,9 +292,18 @@ export function ExamPlayer() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
                 {reviewMode ? 'Review Mode' : `Question ${currentIndex + 1} of ${totalQuestions}`}
               </p>
-              <div className="mt-3 flex items-center gap-2 text-sm text-white">
-                <ClockIcon />
-                <span>{formatElapsed(elapsedSeconds)}</span>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-white">
+                  <ClockIcon />
+                  <span>{formatElapsed(elapsedSeconds)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setToolsOpen(true)}
+                  className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10"
+                >
+                  Tools
+                </button>
               </div>
             </div>
           </div>
@@ -530,6 +541,7 @@ export function ExamPlayer() {
           </div>
         </section>
       </div>
+      {toolsOpen ? <ToolsPanel onClose={() => setToolsOpen(false)} /> : null}
     </div>
   );
 }
