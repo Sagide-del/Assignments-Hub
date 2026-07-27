@@ -31,6 +31,7 @@ import { SupportNeedsModule } from './support-needs/support-needs.module';
 import { StemModule } from './stem/stem.module';
 import { TalentsModule } from './talents/talents.module';
 import { MentorshipModule } from './mentorship/mentorship.module';
+import { MessagesModule } from './messages/messages.module';
 
 import { AiModule } from './ai/ai.module';
 import { SkillsModule } from './skills/skills.module';
@@ -94,6 +95,8 @@ import { TenantGuard } from './common/guards/tenant.guard';
     TalentsModule,
 
     MentorshipModule,
+
+    MessagesModule,
 
     AiModule,
 

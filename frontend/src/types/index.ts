@@ -797,6 +797,42 @@ export interface MentorshipStats {
   completed: number;
 }
 
+// ---- News/Messages ----
+// Mirrors backend/src/messages. Any STUDENT can message any TEACHER at their
+// school and vice versa — see MessagesService.assertCanMessage. SCHOOL_ADMIN
+// (and PLATFORM_ADMIN via schoolId) get read-only oversight of every
+// conversation at the school, the same transparency precedent as Parent
+// Corner.
+
+export interface MessageContact {
+  id: number;
+  name: string;
+  subject: string | null;
+  grade: string | null;
+  assignedClass: string | null;
+  lastMessage: { body: string; createdAt: string; senderId: number } | null;
+  unreadCount: number;
+}
+
+export interface Message {
+  id: number;
+  schoolId: number;
+  senderId: number;
+  recipientId: number;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+  sender?: { id: number; name: string; role: Role };
+  recipient?: { id: number; name: string; role: Role };
+}
+
+export interface MessageConversationSummary {
+  student: { id: number; name: string; role: Role };
+  teacher: { id: number; name: string; role: Role };
+  lastMessage: { body: string; createdAt: string; senderId: number };
+  messageCount: number;
+}
+
 // Generic API error shape thrown by backend/src/common/filters/http-exception.filter.ts
 export interface ApiErrorBody {
   statusCode: number;

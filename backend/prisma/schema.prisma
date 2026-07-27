@@ -227,6 +227,7 @@ model School {
   mentorProfiles      MentorProfile[]
   mentorshipRequests  MentorshipRequest[]
   talentProfiles      StudentTalentProfile[]
+  messages            Message[]
 
   @@map("schools")
 }
@@ -287,6 +288,12 @@ model User {
   mentorshipRequestsMade MentorshipRequest[] @relation("MentorshipRequestStudent")
   mentorshipLogEntries MentorshipLogEntry[]
   talentProfile        StudentTalentProfile?
+  // News/Messages: any STUDENT can message any TEACHER at their school and
+  // vice versa — see MessagesService.assertCanMessage. Not applicable to
+  // SCHOOL_ADMIN/PLATFORM_ADMIN, who instead get read-only oversight via
+  // GET /messages/admin/* (no send/receive relation needed for them).
+  sentMessages         Message[] @relation("MessageSender")
+  receivedMessages     Message[] @relation("MessageRecipient")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -1517,4 +1524,40 @@ model MentorshipLogEntry {
 
   @@index([requestId])
   @@map("mentorship_log_entries")
+}
+
+// ---- News/Messages ----
+// Direct messaging between a school's students and teachers, replacing the
+// old "My Activity" tab. Any STUDENT can message any TEACHER at their school
+// and vice versa (mirrors MentorProfile's "any teacher" directory scope, just
+// two-way) — enforced in MessagesService.assertCanMessage, not here.
+// SCHOOL_ADMIN (and PLATFORM_ADMIN via schoolId) get read-only oversight of
+// every conversation at the school, the same transparency precedent as
+// Parent Corner. One row per message, not per thread — a "conversation" is
+// simply every Message between one student and one teacher, derived at query
+// time (see MessagesService.findContacts / findAdminConversations) rather
+// than a separate thread table, since there's exactly one thread per
+// student-teacher pair.
+model Message {
+  id          Int      @id @default(autoincrement())
+  schoolId    Int      @map("school_id")
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  senderId    Int      @map("sender_id")
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  recipientId Int      @map("recipient_id")
+  recipient   User     @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  body        String
+  // Set the first time the recipient opens the thread containing this
+  // message — see MessagesService.findThread. Null = unread.
+  readAt      DateTime? @map("read_at")
+
+  createdAt   DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([senderId, recipientId])
+  @@index([recipientId, senderId])
+  @@map("messages")
 }

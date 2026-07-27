@@ -14,7 +14,7 @@ import { MyAssignmentsPage } from '../../features/student/MyAssignments';
 import { LearnSkillsPage } from '../../features/student/LearnSkills';
 import { SkillDetailPage } from '../../features/student/SkillDetail';
 import { MyPathwayPage } from '../../features/student/my-pathway/MyPathwayPage';
-import { MyActivitiesPage } from '../../features/student/MyActivities';
+import { MessagesPage } from '../../features/student/Messages';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 
@@ -26,12 +26,14 @@ import { Marking } from '../../features/teacher/Marking';
 import { CslReview } from '../../features/teacher/CslReview';
 import { PathwaysStats } from '../../features/teacher/PathwaysStats';
 import { MentorshipInboxPage } from '../../features/teacher/MentorshipInbox';
+import { TeacherMessagesPage } from '../../features/teacher/Messages';
 
 import { SchoolAdminDashboard } from '../../features/school-admin/Dashboard';
 import { BrandingSettings } from '../../features/school-admin/Branding';
 import { SchoolAdminBilling } from '../../features/school-admin/Billing';
 import { SchoolAdminReports } from '../../features/school-admin/Reports';
 import { AiUsage } from '../../features/school-admin/AiUsage';
+import { MessagesOversight } from '../../features/school-admin/MessagesOversight';
 
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
@@ -61,8 +63,8 @@ const studentNav = [
     label: 'My Pathway',
   },
   {
-    to: '/student/my-activities',
-    label: 'My Activity',
+    to: '/student/messages',
+    label: 'News/Messages',
   },
 ];
 
@@ -100,6 +102,10 @@ const teacherNav = [
     to: '/teacher/mentorship',
     label: 'Mentorship',
   },
+  {
+    to: '/teacher/messages',
+    label: 'Messages',
+  },
 ];
 
 
@@ -123,6 +129,10 @@ const schoolAdminNav = [
   {
     to: '/school-admin/ai-usage',
     label: 'AI Usage',
+  },
+  {
+    to: '/school-admin/messages',
+    label: 'Messages',
   },
 ];
 
@@ -227,8 +237,14 @@ export const router = createBrowserRouter([
             element: <MyPathwayPage />,
           },
           {
+            // "My Activity" was retired in favor of News/Messages —
+            // redirect old bookmarks/links rather than break them.
             path: '/student/my-activities',
-            element: <MyActivitiesPage />,
+            element: <Navigate to="/student/messages" replace />,
+          },
+          {
+            path: '/student/messages',
+            element: <MessagesPage />,
           },
           {
             // Career Pathways is now a tab inside My Pathway rather than its
@@ -288,6 +304,10 @@ export const router = createBrowserRouter([
             path: '/teacher/mentorship',
             element: <MentorshipInboxPage />,
           },
+          {
+            path: '/teacher/messages',
+            element: <TeacherMessagesPage />,
+          },
         ],
       },
     ],
@@ -323,6 +343,10 @@ export const router = createBrowserRouter([
           {
             path: '/school-admin/ai-usage',
             element: <AiUsage />,
+          },
+          {
+            path: '/school-admin/messages',
+            element: <MessagesOversight />,
           },
         ],
       },
