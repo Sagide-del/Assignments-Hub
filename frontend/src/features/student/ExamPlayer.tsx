@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentsApi } from '../../api/assignments.api';
 import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
@@ -142,6 +142,7 @@ export function ExamPlayer() {
   const { id } = useParams<{ id: string }>();
   const assignmentId = Number(id);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: assignment } = useQuery({
     queryKey: ['assignment', assignmentId],
@@ -202,9 +203,9 @@ export function ExamPlayer() {
       const timeSpentSeconds = Math.round((Date.now() - startTime) / 1000);
       return assignmentsApi.submit(assignmentId, { answers: answerList, isDraft, timeSpentSeconds });
     },
-    onSuccess: (_, isDraft) => {
-      setStatus(isDraft ? 'Draft saved.' : 'Submitted for grading.');
-      if (!isDraft) navigate('/student', { replace: true });
+    onSuccess: (submission, isDraft) => {
+      setStatus(isDraft ? 'Draft saved.' : 'Assessment submitted.');
+      queryClient.setQueryData(['my-submission', assignmentId], [submission]);
     },
     onError: (err) => setStatus(apiErrorMessage(err, 'Could not save')),
   });
@@ -228,6 +229,7 @@ export function ExamPlayer() {
   const answeredCount = questionList.filter((q) => isAnswered(q, answers[q.id] ?? '')).length;
   const unansweredCount = totalQuestions - answeredCount;
   const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const assignmentMaxPoints = assignment?.maxPoints ?? assignment?.totalMarks ?? 0;
 
   if (loadingQuestions) {
     return <p className="text-sm text-gray-500">Loading...</p>;
@@ -241,13 +243,13 @@ export function ExamPlayer() {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">Assessment Submitted</p>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight">{assignment?.title}</h1>
             <p className="mt-3 text-sm text-slate-300">
-              {assignment?.subject} · {assignment?.totalMarks} marks
+              {assignment?.subject} · {assignmentMaxPoints} marks
             </p>
           </div>
           <div className="grid gap-4 p-6 md:grid-cols-4">
             <StatTile label="Submitted" value={formatDateTime(existing.completedAt ?? existing.createdAt)} />
             <StatTile label="Submission status" value={existing.status} />
-            <StatTile label="Score" value={existing?.score != null ? `${existing.score} / ${assignment?.totalMarks}` : 'Pending'} />
+            <StatTile label="Score" value={existing?.score != null ? `${existing.score} / ${assignmentMaxPoints}` : 'Pending'} />
             <StatTile label="Feedback" value={existing?.gradedAt ? 'Available' : 'Awaiting grading'} />
           </div>
           <div className="border-t border-slate-200 p-6">
@@ -259,7 +261,9 @@ export function ExamPlayer() {
               {existing?.gradedAt ? (
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-sm font-semibold text-[#101820]">
-                    Graded by {existing.gradedBy?.name ?? 'your teacher'} on {formatDateTime(existing.gradedAt)}
+                    {existing.gradedBy?.name
+                      ? `Graded by ${existing.gradedBy.name}`
+                      : 'Automatically graded'} on {formatDateTime(existing.gradedAt)}
                   </p>
                   {existing?.feedback ? (
                     <p className="mt-2 text-sm leading-7 text-slate-600">{existing.feedback}</p>
@@ -286,6 +290,13 @@ export function ExamPlayer() {
                   })}
                 </div>
               ) : null}
+              <button
+                type="button"
+                onClick={() => navigate('/student/my-assignments')}
+                className="mt-5 rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white"
+              >
+                Back to assignments
+              </button>
             </div>
           </div>
         </section>
@@ -308,7 +319,7 @@ export function ExamPlayer() {
               <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-300">
                 <span>{assignment?.subject}</span>
                 <span>·</span>
-                <span>{assignment?.totalMarks} marks</span>
+                <span>{assignmentMaxPoints} marks</span>
                 <span>·</span>
                 <span>{totalQuestions} questions</span>
               </div>
@@ -345,7 +356,7 @@ export function ExamPlayer() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="space-y-6">
+        <aside className="order-2 space-y-6 xl:order-1">
           <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#101820] text-[#B5E61D]">
@@ -412,9 +423,9 @@ export function ExamPlayer() {
           </section>
         </aside>
 
-        <section className="space-y-6">
+        <section className="order-1 space-y-6 xl:order-2">
           {!reviewMode && currentQuestion ? (
-            <div className="rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px]">
               <div className="border-b border-slate-200 px-6 py-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -439,6 +450,11 @@ export function ExamPlayer() {
                   onChange={(val) => setAnswers((prev) => ({ ...prev, [currentQuestion.id]: val }))}
                   onFile={(file) => handleFileChange(currentQuestion.id, file)}
                   uploading={uploadingFor === currentQuestion.id}
+                />
+                <WorkingSpace
+                  key={`working-${currentQuestion.id}`}
+                  assignmentId={assignmentId}
+                  question={currentQuestion}
                 />
               </div>
             </div>
@@ -494,7 +510,7 @@ export function ExamPlayer() {
 
           <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 {!reviewMode ? (
                   <>
                     <button
@@ -538,7 +554,7 @@ export function ExamPlayer() {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 <button
                   type="button"
                   onClick={() => saveMutation.mutate(true)}
@@ -571,6 +587,88 @@ export function ExamPlayer() {
   );
 }
 
+function WorkingSpace({
+  assignmentId,
+  question,
+}: {
+  assignmentId: number;
+  question: Question;
+}) {
+  const storageKey = `assignment-working:${assignmentId}:${question.id}`;
+  const [open, setOpen] = useState(
+    ['NUMERIC', 'SHORT_ANSWER', 'FILL_BLANK', 'ESSAY'].includes(question.questionType),
+  );
+  const [notes, setNotes] = useState(() => {
+    try {
+      return window.localStorage.getItem(storageKey) ?? '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (notes) {
+        window.localStorage.setItem(storageKey, notes);
+      } else {
+        window.localStorage.removeItem(storageKey);
+      }
+    } catch {
+      // Private working notes remain usable even if browser storage is blocked.
+    }
+  }, [notes, storageKey]);
+
+  return (
+    <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] sm:rounded-[24px]">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-5"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#101820] text-[#B5E61D]">
+            <PencilIcon />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-[#101820]">Working space</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-500">Notes saved on this device</span>
+          </span>
+        </span>
+        <span className="text-xs font-semibold text-slate-500">{open ? 'Close' : 'Open'}</span>
+      </button>
+
+      {open ? (
+        <div className="border-t border-slate-200 bg-white p-3 sm:p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs leading-5 text-slate-500">
+              Use equations, chemical notation, or upload a graph image. Working notes are not submitted.
+            </p>
+            {notes ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Clear this working space?')) setNotes('');
+                }}
+                className="text-xs font-semibold text-red-600"
+              >
+                Clear notes
+              </button>
+            ) : null}
+          </div>
+          <div className="student-working-space">
+            <RichTextEditor
+              value={notes}
+              onChange={setNotes}
+              placeholder="Show your calculations or make private notes"
+            />
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function QuestionInput({
   index,
   question,
@@ -596,7 +694,7 @@ function QuestionInput({
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Question {index + 1}</p>
             <div className="mt-2">
-              <RichContent html={question.contentHtml} />
+              <RichContent html={question.contentHtml} className="assessment-question-copy" />
             </div>
           </div>
         ) : (
@@ -642,7 +740,7 @@ function QuestionInput({
                   <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${selected ? 'bg-[#101820] text-white' : 'bg-[#F8FAFC] text-slate-600'}`}>
                     {String.fromCharCode(65 + optionIndex)}
                   </span>
-                  <span className="text-sm leading-7 text-slate-700">{opt}</span>
+                  <span className="break-words text-base leading-7 text-slate-700">{opt}</span>
                 </div>
               </label>
             );
@@ -681,10 +779,42 @@ function QuestionInput({
           <input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-[24px] border border-slate-300 px-4 py-3 text-base text-slate-700"
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
             placeholder="Enter your answer"
           />
           <SymbolPad value={value} onChange={onChange} />
+        </div>
+      )}
+
+      {question.questionType === 'NUMERIC' && (
+        <div className="space-y-3">
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[#101820]">Your numeric answer</span>
+            <input
+              value={value}
+              inputMode="decimal"
+              autoComplete="off"
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-lg leading-7 text-[#101820] outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
+              placeholder="e.g. 2.73 cm or 3/4"
+            />
+          </label>
+          <SymbolPad value={value} onChange={onChange} />
+        </div>
+      )}
+
+      {question.questionType === 'SHORT_ANSWER' && (
+        <div className="space-y-3">
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[#101820]">Your answer</span>
+            <textarea
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              rows={4}
+              className="w-full resize-y rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
+              placeholder="Write a clear, concise response"
+            />
+          </label>
         </div>
       )}
 
@@ -734,5 +864,14 @@ function QuestionInput({
         </div>
       )}
     </div>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" strokeLinejoin="round" />
+      <path d="m13.5 8 3 3" />
+    </svg>
   );
 }

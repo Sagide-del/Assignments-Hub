@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,6 +39,7 @@ export class AssignmentsService {
     actor: AuthenticatedUser,
     schoolId: number,
   ) {
+    this.validateQuestionConfigs(dto.questions);
     const rubricTotal = dto.rubric?.reduce((sum, c) => sum + (c.points || 0), 0) ?? 0;
     // Normalize free-text grade input ("12", "grade12") to the canonical
     // "Grade 12" format that AssignmentsService.findAll's exact-match
@@ -73,6 +74,7 @@ export class AssignmentsService {
                 contentHtml: q.contentHtml,
                 questionType: q.questionType ?? QuestionType.ESSAY,
                 options: q.options && q.options.length ? (q.options as any) : undefined,
+                config: q.config ? (q.config as any) : undefined,
                 correctAnswer: q.correctAnswer,
                 points: q.points ?? 10,
                 order: q.order ?? index,
@@ -104,6 +106,51 @@ export class AssignmentsService {
       },
       update: {},
     });
+  }
+
+  private validateQuestionConfigs(questions: CreateAssignmentDto['questions']) {
+    for (const [index, question] of (questions ?? []).entries()) {
+      const label = `Question ${index + 1}`;
+      if (question.questionType === QuestionType.NUMERIC) {
+        const numeric = (question.config as { numeric?: Record<string, unknown> } | undefined)?.numeric;
+        const acceptedValue = numeric?.acceptedValue;
+        const tolerance = numeric?.tolerance;
+        const significantFigures = numeric?.significantFigures;
+        if (typeof acceptedValue !== 'number' || !Number.isFinite(acceptedValue)) {
+          throw new BadRequestException(`${label}: numeric acceptedValue must be a valid number`);
+        }
+        if (tolerance !== undefined && (typeof tolerance !== 'number' || tolerance < 0)) {
+          throw new BadRequestException(`${label}: numeric tolerance must be at least 0`);
+        }
+        if (
+          significantFigures !== undefined &&
+          (typeof significantFigures !== 'number' ||
+            !Number.isInteger(significantFigures) ||
+            significantFigures < 1)
+        ) {
+          throw new BadRequestException(`${label}: significantFigures must be a positive integer`);
+        }
+      }
+
+      if (question.questionType === QuestionType.SHORT_ANSWER) {
+        const shortAnswer = (question.config as { shortAnswer?: Record<string, unknown> } | undefined)?.shortAnswer;
+        const keywords = shortAnswer?.keywords;
+        const passThreshold = shortAnswer?.passThreshold;
+        if (
+          !Array.isArray(keywords) ||
+          keywords.length === 0 ||
+          keywords.some((keyword) => typeof keyword !== 'string' || !keyword.trim())
+        ) {
+          throw new BadRequestException(`${label}: short answer keywords are required`);
+        }
+        if (
+          passThreshold !== undefined &&
+          (typeof passThreshold !== 'number' || passThreshold <= 0 || passThreshold > 1)
+        ) {
+          throw new BadRequestException(`${label}: passThreshold must be greater than 0 and at most 1`);
+        }
+      }
+    }
   }
 
   // Fire-and-forget: SMS every parent (with a phone on file) of a student in
@@ -312,6 +359,46 @@ export class AssignmentsService {
             }
             break;
           }
+          case QuestionType.NUMERIC: {
+            const numeric = (q.config as { numeric?: Record<string, unknown> } | undefined)?.numeric;
+            const acceptedValue = numeric?.acceptedValue;
+            const tolerance = numeric?.tolerance;
+            const significantFigures = numeric?.significantFigures;
+            if (typeof acceptedValue !== 'number' || !Number.isFinite(acceptedValue)) {
+              errors.push(`${qLabel}: NUMERIC needs config.numeric.acceptedValue as a valid number.`);
+            }
+            if (tolerance !== undefined && (typeof tolerance !== 'number' || tolerance < 0)) {
+              errors.push(`${qLabel}: NUMERIC tolerance must be a number greater than or equal to 0.`);
+            }
+            if (
+              significantFigures !== undefined &&
+              (typeof significantFigures !== 'number' ||
+                !Number.isInteger(significantFigures) ||
+                significantFigures < 1)
+            ) {
+              errors.push(`${qLabel}: NUMERIC significantFigures must be a positive integer.`);
+            }
+            break;
+          }
+          case QuestionType.SHORT_ANSWER: {
+            const shortAnswer = (q.config as { shortAnswer?: Record<string, unknown> } | undefined)?.shortAnswer;
+            const keywords = shortAnswer?.keywords;
+            const passThreshold = shortAnswer?.passThreshold;
+            if (
+              !Array.isArray(keywords) ||
+              keywords.length === 0 ||
+              keywords.some((keyword) => typeof keyword !== 'string' || !keyword.trim())
+            ) {
+              errors.push(`${qLabel}: SHORT_ANSWER needs at least one keyword in config.shortAnswer.keywords.`);
+            }
+            if (
+              passThreshold !== undefined &&
+              (typeof passThreshold !== 'number' || passThreshold <= 0 || passThreshold > 1)
+            ) {
+              errors.push(`${qLabel}: SHORT_ANSWER passThreshold must be greater than 0 and at most 1.`);
+            }
+            break;
+          }
           case QuestionType.MATCHING: {
             const opts = q.options as { left?: string[]; right?: string[] } | undefined;
             const leftOk = opts && Array.isArray(opts.left) && opts.left.length > 0;
@@ -445,6 +532,7 @@ export class AssignmentsService {
               questionText: q.questionText,
               questionType: q.type,
               options: this.serializeOptions(q) as any,
+              config: q.config ? (q.config as any) : undefined,
               correctAnswer: this.serializeCorrectAnswer(q),
               points: q.points,
               order: qIndex,
@@ -502,15 +590,17 @@ export class AssignmentsService {
     return { id };
   }
 
-  // Removes correctAnswer from every question so students can't read it out
-  // of the API response (the client-side auto-grading in the old build was
-  // trust-the-client; the real answer key must never reach a student).
-  private stripAnswersForStudent<T extends { questions: { correctAnswer: string | null }[] }>(
+  // Removes every answer-key field from student responses. Numeric accepted
+  // values and short-answer keywords live in config, so config is as private
+  // as correctAnswer and must never reach the assessment client.
+  private stripAnswersForStudent<
+    T extends { questions: { correctAnswer: string | null; config: unknown }[] },
+  >(
     assignment: T,
   ): T {
     return {
       ...assignment,
-      questions: assignment.questions.map(({ correctAnswer, ...rest }) => rest) as any,
+      questions: assignment.questions.map(({ correctAnswer, config, ...rest }) => rest) as any,
     };
   }
 

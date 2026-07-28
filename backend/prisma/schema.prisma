@@ -103,6 +103,8 @@ enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
   FILL_BLANK
+  NUMERIC
+  SHORT_ANSWER
   ESSAY
   FILE_UPLOAD
   MATCHING
@@ -573,6 +575,9 @@ model Question {
   //  ORDERING:         array of items in the (scrambled) display order
   //  everything else:  unused (null)
   options        Json?
+  // Private grading rules for NUMERIC and SHORT_ANSWER questions. This is
+  // stripped from student-facing assignment responses with correctAnswer.
+  config         Json?
   // Only used for auto-gradable types (MULTIPLE_CHOICE, TRUE_FALSE,
   // FILL_BLANK, MATCHING, ORDERING) — see SubmissionsService.AUTO_GRADABLE_TYPES.
   // MATCHING/ORDERING store a JSON-encoded string (object/array) here, same

@@ -13,7 +13,9 @@ import { buildDiagramHtml, type DiagramValue } from './rich-editor/diagramHtml';
 const QUESTION_TYPES: { value: QuestionType; label: string; description: string }[] = [
   { value: 'MULTIPLE_CHOICE', label: 'Multiple choice', description: 'Students select one option' },
   { value: 'TRUE_FALSE', label: 'True or false', description: 'Students choose between two answers' },
-  { value: 'FILL_BLANK', label: 'Short answer', description: 'A concise text or numeric response' },
+  { value: 'FILL_BLANK', label: 'Fill in the blank', description: 'One exact text response' },
+  { value: 'NUMERIC', label: 'Numeric', description: 'A number with tolerance, units, or significant figures' },
+  { value: 'SHORT_ANSWER', label: 'Short answer', description: 'A concise response graded by key concepts' },
   { value: 'ESSAY', label: 'Long response', description: 'Written work with math, chemistry, and images' },
   { value: 'FILE_UPLOAD', label: 'File upload', description: 'Students submit a graph, document, or image' },
   { value: 'MATCHING', label: 'Matching', description: 'A structured matching response' },
@@ -34,6 +36,12 @@ interface DraftQuestion {
   options: string[];
   correctAnswer: string;
   hint: string;
+  numericAcceptedValue: string;
+  numericTolerance: string;
+  numericUnit: string;
+  numericSignificantFigures: string;
+  shortAnswerKeywords: string;
+  shortAnswerPassThreshold: string;
 }
 
 interface CsvImportResult {
@@ -51,6 +59,12 @@ function newQuestion(type: QuestionType = 'ESSAY'): DraftQuestion {
     options: type === 'MULTIPLE_CHOICE' ? ['', ''] : [],
     correctAnswer: '',
     hint: '',
+    numericAcceptedValue: '',
+    numericTolerance: '0.01',
+    numericUnit: '',
+    numericSignificantFigures: '',
+    shortAnswerKeywords: '',
+    shortAnswerPassThreshold: '0.7',
   };
 }
 
@@ -116,13 +130,6 @@ function normalizeQuestionType(rawType: string): { type: QuestionType; warning?:
   const supported = QUESTION_TYPES.find((item) => item.value === normalized);
   if (supported) return { type: supported.value };
 
-  if (normalized === 'NUMERIC' || normalized === 'SHORT_ANSWER') {
-    return {
-      type: 'FILL_BLANK',
-      warning: `${rawType} was imported as Short answer to match the current student player.`,
-    };
-  }
-
   return {
     type: 'ESSAY',
     warning: `${rawType || 'Blank question type'} was imported as Long response.`,
@@ -167,6 +174,27 @@ function importQuestionsFromCsv(text: string): CsvImportResult {
       warnings.push(`Row ${rowIndex + 2}: image_url was skipped because it was not a valid web or upload URL.`);
     }
 
+    let config: Record<string, unknown> = {};
+    if (value('config')) {
+      try {
+        const parsed = JSON.parse(value('config'));
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          config = parsed as Record<string, unknown>;
+        }
+      } catch {
+        throw new Error(`Row ${rowIndex + 2}: config must contain valid JSON.`);
+      }
+    }
+    const numeric = config.numeric && typeof config.numeric === 'object'
+      ? config.numeric as Record<string, unknown>
+      : {};
+    const shortAnswer = config.shortAnswer && typeof config.shortAnswer === 'object'
+      ? config.shortAnswer as Record<string, unknown>
+      : {};
+    const importedKeywords = Array.isArray(shortAnswer.keywords)
+      ? shortAnswer.keywords.map(String).join(', ')
+      : '';
+
     return {
       ...newQuestion(normalizedType.type),
       bodyHtml: `<p>${escapeHtml(questionText)}</p>${safeImage}`,
@@ -174,6 +202,20 @@ function importQuestionsFromCsv(text: string): CsvImportResult {
       options: normalizedType.type === 'MULTIPLE_CHOICE' ? parseOptions(value('options')) : [],
       correctAnswer: value('correct_answer'),
       hint: value('hint'),
+      numericAcceptedValue: numeric.acceptedValue !== undefined
+        ? String(numeric.acceptedValue)
+        : normalizedType.type === 'NUMERIC'
+          ? value('correct_answer')
+          : '',
+      numericTolerance: numeric.tolerance !== undefined ? String(numeric.tolerance) : '0.01',
+      numericUnit: typeof numeric.unit === 'string' ? numeric.unit : '',
+      numericSignificantFigures: numeric.significantFigures !== undefined
+        ? String(numeric.significantFigures)
+        : '',
+      shortAnswerKeywords: importedKeywords,
+      shortAnswerPassThreshold: shortAnswer.passThreshold !== undefined
+        ? String(shortAnswer.passThreshold)
+        : '0.7',
     };
   });
 
@@ -290,6 +332,46 @@ export function CreateAssignmentRich({
       setStatus('Multiple-choice questions need at least two options and a correct answer.');
       return;
     }
+    const invalidNumeric = questions.find((question) => {
+      if (question.questionType !== 'NUMERIC') return false;
+      const acceptedValue = Number(question.numericAcceptedValue);
+      const tolerance = Number(question.numericTolerance);
+      const significantFigures = question.numericSignificantFigures
+        ? Number(question.numericSignificantFigures)
+        : null;
+      return (
+        !question.numericAcceptedValue.trim() ||
+        !Number.isFinite(acceptedValue) ||
+        !Number.isFinite(tolerance) ||
+        tolerance < 0 ||
+        (significantFigures !== null &&
+          (!Number.isInteger(significantFigures) || significantFigures < 1))
+      );
+    });
+    if (invalidNumeric) {
+      setSelectedQuestionId(invalidNumeric.tempId);
+      setQuestionMode('manual');
+      setStatus('Numeric questions need a valid accepted value, non-negative tolerance, and valid significant figures.');
+      return;
+    }
+    const invalidShortAnswer = questions.find(
+      (question) => {
+        if (question.questionType !== 'SHORT_ANSWER') return false;
+        const passThreshold = Number(question.shortAnswerPassThreshold);
+        return (
+          !question.shortAnswerKeywords.split(',').some((keyword) => keyword.trim()) ||
+          !Number.isFinite(passThreshold) ||
+          passThreshold <= 0 ||
+          passThreshold > 1
+        );
+      },
+    );
+    if (invalidShortAnswer) {
+      setSelectedQuestionId(invalidShortAnswer.tempId);
+      setQuestionMode('manual');
+      setStatus('Short-answer questions need at least one grading keyword.');
+      return;
+    }
     setStep(2);
   }
 
@@ -301,13 +383,39 @@ export function CreateAssignmentRich({
         const options = question.questionType === 'MULTIPLE_CHOICE'
           ? question.options.map((option) => option.trim()).filter(Boolean)
           : undefined;
+        const config = question.questionType === 'NUMERIC'
+          ? {
+              numeric: {
+                acceptedValue: Number(question.numericAcceptedValue),
+                tolerance: Number(question.numericTolerance),
+                unit: question.numericUnit.trim() || undefined,
+                significantFigures: question.numericSignificantFigures
+                  ? Number(question.numericSignificantFigures)
+                  : undefined,
+              },
+            }
+          : question.questionType === 'SHORT_ANSWER'
+            ? {
+                shortAnswer: {
+                  keywords: question.shortAnswerKeywords
+                    .split(',')
+                    .map((keyword) => keyword.trim())
+                    .filter(Boolean),
+                  passThreshold: Number(question.shortAnswerPassThreshold) || 0.7,
+                },
+              }
+            : undefined;
+        const correctAnswer = question.questionType === 'NUMERIC'
+          ? question.numericAcceptedValue.trim()
+          : question.correctAnswer.trim();
 
         return {
           questionText: plainText,
           contentHtml,
           questionType: question.questionType,
           options,
-          correctAnswer: question.correctAnswer.trim() || undefined,
+          config,
+          correctAnswer: correctAnswer || undefined,
           points: question.points,
           order: index,
           hint: question.hint.trim() || undefined,
@@ -813,6 +921,78 @@ function QuestionEditor({
           </Field>
         ) : null}
 
+        {question.questionType === 'NUMERIC' ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Accepted value" required>
+              <input
+                type="number"
+                step="any"
+                value={question.numericAcceptedValue}
+                onChange={(event) => onUpdate({ numericAcceptedValue: event.target.value })}
+                placeholder="e.g. 2.73"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Tolerance" required>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={question.numericTolerance}
+                onChange={(event) => onUpdate({ numericTolerance: event.target.value })}
+                placeholder="e.g. 0.01"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Required unit">
+              <input
+                value={question.numericUnit}
+                onChange={(event) => onUpdate({ numericUnit: event.target.value })}
+                placeholder="e.g. cm"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Significant figures">
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={question.numericSignificantFigures}
+                onChange={(event) => onUpdate({ numericSignificantFigures: event.target.value })}
+                placeholder="Optional"
+                className={inputClass}
+              />
+            </Field>
+          </div>
+        ) : null}
+
+        {question.questionType === 'SHORT_ANSWER' ? (
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+            <Field label="Grading keywords" required>
+              <input
+                value={question.shortAnswerKeywords}
+                onChange={(event) => onUpdate({ shortAnswerKeywords: event.target.value })}
+                placeholder="e.g. photosynthesis, chlorophyll, sunlight"
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-xs text-slate-400">Separate key concepts with commas.</p>
+            </Field>
+            <Field label="Pass threshold">
+              <select
+                value={question.shortAnswerPassThreshold}
+                onChange={(event) => onUpdate({ shortAnswerPassThreshold: event.target.value })}
+                className={inputClass}
+              >
+                <option value="0.5">50%</option>
+                <option value="0.6">60%</option>
+                <option value="0.7">70%</option>
+                <option value="0.8">80%</option>
+                <option value="1">100%</option>
+              </select>
+            </Field>
+          </div>
+        ) : null}
+
         {['FILL_BLANK', 'MATCHING', 'ORDERING'].includes(question.questionType) ? (
           <Field label={question.questionType === 'FILL_BLANK' ? 'Correct answer' : 'Expected answer'}>
             <input
@@ -929,7 +1109,8 @@ function CsvImporter({ onImport }: { onImport: (result: CsvImportResult) => void
   function downloadTemplate() {
     const csv = [
       'subject,grade,topic,question_type,question_text,points,correct_answer,options,config,image_url,hint',
-      'Mathematics,11,Volume of Solids,FILL_BLANK,"Enter the radius of the sphere to 3 significant figures.",3,2.73,,,,"Use the volume formula"',
+      'Mathematics,11,Volume of Solids,NUMERIC,"Enter the radius of the sphere to 3 significant figures.",3,2.73,,"{""numeric"":{""acceptedValue"":2.73,""tolerance"":0.01,""unit"":""cm"",""significantFigures"":3}}",,"Use the volume formula"',
+      'Biology,10,Photosynthesis,SHORT_ANSWER,"State what plants require for photosynthesis.",3,,,"{""shortAnswer"":{""keywords"":[""sunlight"",""chlorophyll"",""carbon dioxide""],""passThreshold"":0.7}}",,',
       'Mathematics,11,Volume of Solids,MULTIPLE_CHOICE,"Which unit measures volume?",1,cm3,"cm|cm2|cm3|kg",,,,',
     ].join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

@@ -17,9 +17,23 @@ const AUTO_GRADABLE_TYPES = new Set<QuestionType>([
   QuestionType.MULTIPLE_CHOICE,
   QuestionType.TRUE_FALSE,
   QuestionType.FILL_BLANK,
+  QuestionType.NUMERIC,
+  QuestionType.SHORT_ANSWER,
   QuestionType.MATCHING,
   QuestionType.ORDERING,
 ]);
+
+interface AutoGradeResult {
+  pointsAwarded: number;
+  feedback: string;
+  isCorrect: boolean;
+}
+
+interface NumericAnswer {
+  value: number;
+  numericText: string;
+  unitText: string;
+}
 
 @Injectable()
 export class SubmissionsService {
@@ -95,19 +109,22 @@ export class SubmissionsService {
       const studentAnswer = answerByQuestionId.get(q.id) ?? '';
       let isCorrect: boolean | null = null;
       let pointsAwarded: number | null = null;
+      let feedback: string | null = null;
 
       // Only actually grade on the final submit — a draft just records
       // whatever's typed so far, ungraded, so re-opening it later shows the
       // student's own in-progress answers rather than premature scores.
-      if (isFinal && AUTO_GRADABLE_TYPES.has(q.questionType) && q.correctAnswer != null && q.correctAnswer !== '') {
-        isCorrect = this.isAnswerCorrect(q.questionType, studentAnswer, q.correctAnswer);
-        pointsAwarded = isCorrect ? q.points : 0;
+      if (isFinal && this.canAutoGradeQuestion(q)) {
+        const result = this.gradeAutoQuestion(q, studentAnswer);
+        isCorrect = result.isCorrect;
+        pointsAwarded = result.pointsAwarded;
+        feedback = result.feedback;
         totalScore += pointsAwarded;
       } else if (isFinal) {
         allAutoGraded = false;
       }
 
-      return { questionId: q.id, studentAnswer, isCorrect, pointsAwarded };
+      return { questionId: q.id, studentAnswer, isCorrect, pointsAwarded, feedback };
     });
 
     const fullyGraded = isFinal && allAutoGraded && answerRows.length > 0;
@@ -298,5 +315,247 @@ export class SubmissionsService {
       }
     }
     return given.trim().toLowerCase() === correct.trim().toLowerCase();
+  }
+
+  private canAutoGradeQuestion(question: {
+    questionType: QuestionType;
+    correctAnswer: string | null;
+    config: unknown;
+  }): boolean {
+    if (!AUTO_GRADABLE_TYPES.has(question.questionType)) return false;
+    if (question.questionType === QuestionType.NUMERIC) {
+      const numeric = this.numericConfig(question.config);
+      return (
+        (typeof numeric?.acceptedValue === 'number' && Number.isFinite(numeric.acceptedValue)) ||
+        this.parseNumericAnswer(question.correctAnswer ?? '') !== null
+      );
+    }
+    if (question.questionType === QuestionType.SHORT_ANSWER) {
+      const keywords = this.shortAnswerConfig(question.config)?.keywords;
+      return (
+        (Array.isArray(keywords) && keywords.some((keyword) => typeof keyword === 'string' && keyword.trim())) ||
+        Boolean(question.correctAnswer?.trim())
+      );
+    }
+    return Boolean(question.correctAnswer?.trim());
+  }
+
+  private gradeAutoQuestion(
+    question: {
+      questionType: QuestionType;
+      correctAnswer: string | null;
+      config: unknown;
+      points: number;
+    },
+    studentAnswer: string,
+  ): AutoGradeResult {
+    if (question.questionType === QuestionType.NUMERIC) {
+      return this.gradeNumeric(question, studentAnswer);
+    }
+    if (question.questionType === QuestionType.SHORT_ANSWER) {
+      return this.gradeShortAnswer(question, studentAnswer);
+    }
+
+    const isCorrect = this.isAnswerCorrect(
+      question.questionType,
+      studentAnswer,
+      question.correctAnswer ?? '',
+    );
+    return {
+      pointsAwarded: isCorrect ? question.points : 0,
+      feedback: isCorrect ? 'Correct.' : 'The answer does not match the expected response.',
+      isCorrect,
+    };
+  }
+
+  private gradeNumeric(
+    question: { config: unknown; correctAnswer: string | null; points: number },
+    studentAnswer: string,
+  ): AutoGradeResult {
+    if (!studentAnswer.trim()) {
+      return { pointsAwarded: 0, feedback: 'No answer was provided.', isCorrect: false };
+    }
+
+    const parsed = this.parseNumericAnswer(studentAnswer);
+    if (!parsed) {
+      return {
+        pointsAwarded: 0,
+        feedback: 'Enter a valid number, decimal, scientific value, or fraction.',
+        isCorrect: false,
+      };
+    }
+
+    const config = this.numericConfig(question.config);
+    const fallback = this.parseNumericAnswer(question.correctAnswer ?? '');
+    const acceptedValue =
+      typeof config?.acceptedValue === 'number' && Number.isFinite(config.acceptedValue)
+        ? config.acceptedValue
+        : fallback?.value;
+    if (acceptedValue === undefined) {
+      return { pointsAwarded: 0, feedback: 'This answer requires teacher review.', isCorrect: false };
+    }
+
+    const tolerance =
+      typeof config?.tolerance === 'number' && Number.isFinite(config.tolerance)
+        ? Math.max(0, config.tolerance)
+        : 0;
+    const difference = Math.abs(parsed.value - acceptedValue);
+    if (difference > tolerance) {
+      const isClose = tolerance > 0 && difference <= tolerance * 10;
+      return {
+        pointsAwarded: isClose ? Math.round(question.points * 0.5) : 0,
+        feedback: isClose
+          ? 'The answer is close. Check the calculation and rounding.'
+          : 'The numeric answer is outside the accepted range.',
+        isCorrect: false,
+      };
+    }
+
+    let pointsAwarded = question.points;
+    const feedback: string[] = ['The numeric value is correct.'];
+    const significantFigures = config?.significantFigures;
+    if (
+      typeof significantFigures === 'number' &&
+      Number.isInteger(significantFigures) &&
+      significantFigures > 0 &&
+      this.countSignificantFigures(parsed.numericText) !== significantFigures
+    ) {
+      pointsAwarded = this.applyIntegerPenalty(pointsAwarded, 0.9);
+      feedback.push(`Use ${significantFigures} significant figures.`);
+    }
+
+    const expectedUnit = typeof config?.unit === 'string' ? config.unit.trim() : '';
+    if (expectedUnit && this.normalizedUnit(parsed.unitText) !== this.normalizedUnit(expectedUnit)) {
+      pointsAwarded = this.applyIntegerPenalty(pointsAwarded, 0.8);
+      feedback.push(`Include the required unit (${expectedUnit}).`);
+    }
+
+    return { pointsAwarded, feedback: feedback.join(' '), isCorrect: true };
+  }
+
+  private gradeShortAnswer(
+    question: { config: unknown; correctAnswer: string | null; points: number },
+    studentAnswer: string,
+  ): AutoGradeResult {
+    const normalizedAnswer = this.normalizeText(studentAnswer);
+    if (!normalizedAnswer) {
+      return { pointsAwarded: 0, feedback: 'No answer was provided.', isCorrect: false };
+    }
+
+    const config = this.shortAnswerConfig(question.config);
+    const keywords = Array.isArray(config?.keywords)
+      ? config.keywords
+          .filter((keyword): keyword is string => typeof keyword === 'string')
+          .map((keyword) => this.normalizeText(keyword))
+          .filter(Boolean)
+      : [];
+
+    if (!keywords.length) {
+      const expected = this.normalizeText(question.correctAnswer ?? '');
+      const isCorrect = Boolean(expected) && normalizedAnswer === expected;
+      return {
+        pointsAwarded: isCorrect ? question.points : 0,
+        feedback: isCorrect ? 'Correct.' : 'The response needs teacher review.',
+        isCorrect,
+      };
+    }
+
+    const matched = keywords.filter((keyword) => normalizedAnswer.includes(keyword)).length;
+    const ratio = matched / keywords.length;
+    const configuredThreshold = config?.passThreshold;
+    const passThreshold =
+      typeof configuredThreshold === 'number' && configuredThreshold > 0 && configuredThreshold <= 1
+        ? configuredThreshold
+        : 0.7;
+    const pointsAwarded = Math.round(ratio * question.points);
+    const isCorrect = ratio >= passThreshold;
+
+    return {
+      pointsAwarded,
+      feedback: isCorrect
+        ? 'The response covers the required key points.'
+        : ratio > 0
+          ? 'The response includes some key points but needs more detail.'
+          : 'The response does not yet cover the required key points.',
+      isCorrect,
+    };
+  }
+
+  private parseNumericAnswer(answer: string): NumericAnswer | null {
+    const normalized = answer.trim().replace(/,/g, '');
+    const numberPattern = '[+-]?(?:(?:\\d+(?:\\.\\d*)?)|(?:\\.\\d+))(?:e[+-]?\\d+)?';
+    const match = normalized.match(
+      new RegExp(`^(${numberPattern})(?:\\s*\\/\\s*(${numberPattern}))?\\s*(.*)$`, 'i'),
+    );
+    if (!match) return null;
+
+    const numerator = Number(match[1]);
+    const denominator = match[2] === undefined ? null : Number(match[2]);
+    if (
+      !Number.isFinite(numerator) ||
+      (denominator !== null && (!Number.isFinite(denominator) || denominator === 0))
+    ) {
+      return null;
+    }
+
+    const unitText = match[3]?.trim() ?? '';
+    if (unitText && !/[a-zA-Zµμ°%²³]/.test(unitText)) return null;
+
+    return {
+      value: denominator === null ? numerator : numerator / denominator,
+      numericText: denominator === null ? match[1] : `${match[1]}/${match[2]}`,
+      unitText,
+    };
+  }
+
+  private countSignificantFigures(value: string): number {
+    const numerator = value.split('/')[0].trim().replace(/^[+-]/, '').toLowerCase().split('e')[0];
+    const withoutLeadingZeros = numerator.replace('.', '').replace(/^0+/, '');
+    if (!withoutLeadingZeros) return 0;
+    return numerator.includes('.')
+      ? withoutLeadingZeros.length
+      : withoutLeadingZeros.replace(/0+$/, '').length;
+  }
+
+  private normalizeText(value: string): string {
+    return value.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  private normalizedUnit(value: string): string {
+    return value
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/\^2/g, '²')
+      .replace(/\^3/g, '³')
+      .replace(/[.,;:]$/, '');
+  }
+
+  private applyIntegerPenalty(points: number, ratio: number): number {
+    if (points <= 1) return 0;
+    return Math.max(1, Math.floor(points * ratio));
+  }
+
+  private numericConfig(config: unknown): {
+    acceptedValue?: unknown;
+    tolerance?: unknown;
+    unit?: unknown;
+    significantFigures?: unknown;
+  } | null {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
+    const numeric = (config as Record<string, unknown>).numeric;
+    return numeric && typeof numeric === 'object' && !Array.isArray(numeric)
+      ? (numeric as Record<string, unknown>)
+      : null;
+  }
+
+  private shortAnswerConfig(config: unknown): {
+    keywords?: unknown;
+    passThreshold?: unknown;
+  } | null {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
+    const shortAnswer = (config as Record<string, unknown>).shortAnswer;
+    return shortAnswer && typeof shortAnswer === 'object' && !Array.isArray(shortAnswer)
+      ? (shortAnswer as Record<string, unknown>)
+      : null;
   }
 }

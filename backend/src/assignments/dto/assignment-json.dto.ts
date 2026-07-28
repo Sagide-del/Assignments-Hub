@@ -3,6 +3,7 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -82,6 +83,10 @@ export class ExamQuestionDto {
   // enum value, but {left,right} object for that one" cleanly.
   @IsOptional()
   options?: string[] | { left: string[]; right: string[] };
+
+  @IsOptional()
+  @IsObject()
+  config?: Record<string, unknown>;
 
   // Same polymorphism as `options`: a plain string for MULTIPLE_CHOICE/
   // TRUE_FALSE/FILL_BLANK, a { "0": "1", ... } object for MATCHING, or a

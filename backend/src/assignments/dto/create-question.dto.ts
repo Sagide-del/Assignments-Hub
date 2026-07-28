@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsObject, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { QuestionType } from '@prisma/client';
 
 export class CreateQuestionDto {
@@ -26,6 +26,10 @@ export class CreateQuestionDto {
   @IsArray()
   @IsString({ each: true })
   options?: string[];
+
+  @IsOptional()
+  @IsObject()
+  config?: Record<string, unknown>;
 
   // Only used for auto-gradable types (MULTIPLE_CHOICE, TRUE_FALSE,
   // FILL_BLANK) — see SubmissionsService.autoGrade. Never sent back to

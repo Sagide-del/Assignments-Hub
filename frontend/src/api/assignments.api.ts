@@ -7,6 +7,7 @@ export interface CreateQuestionInput {
   contentHtml?: string;
   questionType?: Question['questionType'];
   options?: string[];
+  config?: Record<string, unknown>;
   correctAnswer?: string;
   points?: number;
   order?: number;
