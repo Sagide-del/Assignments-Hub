@@ -14,6 +14,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
 import { normalizeGrade } from '../common/utils/grade.util';
+import { generateIndependentStudentId } from '../common/utils/independent-student-id.util';
 
 // How long a refresh token is valid for if it's never used to refresh
 // (i.e. how long a "remember me" session can sit idle before the user has
@@ -157,7 +158,7 @@ export class AuthService {
     }
 
     const grade = normalizeGrade(dto.grade) ?? dto.grade.trim();
-    const admissionNumber = `IND-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+    const admissionNumber = await generateIndependentStudentId(this.prisma, school.id);
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const student = await this.prisma.user.create({

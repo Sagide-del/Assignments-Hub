@@ -13,6 +13,7 @@ import { SubmitIndependentPaymentClaimDto } from './dto/submit-payment-claim.dto
 import { RejectIndependentPaymentClaimDto } from './dto/reject-payment-claim.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
+import { generateIndependentStudentId } from '../common/utils/independent-student-id.util';
 
 // The one system-wide School row every independent student belongs to —
 // lazily upserted by code so the rest of the app's schoolId-scoped
@@ -91,7 +92,9 @@ export class IndependentStudentsService {
     // Independent students don't come from a school register, so there's
     // no natural admission number — generate one if the admin didn't
     // supply one, unique enough within this one school.
-    const admissionNumber = dto.admissionNumber?.trim() || `IND-${Date.now()}`;
+    const admissionNumber =
+      dto.admissionNumber?.trim().toUpperCase() ||
+      await generateIndependentStudentId(this.prisma, school.id);
 
     return this.usersService.create(
       {
