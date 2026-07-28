@@ -21,6 +21,7 @@ export interface CreateAssignmentInput {
   type?: string;
   dueDate?: string;
   maxPoints?: number;
+  timeAllowedMinutes?: number;
   isPublished?: boolean;
   questions?: CreateQuestionInput[];
   // One-shot instruction, not persisted: SMS every parent with a phone on

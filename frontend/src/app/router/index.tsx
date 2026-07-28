@@ -20,7 +20,6 @@ import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
-import { CreateAssignment } from '../../features/teacher/CreateAssignment';
 import { CreateAssignmentRich } from '../../features/teacher/CreateAssignmentRich';
 import AiAssignmentGenerator from '../../features/teacher/AiAssignmentGenerator';
 import { Marking } from '../../features/teacher/Marking';
@@ -80,10 +79,6 @@ const teacherNav = [
   {
     to: '/teacher/assignments/new',
     label: 'New Assignment',
-  },
-  {
-    to: '/teacher/assignments/new-rich',
-    label: 'Rich Editor',
   },
   {
     to: '/teacher/assignments/generate',
@@ -294,11 +289,11 @@ export const router = createBrowserRouter([
           },
           {
             path: '/teacher/assignments/new',
-            element: <CreateAssignment />,
+            element: <CreateAssignmentRich />,
           },
           {
             path: '/teacher/assignments/new-rich',
-            element: <CreateAssignmentRich />,
+            element: <Navigate to="/teacher/assignments/new" replace />,
           },
           {
             path: '/teacher/assignments/generate',

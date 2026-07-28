@@ -50,6 +50,12 @@ export class CreateAssignmentDto {
   @Max(10000)
   maxPoints?: number;
 
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(480)
+  timeAllowedMinutes?: number;
+
   // Defaults to true in the service layer if omitted (publish immediately).
   @IsOptional()
   @IsBoolean()

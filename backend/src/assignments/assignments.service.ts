@@ -56,6 +56,7 @@ export class AssignmentsService {
         type: dto.type,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints ?? 100,
+        timeAllowedMinutes: dto.timeAllowedMinutes,
         isPublished: dto.isPublished ?? true,
         publishDate: dto.publishDate ? new Date(dto.publishDate) : undefined,
         resources: dto.resources && dto.resources.length ? dto.resources : undefined,
