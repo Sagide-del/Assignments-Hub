@@ -15,12 +15,11 @@ import {
   SubscriptionStatus,
 } from '@prisma/client';
 import PDFDocument = require('pdfkit');
-import { promises as fs } from 'fs';
-import { join } from 'path';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
 import { computeMonthlyPriceKES, ComputedPricing, SchoolType } from '../common/config/plans';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { IntaSendPaymentProvider } from './providers/intasend-payment.provider';
 import { MpesaPaymentProvider } from './providers/mpesa-payment.provider';
 
@@ -51,16 +50,15 @@ export interface PaymentProviderView {
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly webhookSecret: string;
-  private readonly invoiceStorageDir: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly intaSendProvider: IntaSendPaymentProvider,
     private readonly mpesaProvider: MpesaPaymentProvider,
+    private readonly uploadsService: UploadsService,
   ) {
     this.webhookSecret = this.configService.get('INTASEND_WEBHOOK_SECRET') || '';
-    this.invoiceStorageDir = join(process.cwd(), 'generated', 'invoices');
     if (!this.webhookSecret) {
       this.logger.warn(
         'INTASEND_WEBHOOK_SECRET is not set â€” all incoming IntaSend webhooks will be rejected, so paid subscriptions will never auto-activate. Set it in .env to the challenge string configured on the IntaSend dashboard.',
@@ -1107,8 +1105,6 @@ export class PaymentService {
   private async buildInvoicePdf(invoiceId: number, actor: AuthenticatedUser) {
     const invoice = await this.loadInvoiceForAccess(invoiceId, actor);
     const fileName = `${invoice.invoiceNumber}.pdf`;
-    const filePath = join(this.invoiceStorageDir, fileName);
-    await fs.mkdir(this.invoiceStorageDir, { recursive: true });
 
     const doc = new PDFDocument({ margin: 50 });
     const chunks: Buffer[] = [];
@@ -1148,14 +1144,19 @@ export class PaymentService {
 
     doc.end();
     const buffer = await endPromise;
-    await fs.writeFile(filePath, buffer);
+    const storedInvoice = await this.uploadsService.uploadBuffer({
+      body: buffer,
+      filename: fileName,
+      contentType: 'application/pdf',
+      folder: 'invoices',
+    });
 
     await this.prisma.invoice.update({
       where: { id: invoice.id },
-      data: { pdfPath: filePath },
+      data: { pdfPath: storedInvoice.url },
     });
 
-    return { buffer, fileName, filePath };
+    return { buffer, fileName, filePath: storedInvoice.url };
   }
 
   async downloadInvoice(invoiceId: number, actor: AuthenticatedUser) {

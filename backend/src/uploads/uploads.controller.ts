@@ -6,9 +6,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { extname } from 'path';
-import { randomBytes } from 'crypto';
+import { UploadsService } from './uploads.service';
 
 // Generic authenticated file upload used by both the teacher assignment
 // builder (attachments) and student submissions (FILE_UPLOAD question
@@ -19,8 +19,8 @@ import { randomBytes } from 'crypto';
 // "upload a file and get a URL back".
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
 
-// main.ts serves everything under ./uploads as static files from the SAME
-// origin as the rest of the app (`app.use('/uploads', express.static(...))`).
+// main.ts still serves legacy files under ./uploads so existing URLs work.
+// New uploads are buffered here and stored in S3 by UploadsService.
 // Without an allowlist here, anyone could upload an .html/.svg/.js file
 // containing a <script> and get it served back same-origin — a stored XSS
 // vector, since the browser would execute it with this app's cookies/DOM
@@ -52,17 +52,12 @@ const ALLOWED_EXTENSIONS = new Set([
 
 @Controller('uploads')
 export class UploadsController {
+  constructor(private readonly uploadsService: UploadsService) {}
+
   @Post('single')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (_req, file, callback) => {
-          const unique = `${Date.now()}-${randomBytes(6).toString('hex')}`;
-          const safeExt = extname(file.originalname).slice(0, 10);
-          callback(null, `${unique}${safeExt}`);
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: MAX_FILE_SIZE_BYTES },
       fileFilter: (_req, file, callback) => {
         const ext = extname(file.originalname).toLowerCase();
@@ -74,16 +69,12 @@ export class UploadsController {
       },
     }),
   )
-  uploadSingle(@UploadedFile() file: Express.Multer.File) {
+  async uploadSingle(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException(
         'No file was uploaded (expected multipart field "file"), or the file type is not supported',
       );
     }
-    return {
-      url: `/uploads/${file.filename}`,
-      filename: file.originalname,
-      size: file.size,
-    };
+    return this.uploadsService.upload(file);
   }
 }
