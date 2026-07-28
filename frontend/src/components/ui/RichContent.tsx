@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify';
 import 'katex/dist/katex.min.css';
+import { resolveUploadUrl } from '../../api/uploads.api';
 
 // Renders teacher-authored rich HTML (from the Rich Editor — see
 // features/teacher/rich-editor/RichTextEditor.tsx) anywhere a question body
@@ -34,7 +35,7 @@ const ALLOWED_ATTR = [
 ];
 
 export function sanitizeRichHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
+  const sanitized = DOMPurify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
     USE_PROFILES: { html: true, svg: true, mathMl: true },
@@ -42,6 +43,16 @@ export function sanitizeRichHtml(html: string): string {
     // through via an allowed attribute like `style` or `href`.
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
   });
+
+  // Older questions may already contain backend-relative upload paths. Keep
+  // the stored HTML portable and resolve those paths only when rendering.
+  const template = document.createElement('template');
+  template.innerHTML = sanitized;
+  template.content.querySelectorAll<HTMLImageElement>('img[src]').forEach((image) => {
+    const source = image.getAttribute('src');
+    if (source) image.setAttribute('src', resolveUploadUrl(source));
+  });
+  return template.innerHTML;
 }
 
 export function RichContent({ html, className = '' }: { html: string; className?: string }) {
