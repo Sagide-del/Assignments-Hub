@@ -7,7 +7,7 @@ import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { AssignmentJsonDto, ExamQuestionDto } from './dto/assignment-json.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
-import { AssignmentType, QuestionType } from '@prisma/client';
+import { AssignmentType, QuestionType, SubscriptionStatus } from '@prisma/client';
 import { SmsService } from '../sms/sms.service';
 import { normalizeGrade } from '../common/utils/grade.util';
 
@@ -21,6 +21,24 @@ export class AssignmentsService {
   ) {}
 
   async create(dto: CreateAssignmentDto, actor: AuthenticatedUser) {
+    return this.createForSchool(dto, actor, actor.schoolId);
+  }
+
+  async createIndependent(dto: CreateAssignmentDto, actor: AuthenticatedUser) {
+    const school = await this.getIndependentSchool();
+    return this.createForSchool(dto, actor, school.id);
+  }
+
+  async findIndependent(actor: AuthenticatedUser) {
+    const school = await this.getIndependentSchool();
+    return this.findAll(actor, school.id);
+  }
+
+  private async createForSchool(
+    dto: CreateAssignmentDto,
+    actor: AuthenticatedUser,
+    schoolId: number,
+  ) {
     const rubricTotal = dto.rubric?.reduce((sum, c) => sum + (c.points || 0), 0) ?? 0;
     // Normalize free-text grade input ("12", "grade12") to the canonical
     // "Grade 12" format that AssignmentsService.findAll's exact-match
@@ -30,7 +48,7 @@ export class AssignmentsService {
 
     const assignment = await this.prisma.assignment.create({
       data: {
-        schoolId: actor.schoolId,
+        schoolId,
         title: dto.title,
         description: dto.description,
         subject: dto.subject,
@@ -73,6 +91,18 @@ export class AssignmentsService {
     }
 
     return assignment;
+  }
+
+  private getIndependentSchool() {
+    return this.prisma.school.upsert({
+      where: { code: 'INDEPENDENT' },
+      create: {
+        name: 'Independent Students',
+        code: 'INDEPENDENT',
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+      },
+      update: {},
+    });
   }
 
   // Fire-and-forget: SMS every parent (with a phone on file) of a student in
@@ -146,7 +176,16 @@ export class AssignmentsService {
     if (!assignment) throw new NotFoundException('Assignment not found');
     this.assertSameTenant(assignment.schoolId, actor);
 
-    return actor.role === Role.STUDENT ? this.stripAnswersForStudent(assignment) : assignment;
+    if (actor.role === Role.STUDENT) {
+      const unavailable =
+        !assignment.isPublished ||
+        (assignment.publishDate && assignment.publishDate > new Date()) ||
+        (actor.grade && assignment.grade !== actor.grade);
+      if (unavailable) throw new NotFoundException('Assignment not found');
+      return this.stripAnswersForStudent(assignment);
+    }
+
+    return assignment;
   }
 
   async findQuestions(id: number, actor: AuthenticatedUser) {

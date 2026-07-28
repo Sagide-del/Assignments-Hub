@@ -1,4 +1,4 @@
-export type LoginType = 'student' | 'staff';
+export type LoginType = 'student' | 'independent' | 'staff';
 
 interface Props {
   loginType: LoginType;
@@ -7,7 +7,7 @@ interface Props {
 
 export function LoginTabs({ loginType, setLoginType }: Props) {
   return (
-    <div className="flex border rounded-xl overflow-hidden mt-8">
+    <div className="grid grid-cols-3 overflow-hidden rounded-xl border mt-8">
       <button
         type="button"
         onClick={() => setLoginType('student')}
@@ -15,7 +15,16 @@ export function LoginTabs({ loginType, setLoginType }: Props) {
           loginType === 'student' ? 'bg-[#B5E61D]' : 'bg-white hover:bg-gray-50'
         }`}
       >
-        Student
+        School Student
+      </button>
+      <button
+        type="button"
+        onClick={() => setLoginType('independent')}
+        className={`px-2 py-3 text-sm font-medium transition ${
+          loginType === 'independent' ? 'bg-[#B5E61D]' : 'bg-white hover:bg-gray-50'
+        }`}
+      >
+        Individual
       </button>
       <button
         type="button"

@@ -4,6 +4,7 @@ import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 
 import Login from '../../pages/Login';
+import IndependentRegister from '../../pages/IndependentRegister';
 import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 
 import { StudentDashboard } from '../../features/student/Dashboard';
@@ -42,6 +43,7 @@ import { StemContentStudio } from '../../features/platform-admin/StemContentStud
 import { PlatformBilling } from '../../features/platform-admin/Billing';
 import { SkillStudio } from '../../features/platform-admin/SkillStudio';
 import { IndependentStudentsPage } from '../../features/platform-admin/IndependentStudents';
+import { IndependentAssignmentsPage } from '../../features/platform-admin/IndependentAssignments';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -152,6 +154,10 @@ const platformAdminNav = [
     label: 'Independent Students',
   },
   {
+    to: '/platform/independent-assignments',
+    label: 'Independent Assignments',
+  },
+  {
     to: '/platform/stem-content',
     label: 'STEM Studio',
   },
@@ -175,6 +181,11 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+
+  {
+    path: '/register',
+    element: <IndependentRegister />,
   },
 
   {
@@ -380,6 +391,19 @@ export const router = createBrowserRouter([
           {
             path: '/platform/independent-students',
             element: <IndependentStudentsPage />,
+          },
+          {
+            path: '/platform/independent-assignments',
+            element: <IndependentAssignmentsPage />,
+          },
+          {
+            path: '/platform/independent-assignments/new',
+            element: (
+              <CreateAssignmentRich
+                target="independent"
+                returnTo="/platform/independent-assignments"
+              />
+            ),
           },
           {
             path: '/platform/stem-content',

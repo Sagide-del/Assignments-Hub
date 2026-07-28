@@ -1,19 +1,36 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { IndependentStudentsService } from './independent-students.service';
 import { CreateIndependentStudentDto } from './dto/create-independent-student.dto';
 import { RecordIndependentInvoiceDto } from './dto/record-invoice.dto';
+import { SubmitIndependentPaymentClaimDto } from './dto/submit-payment-claim.dto';
+import { RejectIndependentPaymentClaimDto } from './dto/reject-payment-claim.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditAction } from '../common/decorators/audit.decorator';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
+import { Public } from '../common/decorators/public.decorator';
 
 // Students enrolled without a school — PLATFORM_ADMIN only throughout, see
 // independent-students.service.ts for the full design rationale.
 @Controller('independent-students')
 export class IndependentStudentsController {
   constructor(private readonly independentStudentsService: IndependentStudentsService) {}
+
+  @Public()
+  @Get('public/payment-info')
+  getPublicPaymentInfo() {
+    return this.independentStudentsService.getPaymentInfo();
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('public/payment-claims')
+  submitPaymentClaim(@Body() dto: SubmitIndependentPaymentClaimDto) {
+    return this.independentStudentsService.submitPaymentClaim(dto);
+  }
 
   @Get('payment-info')
   @Roles(Role.PLATFORM_ADMIN)
@@ -45,5 +62,32 @@ export class IndependentStudentsController {
   @AuditAction('independent_student.invoice_record')
   recordInvoice(@Body() dto: RecordIndependentInvoiceDto, @CurrentUser() actor: AuthenticatedUser) {
     return this.independentStudentsService.recordInvoice(dto, actor);
+  }
+
+  @Get('payment-claims')
+  @Roles(Role.PLATFORM_ADMIN)
+  findPaymentClaims() {
+    return this.independentStudentsService.findPaymentClaims();
+  }
+
+  @Patch('payment-claims/:id/approve')
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction('independent_student.payment_claim_approve')
+  approvePaymentClaim(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.independentStudentsService.approvePaymentClaim(id, actor);
+  }
+
+  @Patch('payment-claims/:id/reject')
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction('independent_student.payment_claim_reject')
+  rejectPaymentClaim(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RejectIndependentPaymentClaimDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.independentStudentsService.rejectPaymentClaim(id, dto, actor);
   }
 }

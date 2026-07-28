@@ -52,9 +52,12 @@ export interface Assignment {
   subject: string;
   grade: string;
   totalMarks: number;
+  maxPoints?: number;
+  dueDate?: string | null;
   isPublished: boolean;
   createdAt: string;
   schoolId: number;
+  _count?: { questions: number; submissions: number };
 }
 
 // Mirrors backend/prisma/schema.prisma Submission model (there is no
@@ -843,6 +846,7 @@ export type IndependentStudentStatus = 'ACTIVE' | 'EXPIRED' | 'NEVER_PAID';
 export interface IndependentStudent {
   id: number;
   name: string;
+  email: string | null;
   admissionNumber: string | null;
   grade: string | null;
   parentPhone: string | null;
@@ -869,9 +873,41 @@ export interface IndependentStudentInvoice {
 }
 
 export interface IndependentStudentPaymentInfo {
+  enabled: boolean;
   tillNumber: string;
   storeNumber: string;
+  monthlyAmountKES: number;
+  annualAmountKES: number;
   instructions: string;
+}
+
+export interface IndependentRegistrationResult {
+  studentId: number;
+  name: string;
+  email: string | null;
+  admissionNumber: string;
+  grade: string;
+  requiresPayment: boolean;
+}
+
+export type IndependentPaymentClaimStatus =
+  | 'AWAITING_VERIFICATION'
+  | 'CONFIRMED'
+  | 'REJECTED';
+
+export interface IndependentPaymentClaim {
+  id: number;
+  studentId: number;
+  amountKES: number;
+  interval: 'MONTHLY' | 'ANNUAL';
+  mpesaCode: string;
+  payerPhone: string | null;
+  status: IndependentPaymentClaimStatus;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  student?: { id: number; name: string; email: string | null; grade: string | null };
+  reviewedBy?: { id: number; name: string } | null;
 }
 
 // Generic API error shape thrown by backend/src/common/filters/http-exception.filter.ts

@@ -1,9 +1,28 @@
 import { api } from './axios';
-import type { IndependentStudent, IndependentStudentInvoice, IndependentStudentPaymentInfo } from '../types';
+import type {
+  IndependentPaymentClaim,
+  IndependentStudent,
+  IndependentStudentInvoice,
+  IndependentStudentPaymentInfo,
+} from '../types';
 
 // Matches backend/src/independent-students/independent-students.controller.ts.
 export const independentStudentsApi = {
   getPaymentInfo: () => api.get<IndependentStudentPaymentInfo>('/independent-students/payment-info').then((r) => r.data),
+
+  getPublicPaymentInfo: () =>
+    api.get<IndependentStudentPaymentInfo>('/independent-students/public/payment-info').then((r) => r.data),
+
+  submitPaymentClaim: (dto: {
+    identifier: string;
+    interval: 'MONTHLY' | 'ANNUAL';
+    mpesaCode: string;
+    payerPhone?: string;
+  }) =>
+    api.post<Pick<IndependentPaymentClaim, 'id' | 'status' | 'amountKES' | 'interval' | 'createdAt'>>(
+      '/independent-students/public/payment-claims',
+      dto,
+    ).then((r) => r.data),
 
   findStudents: () => api.get<IndependentStudent[]>('/independent-students/students').then((r) => r.data),
 
@@ -21,4 +40,13 @@ export const independentStudentsApi = {
     mpesaCode: string;
     payerPhone?: string;
   }) => api.post<IndependentStudentInvoice>('/independent-students/invoices', dto).then((r) => r.data),
+
+  findPaymentClaims: () =>
+    api.get<IndependentPaymentClaim[]>('/independent-students/payment-claims').then((r) => r.data),
+
+  approvePaymentClaim: (id: number) =>
+    api.patch(`/independent-students/payment-claims/${id}/approve`).then((r) => r.data),
+
+  rejectPaymentClaim: (id: number, reason?: string) =>
+    api.patch(`/independent-students/payment-claims/${id}/reject`, { reason }).then((r) => r.data),
 };

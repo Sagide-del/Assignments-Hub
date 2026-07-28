@@ -54,6 +54,11 @@ export const assignmentsApi = {
 
   create: (dto: CreateAssignmentInput) => api.post<Assignment>('/assignments', dto).then((r) => r.data),
 
+  findIndependent: () => api.get<Assignment[]>('/assignments/independent').then((r) => r.data),
+
+  createIndependent: (dto: CreateAssignmentInput) =>
+    api.post<Assignment>('/assignments/independent', dto).then((r) => r.data),
+
   update: (id: number, dto: Partial<Assignment>) =>
     api.patch<Assignment>(`/assignments/${id}`, dto).then((r) => r.data),
 

@@ -58,7 +58,13 @@ function newQuestion(): DraftQuestion {
 // read-only (rendered via RichContent.tsx in ExamPlayer) and answer the
 // same way they do today; interactive answering for diagrams/equations is
 // a later addition.
-export function CreateAssignmentRich() {
+export function CreateAssignmentRich({
+  target = 'school',
+  returnTo = '/teacher',
+}: {
+  target?: 'school' | 'independent';
+  returnTo?: string;
+} = {}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -99,18 +105,24 @@ export function CreateAssignmentRich() {
         };
       });
 
-      return assignmentsApi.create({
+      const createAssignment =
+        target === 'independent'
+          ? assignmentsApi.createIndependent
+          : assignmentsApi.create;
+
+      return createAssignment({
         title,
         subject,
         grade,
         dueDate: dueDate || undefined,
-        notifyParents,
+        notifyParents: target === 'school' ? notifyParents : false,
         questions: payloadQuestions,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      navigate('/teacher', { replace: true });
+      queryClient.invalidateQueries({ queryKey: ['independent-assignments'] });
+      navigate(returnTo, { replace: true });
     },
     onError: (err) => setStatus(apiErrorMessage(err, 'Could not create assignment')),
   });
@@ -120,8 +132,8 @@ export function CreateAssignmentRich() {
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        eyebrow="Rich Editor (Beta)"
-        title="New Assignment — Rich Editor"
+        eyebrow={target === 'independent' ? 'Independent Learning' : 'Rich Editor (Beta)'}
+        title={target === 'independent' ? 'New Independent Assignment' : 'New Assignment — Rich Editor'}
         meta="Format question text, insert math or chemistry equations, embed images, and label diagrams."
       />
 
@@ -144,10 +156,12 @@ export function CreateAssignmentRich() {
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
           </div>
         </div>
-        <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={notifyParents} onChange={(e) => setNotifyParents(e.target.checked)} />
-          SMS every parent in this grade when created
-        </label>
+        {target === 'school' ? (
+          <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={notifyParents} onChange={(e) => setNotifyParents(e.target.checked)} />
+            SMS every parent in this grade when created
+          </label>
+        ) : null}
       </ActionCard>
 
       <div className="space-y-4">

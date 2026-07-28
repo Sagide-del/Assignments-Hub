@@ -1,9 +1,10 @@
 import { useState, type FormEvent, type ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LoginTabs, type LoginType } from './LoginTabs';
 import {
   loginStudent,
   loginStaff,
+  loginIndependent,
   dashboardPathForRole,
 } from '../../services/authService';
 import { apiErrorMessage } from '../../api/axios';
@@ -19,6 +20,7 @@ interface Props {
 interface FormState {
   schoolCode: string;
   email: string;
+  independentIdentifier: string;
   password: string;
   admissionNumber: string;
 }
@@ -37,6 +39,7 @@ export function LoginCard({
   const [form, setForm] = useState<FormState>({
     schoolCode: '',
     email: '',
+    independentIdentifier: '',
     password: '',
     admissionNumber: '',
   });
@@ -72,15 +75,10 @@ export function LoginCard({
 
       const user =
         loginType === 'student'
-          ? await loginStudent(
-              form.schoolCode,
-              form.admissionNumber
-            )
-          : await loginStaff(
-              form.schoolCode,
-              form.email,
-              form.password
-            );
+          ? await loginStudent(form.schoolCode, form.admissionNumber)
+          : loginType === 'independent'
+            ? await loginIndependent(form.independentIdentifier, form.password)
+            : await loginStaff(form.schoolCode, form.email, form.password);
 
 
       navigate(
@@ -98,7 +96,9 @@ export function LoginCard({
           err,
           loginType === 'student'
             ? 'Invalid school code or admission number'
-            : 'Invalid credentials'
+            : loginType === 'independent'
+              ? 'Invalid Student ID or password'
+              : 'Invalid email or password'
         )
       );
 
@@ -176,27 +176,29 @@ export function LoginCard({
 
 
 
-        <input
-          name="schoolCode"
-          placeholder="School Code"
-          value={form.schoolCode}
-          onChange={handleChange}
-          required
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          autoComplete="off"
-          className="
-            w-full
-            border
-            border-gray-200
-            rounded-xl
-            px-5
-            py-4
-            outline-none
-            focus:border-[#B5E61D]
-          "
-        />
+        {loginType !== 'independent' ? (
+          <input
+            name="schoolCode"
+            placeholder="School Code"
+            value={form.schoolCode}
+            onChange={handleChange}
+            required
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="off"
+            className="
+              w-full
+              border
+              border-gray-200
+              rounded-xl
+              px-5
+              py-4
+              outline-none
+              focus:border-[#B5E61D]
+            "
+          />
+        ) : null}
 
 
 
@@ -229,30 +231,53 @@ export function LoginCard({
 
           <>
 
-
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={form.email}
-              onChange={handleChange}
-              required
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              autoComplete="email"
-              inputMode="email"
-              className="
-                w-full
-                border
-                border-gray-200
-                rounded-xl
-                px-5
-                py-4
-                outline-none
-                focus:border-[#B5E61D]
-              "
-            />
+            {loginType === 'independent' ? (
+              <input
+                name="independentIdentifier"
+                placeholder="Student ID or Email"
+                value={form.independentIdentifier}
+                onChange={handleChange}
+                required
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="username"
+                className="
+                  w-full
+                  border
+                  border-gray-200
+                  rounded-xl
+                  px-5
+                  py-4
+                  outline-none
+                  focus:border-[#B5E61D]
+                "
+              />
+            ) : (
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                value={form.email}
+                onChange={handleChange}
+                required
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="email"
+                inputMode="email"
+                className="
+                  w-full
+                  border
+                  border-gray-200
+                  rounded-xl
+                  px-5
+                  py-4
+                  outline-none
+                  focus:border-[#B5E61D]
+                "
+              />
+            )}
 
 
 
@@ -338,17 +363,13 @@ export function LoginCard({
         "
       >
 
-        New school?
-
-        <span
-          className="
-            text-[#8BB800]
-            font-semibold
-            ml-1
-          "
+        {loginType === 'independent' ? 'New individual learner?' : 'Learning independently?'}
+        <Link
+          to="/register"
+          className="ml-1 font-semibold text-[#6F9300] hover:underline"
         >
-          Contact your Platform Admin to get set up.
-        </span>
+          Create an account
+        </Link>
 
       </p>
 

@@ -20,6 +20,12 @@ export async function loginStaff(schoolCode: string, email: string, password: st
   return pair.user;
 }
 
+export async function loginIndependent(identifier: string, password: string): Promise<AuthenticatedUser> {
+  const pair = await authApi.loginIndependent(identifier.trim(), password);
+  useAuthStore.getState().setSession(pair);
+  return pair.user;
+}
+
 // Matches the route table in src/app/router/index.tsx exactly. Covers all
 // four roles (including PLATFORM_ADMIN) even though this page never shows a
 // Platform Admin login option — if a platform admin's credentials happen to

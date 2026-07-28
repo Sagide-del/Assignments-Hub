@@ -4,6 +4,8 @@ import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { StaffLoginDto } from './dto/staff-login.dto';
 import { StudentLoginDto } from './dto/student-login.dto';
+import { IndependentLoginDto } from './dto/independent-login.dto';
+import { RegisterIndependentStudentDto } from './dto/register-independent-student.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -26,6 +28,20 @@ export class AuthController {
   @Post('student/login')
   loginStudent(@Body() dto: StudentLoginDto, @Req() req: Request) {
     return this.authService.loginStudent(dto, req.ip);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('independent/register')
+  registerIndependentStudent(@Body() dto: RegisterIndependentStudentDto, @Req() req: Request) {
+    return this.authService.registerIndependentStudent(dto, req.ip);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('independent/login')
+  loginIndependentStudent(@Body() dto: IndependentLoginDto, @Req() req: Request) {
+    return this.authService.loginIndependentStudent(dto, req.ip);
   }
 
   // Public: the access token is expired (that's the whole point of calling

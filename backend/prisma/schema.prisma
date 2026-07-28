@@ -55,6 +55,12 @@ enum SubscriptionInterval {
   ANNUAL
 }
 
+enum IndependentPaymentClaimStatus {
+  AWAITING_VERIFICATION
+  CONFIRMED
+  REJECTED
+}
+
 enum AssignmentType {
   AUTO_MARKED
   TEACHER_MARKED
@@ -307,6 +313,8 @@ model User {
   // Independent-student billing — see IndependentStudentInvoice's comment.
   independentInvoices          IndependentStudentInvoice[] @relation("IndependentInvoiceStudent")
   recordedIndependentInvoices  IndependentStudentInvoice[] @relation("IndependentInvoiceRecordedBy")
+  independentPaymentClaims     IndependentPaymentClaim[] @relation("IndependentPaymentClaimStudent")
+  reviewedIndependentPaymentClaims IndependentPaymentClaim[] @relation("IndependentPaymentClaimReviewedBy")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -1615,4 +1623,28 @@ model IndependentStudentInvoice {
 
   @@index([studentId])
   @@map("independent_student_invoices")
+}
+
+model IndependentPaymentClaim {
+  id          Int      @id @default(autoincrement())
+  studentId   Int      @map("student_id")
+  student     User     @relation("IndependentPaymentClaimStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  amountKES   Int      @map("amount_kes")
+  interval    SubscriptionInterval @default(MONTHLY)
+  mpesaCode   String   @unique @map("mpesa_code")
+  payerPhone  String?  @map("payer_phone")
+  status      IndependentPaymentClaimStatus @default(AWAITING_VERIFICATION)
+
+  reviewedById Int?    @map("reviewed_by_id")
+  reviewedBy   User?   @relation("IndependentPaymentClaimReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime? @map("reviewed_at")
+  rejectionReason String? @map("rejection_reason")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([studentId, status])
+  @@index([status, createdAt])
+  @@map("independent_payment_claims")
 }

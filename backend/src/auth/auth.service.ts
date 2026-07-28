@@ -1,21 +1,26 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StaffLoginDto } from './dto/staff-login.dto';
 import { StudentLoginDto } from './dto/student-login.dto';
+import { IndependentLoginDto } from './dto/independent-login.dto';
+import { RegisterIndependentStudentDto } from './dto/register-independent-student.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
+import { normalizeGrade } from '../common/utils/grade.util';
 
 // How long a refresh token is valid for if it's never used to refresh
 // (i.e. how long a "remember me" session can sit idle before the user has
 // to log in again). Each successful refresh issues a new one with a fresh
 // window, so an active user is never forced to re-login mid-session.
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const INDEPENDENT_SCHOOL_CODE = 'INDEPENDENT';
 
 @Injectable()
 export class AuthService {
@@ -91,6 +96,14 @@ export class AuthService {
 
     if (!user || !user.isActive || user.role !== Role.STUDENT) throw invalidCredentials();
 
+    // Self-registered independent accounts always carry a password and must
+    // use the dedicated login endpoint. Legacy admin-created independent
+    // accounts have no password and retain their existing admission-number
+    // login so this rollout remains backward compatible.
+    if (school.code === INDEPENDENT_SCHOOL_CODE && user.passwordHash) {
+      throw invalidCredentials();
+    }
+
     // Independent students (enrolled without a school — see
     // backend/src/independent-students) carry their own paid-through date
     // instead of riding on a school's subscription. Regular
@@ -99,6 +112,121 @@ export class AuthService {
     // is an expected, non-adversarial account state, not a login guess.
     if (user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
       throw new UnauthorizedException('Your subscription has expired. Please contact support to renew your access.');
+    }
+
+    await this.auditService.record({
+      action: 'auth.login',
+      userId: user.id,
+      schoolId: school.id,
+      ipAddress,
+    });
+
+    return this.issueTokenPair(
+      {
+        id: user.id,
+        schoolId: user.schoolId,
+        role: user.role as Role,
+        name: user.name,
+        email: user.email,
+        admissionNumber: user.admissionNumber,
+        grade: user.grade,
+      },
+      ipAddress,
+    );
+  }
+
+  async registerIndependentStudent(dto: RegisterIndependentStudentDto, ipAddress?: string) {
+    const email = dto.email?.trim().toLowerCase() || undefined;
+    const school = await this.prisma.school.upsert({
+      where: { code: INDEPENDENT_SCHOOL_CODE },
+      create: {
+        name: 'Independent Students',
+        code: INDEPENDENT_SCHOOL_CODE,
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+      },
+      update: {},
+    });
+
+    if (email) {
+      const existing = await this.prisma.user.findUnique({
+        where: { schoolId_email: { schoolId: school.id, email } },
+      });
+      if (existing) {
+        throw new ConflictException('An individual student account already exists for this email');
+      }
+    }
+
+    const grade = normalizeGrade(dto.grade) ?? dto.grade.trim();
+    const admissionNumber = `IND-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+
+    const student = await this.prisma.user.create({
+      data: {
+        schoolId: school.id,
+        name: dto.name.trim(),
+        email,
+        passwordHash,
+        admissionNumber,
+        grade,
+        parentPhone: dto.parentPhone?.trim() || undefined,
+        role: Role.STUDENT,
+        // Payment approval activates the account and establishes its first
+        // paid-through date. An unverified claim must never grant access.
+        isActive: false,
+        studentProfile: {
+          create: {
+            admissionNumber,
+            grade,
+            parentPhone: dto.parentPhone?.trim() || undefined,
+          },
+        },
+      },
+    });
+
+    await this.auditService.record({
+      action: 'auth.independent_student.register',
+      userId: student.id,
+      schoolId: school.id,
+      resource: `User:${student.id}`,
+      ipAddress,
+    });
+
+    return {
+      studentId: student.id,
+      name: student.name,
+      email: student.email,
+      admissionNumber: student.admissionNumber,
+      grade: student.grade,
+      requiresPayment: true,
+    };
+  }
+
+  async loginIndependentStudent(dto: IndependentLoginDto, ipAddress?: string) {
+    const invalidCredentials = () => new UnauthorizedException('Invalid credentials');
+    const school = await this.prisma.school.findUnique({ where: { code: INDEPENDENT_SCHOOL_CODE } });
+    if (!school) throw invalidCredentials();
+
+    const identifier = dto.identifier.trim();
+    const user = await this.prisma.user.findFirst({
+      where: {
+        schoolId: school.id,
+        role: Role.STUDENT,
+        OR: [
+          { admissionNumber: identifier.toUpperCase() },
+          { email: identifier.toLowerCase() },
+        ],
+      },
+    });
+
+    if (!user || user.role !== Role.STUDENT || !user.passwordHash) throw invalidCredentials();
+    const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!passwordMatches) throw invalidCredentials();
+
+    if (!user.isActive || !user.subscriptionExpiresAt) {
+      throw new UnauthorizedException('Your payment is awaiting verification');
+    }
+    if (user.subscriptionExpiresAt < new Date()) {
+      throw new UnauthorizedException('Your subscription has expired. Please renew your access.');
     }
 
     await this.auditService.record({

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiErrorMessage } from '../../api/axios';
 import { independentStudentsApi } from '../../api/independent-students.api';
 import { ActionCard, EmptyState, PageHeader } from '../../components/ui/Saas';
-import type { IndependentStudent, IndependentStudentStatus } from '../../types';
+import type { IndependentPaymentClaim, IndependentStudent, IndependentStudentStatus } from '../../types';
 
 function formatDate(iso: string | null) {
   if (!iso) return 'Never';
@@ -76,7 +76,7 @@ export function IndependentStudentsPage() {
         </div>
       </section>
 
-      {paymentInfo ? (
+      {paymentInfo?.enabled ? (
         <div className="rounded-[24px] border border-slate-200 bg-[#FAFDEB] p-5 text-sm leading-6 text-slate-600">
           <p className="font-semibold text-[#101820]">M-Pesa Buy Goods (Till)</p>
           <p className="mt-1">
@@ -85,7 +85,13 @@ export function IndependentStudentsPage() {
           </p>
           <p className="mt-2">{paymentInfo.instructions}</p>
         </div>
+      ) : paymentInfo ? (
+        <div className="rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+          Individual student Till details and prices are not fully configured.
+        </div>
       ) : null}
+
+      <PaymentClaimsCard />
 
       <ActionCard title="Students" meta={isLoading ? undefined : `${students.length}`}>
         {isLoading ? (
@@ -141,6 +147,92 @@ export function IndependentStudentsPage() {
       ) : null}
       {viewingInvoicesFor ? <InvoiceHistoryModal student={viewingInvoicesFor} onClose={() => setViewingInvoicesFor(null)} /> : null}
     </div>
+  );
+}
+
+function PaymentClaimsCard() {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const { data: claims = [], isLoading } = useQuery({
+    queryKey: ['independent-payment-claims'],
+    queryFn: () => independentStudentsApi.findPaymentClaims(),
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ claim, action, reason }: {
+      claim: IndependentPaymentClaim;
+      action: 'approve' | 'reject';
+      reason?: string;
+    }) =>
+      action === 'approve'
+        ? independentStudentsApi.approvePaymentClaim(claim.id)
+        : independentStudentsApi.rejectPaymentClaim(claim.id, reason),
+    onSuccess: () => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ['independent-payment-claims'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-student-invoices'] });
+    },
+    onError: (err) => setError(apiErrorMessage(err, 'Could not review payment')),
+  });
+
+  const pending = claims.filter((claim) => claim.status === 'AWAITING_VERIFICATION');
+
+  return (
+    <ActionCard title="Payment verification" meta={isLoading ? undefined : `${pending.length} pending`}>
+      {isLoading ? (
+        <EmptyState title="Loading..." />
+      ) : pending.length === 0 ? (
+        <EmptyState title="No payments awaiting verification." />
+      ) : (
+        <div className="space-y-3">
+          {pending.map((claim) => (
+            <div key={claim.id} className="rounded-2xl border border-slate-200 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="font-semibold text-[#101820]">{claim.student?.name ?? 'Individual student'}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {claim.student?.email ?? 'No email'} · {claim.student?.grade ?? 'Grade not set'}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    KES {claim.amountKES.toLocaleString()} · {claim.interval === 'ANNUAL' ? 'Annual' : 'Monthly'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    M-Pesa code {claim.mpesaCode}
+                    {claim.payerPhone ? ` · ${claim.payerPhone}` : ''}
+                    {` · ${formatDate(claim.createdAt)}`}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={reviewMutation.isPending}
+                    onClick={() => reviewMutation.mutate({ claim, action: 'approve' })}
+                    className="rounded-xl bg-[#B5E61D] px-4 py-2 text-xs font-semibold text-[#101820] disabled:opacity-60"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewMutation.isPending}
+                    onClick={() => {
+                      const response = window.prompt('Reason for rejection (optional)');
+                      if (response === null) return;
+                      const reason = response || undefined;
+                      reviewMutation.mutate({ claim, action: 'reject', reason });
+                    }}
+                    className="rounded-xl border border-red-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+    </ActionCard>
   );
 }
 

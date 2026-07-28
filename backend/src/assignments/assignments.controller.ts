@@ -36,6 +36,19 @@ export class AssignmentsController {
     return this.assignmentsService.create(dto, actor);
   }
 
+  @Post('independent')
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction('assignment.create_independent')
+  createIndependent(@Body() dto: CreateAssignmentDto, @CurrentUser() actor: AuthenticatedUser) {
+    return this.assignmentsService.createIndependent(dto, actor);
+  }
+
+  @Get('independent')
+  @Roles(Role.PLATFORM_ADMIN)
+  findIndependent(@CurrentUser() actor: AuthenticatedUser) {
+    return this.assignmentsService.findIndependent(actor);
+  }
+
   // Checks a JSON exam paper against the full schema (basic well-formedness
   // + per-question-type structural rules — see AssignmentJsonDto and
   // AssignmentsService.validateExamJsonRaw) WITHOUT persisting anything.
