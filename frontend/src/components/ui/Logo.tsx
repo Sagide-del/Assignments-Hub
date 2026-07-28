@@ -26,6 +26,8 @@ const SIZE_CLASSES = {
   // Used by the public login page's brand mark — the one place a much
   // larger logo is shown outside a dashboard sidebar/topbar.
   xl: 'h-36 w-36 rounded-[28px]',
+  // Horizontal Assignment Hub wordmark used on public authentication pages.
+  wordmark: 'h-20 w-64 rounded-2xl',
 } as const;
 
 const TEXT_SIZE_CLASSES = {
@@ -33,6 +35,7 @@ const TEXT_SIZE_CLASSES = {
   md: 'text-base',
   lg: 'text-lg',
   xl: 'text-4xl',
+  wordmark: 'text-2xl',
 } as const;
 
 export type LogoSize = keyof typeof SIZE_CLASSES;

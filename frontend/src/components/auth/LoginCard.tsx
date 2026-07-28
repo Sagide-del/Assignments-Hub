@@ -121,8 +121,8 @@ export function LoginCard({
 
       {/* ASSIGNMENT HUB LOGIN LOGO */}
 
-      <div className="mx-auto mb-8">
-        <Logo src="/logo.png" name="Assignment Hub" size="xl" />
+      <div className="mb-8 flex w-full justify-center">
+        <Logo src="/logo.png" name="Assignment Hub" size="wordmark" />
       </div>
 
 
