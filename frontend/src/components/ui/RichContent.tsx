@@ -58,7 +58,7 @@ export function sanitizeRichHtml(html: string): string {
 export function RichContent({ html, className = '' }: { html: string; className?: string }) {
   return (
     <div
-      className={`rich-content max-w-none text-sm leading-7 text-slate-700 [&_img]:max-w-full [&_img]:rounded-2xl [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${className}`}
+      className={`rich-content max-w-none min-w-0 overflow-x-auto break-words text-base leading-7 text-slate-700 [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-2xl [&_p]:mb-3 [&_table]:min-w-max [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${className}`}
       dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }}
     />
   );

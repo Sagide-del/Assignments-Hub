@@ -136,7 +136,17 @@ function GradeForm({ submissionId, questions }: { submissionId: number; question
             ) : (
               <p className="text-sm font-medium">{q.questionText}</p>
             )}
-            <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{answer?.studentAnswer || '—'}</p>
+            {answer?.studentAnswer ? (
+              q.questionType === 'ESSAY' ? (
+                <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <RichContent html={answer.studentAnswer} />
+                </div>
+              ) : (
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-600">{answer.studentAnswer}</p>
+              )
+            ) : (
+              <p className="mt-1 text-sm text-gray-600">—</p>
+            )}
             <div className="flex items-center gap-2 mt-2">
               <label className="text-xs text-gray-500">Points (of {q.points})</label>
               <input

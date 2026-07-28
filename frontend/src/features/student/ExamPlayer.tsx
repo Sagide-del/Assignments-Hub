@@ -5,6 +5,7 @@ import { assignmentsApi } from '../../api/assignments.api';
 import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
 import { RichContent } from '../../components/ui/RichContent';
+import { RichTextEditor } from '../../components/ui/RichTextEditor';
 import { ToolsPanel } from './tools/ToolsPanel';
 import type { AnswerInput, Question } from '../../types';
 
@@ -106,7 +107,31 @@ function extractMediaUrl(question: Question) {
 
 function isAnswered(question: Question, value: string) {
   if (question.questionType === 'FILE_UPLOAD') return value.trim().length > 0;
+  if (question.questionType === 'ESSAY') {
+    if (/<(img|math)\b|class=["'][^"']*ql-formula/i.test(value)) return true;
+    return value.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim().length > 0;
+  }
   return value.trim().length > 0;
+}
+
+const RESPONSE_SYMBOLS = ['π', '√', '²', '³', '×', '÷', '≤', '≥', '→', '⇌', '₁', '₂', '₃'];
+
+function SymbolPad({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2" aria-label="Math and chemistry symbols">
+      {RESPONSE_SYMBOLS.map((symbol) => (
+        <button
+          key={symbol}
+          type="button"
+          onClick={() => onChange(`${value}${symbol}`)}
+          className="flex h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-base font-semibold text-[#101820] hover:border-[#B5E61D]"
+          aria-label={`Insert ${symbol}`}
+        >
+          {symbol}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 // Real exam-taking flow: loads the assignment's question bank (with
@@ -275,11 +300,11 @@ export function ExamPlayer() {
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
-        <div className="bg-[#101820] px-6 py-8 text-white md:px-8">
+        <div className="bg-[#101820] px-4 py-7 text-white sm:px-6 md:px-8 md:py-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">Assessment Workspace</p>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight">{assignment?.title}</h1>
+              <h1 className="mt-4 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{assignment?.title}</h1>
               <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-300">
                 <span>{assignment?.subject}</span>
                 <span>·</span>
@@ -406,7 +431,7 @@ export function ExamPlayer() {
                 </div>
               </div>
 
-              <div className="px-6 py-6">
+              <div className="px-4 py-5 sm:px-6 sm:py-6">
                 <QuestionInput
                   index={currentIndex}
                   question={currentQuestion}
@@ -575,7 +600,7 @@ function QuestionInput({
             </div>
           </div>
         ) : (
-          <p className="text-lg font-semibold leading-8 text-[#101820]">
+          <p className="break-words text-base font-semibold leading-7 text-[#101820] sm:text-lg sm:leading-8">
             {index + 1}. {question.questionText}
           </p>
         )}
@@ -652,22 +677,30 @@ function QuestionInput({
       )}
 
       {question.questionType === 'FILL_BLANK' && (
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-[24px] border border-slate-300 px-4 py-3 text-sm text-slate-700"
-          placeholder="Enter your answer"
-        />
+        <div className="space-y-3">
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full rounded-[24px] border border-slate-300 px-4 py-3 text-base text-slate-700"
+            placeholder="Enter your answer"
+          />
+          <SymbolPad value={value} onChange={onChange} />
+        </div>
       )}
 
       {question.questionType === 'ESSAY' && (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          rows={6}
-          className="w-full rounded-[24px] border border-slate-300 px-4 py-4 text-sm leading-7 text-slate-700"
-          placeholder="Write your response here"
-        />
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+            <span className="rounded-full bg-[#F8FAFC] px-3 py-1.5">fx Math</span>
+            <span className="rounded-full bg-[#F8FAFC] px-3 py-1.5">Chem Chemical equation</span>
+            <span className="rounded-full bg-[#F8FAFC] px-3 py-1.5">Image Upload graph</span>
+          </div>
+          <RichTextEditor
+            value={value}
+            onChange={onChange}
+            placeholder="Write your response, calculation, or explanation"
+          />
+        </div>
       )}
 
       {(question.questionType === 'MATCHING' || question.questionType === 'ORDERING') && (
