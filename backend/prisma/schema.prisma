@@ -443,6 +443,26 @@ model SkillPayment {
   @@map("skill_payments")
 }
 
+model MnemonicCard {
+  id           Int      @id @default(autoincrement())
+  title        String
+  subject      String
+  topic        String
+  grade        String?
+  description  String?
+  pdfUrl       String   @map("pdf_url")
+  fileName     String   @map("file_name")
+  fileSize     Int?     @map("file_size")
+  isPublished  Boolean  @default(false) @map("is_published")
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([isPublished, grade])
+  @@index([subject, topic])
+  @@map("mnemonic_cards")
+}
+
 // Opaque (non-JWT) refresh tokens, stored hashed so a DB leak alone can't be
 // used to mint sessions. Paired with a short-lived JWT access token (see
 // AuthService.issueTokenPair): the access token proves identity on every

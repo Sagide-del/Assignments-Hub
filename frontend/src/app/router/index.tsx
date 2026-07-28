@@ -16,6 +16,7 @@ import { LearnSkillsPage } from '../../features/student/LearnSkills';
 import { SkillDetailPage } from '../../features/student/SkillDetail';
 import { MyPathwayPage } from '../../features/student/my-pathway/MyPathwayPage';
 import { MessagesPage } from '../../features/student/Messages';
+import { MnemonicCardsPage } from '../../features/student/MnemonicCards';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 
@@ -42,6 +43,7 @@ import { StemContentStudio } from '../../features/platform-admin/StemContentStud
 import { PlatformBilling } from '../../features/platform-admin/Billing';
 import { SkillStudio } from '../../features/platform-admin/SkillStudio';
 import { IndependentStudentsPage } from '../../features/platform-admin/IndependentStudents';
+import { MnemonicCardsStudio } from '../../features/platform-admin/MnemonicCardsStudio';
 import { IndependentAssignmentsPage } from '../../features/platform-admin/IndependentAssignments';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
@@ -51,6 +53,10 @@ const studentNav = [
   {
     to: '/student/my-assignments',
     label: 'My Assignments',
+  },
+  {
+    to: '/student/mnemonic-cards',
+    label: 'Mnemonic Cards',
   },
   {
     to: '/student/stem-labs',
@@ -161,6 +167,10 @@ const platformAdminNav = [
     label: 'Skill Studio',
   },
   {
+    to: '/platform/mnemonic-cards',
+    label: 'Mnemonic Cards',
+  },
+  {
     to: '/platform/billing',
     label: 'Billing',
   },
@@ -212,6 +222,10 @@ export const router = createBrowserRouter([
           {
             path: '/student/my-assignments',
             element: <MyAssignmentsPage />,
+          },
+          {
+            path: '/student/mnemonic-cards',
+            element: <MnemonicCardsPage />,
           },
           {
             path: '/student/assignments/:id',
@@ -407,6 +421,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/skill-studio',
             element: <SkillStudio />,
+          },
+          {
+            path: '/platform/mnemonic-cards',
+            element: <MnemonicCardsStudio />,
           },
           {
             path: '/platform/billing',

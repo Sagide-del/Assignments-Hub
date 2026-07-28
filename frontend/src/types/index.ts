@@ -211,6 +211,22 @@ export interface Answer {
   feedback: string | null;
 }
 
+export interface MnemonicCard {
+  id: number;
+  title: string;
+  subject: string;
+  topic: string;
+  grade: string | null;
+  description: string | null;
+  pdfUrl: string;
+  fileName: string;
+  fileSize: number | null;
+  isPublished: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---- STEM Labs ----
 
 export interface StemCategory {

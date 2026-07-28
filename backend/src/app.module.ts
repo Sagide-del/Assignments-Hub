@@ -36,6 +36,7 @@ import { IndependentStudentsModule } from './independent-students/independent-st
 
 import { AiModule } from './ai/ai.module';
 import { SkillsModule } from './skills/skills.module';
+import { MnemonicCardsModule } from './mnemonic-cards/mnemonic-cards.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -104,6 +105,8 @@ import { TenantGuard } from './common/guards/tenant.guard';
     AiModule,
 
     SkillsModule,
+
+    MnemonicCardsModule,
   ],
 
   providers: [
