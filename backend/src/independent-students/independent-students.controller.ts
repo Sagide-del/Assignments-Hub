@@ -5,6 +5,7 @@ import { CreateIndependentStudentDto } from './dto/create-independent-student.dt
 import { RecordIndependentInvoiceDto } from './dto/record-invoice.dto';
 import { SubmitIndependentPaymentClaimDto } from './dto/submit-payment-claim.dto';
 import { RejectIndependentPaymentClaimDto } from './dto/reject-payment-claim.dto';
+import { SendIndependentWelcomeDto } from './dto/send-independent-welcome.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -49,6 +50,23 @@ export class IndependentStudentsController {
   @AuditAction('independent_student.create')
   createStudent(@Body() dto: CreateIndependentStudentDto, @CurrentUser() actor: AuthenticatedUser) {
     return this.independentStudentsService.createStudent(dto, actor);
+  }
+
+  @Get('summary')
+  @Roles(Role.PLATFORM_ADMIN)
+  getSummary() {
+    return this.independentStudentsService.getSummary();
+  }
+
+  @Post('students/:id/welcome')
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction('independent_student.welcome')
+  sendWelcome(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SendIndependentWelcomeDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.independentStudentsService.sendWelcome(id, dto, actor);
   }
 
   @Get('invoices')

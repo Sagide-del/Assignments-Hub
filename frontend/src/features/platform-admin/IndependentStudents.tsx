@@ -1,13 +1,27 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiErrorMessage } from '../../api/axios';
 import { independentStudentsApi } from '../../api/independent-students.api';
-import { ActionCard, EmptyState, PageHeader } from '../../components/ui/Saas';
-import type { IndependentPaymentClaim, IndependentStudent, IndependentStudentStatus } from '../../types';
+import { ActionCard, EmptyState, MetricCard, PageHeader } from '../../components/ui/Saas';
+import type {
+  IndependentPaymentClaim,
+  IndependentStudent,
+  IndependentStudentPaymentInfo,
+  IndependentStudentStatus,
+  IndependentWelcomeResult,
+} from '../../types';
 
-function formatDate(iso: string | null) {
-  if (!iso) return 'Never';
-  return new Date(iso).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
+function formatDate(value: string | null) {
+  if (!value) return 'Never';
+  return new Date(value).toLocaleDateString([], {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatCurrency(amount: number) {
+  return `KES ${amount.toLocaleString('en-KE')}`;
 }
 
 function statusBadgeClass(status: IndependentStudentStatus) {
@@ -16,40 +30,51 @@ function statusBadgeClass(status: IndependentStudentStatus) {
   return 'bg-slate-100 text-slate-500';
 }
 
-function statusLabel(student: IndependentStudent) {
-  if (student.status === 'ACTIVE') return `Active until ${formatDate(student.subscriptionExpiresAt)}`;
-  if (student.status === 'EXPIRED') return `Expired ${formatDate(student.subscriptionExpiresAt)}`;
-  return 'Never paid';
-}
-
-// Students enrolled directly by a platform admin rather than through a
-// paying school — they pay for their own access individually via M-Pesa
-// Till Number, recorded here as an invoice against their confirmation code.
-// See backend/src/independent-students for the full design.
 export function IndependentStudentsPage() {
   const [addingStudent, setAddingStudent] = useState(false);
   const [invoicingStudent, setInvoicingStudent] = useState<IndependentStudent | null>(null);
   const [viewingInvoicesFor, setViewingInvoicesFor] = useState<IndependentStudent | null>(null);
+  const [welcomingStudent, setWelcomingStudent] = useState<IndependentStudent | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | IndependentStudentStatus>('ALL');
 
   const { data: paymentInfo } = useQuery({
     queryKey: ['independent-students-payment-info'],
     queryFn: () => independentStudentsApi.getPaymentInfo(),
   });
-
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['independent-students'],
     queryFn: () => independentStudentsApi.findStudents(),
   });
+  const { data: summary } = useQuery({
+    queryKey: ['independent-students-summary'],
+    queryFn: () => independentStudentsApi.getSummary(),
+  });
+  const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
+    queryKey: ['independent-student-invoices'],
+    queryFn: () => independentStudentsApi.findInvoices(),
+  });
 
-  const activeCount = students.filter((s) => s.status === 'ACTIVE').length;
-  const expiredCount = students.filter((s) => s.status === 'EXPIRED').length;
-  const neverPaidCount = students.filter((s) => s.status === 'NEVER_PAID').length;
+  const filteredStudents = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return students.filter((student) => {
+      const matchesStatus = statusFilter === 'ALL' || student.status === statusFilter;
+      const matchesSearch =
+        !term ||
+        student.name.toLowerCase().includes(term) ||
+        student.admissionNumber?.toLowerCase().includes(term) ||
+        student.parentPhone?.toLowerCase().includes(term) ||
+        student.email?.toLowerCase().includes(term);
+      return matchesStatus && Boolean(matchesSearch);
+    });
+  }, [search, statusFilter, students]);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Independent Students"
-        meta="Students enrolled without a school — they pay individually via M-Pesa to activate their account"
+        eyebrow="Direct subscriptions"
+        title="Independent student billing"
+        meta="Accounts, payments and access"
         actions={
           <button
             type="button"
@@ -61,81 +86,178 @@ export function IndependentStudentsPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Active</p>
-          <p className="mt-2 text-2xl font-semibold text-[#101820]">{activeCount}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Expired</p>
-          <p className="mt-2 text-2xl font-semibold text-[#101820]">{expiredCount}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Never paid</p>
-          <p className="mt-2 text-2xl font-semibold text-[#101820]">{neverPaidCount}</p>
-        </div>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricCard label="Total students" value={summary?.totalPopulation ?? students.length} compact />
+        <MetricCard label="Active access" value={summary?.activeStudents ?? 0} compact />
+        <MetricCard label="Payments made" value={summary?.paymentsMade ?? invoices.length} compact />
+        <MetricCard label="Revenue" value={formatCurrency(summary?.totalRevenueKES ?? 0)} compact />
+        <MetricCard label="Pending review" value={summary?.pendingPayments ?? 0} compact />
       </section>
 
       {paymentInfo?.enabled ? (
-        <div className="rounded-[24px] border border-slate-200 bg-[#FAFDEB] p-5 text-sm leading-6 text-slate-600">
-          <p className="font-semibold text-[#101820]">M-Pesa Buy Goods (Till)</p>
-          <p className="mt-1">
-            Till Number <span className="font-semibold text-[#101820]">{paymentInfo.tillNumber}</span> · Store Number{' '}
-            <span className="font-semibold text-[#101820]">{paymentInfo.storeNumber}</span>
+        <div className="flex flex-col gap-3 rounded-2xl border border-[#DDECB0] bg-[#FAFDEB] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5E7900]">M-Pesa collection</p>
+            <p className="mt-1 text-sm font-semibold text-[#101820]">
+              Till {paymentInfo.tillNumber}
+              {paymentInfo.storeNumber ? ` / Store ${paymentInfo.storeNumber}` : ''}
+            </p>
+          </div>
+          <p className="text-sm font-semibold text-[#101820]">
+            {formatCurrency(paymentInfo.monthlyAmountKES)} monthly
           </p>
-          <p className="mt-2">{paymentInfo.instructions}</p>
         </div>
       ) : paymentInfo ? (
-        <div className="rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-          Individual student Till details and prices are not fully configured.
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Individual student payment details are not fully configured.
         </div>
       ) : null}
 
       <PaymentClaimsCard />
 
-      <ActionCard title="Students" meta={isLoading ? undefined : `${students.length}`}>
+      <ActionCard
+        title="Student accounts"
+        meta={isLoading ? undefined : `${filteredStudents.length} of ${students.length}`}
+        action={
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+            {summary?.studentsWithPhone ?? 0} with phone
+          </span>
+        }
+      >
+        <div className="mb-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+          <label className="relative">
+            <span className="sr-only">Search students</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search name, ID or phone"
+              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#8CB500]"
+            />
+          </label>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'ALL' | IndependentStudentStatus)}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-[#101820] outline-none focus:border-[#8CB500]"
+          >
+            <option value="ALL">All access states</option>
+            <option value="ACTIVE">Active</option>
+            <option value="EXPIRED">Expired</option>
+            <option value="NEVER_PAID">Never paid</option>
+          </select>
+        </div>
+
         {isLoading ? (
-          <EmptyState title="Loading..." />
+          <EmptyState title="Loading students..." />
         ) : students.length === 0 ? (
-          <EmptyState title="No independent students yet." action={
-            <button type="button" onClick={() => setAddingStudent(true)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#101820] hover:bg-white">
-              Add the first one
-            </button>
-          } />
+          <EmptyState
+            title="No independent students yet."
+            action={
+              <button
+                type="button"
+                onClick={() => setAddingStudent(true)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#101820]"
+              >
+                Add the first student
+              </button>
+            }
+          />
+        ) : filteredStudents.length === 0 ? (
+          <EmptyState title="No students match these filters." />
         ) : (
-          <div className="space-y-2">
-            {students.map((student) => (
-              <div key={student.id} className="rounded-2xl border border-slate-200 px-4 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-[#101820]">{student.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">
-                      {student.admissionNumber ?? 'No admission number'} {student.grade ? `· ${student.grade}` : ''}
-                    </p>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(student.status)}`}>{statusLabel(student)}</span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setInvoicingStudent(student)}
-                    className="rounded-xl bg-[#101820] px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900"
-                  >
-                    Record payment
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewingInvoicesFor(student)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-[#101820] hover:bg-slate-50"
-                  >
-                    View invoices
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="w-full min-w-[980px] text-left text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.1em] text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Student</th>
+                  <th className="px-4 py-3 font-semibold">Phone</th>
+                  <th className="px-4 py-3 font-semibold">Access</th>
+                  <th className="px-4 py-3 font-semibold">Payments</th>
+                  <th className="px-4 py-3 font-semibold">Last payment</th>
+                  <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredStudents.map((student) => (
+                  <tr key={student.id} className="align-top transition hover:bg-slate-50/70">
+                    <td className="px-4 py-4">
+                      <p className="font-semibold text-[#101820]">{student.name}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {student.admissionNumber ?? 'No login ID'}
+                        {student.grade ? ` / ${student.grade}` : ''}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-slate-700">{student.parentPhone ?? 'Not provided'}</p>
+                      {student.email ? (
+                        <p className="mt-1 max-w-[180px] truncate text-xs text-slate-400">{student.email}</p>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(student.status)}`}>
+                        {student.status === 'ACTIVE' ? 'Active' : student.status === 'EXPIRED' ? 'Expired' : 'Never paid'}
+                      </span>
+                      <p className="mt-2 text-xs text-slate-400">
+                        {student.hasPassword ? 'Login ready' : 'Credentials not set'}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-semibold text-[#101820]">{formatCurrency(student.totalPaidKES)}</p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {student.paymentCount} payment{student.paymentCount === 1 ? '' : 's'}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4 text-slate-600">{formatDate(student.lastPaymentAt)}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWelcomingStudent(student)}
+                          disabled={student.status !== 'ACTIVE'}
+                          title={
+                            student.status === 'ACTIVE'
+                              ? 'Reset and send login credentials'
+                              : 'Activate payment before sending credentials'
+                          }
+                          className="rounded-lg border border-[#CFE481] px-3 py-2 text-xs font-semibold text-[#4B6500] hover:bg-[#FAFDEB] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+                        >
+                          Send welcome
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInvoicingStudent(student)}
+                          className="rounded-lg bg-[#101820] px-3 py-2 text-xs font-semibold text-white hover:bg-slate-900"
+                        >
+                          Record payment
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewingInvoicesFor(student)}
+                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-[#101820] hover:bg-white"
+                        >
+                          History
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </ActionCard>
+
+      <PaymentHistory invoices={invoices} isLoading={invoicesLoading} />
 
       {addingStudent ? <AddStudentModal onClose={() => setAddingStudent(false)} /> : null}
       {invoicingStudent ? (
@@ -145,7 +267,15 @@ export function IndependentStudentsPage() {
           paymentInfo={paymentInfo}
         />
       ) : null}
-      {viewingInvoicesFor ? <InvoiceHistoryModal student={viewingInvoicesFor} onClose={() => setViewingInvoicesFor(null)} /> : null}
+      {viewingInvoicesFor ? (
+        <InvoiceHistoryModal
+          student={viewingInvoicesFor}
+          onClose={() => setViewingInvoicesFor(null)}
+        />
+      ) : null}
+      {welcomingStudent ? (
+        <WelcomeStudentModal student={welcomingStudent} onClose={() => setWelcomingStudent(null)} />
+      ) : null}
     </div>
   );
 }
@@ -159,7 +289,11 @@ function PaymentClaimsCard() {
   });
 
   const reviewMutation = useMutation({
-    mutationFn: ({ claim, action, reason }: {
+    mutationFn: ({
+      claim,
+      action,
+      reason,
+    }: {
       claim: IndependentPaymentClaim;
       action: 'approve' | 'reject';
       reason?: string;
@@ -171,6 +305,7 @@ function PaymentClaimsCard() {
       setError(null);
       queryClient.invalidateQueries({ queryKey: ['independent-payment-claims'] });
       queryClient.invalidateQueries({ queryKey: ['independent-students'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students-summary'] });
       queryClient.invalidateQueries({ queryKey: ['independent-student-invoices'] });
     },
     onError: (err) => setError(apiErrorMessage(err, 'Could not review payment')),
@@ -179,9 +314,9 @@ function PaymentClaimsCard() {
   const pending = claims.filter((claim) => claim.status === 'AWAITING_VERIFICATION');
 
   return (
-    <ActionCard title="Payment verification" meta={isLoading ? undefined : `${pending.length} pending`}>
+    <ActionCard title="Payment verification" meta={`${pending.length} pending`}>
       {isLoading ? (
-        <EmptyState title="Loading..." />
+        <EmptyState title="Loading payments..." />
       ) : pending.length === 0 ? (
         <EmptyState title="No payments awaiting verification." />
       ) : (
@@ -190,17 +325,16 @@ function PaymentClaimsCard() {
             <div key={claim.id} className="rounded-2xl border border-slate-200 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="font-semibold text-[#101820]">{claim.student?.name ?? 'Individual student'}</p>
+                  <p className="font-semibold text-[#101820]">{claim.student?.name ?? 'Independent student'}</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {claim.student?.email ?? 'No email'} · {claim.student?.grade ?? 'Grade not set'}
+                    {claim.student?.grade ?? 'Grade not set'}
+                    {claim.payerPhone ? ` / ${claim.payerPhone}` : ''}
                   </p>
-                  <p className="mt-2 text-sm text-slate-700">
-                    KES {claim.amountKES.toLocaleString()} · {claim.interval === 'ANNUAL' ? 'Annual' : 'Monthly'}
+                  <p className="mt-2 text-sm font-semibold text-slate-700">
+                    {formatCurrency(claim.amountKES)} / {claim.interval === 'ANNUAL' ? 'Annual' : 'Monthly'}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    M-Pesa code {claim.mpesaCode}
-                    {claim.payerPhone ? ` · ${claim.payerPhone}` : ''}
-                    {` · ${formatDate(claim.createdAt)}`}
+                    M-Pesa {claim.mpesaCode} / {formatDate(claim.createdAt)}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -218,8 +352,7 @@ function PaymentClaimsCard() {
                     onClick={() => {
                       const response = window.prompt('Reason for rejection (optional)');
                       if (response === null) return;
-                      const reason = response || undefined;
-                      reviewMutation.mutate({ claim, action: 'reject', reason });
+                      reviewMutation.mutate({ claim, action: 'reject', reason: response || undefined });
                     }}
                     className="rounded-xl border border-red-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
                   >
@@ -232,6 +365,51 @@ function PaymentClaimsCard() {
         </div>
       )}
       {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+    </ActionCard>
+  );
+}
+
+function PaymentHistory({
+  invoices,
+  isLoading,
+}: {
+  invoices: Awaited<ReturnType<typeof independentStudentsApi.findInvoices>>;
+  isLoading: boolean;
+}) {
+  return (
+    <ActionCard title="Payment history" meta={`${invoices.length} records`}>
+      {isLoading ? (
+        <EmptyState title="Loading payment history..." />
+      ) : invoices.length === 0 ? (
+        <EmptyState title="No independent student payments recorded." />
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="w-full min-w-[780px] text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.1em] text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Invoice</th>
+                <th className="px-4 py-3 font-semibold">Student</th>
+                <th className="px-4 py-3 font-semibold">Phone</th>
+                <th className="px-4 py-3 font-semibold">M-Pesa reference</th>
+                <th className="px-4 py-3 font-semibold">Amount</th>
+                <th className="px-4 py-3 font-semibold">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {invoices.map((invoice) => (
+                <tr key={invoice.id}>
+                  <td className="px-4 py-3 font-semibold text-[#101820]">{invoice.invoiceNumber}</td>
+                  <td className="px-4 py-3 text-slate-700">{invoice.studentName}</td>
+                  <td className="px-4 py-3 text-slate-600">{invoice.payerPhone ?? 'Not provided'}</td>
+                  <td className="px-4 py-3 font-medium text-slate-700">{invoice.mpesaCode}</td>
+                  <td className="px-4 py-3 font-semibold text-[#101820]">{formatCurrency(invoice.amountKES)}</td>
+                  <td className="px-4 py-3 text-slate-500">{formatDate(invoice.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </ActionCard>
   );
 }
@@ -254,60 +432,35 @@ function AddStudentModal({ onClose }: { onClose: () => void }) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['independent-students'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students-summary'] });
       onClose();
     },
     onError: (err) => setError(apiErrorMessage(err, 'Could not add student')),
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-[28px] bg-white p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-[#101820]">Add an independent student</h3>
-        <div className="mt-4 space-y-3">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Student name (required)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-          <input
-            value={admissionNumber}
-            onChange={(e) => setAdmissionNumber(e.target.value)}
-            placeholder="Admission number (optional — auto-generated if left blank)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-          <input
-            value={grade}
-            onChange={(e) => setGrade(e.target.value)}
-            placeholder="Grade (optional, e.g. Grade 9)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-          <input
-            value={parentPhone}
-            onChange={(e) => setParentPhone(e.target.value)}
-            placeholder="Parent/guardian phone (optional)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-        </div>
-        <p className="mt-3 text-xs text-slate-400">
-          The account is created inactive until you record their first payment (see "Record payment" once added).
-        </p>
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-        <div className="mt-5 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => createMutation.mutate()}
-            disabled={createMutation.isPending || !name.trim()}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#101820] px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-900 disabled:opacity-60"
-          >
-            {createMutation.isPending ? 'Adding...' : 'Add student'}
-          </button>
-          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-[#101820] hover:bg-slate-50">
-            Cancel
-          </button>
-        </div>
+    <Modal title="Add independent student" onClose={onClose}>
+      <div className="space-y-3">
+        <Input value={name} onChange={setName} placeholder="Student name" />
+        <Input
+          value={admissionNumber}
+          onChange={setAdmissionNumber}
+          placeholder="Login ID (optional - generated if blank)"
+        />
+        <Input value={grade} onChange={setGrade} placeholder="Grade, e.g. Grade 9" />
+        <Input value={parentPhone} onChange={setParentPhone} placeholder="Parent or guardian phone" />
       </div>
-    </div>
+      <p className="mt-3 text-xs leading-5 text-slate-500">
+        Record the first payment to activate access, then use Send welcome to issue login credentials.
+      </p>
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      <ModalActions
+        primaryLabel={createMutation.isPending ? 'Adding...' : 'Add student'}
+        primaryDisabled={createMutation.isPending || !name.trim()}
+        onPrimary={() => createMutation.mutate()}
+        onClose={onClose}
+      />
+    </Modal>
   );
 }
 
@@ -318,21 +471,21 @@ function RecordInvoiceModal({
 }: {
   student: IndependentStudent;
   onClose: () => void;
-  paymentInfo: { tillNumber: string; storeNumber: string } | undefined;
+  paymentInfo: IndependentStudentPaymentInfo | undefined;
 }) {
   const queryClient = useQueryClient();
-  const [studentName, setStudentName] = useState(student.name);
-  const [amountKES, setAmountKES] = useState('');
+  const [amountKES, setAmountKES] = useState(
+    paymentInfo?.monthlyAmountKES ? String(paymentInfo.monthlyAmountKES) : '',
+  );
   const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
   const [mpesaCode, setMpesaCode] = useState('');
-  const [payerPhone, setPayerPhone] = useState('');
+  const [payerPhone, setPayerPhone] = useState(student.parentPhone ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const recordMutation = useMutation({
     mutationFn: () =>
       independentStudentsApi.recordInvoice({
         studentId: student.id,
-        studentName: studentName.trim() || undefined,
         amountKES: Number(amountKES),
         interval,
         mpesaCode: mpesaCode.trim(),
@@ -340,125 +493,306 @@ function RecordInvoiceModal({
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['independent-students'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-student-invoices'] });
       onClose();
     },
     onError: (err) => setError(apiErrorMessage(err, 'Could not record payment')),
   });
 
-  const canSubmit = Number(amountKES) > 0 && mpesaCode.trim().length > 0;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-[28px] bg-white p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-[#101820]">Record a payment for {student.name}</h3>
-        {paymentInfo ? (
-          <p className="mt-1 text-xs text-slate-500">
-            Verify the M-Pesa confirmation code against Till {paymentInfo.tillNumber} / Store {paymentInfo.storeNumber} before recording it.
-          </p>
-        ) : null}
-        <div className="mt-4 space-y-3">
-          <input
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
-            placeholder="Student name on the invoice"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-          <input
-            value={amountKES}
-            onChange={(e) => setAmountKES(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="Amount paid (KES)"
-            inputMode="numeric"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-          <select
-            value={interval}
-            onChange={(e) => setInterval(e.target.value as 'monthly' | 'annual')}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          >
-            <option value="monthly">Monthly plan</option>
-            <option value="annual">Annual plan</option>
-          </select>
-          <input
-            value={mpesaCode}
-            onChange={(e) => setMpesaCode(e.target.value)}
-            placeholder="M-Pesa confirmation code (required)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-          <input
-            value={payerPhone}
-            onChange={(e) => setPayerPhone(e.target.value)}
-            placeholder="Payer phone number (optional)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
-          />
-        </div>
-        {student.subscriptionExpiresAt ? (
-          <p className="mt-3 text-xs text-slate-400">
-            {student.status === 'ACTIVE'
-              ? `Recording this extends their access from ${formatDate(student.subscriptionExpiresAt)}.`
-              : `Their access expired on ${formatDate(student.subscriptionExpiresAt)} — recording this reactivates them.`}
-          </p>
-        ) : (
-          <p className="mt-3 text-xs text-slate-400">This is their first payment — recording it activates their account.</p>
-        )}
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-        <div className="mt-5 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => recordMutation.mutate()}
-            disabled={recordMutation.isPending || !canSubmit}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#101820] px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-900 disabled:opacity-60"
-          >
-            {recordMutation.isPending ? 'Recording...' : 'Record payment & activate'}
-          </button>
-          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-[#101820] hover:bg-slate-50">
-            Cancel
-          </button>
-        </div>
+    <Modal title={`Record payment - ${student.name}`} onClose={onClose}>
+      <div className="space-y-3">
+        <Input
+          value={amountKES}
+          onChange={(value) => setAmountKES(value.replace(/[^0-9]/g, ''))}
+          placeholder="Amount paid (KES)"
+          inputMode="numeric"
+        />
+        <select
+          value={interval}
+          onChange={(event) => {
+            const nextInterval = event.target.value as 'monthly' | 'annual';
+            setInterval(nextInterval);
+            const configuredAmount =
+              nextInterval === 'annual'
+                ? paymentInfo?.annualAmountKES
+                : paymentInfo?.monthlyAmountKES;
+            if (configuredAmount) setAmountKES(String(configuredAmount));
+          }}
+          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#8CB500]"
+        >
+          <option value="monthly">Monthly plan</option>
+          <option value="annual">Annual plan</option>
+        </select>
+        <Input value={mpesaCode} onChange={setMpesaCode} placeholder="M-Pesa confirmation code" />
+        <Input value={payerPhone} onChange={setPayerPhone} placeholder="Payer phone number" />
       </div>
-    </div>
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      <ModalActions
+        primaryLabel={recordMutation.isPending ? 'Recording...' : 'Record payment and activate'}
+        primaryDisabled={recordMutation.isPending || Number(amountKES) <= 0 || !mpesaCode.trim()}
+        onPrimary={() => recordMutation.mutate()}
+        onClose={onClose}
+      />
+    </Modal>
   );
 }
 
-function InvoiceHistoryModal({ student, onClose }: { student: IndependentStudent; onClose: () => void }) {
+function InvoiceHistoryModal({
+  student,
+  onClose,
+}: {
+  student: IndependentStudent;
+  onClose: () => void;
+}) {
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['independent-student-invoices', student.id],
     queryFn: () => independentStudentsApi.findInvoices(student.id),
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[28px] bg-white p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-[#101820]">Invoices for {student.name}</h3>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close">
-            ✕
+    <Modal title={`Payment history - ${student.name}`} onClose={onClose} wide>
+      {isLoading ? (
+        <EmptyState title="Loading payment history..." />
+      ) : invoices.length === 0 ? (
+        <EmptyState title="No payments recorded yet." />
+      ) : (
+        <div className="space-y-3">
+          {invoices.map((invoice) => (
+            <div key={invoice.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold text-[#101820]">{invoice.invoiceNumber}</p>
+                <p className="text-xs text-slate-400">{formatDate(invoice.createdAt)}</p>
+              </div>
+              <p className="mt-2 font-medium text-slate-700">
+                {formatCurrency(invoice.amountKES)} / {invoice.interval === 'ANNUAL' ? 'Annual' : 'Monthly'}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                M-Pesa {invoice.mpesaCode}
+                {invoice.payerPhone ? ` / ${invoice.payerPhone}` : ''}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function WelcomeStudentModal({
+  student,
+  onClose,
+}: {
+  student: IndependentStudent;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [phone, setPhone] = useState(student.parentPhone ?? '');
+  const [message, setMessage] = useState(
+    `Welcome to Assignment Hub, ${student.name}. Your learning account is ready.`,
+  );
+  const [result, setResult] = useState<IndependentWelcomeResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const sendMutation = useMutation({
+    mutationFn: () =>
+      independentStudentsApi.sendWelcome(student.id, {
+        phone: phone.trim() || undefined,
+        message: message.trim() || undefined,
+      }),
+    onSuccess: (welcomeResult) => {
+      setResult(welcomeResult);
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ['independent-students'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students-summary'] });
+    },
+    onError: (err) => setError(apiErrorMessage(err, 'Could not send welcome message')),
+  });
+
+  if (result) {
+    const deliverySucceeded = result.delivery.sent > 0;
+    const credentialText = [
+      message.trim(),
+      `Login ID: ${result.loginId}`,
+      `Temporary password: ${result.temporaryPassword}`,
+      'Sign in: https://assignmenthub.co.ke/login',
+    ].join('\n');
+
+    return (
+      <Modal title="Welcome credentials created" onClose={onClose}>
+        <div
+          className={`rounded-2xl border p-4 text-sm ${
+            deliverySucceeded
+              ? 'border-[#DDECB0] bg-[#FAFDEB] text-[#405500]'
+              : 'border-amber-200 bg-amber-50 text-amber-900'
+          }`}
+        >
+          {deliverySucceeded
+            ? `SMS sent to ${result.phone}.`
+            : 'SMS was not delivered. Share the credentials below securely.'}
+        </div>
+        <div className="mt-4 space-y-3 rounded-2xl bg-[#101820] p-5 text-white">
+          <CredentialRow label="Student" value={result.name} />
+          <CredentialRow label="Login ID" value={result.loginId} />
+          <CredentialRow label="Temporary password" value={result.temporaryPassword} />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          The temporary password is shown only now. It is redacted from system SMS logs.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void navigator.clipboard.writeText(credentialText)}
+            className="rounded-xl bg-[#B5E61D] px-5 py-3 text-sm font-semibold text-[#101820]"
+          >
+            Copy welcome message
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-[#101820]"
+          >
+            Close
           </button>
         </div>
-        <div className="mt-4 space-y-3">
-          {isLoading ? (
-            <EmptyState title="Loading..." />
-          ) : invoices.length === 0 ? (
-            <EmptyState title="No payments recorded yet." />
-          ) : (
-            invoices.map((inv) => (
-              <div key={inv.id} className="rounded-xl bg-slate-50 p-3 text-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-[#101820]">{inv.invoiceNumber}</p>
-                  <p className="text-xs text-slate-400">{formatDate(inv.createdAt)}</p>
-                </div>
-                <p className="mt-1 text-slate-600">
-                  KES {inv.amountKES.toLocaleString()} · {inv.interval === 'ANNUAL' ? 'Annual' : 'Monthly'} · {formatDate(inv.periodStart)} –{' '}
-                  {formatDate(inv.periodEnd)}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  M-Pesa code: {inv.mpesaCode} {inv.payerPhone ? `· Paid by ${inv.payerPhone}` : ''}
-                </p>
-                {inv.recordedBy ? <p className="mt-1 text-xs text-slate-400">Recorded by {inv.recordedBy.name}</p> : null}
-              </div>
-            ))
-          )}
-        </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal title={`Send welcome - ${student.name}`} onClose={onClose}>
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
+        This action resets the student's password and sends a new temporary password. Use it only when
+        issuing credentials or helping a student regain access.
       </div>
+      <div className="mt-4 space-y-3">
+        <Input value={phone} onChange={setPhone} placeholder="Parent or guardian phone" />
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+            Welcome message
+          </span>
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            rows={4}
+            maxLength={240}
+            className="w-full resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-[#8CB500]"
+          />
+          <span className="mt-1 block text-right text-xs text-slate-400">{message.length}/240</span>
+        </label>
+      </div>
+      <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
+        Login ID: <span className="font-semibold text-[#101820]">{student.admissionNumber}</span>
+      </div>
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      <ModalActions
+        primaryLabel={sendMutation.isPending ? 'Sending...' : 'Reset password and send'}
+        primaryDisabled={sendMutation.isPending || !phone.trim() || !message.trim()}
+        onPrimary={() => sendMutation.mutate()}
+        onClose={onClose}
+      />
+    </Modal>
+  );
+}
+
+function CredentialRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-xs uppercase tracking-[0.12em] text-slate-400">{label}</span>
+      <span className="font-mono text-sm font-semibold text-white">{value}</span>
+    </div>
+  );
+}
+
+function Input({
+  value,
+  onChange,
+  placeholder,
+  inputMode,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  inputMode?: 'text' | 'numeric';
+}) {
+  return (
+    <input
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder}
+      inputMode={inputMode}
+      className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-[#8CB500]"
+    />
+  );
+}
+
+function Modal({
+  title,
+  onClose,
+  wide = false,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#101820]/55 p-4" onClick={onClose}>
+      <section
+        className={`max-h-[90vh] w-full overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl ${
+          wide ? 'max-w-xl' : 'max-w-md'
+        }`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <h3 className="text-lg font-semibold text-[#101820]">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-[#101820]"
+            aria-label="Close"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        {children}
+      </section>
+    </div>
+  );
+}
+
+function ModalActions({
+  primaryLabel,
+  primaryDisabled,
+  onPrimary,
+  onClose,
+}: {
+  primaryLabel: string;
+  primaryDisabled: boolean;
+  onPrimary: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-5 flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={onPrimary}
+        disabled={primaryDisabled}
+        className="rounded-xl bg-[#101820] px-5 py-3 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-60"
+      >
+        {primaryLabel}
+      </button>
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-[#101820] hover:bg-slate-50"
+      >
+        Cancel
+      </button>
     </div>
   );
 }

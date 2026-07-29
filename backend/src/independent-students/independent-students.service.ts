@@ -1,7 +1,17 @@
-import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import {
   IndependentPaymentClaimStatus,
+  SmsType,
   SubscriptionInterval,
   SubscriptionStatus,
 } from '@prisma/client';
@@ -14,6 +24,8 @@ import { RejectIndependentPaymentClaimDto } from './dto/reject-payment-claim.dto
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
 import { generateIndependentStudentId } from '../common/utils/independent-student-id.util';
+import { SmsService } from '../sms/sms.service';
+import { SendIndependentWelcomeDto } from './dto/send-independent-welcome.dto';
 
 // The one system-wide School row every independent student belongs to —
 // lazily upserted by code so the rest of the app's schoolId-scoped
@@ -29,6 +41,7 @@ export class IndependentStudentsService {
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
+    private readonly smsService: SmsService,
   ) {}
 
   private async getOrCreateSchool() {
@@ -69,21 +82,102 @@ export class IndependentStudentsService {
     const school = await this.getOrCreateSchool();
     const students = await this.prisma.user.findMany({
       where: { schoolId: school.id, role: Role.STUDENT },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        admissionNumber: true,
+        grade: true,
+        parentPhone: true,
+        passwordHash: true,
+        isActive: true,
+        subscriptionExpiresAt: true,
+        createdAt: true,
+        independentInvoices: {
+          select: { amountKES: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
       orderBy: { name: 'asc' },
     });
 
     const now = new Date();
-    return students.map((s) => ({
-      id: s.id,
-      name: s.name,
-      email: s.email,
-      admissionNumber: s.admissionNumber,
-      grade: s.grade,
-      parentPhone: s.parentPhone,
-      isActive: s.isActive,
-      subscriptionExpiresAt: s.subscriptionExpiresAt,
-      status: !s.subscriptionExpiresAt ? 'NEVER_PAID' : s.subscriptionExpiresAt > now ? 'ACTIVE' : 'EXPIRED',
-    }));
+    return students.map((student) => {
+      const totalPaidKES = student.independentInvoices.reduce(
+        (total, invoice) => total + invoice.amountKES,
+        0,
+      );
+
+      return {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        admissionNumber: student.admissionNumber,
+        grade: student.grade,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive,
+        hasPassword: Boolean(student.passwordHash),
+        subscriptionExpiresAt: student.subscriptionExpiresAt,
+        createdAt: student.createdAt,
+        paymentCount: student.independentInvoices.length,
+        totalPaidKES,
+        lastPaymentAt: student.independentInvoices[0]?.createdAt ?? null,
+        status: !student.subscriptionExpiresAt
+          ? 'NEVER_PAID'
+          : student.subscriptionExpiresAt > now
+            ? 'ACTIVE'
+            : 'EXPIRED',
+      };
+    });
+  }
+
+  async getSummary() {
+    const school = await this.getOrCreateSchool();
+    const now = new Date();
+
+    const [students, invoiceSummary, pendingPayments] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { schoolId: school.id, role: Role.STUDENT },
+        select: {
+          isActive: true,
+          parentPhone: true,
+          passwordHash: true,
+          subscriptionExpiresAt: true,
+        },
+      }),
+      this.prisma.independentStudentInvoice.aggregate({
+        where: { student: { schoolId: school.id, role: Role.STUDENT } },
+        _count: { _all: true },
+        _sum: { amountKES: true },
+      }),
+      this.prisma.independentPaymentClaim.count({
+        where: {
+          student: { schoolId: school.id, role: Role.STUDENT },
+          status: IndependentPaymentClaimStatus.AWAITING_VERIFICATION,
+        },
+      }),
+    ]);
+
+    const activeStudents = students.filter(
+      (student) =>
+        student.isActive &&
+        student.subscriptionExpiresAt &&
+        student.subscriptionExpiresAt > now,
+    ).length;
+
+    return {
+      totalPopulation: students.length,
+      activeStudents,
+      expiredStudents: students.filter(
+        (student) => student.subscriptionExpiresAt && student.subscriptionExpiresAt <= now,
+      ).length,
+      neverPaidStudents: students.filter((student) => !student.subscriptionExpiresAt).length,
+      studentsWithPhone: students.filter((student) => Boolean(student.parentPhone)).length,
+      loginReadyStudents: students.filter((student) => Boolean(student.passwordHash)).length,
+      paymentsMade: invoiceSummary._count._all,
+      totalRevenueKES: invoiceSummary._sum.amountKES ?? 0,
+      pendingPayments,
+    };
   }
 
   async createStudent(dto: CreateIndependentStudentDto, actor: AuthenticatedUser) {
@@ -107,6 +201,101 @@ export class IndependentStudentsService {
       },
       actor,
     );
+  }
+
+  async sendWelcome(
+    studentId: number,
+    dto: SendIndependentWelcomeDto,
+    actor: AuthenticatedUser,
+  ) {
+    const school = await this.getOrCreateSchool();
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      include: { studentProfile: true },
+    });
+
+    if (!student || student.schoolId !== school.id || student.role !== Role.STUDENT) {
+      throw new NotFoundException('Independent student not found');
+    }
+
+    if (
+      !student.isActive ||
+      !student.subscriptionExpiresAt ||
+      student.subscriptionExpiresAt <= new Date()
+    ) {
+      throw new ForbiddenException(
+        'Activate the student subscription before sending login credentials',
+      );
+    }
+
+    const phone =
+      dto.phone?.trim() ||
+      student.parentPhone?.trim() ||
+      student.studentProfile?.parentPhone?.trim();
+    if (!phone) {
+      throw new BadRequestException('Add a parent or guardian phone number first');
+    }
+    if (!student.admissionNumber) {
+      throw new ConflictException('This student does not have a login ID');
+    }
+
+    const temporaryPassword = this.createTemporaryPassword();
+    const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+    const customMessage =
+      dto.message?.trim() || `Welcome to Assignment Hub, ${student.name}.`;
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL')?.trim().replace(/\/$/, '') ||
+      'https://assignmenthub.co.ke';
+    const message = [
+      customMessage,
+      `Login ID: ${student.admissionNumber}`,
+      `Temporary password: ${temporaryPassword}`,
+      `Sign in: ${frontendUrl}/login`,
+    ].join('\n');
+    const loggedMessage = [
+      customMessage,
+      `Login ID: ${student.admissionNumber}`,
+      'Temporary password: [REDACTED]',
+      `Sign in: ${frontendUrl}/login`,
+    ].join('\n');
+
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.user.update({
+        where: { id: student.id },
+        data: {
+          passwordHash,
+          parentPhone: phone,
+        },
+      });
+      await transaction.studentProfile.upsert({
+        where: { userId: student.id },
+        create: {
+          userId: student.id,
+          admissionNumber: student.admissionNumber,
+          grade: student.grade,
+          parentPhone: phone,
+        },
+        update: { parentPhone: phone },
+      });
+    });
+
+    const delivery = await this.smsService.sendAndLog({
+      schoolId: school.id,
+      type: SmsType.BROADCAST,
+      message,
+      loggedMessage,
+      recipients: [{ phone, studentId: student.id }],
+      sentById: actor.id,
+    });
+
+    return {
+      studentId: student.id,
+      name: student.name,
+      loginId: student.admissionNumber,
+      temporaryPassword,
+      phone,
+      delivery,
+    };
   }
 
   async findInvoices(studentId?: number) {
@@ -348,5 +537,28 @@ export class IndependentStudentsService {
     const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const random = Math.floor(1000 + Math.random() * 9000);
     return `IND-${stamp}-${studentId}-${random}`;
+  }
+
+  private createTemporaryPassword(): string {
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijkmnopqrstuvwxyz';
+    const digits = '23456789';
+    const alphabet = `${uppercase}${lowercase}${digits}`;
+    const characters = [
+      uppercase[randomInt(uppercase.length)],
+      lowercase[randomInt(lowercase.length)],
+      digits[randomInt(digits.length)],
+    ];
+
+    while (characters.length < 10) {
+      characters.push(alphabet[randomInt(alphabet.length)]);
+    }
+
+    for (let index = characters.length - 1; index > 0; index -= 1) {
+      const swapIndex = randomInt(index + 1);
+      [characters[index], characters[swapIndex]] = [characters[swapIndex], characters[index]];
+    }
+
+    return characters.join('');
   }
 }

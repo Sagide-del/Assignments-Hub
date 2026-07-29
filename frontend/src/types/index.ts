@@ -874,8 +874,39 @@ export interface IndependentStudent {
   grade: string | null;
   parentPhone: string | null;
   isActive: boolean;
+  hasPassword: boolean;
   subscriptionExpiresAt: string | null;
+  createdAt: string;
+  paymentCount: number;
+  totalPaidKES: number;
+  lastPaymentAt: string | null;
   status: IndependentStudentStatus;
+}
+
+export interface IndependentStudentSummary {
+  totalPopulation: number;
+  activeStudents: number;
+  expiredStudents: number;
+  neverPaidStudents: number;
+  studentsWithPhone: number;
+  loginReadyStudents: number;
+  paymentsMade: number;
+  totalRevenueKES: number;
+  pendingPayments: number;
+}
+
+export interface IndependentWelcomeResult {
+  studentId: number;
+  name: string;
+  loginId: string;
+  temporaryPassword: string;
+  phone: string;
+  delivery: {
+    totalRecipients: number;
+    sent: number;
+    failed: number;
+    skippedNoPhone: number;
+  };
 }
 
 export interface IndependentStudentInvoice {

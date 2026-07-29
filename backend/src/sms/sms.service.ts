@@ -84,10 +84,11 @@ export class SmsService {
     schoolId: number;
     type: SmsType;
     message: string;
+    loggedMessage?: string;
     recipients: SmsRecipient[];
     sentById?: number;
   }): Promise<SmsSendSummary> {
-    const { schoolId, type, message, recipients, sentById } = params;
+    const { schoolId, type, message, loggedMessage = message, recipients, sentById } = params;
     const summary: SmsSendSummary = { totalRecipients: recipients.length, sent: 0, failed: 0, skippedNoPhone: 0 };
 
     const valid: (SmsRecipient & { normalizedPhone: string })[] = [];
@@ -110,7 +111,7 @@ export class SmsService {
           schoolId,
           type,
           toPhone: r.normalizedPhone,
-          message,
+          message: loggedMessage,
           status: SmsStatus.FAILED,
           errorMessage: 'SMS gateway not configured (AFRICASTALKING_API_KEY missing)',
           studentId: r.studentId,
@@ -124,7 +125,7 @@ export class SmsService {
 
     for (let i = 0; i < valid.length; i += BATCH_SIZE) {
       const batch = valid.slice(i, i + BATCH_SIZE);
-      await this.sendBatch(batch, message, schoolId, type, sentById, summary);
+      await this.sendBatch(batch, message, loggedMessage, schoolId, type, sentById, summary);
     }
 
     return summary;
@@ -133,6 +134,7 @@ export class SmsService {
   private async sendBatch(
     batch: (SmsRecipient & { normalizedPhone: string })[],
     message: string,
+    loggedMessage: string,
     schoolId: number,
     type: SmsType,
     sentById: number | undefined,
@@ -166,7 +168,7 @@ export class SmsService {
           schoolId,
           type,
           toPhone: rec.number,
-          message,
+          message: loggedMessage,
           status: success ? SmsStatus.SENT : SmsStatus.FAILED,
           errorMessage: success ? undefined : rec.status || 'Unknown gateway error',
           studentId: match?.studentId,
@@ -186,7 +188,7 @@ export class SmsService {
             schoolId,
             type,
             toPhone: r.normalizedPhone,
-            message,
+            message: loggedMessage,
             status: SmsStatus.FAILED,
             errorMessage: 'No delivery status returned by gateway',
             studentId: r.studentId,
@@ -205,7 +207,7 @@ export class SmsService {
           schoolId,
           type,
           toPhone: r.normalizedPhone,
-          message,
+          message: loggedMessage,
           status: SmsStatus.FAILED,
           errorMessage: (error.response?.data?.SMSMessageData?.Message || error.message || 'Send failed').toString().slice(0, 500),
           studentId: r.studentId,
