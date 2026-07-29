@@ -64,6 +64,13 @@ export const independentStudentsApi = {
     payerPhone?: string;
   }) => api.post<IndependentStudentInvoice>('/independent-students/invoices', dto).then((r) => r.data),
 
+  deleteInvoice: (id: number) =>
+    api
+      .delete<{ id: number; studentId: number; subscriptionExpiresAt: string | null }>(
+        `/independent-students/invoices/${id}`,
+      )
+      .then((r) => r.data),
+
   findPaymentClaims: () =>
     api.get<IndependentPaymentClaim[]>('/independent-students/payment-claims').then((r) => r.data),
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { IndependentStudentsService } from './independent-students.service';
 import { CreateIndependentStudentDto } from './dto/create-independent-student.dto';
@@ -100,6 +100,13 @@ export class IndependentStudentsController {
   @AuditAction('independent_student.invoice_record')
   recordInvoice(@Body() dto: RecordIndependentInvoiceDto, @CurrentUser() actor: AuthenticatedUser) {
     return this.independentStudentsService.recordInvoice(dto, actor);
+  }
+
+  @Delete('invoices/:id')
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction('independent_student.invoice_delete')
+  deleteInvoice(@Param('id', ParseIntPipe) id: number) {
+    return this.independentStudentsService.deleteInvoice(id);
   }
 
   @Get('payment-claims')

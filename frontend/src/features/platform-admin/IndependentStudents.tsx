@@ -393,6 +393,7 @@ function PaymentHistory({
                 <th className="px-4 py-3 font-semibold">M-Pesa reference</th>
                 <th className="px-4 py-3 font-semibold">Amount</th>
                 <th className="px-4 py-3 font-semibold">Date</th>
+                <th className="px-4 py-3 text-right font-semibold">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -404,6 +405,9 @@ function PaymentHistory({
                   <td className="px-4 py-3 font-medium text-slate-700">{invoice.mpesaCode}</td>
                   <td className="px-4 py-3 font-semibold text-[#101820]">{formatCurrency(invoice.amountKES)}</td>
                   <td className="px-4 py-3 text-slate-500">{formatDate(invoice.createdAt)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <DeletePaymentButton invoice={invoice} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -572,11 +576,51 @@ function InvoiceHistoryModal({
                 M-Pesa {invoice.mpesaCode}
                 {invoice.payerPhone ? ` / ${invoice.payerPhone}` : ''}
               </p>
+              <div className="mt-3">
+                <DeletePaymentButton invoice={invoice} />
+              </div>
             </div>
           ))}
         </div>
       )}
     </Modal>
+  );
+}
+
+function DeletePaymentButton({
+  invoice,
+}: {
+  invoice: Awaited<ReturnType<typeof independentStudentsApi.findInvoices>>[number];
+}) {
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: () => independentStudentsApi.deleteInvoice(invoice.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['independent-student-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students-summary'] });
+    },
+    onError: (error) => {
+      window.alert(apiErrorMessage(error, 'Could not delete this payment'));
+    },
+  });
+
+  function confirmDelete() {
+    const confirmed = window.confirm(
+      `Delete payment ${invoice.invoiceNumber} for ${invoice.studentName}? The student's access period will be recalculated.`,
+    );
+    if (confirmed) deleteMutation.mutate();
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={confirmDelete}
+      disabled={deleteMutation.isPending}
+      className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+    >
+      {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+    </button>
   );
 }
 

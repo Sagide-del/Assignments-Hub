@@ -448,6 +448,53 @@ export class IndependentStudentsService {
     });
   }
 
+  async deleteInvoice(invoiceId: number) {
+    const school = await this.getOrCreateSchool();
+
+    return this.prisma.$transaction(async (transaction) => {
+      const invoice = await transaction.independentStudentInvoice.findUnique({
+        where: { id: invoiceId },
+        include: {
+          student: {
+            select: {
+              id: true,
+              schoolId: true,
+              role: true,
+            },
+          },
+        },
+      });
+      if (
+        !invoice ||
+        invoice.student.schoolId !== school.id ||
+        invoice.student.role !== Role.STUDENT
+      ) {
+        throw new NotFoundException('Independent student payment not found');
+      }
+
+      await transaction.independentStudentInvoice.delete({ where: { id: invoice.id } });
+      const remaining = await transaction.independentStudentInvoice.aggregate({
+        where: { studentId: invoice.studentId },
+        _max: { periodEnd: true },
+      });
+      const subscriptionExpiresAt = remaining._max.periodEnd;
+
+      await transaction.user.update({
+        where: { id: invoice.studentId },
+        data: {
+          subscriptionExpiresAt,
+          isActive: Boolean(subscriptionExpiresAt && subscriptionExpiresAt > new Date()),
+        },
+      });
+
+      return {
+        id: invoice.id,
+        studentId: invoice.studentId,
+        subscriptionExpiresAt,
+      };
+    });
+  }
+
   async submitPaymentClaim(dto: SubmitIndependentPaymentClaimDto) {
     const paymentInfo = this.getPaymentInfo();
     if (!paymentInfo.enabled) {
