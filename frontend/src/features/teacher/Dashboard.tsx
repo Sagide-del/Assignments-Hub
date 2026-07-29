@@ -49,6 +49,16 @@ export function TeacherDashboard() {
     onError: (error) => setStatus(apiErrorMessage(error, 'Could not notify parents')),
   });
 
+  const deleteAssignmentMutation = useMutation({
+    mutationFn: (assignmentId: number) => assignmentsApi.remove(assignmentId),
+    onSuccess: () => {
+      setStatus('Assignment deleted.');
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+    },
+    onError: (error) =>
+      setStatus(apiErrorMessage(error, 'Could not delete assignment')),
+  });
+
   const broadcastMutation = useMutation({
     mutationFn: () => smsApi.broadcast({ message: parentMessage.trim(), grade: messageGrade.trim() || undefined }),
     onSuccess: (response) => {
@@ -177,15 +187,21 @@ export function TeacherDashboard() {
         ) : (
           <ul className="divide-y divide-slate-100">
             {(assignments ?? []).map((assignment) => (
-              <li key={assignment.id} className="flex items-center justify-between gap-4 px-5 py-4 text-sm">
-                <div>
+              <li key={assignment.id} className="flex flex-col gap-4 px-5 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="font-semibold text-[#101820]">{assignment.title}</p>
                   <p className="mt-1 text-slate-500">{assignment.subject} · Grade {assignment.grade}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${assignment.isPublished ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                     {assignment.isPublished ? 'Published' : 'Draft'}
                   </span>
+                  <Link
+                    to={`/teacher/assignments/${assignment.id}/edit`}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#101820] hover:bg-slate-50"
+                  >
+                    Edit
+                  </Link>
                   <button
                     type="button"
                     disabled={!assignment.isPublished || notifyAssignmentMutation.isPending}
@@ -193,6 +209,30 @@ export function TeacherDashboard() {
                     className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-[#101820] disabled:opacity-40"
                   >
                     Notify parents
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      Boolean(assignment._count?.submissions) ||
+                      deleteAssignmentMutation.isPending
+                    }
+                    title={
+                      assignment._count?.submissions
+                        ? 'Assignments with student submissions cannot be deleted'
+                        : 'Delete assignment'
+                    }
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Delete "${assignment.title}"? This cannot be undone.`,
+                        )
+                      ) {
+                        deleteAssignmentMutation.mutate(assignment.id);
+                      }
+                    }}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Delete
                   </button>
                 </div>
               </li>

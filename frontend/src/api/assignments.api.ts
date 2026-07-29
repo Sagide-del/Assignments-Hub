@@ -61,7 +61,7 @@ export const assignmentsApi = {
   createIndependent: (dto: CreateAssignmentInput) =>
     api.post<Assignment>('/assignments/independent', dto).then((r) => r.data),
 
-  update: (id: number, dto: Partial<Assignment>) =>
+  update: (id: number, dto: Partial<CreateAssignmentInput>) =>
     api.patch<Assignment>(`/assignments/${id}`, dto).then((r) => r.data),
 
   remove: (id: number) => api.delete(`/assignments/${id}`),

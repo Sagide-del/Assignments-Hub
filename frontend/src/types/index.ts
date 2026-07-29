@@ -49,14 +49,17 @@ export interface School {
 export interface Assignment {
   id: number;
   title: string;
+  description?: string | null;
   subject: string;
   grade: string;
   totalMarks: number;
   maxPoints?: number;
   dueDate?: string | null;
+  timeAllowedMinutes?: number | null;
   isPublished: boolean;
   createdAt: string;
   schoolId: number;
+  questions?: Question[];
   _count?: { questions: number; submissions: number };
 }
 
@@ -184,6 +187,8 @@ export interface Question {
   contentHtml?: string | null;
   questionType: QuestionType;
   options: unknown;
+  config?: Record<string, unknown> | null;
+  correctAnswer?: string | null;
   // correctAnswer is deliberately absent here — the backend strips it for
   // students (see AssignmentsService.stripAnswersForStudent). Never assume
   // it's present in a findQuestions() response.

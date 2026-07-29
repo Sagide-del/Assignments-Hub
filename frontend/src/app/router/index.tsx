@@ -21,7 +21,10 @@ import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
-import { CreateAssignmentRich } from '../../features/teacher/CreateAssignmentRich';
+import {
+  CreateAssignmentRich,
+  EditAssignmentRich,
+} from '../../features/teacher/CreateAssignmentRich';
 import AiAssignmentGenerator from '../../features/teacher/AiAssignmentGenerator';
 import { Marking } from '../../features/teacher/Marking';
 import { CslReview } from '../../features/teacher/CslReview';
@@ -306,6 +309,10 @@ export const router = createBrowserRouter([
             element: <CreateAssignmentRich />,
           },
           {
+            path: '/teacher/assignments/:id/edit',
+            element: <EditAssignmentRich />,
+          },
+          {
             path: '/teacher/assignments/new-rich',
             element: <Navigate to="/teacher/assignments/new" replace />,
           },
@@ -409,6 +416,15 @@ export const router = createBrowserRouter([
             path: '/platform/independent-assignments/new',
             element: (
               <CreateAssignmentRich
+                target="independent"
+                returnTo="/platform/independent-assignments"
+              />
+            ),
+          },
+          {
+            path: '/platform/independent-assignments/:id/edit',
+            element: (
+              <EditAssignmentRich
                 target="independent"
                 returnTo="/platform/independent-assignments"
               />

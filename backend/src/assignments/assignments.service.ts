@@ -7,7 +7,12 @@ import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { AssignmentJsonDto, ExamQuestionDto } from './dto/assignment-json.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
-import { AssignmentType, QuestionType, SubscriptionStatus } from '@prisma/client';
+import {
+  AssignmentType,
+  Prisma,
+  QuestionType,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { SmsService } from '../sms/sms.service';
 import { normalizeGrade } from '../common/utils/grade.util';
 
@@ -219,6 +224,7 @@ export class AssignmentsService {
         questions: { orderBy: { order: 'asc' } },
         sections: { orderBy: { order: 'asc' } },
         rubric: true,
+        _count: { select: { questions: true, submissions: true } },
       },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
@@ -557,10 +563,14 @@ export class AssignmentsService {
   async update(id: number, dto: UpdateAssignmentDto, actor: AuthenticatedUser) {
     const assignment = await this.findOne(id, actor);
     this.assertCanModify(assignment, actor);
+    this.validateQuestionConfigs(dto.questions);
 
-    // Deliberately flat/scalar-only: editing individual questions or rubric
-    // rows after creation isn't supported in this build (would need diffing
-    // add/remove/update per question). `attachments`/`resources`, if
+    if (dto.questions !== undefined) {
+      return this.replaceAssignmentQuestions(id, dto);
+    }
+
+    // Metadata-only updates preserve the existing question records.
+    // `attachments`/`resources`, if
     // provided, replace the array wholesale — the client is expected to
     // send the full desired list, not a delta.
     return this.prisma.assignment.update({
@@ -573,6 +583,7 @@ export class AssignmentsService {
         type: dto.type,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints,
+        timeAllowedMinutes: dto.timeAllowedMinutes,
         isPublished: dto.isPublished,
         publishDate: dto.publishDate ? new Date(dto.publishDate) : undefined,
         resources: dto.resources as any,
@@ -582,12 +593,97 @@ export class AssignmentsService {
     });
   }
 
+  private async replaceAssignmentQuestions(id: number, dto: UpdateAssignmentDto) {
+    const questions = dto.questions;
+    if (!questions?.length) {
+      throw new BadRequestException('An assignment must contain at least one question');
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const submissionCount = await tx.submission.count({
+          where: { assignmentId: id },
+        });
+        if (submissionCount > 0) {
+          throw new BadRequestException(
+            'Questions cannot be changed after a student has started this assignment',
+          );
+        }
+
+        await tx.question.deleteMany({ where: { assignmentId: id } });
+        await tx.section.deleteMany({ where: { assignmentId: id } });
+
+        return tx.assignment.update({
+          where: { id },
+          data: {
+            title: dto.title,
+            description: dto.description,
+            subject: dto.subject,
+            grade:
+              dto.grade !== undefined
+                ? (normalizeGrade(dto.grade) ?? dto.grade)
+                : undefined,
+            type: dto.type,
+            dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+            maxPoints: dto.maxPoints,
+            timeAllowedMinutes: dto.timeAllowedMinutes,
+            isPublished: dto.isPublished,
+            publishDate: dto.publishDate
+              ? new Date(dto.publishDate)
+              : undefined,
+            resources: dto.resources as any,
+            attachments: dto.attachments as any,
+            questions: {
+              create: questions.map((question, index) => ({
+                questionText: question.questionText,
+                contentHtml: question.contentHtml,
+                questionType:
+                  question.questionType ?? QuestionType.ESSAY,
+                options:
+                  question.options && question.options.length
+                    ? (question.options as any)
+                    : undefined,
+                config: question.config
+                  ? (question.config as any)
+                  : undefined,
+                correctAnswer: question.correctAnswer,
+                points: question.points ?? 10,
+                order: question.order ?? index,
+                hint: question.hint,
+              })),
+            },
+          },
+          include: {
+            questions: { orderBy: { order: 'asc' } },
+            rubric: true,
+            _count: { select: { questions: true, submissions: true } },
+          },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
+
   async remove(id: number, actor: AuthenticatedUser) {
     const assignment = await this.findOne(id, actor);
     this.assertCanModify(assignment, actor);
 
-    await this.prisma.assignment.delete({ where: { id } });
-    return { id };
+    return this.prisma.$transaction(
+      async (tx) => {
+        const submissionCount = await tx.submission.count({
+          where: { assignmentId: id },
+        });
+        if (submissionCount > 0) {
+          throw new BadRequestException(
+            'Assignments with student submissions cannot be deleted. Unpublish the assignment instead.',
+          );
+        }
+
+        await tx.assignment.delete({ where: { id } });
+        return { id };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   // Removes every answer-key field from student responses. Numeric accepted

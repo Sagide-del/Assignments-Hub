@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useParams } from 'react-router-dom';
 import { assignmentsApi, type CreateQuestionInput } from '../../api/assignments.api';
 import { apiErrorMessage } from '../../api/axios';
-import { PageHeader } from '../../components/ui/Saas';
+import { EmptyState, PageHeader } from '../../components/ui/Saas';
 import { RichContent, sanitizeRichHtml } from '../../components/ui/RichContent';
-import type { QuestionType } from '../../types';
+import type { Assignment, Question, QuestionType } from '../../types';
 import { DiagramLabeler } from './rich-editor/DiagramLabeler';
 import { RichTextEditor } from './rich-editor/RichTextEditor';
 import { buildDiagramHtml, type DiagramValue } from './rich-editor/diagramHtml';
@@ -66,6 +66,63 @@ function newQuestion(type: QuestionType = 'ESSAY'): DraftQuestion {
     shortAnswerKeywords: '',
     shortAnswerPassThreshold: '0.7',
   };
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function draftFromQuestion(question: Question): DraftQuestion {
+  const config = asRecord(question.config);
+  const numeric = asRecord(config.numeric);
+  const shortAnswer = asRecord(config.shortAnswer);
+  const options = Array.isArray(question.options)
+    ? question.options.map(String)
+    : [];
+
+  return {
+    ...newQuestion(question.questionType),
+    bodyHtml: question.contentHtml || `<p>${escapeHtml(question.questionText)}</p>`,
+    options:
+      question.questionType === 'MULTIPLE_CHOICE'
+        ? options.length
+          ? options
+          : ['', '']
+        : options,
+    correctAnswer: question.correctAnswer ?? '',
+    points: question.points,
+    hint: question.hint ?? '',
+    numericAcceptedValue:
+      numeric.acceptedValue !== undefined
+        ? String(numeric.acceptedValue)
+        : question.questionType === 'NUMERIC'
+          ? question.correctAnswer ?? ''
+          : '',
+    numericTolerance:
+      numeric.tolerance !== undefined ? String(numeric.tolerance) : '0.01',
+    numericUnit: typeof numeric.unit === 'string' ? numeric.unit : '',
+    numericSignificantFigures:
+      numeric.significantFigures !== undefined
+        ? String(numeric.significantFigures)
+        : '',
+    shortAnswerKeywords: Array.isArray(shortAnswer.keywords)
+      ? shortAnswer.keywords.map(String).join(', ')
+      : '',
+    shortAnswerPassThreshold:
+      shortAnswer.passThreshold !== undefined
+        ? String(shortAnswer.passThreshold)
+        : '0.7',
+  };
+}
+
+function gradeValue(grade?: string): string {
+  return grade?.match(/\d+/)?.[0] ?? '';
+}
+
+function dateInputValue(value?: string | null): string {
+  return value ? new Date(value).toISOString().slice(0, 10) : '';
 }
 
 function htmlToPlainText(html: string): string {
@@ -222,27 +279,86 @@ function importQuestionsFromCsv(text: string): CsvImportResult {
   return { questions, warnings };
 }
 
-export function CreateAssignmentRich({
+export function EditAssignmentRich({
   target = 'school',
   returnTo = '/teacher',
 }: {
   target?: 'school' | 'independent';
   returnTo?: string;
 } = {}) {
+  const { id } = useParams();
+  const assignmentId = Number(id);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['assignment', assignmentId],
+    queryFn: () => assignmentsApi.findOne(assignmentId),
+    enabled: Number.isInteger(assignmentId) && assignmentId > 0,
+  });
+
+  if (!Number.isInteger(assignmentId) || assignmentId < 1) {
+    return <EmptyState title="Invalid assignment" />;
+  }
+  if (isLoading) {
+    return <EmptyState title="Loading assignment..." />;
+  }
+  if (error || !data) {
+    return (
+      <EmptyState
+        title={apiErrorMessage(error, 'Could not load this assignment')}
+      />
+    );
+  }
+
+  return (
+    <CreateAssignmentRich
+      key={data.id}
+      target={target}
+      returnTo={returnTo}
+      initialAssignment={data}
+    />
+  );
+}
+
+export function CreateAssignmentRich({
+  target = 'school',
+  returnTo = '/teacher',
+  initialAssignment,
+}: {
+  target?: 'school' | 'independent';
+  returnTo?: string;
+  initialAssignment?: Assignment;
+} = {}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [subject, setSubject] = useState('');
-  const [grade, setGrade] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [timeAllowedMinutes, setTimeAllowedMinutes] = useState('');
+  const [title, setTitle] = useState(initialAssignment?.title ?? '');
+  const [description, setDescription] = useState(initialAssignment?.description ?? '');
+  const [subject, setSubject] = useState(initialAssignment?.subject ?? '');
+  const [grade, setGrade] = useState(gradeValue(initialAssignment?.grade));
+  const [dueDate, setDueDate] = useState(dateInputValue(initialAssignment?.dueDate));
+  const [timeAllowedMinutes, setTimeAllowedMinutes] = useState(
+    initialAssignment?.timeAllowedMinutes
+      ? String(initialAssignment.timeAllowedMinutes)
+      : '',
+  );
   const [notifyParents, setNotifyParents] = useState(false);
-  const [questions, setQuestions] = useState<DraftQuestion[]>([newQuestion()]);
+  const [questions, setQuestions] = useState<DraftQuestion[]>(() =>
+    initialAssignment?.questions?.length
+      ? initialAssignment.questions.map(draftFromQuestion)
+      : [newQuestion()],
+  );
   const [selectedQuestionId, setSelectedQuestionId] = useState(questions[0].tempId);
   const [questionMode, setQuestionMode] = useState<'manual' | 'csv'>('manual');
   const [status, setStatus] = useState<string | null>(null);
+  const isEditing = Boolean(initialAssignment);
+  const hasStudentWork = Boolean(initialAssignment?._count?.submissions);
+  const hasStructuredQuestions = Boolean(
+    initialAssignment?.questions?.some(
+      (question) =>
+        question.sectionId !== null ||
+        ['MATCHING', 'ORDERING'].includes(question.questionType),
+    ),
+  );
+  const questionsLocked = hasStudentWork || hasStructuredQuestions;
 
   const totalPoints = useMemo(
     () => questions.reduce((total, question) => total + Math.max(0, question.points), 0),
@@ -312,7 +428,7 @@ export function CreateAssignmentRich({
       setStatus('Add a title, subject, and grade before continuing.');
       return;
     }
-    setStep(1);
+    setStep(questionsLocked ? 2 : 1);
   }
 
   function goToReview() {
@@ -422,11 +538,7 @@ export function CreateAssignmentRich({
         };
       });
 
-      const createAssignment = target === 'independent'
-        ? assignmentsApi.createIndependent
-        : assignmentsApi.create;
-
-      return createAssignment({
+      const payload = {
         title: title.trim(),
         description: description.trim() || undefined,
         subject: subject.trim(),
@@ -435,23 +547,48 @@ export function CreateAssignmentRich({
         maxPoints: totalPoints,
         timeAllowedMinutes: timeAllowedMinutes ? Number(timeAllowedMinutes) : undefined,
         isPublished,
-        notifyParents: target === 'school' && isPublished ? notifyParents : false,
-        questions: payloadQuestions,
-      });
+        notifyParents:
+          !isEditing && target === 'school' && isPublished
+            ? notifyParents
+            : false,
+        questions: questionsLocked ? undefined : payloadQuestions,
+      };
+
+      if (initialAssignment) {
+        return assignmentsApi.update(initialAssignment.id, payload);
+      }
+
+      const createAssignment = target === 'independent'
+        ? assignmentsApi.createIndependent
+        : assignmentsApi.create;
+      return createAssignment(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       queryClient.invalidateQueries({ queryKey: ['independent-assignments'] });
+      if (initialAssignment) {
+        queryClient.invalidateQueries({
+          queryKey: ['assignment', initialAssignment.id],
+        });
+      }
       navigate(returnTo, { replace: true });
     },
-    onError: (error) => setStatus(apiErrorMessage(error, 'Could not create assignment')),
+    onError: (error) =>
+      setStatus(
+        apiErrorMessage(
+          error,
+          isEditing
+            ? 'Could not update assignment'
+            : 'Could not create assignment',
+        ),
+      ),
   });
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader
         eyebrow={target === 'independent' ? 'Platform Studio' : 'Teacher Workspace'}
-        title="Create assignment"
+        title={isEditing ? 'Edit assignment' : 'Create assignment'}
         actions={
           <button
             type="button"
@@ -464,7 +601,20 @@ export function CreateAssignmentRich({
       />
 
       <AudienceBanner target={target} />
-      <StepIndicator currentStep={step} onSelect={(nextStep) => nextStep < step && setStep(nextStep)} />
+      {questionsLocked ? (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {hasStudentWork
+            ? 'Student work exists for this assignment. You can update its details and publication status, but its questions are locked.'
+            : 'This assignment uses structured questions. You can update its details and publication status without changing its question structure.'}
+        </section>
+      ) : null}
+      <StepIndicator
+        currentStep={step}
+        onSelect={(nextStep) => {
+          if (nextStep >= step || (questionsLocked && nextStep === 1)) return;
+          setStep(nextStep);
+        }}
+      />
 
       {step === 0 ? (
         <SetupStep
@@ -512,6 +662,7 @@ export function CreateAssignmentRich({
           questions={questions}
           notifyParents={notifyParents}
           onNotifyParents={setNotifyParents}
+          showParentNotification={!isEditing}
         />
       ) : null}
 
@@ -539,14 +690,20 @@ export function CreateAssignmentRich({
               type="button"
               onClick={() => {
                 setStatus(null);
-                setStep((current) => current - 1);
+                setStep((current) =>
+                  questionsLocked && current === 2 ? 0 : current - 1,
+                );
               }}
               className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#101820]"
             >
               Back
             </button>
           ) : null}
-          {step === 0 ? <PrimaryButton onClick={goToQuestions}>Continue to questions</PrimaryButton> : null}
+          {step === 0 ? (
+            <PrimaryButton onClick={goToQuestions}>
+              {questionsLocked ? 'Review changes' : 'Continue to questions'}
+            </PrimaryButton>
+          ) : null}
           {step === 1 ? <PrimaryButton onClick={goToReview}>Review assignment</PrimaryButton> : null}
           {step === 2 ? (
             <>
@@ -563,8 +720,12 @@ export function CreateAssignmentRich({
                 onClick={() => createMutation.mutate(true)}
               >
                 {createMutation.isPending
-                  ? 'Creating...'
-                  : target === 'independent'
+                  ? isEditing
+                    ? 'Saving...'
+                    : 'Creating...'
+                  : isEditing
+                    ? 'Save and publish'
+                    : target === 'independent'
                     ? 'Publish to independent learners'
                     : 'Publish assignment'}
               </PrimaryButton>
@@ -1181,6 +1342,7 @@ function ReviewStep({
   questions,
   notifyParents,
   onNotifyParents,
+  showParentNotification,
 }: {
   target: 'school' | 'independent';
   title: string;
@@ -1193,6 +1355,7 @@ function ReviewStep({
   questions: DraftQuestion[];
   notifyParents: boolean;
   onNotifyParents: (value: boolean) => void;
+  showParentNotification: boolean;
 }) {
   return (
     <div className="space-y-5">
@@ -1210,7 +1373,7 @@ function ReviewStep({
         </div>
       </section>
 
-      {target === 'school' ? (
+      {target === 'school' && showParentNotification ? (
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
           <input
             type="checkbox"

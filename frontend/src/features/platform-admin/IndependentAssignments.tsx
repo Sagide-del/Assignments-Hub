@@ -89,18 +89,34 @@ export function IndependentAssignmentsPage() {
                     {assignment.subject} · {assignment.grade} · {assignment._count?.questions ?? 0} questions
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={removeMutation.isPending}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${assignment.title}"?`)) {
-                      removeMutation.mutate(assignment.id);
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <Link
+                    to={`/platform/independent-assignments/${assignment.id}/edit`}
+                    className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-[#101820] hover:bg-slate-50"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={
+                      Boolean(assignment._count?.submissions) ||
+                      removeMutation.isPending
                     }
-                  }}
-                  className="self-start rounded-xl border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60 sm:self-auto"
-                >
-                  Delete
-                </button>
+                    title={
+                      assignment._count?.submissions
+                        ? 'Assignments with student submissions cannot be deleted'
+                        : 'Delete assignment'
+                    }
+                    onClick={() => {
+                      if (window.confirm(`Delete "${assignment.title}"?`)) {
+                        removeMutation.mutate(assignment.id);
+                      }
+                    }}
+                    className="rounded-xl border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Delete
+                  </button>
+                </div>
               </article>
             ))}
           </div>
