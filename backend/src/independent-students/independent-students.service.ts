@@ -12,6 +12,7 @@ import { randomInt } from 'crypto';
 import {
   IndependentPaymentClaimStatus,
   SmsType,
+  SubmissionStatus,
   SubscriptionInterval,
   SubscriptionStatus,
 } from '@prisma/client';
@@ -178,6 +179,146 @@ export class IndependentStudentsService {
       totalRevenueKES: invoiceSummary._sum.amountKES ?? 0,
       pendingPayments,
     };
+  }
+
+  async getTutorOverview() {
+    const school = await this.getOrCreateSchool();
+
+    const [
+      totalStudents,
+      totalAssignments,
+      totalSubmissions,
+      pendingReview,
+      autoGraded,
+      tutorReviewed,
+      labCompletions,
+      publishedMnemonicCards,
+      recentLabSessions,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { schoolId: school.id, role: Role.STUDENT } }),
+      this.prisma.assignment.count({ where: { schoolId: school.id } }),
+      this.prisma.submission.count({
+        where: {
+          assignment: { schoolId: school.id },
+          status: { not: SubmissionStatus.DRAFT },
+        },
+      }),
+      this.prisma.submission.count({
+        where: {
+          assignment: { schoolId: school.id },
+          status: SubmissionStatus.SUBMITTED,
+        },
+      }),
+      this.prisma.submission.count({
+        where: {
+          assignment: { schoolId: school.id },
+          status: SubmissionStatus.GRADED,
+          gradedById: null,
+        },
+      }),
+      this.prisma.submission.count({
+        where: {
+          assignment: { schoolId: school.id },
+          status: SubmissionStatus.GRADED,
+          gradedById: { not: null },
+        },
+      }),
+      this.prisma.labSession.count({ where: { schoolId: school.id } }),
+      this.prisma.mnemonicCard.count({ where: { isPublished: true } }),
+      this.prisma.labSession.findMany({
+        where: { schoolId: school.id },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              grade: true,
+              admissionNumber: true,
+            },
+          },
+        },
+        orderBy: { completedAt: 'desc' },
+        take: 50,
+      }),
+    ]);
+
+    const labKeys = Array.from(new Set(recentLabSessions.map((session) => session.labKey)));
+    const labs = labKeys.length
+      ? await this.prisma.lab.findMany({
+          where: { key: { in: labKeys } },
+          select: { key: true, title: true, subject: true, topic: true, grade: true },
+        })
+      : [];
+    const labByKey = new Map(labs.map((lab) => [lab.key, lab]));
+
+    return {
+      summary: {
+        totalStudents,
+        totalAssignments,
+        totalSubmissions,
+        pendingReview,
+        autoGraded,
+        tutorReviewed,
+        labCompletions,
+        publishedMnemonicCards,
+      },
+      recentLabSessions: recentLabSessions.map((session) => ({
+        ...session,
+        lab: labByKey.get(session.labKey) ?? null,
+      })),
+    };
+  }
+
+  async getTutorSubmissions(filters: {
+    studentId?: number;
+    subject?: string;
+    reviewState?: string;
+  }) {
+    const school = await this.getOrCreateSchool();
+    const reviewWhere =
+      filters.reviewState === 'PENDING'
+        ? { status: SubmissionStatus.SUBMITTED }
+        : filters.reviewState === 'AUTO_GRADED'
+          ? { status: SubmissionStatus.GRADED, gradedById: null }
+          : filters.reviewState === 'TUTOR_REVIEWED'
+            ? { status: SubmissionStatus.GRADED, gradedById: { not: null } }
+            : { status: { not: SubmissionStatus.DRAFT } };
+
+    return this.prisma.submission.findMany({
+      where: {
+        ...reviewWhere,
+        studentId: filters.studentId,
+        assignment: {
+          schoolId: school.id,
+          ...(filters.subject?.trim()
+            ? { subject: { equals: filters.subject.trim(), mode: 'insensitive' } }
+            : {}),
+        },
+      },
+      include: {
+        assignment: {
+          select: {
+            id: true,
+            title: true,
+            subject: true,
+            grade: true,
+            type: true,
+            maxPoints: true,
+          },
+        },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+            admissionNumber: true,
+          },
+        },
+        gradedBy: { select: { id: true, name: true } },
+      },
+      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
+      take: 200,
+    });
   }
 
   async createStudent(dto: CreateIndependentStudentDto, actor: AuthenticatedUser) {

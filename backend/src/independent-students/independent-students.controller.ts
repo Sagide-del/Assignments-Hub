@@ -58,6 +58,26 @@ export class IndependentStudentsController {
     return this.independentStudentsService.getSummary();
   }
 
+  @Get('tutor/overview')
+  @Roles(Role.PLATFORM_ADMIN)
+  getTutorOverview() {
+    return this.independentStudentsService.getTutorOverview();
+  }
+
+  @Get('tutor/submissions')
+  @Roles(Role.PLATFORM_ADMIN)
+  getTutorSubmissions(
+    @Query('studentId', new OptionalParseIntPipe()) studentId?: number,
+    @Query('subject') subject?: string,
+    @Query('reviewState') reviewState?: string,
+  ) {
+    return this.independentStudentsService.getTutorSubmissions({
+      studentId,
+      subject,
+      reviewState,
+    });
+  }
+
   @Post('students/:id/welcome')
   @Roles(Role.PLATFORM_ADMIN)
   @AuditAction('independent_student.welcome')

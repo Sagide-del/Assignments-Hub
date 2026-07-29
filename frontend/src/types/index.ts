@@ -214,6 +214,7 @@ export interface Answer {
   isCorrect: boolean | null;
   pointsAwarded: number | null;
   feedback: string | null;
+  question?: Question;
 }
 
 export interface MnemonicCard {
@@ -907,6 +908,67 @@ export interface IndependentWelcomeResult {
     failed: number;
     skippedNoPhone: number;
   };
+}
+
+export type TutorReviewState = 'ALL' | 'PENDING' | 'AUTO_GRADED' | 'TUTOR_REVIEWED';
+
+export interface TutorSubmission {
+  id: number;
+  assignmentId: number;
+  studentId: number;
+  score: number | null;
+  status: 'SUBMITTED' | 'GRADED' | string;
+  isLate: boolean;
+  feedback: string | null;
+  gradedById: number | null;
+  gradedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  assignment: {
+    id: number;
+    title: string;
+    subject: string;
+    grade: string;
+    type: 'AUTO_MARKED' | 'TEACHER_MARKED' | 'PRACTICAL';
+    maxPoints: number;
+  };
+  student: {
+    id: number;
+    name: string;
+    grade: string | null;
+    admissionNumber: string | null;
+  };
+  gradedBy: { id: number; name: string } | null;
+}
+
+export interface TutorLabSession extends LabSession {
+  student: {
+    id: number;
+    name: string;
+    grade: string | null;
+    admissionNumber: string | null;
+  };
+  lab: {
+    key: string;
+    title: string;
+    subject: string;
+    topic: string | null;
+    grade: string;
+  } | null;
+}
+
+export interface PrivateTutorOverview {
+  summary: {
+    totalStudents: number;
+    totalAssignments: number;
+    totalSubmissions: number;
+    pendingReview: number;
+    autoGraded: number;
+    tutorReviewed: number;
+    labCompletions: number;
+    publishedMnemonicCards: number;
+  };
+  recentLabSessions: TutorLabSession[];
 }
 
 export interface IndependentStudentInvoice {

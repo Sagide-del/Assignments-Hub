@@ -6,6 +6,9 @@ import type {
   IndependentStudentPaymentInfo,
   IndependentStudentSummary,
   IndependentWelcomeResult,
+  PrivateTutorOverview,
+  TutorReviewState,
+  TutorSubmission,
 } from '../types';
 
 // Matches backend/src/independent-students/independent-students.controller.ts.
@@ -36,6 +39,18 @@ export const independentStudentsApi = {
 
   sendWelcome: (id: number, dto: { phone?: string; message?: string }) =>
     api.post<IndependentWelcomeResult>(`/independent-students/students/${id}/welcome`, dto).then((r) => r.data),
+
+  getTutorOverview: () =>
+    api.get<PrivateTutorOverview>('/independent-students/tutor/overview').then((r) => r.data),
+
+  getTutorSubmissions: (params?: {
+    studentId?: number;
+    subject?: string;
+    reviewState?: TutorReviewState;
+  }) =>
+    api
+      .get<TutorSubmission[]>('/independent-students/tutor/submissions', { params })
+      .then((r) => r.data),
 
   findInvoices: (studentId?: number) =>
     api.get<IndependentStudentInvoice[]>('/independent-students/invoices', { params: { studentId } }).then((r) => r.data),
