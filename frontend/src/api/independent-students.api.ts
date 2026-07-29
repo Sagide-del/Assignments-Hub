@@ -37,6 +37,13 @@ export const independentStudentsApi = {
   createStudent: (dto: { name: string; admissionNumber?: string; grade?: string; parentPhone?: string }) =>
     api.post<IndependentStudent>('/independent-students/students', dto).then((r) => r.data),
 
+  deleteStudents: (ids: number[]) =>
+    api
+      .delete<{ deleted: number; ids: number[] }>('/independent-students/students', {
+        data: { ids },
+      })
+      .then((r) => r.data),
+
   sendWelcome: (id: number, dto: { phone?: string; message?: string }) =>
     api.post<IndependentWelcomeResult>(`/independent-students/students/${id}/welcome`, dto).then((r) => r.data),
 

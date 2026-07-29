@@ -344,6 +344,39 @@ export class IndependentStudentsService {
     );
   }
 
+  async deleteStudents(studentIds: number[]) {
+    const school = await this.getOrCreateSchool();
+    return this.prisma.$transaction(async (transaction) => {
+      const students = await transaction.user.findMany({
+        where: {
+          id: { in: studentIds },
+          schoolId: school.id,
+          role: Role.STUDENT,
+        },
+        select: { id: true },
+      });
+
+      if (students.length !== studentIds.length) {
+        throw new BadRequestException(
+          'One or more selected accounts are not independent students',
+        );
+      }
+
+      const deleted = await transaction.user.deleteMany({
+        where: {
+          id: { in: studentIds },
+          schoolId: school.id,
+          role: Role.STUDENT,
+        },
+      });
+      if (deleted.count !== studentIds.length) {
+        throw new ConflictException('The student list changed; refresh and try again');
+      }
+
+      return { deleted: deleted.count, ids: studentIds };
+    });
+  }
+
   async sendWelcome(
     studentId: number,
     dto: SendIndependentWelcomeDto,

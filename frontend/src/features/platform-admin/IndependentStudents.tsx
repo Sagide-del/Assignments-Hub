@@ -31,12 +31,14 @@ function statusBadgeClass(status: IndependentStudentStatus) {
 }
 
 export function IndependentStudentsPage() {
+  const queryClient = useQueryClient();
   const [addingStudent, setAddingStudent] = useState(false);
   const [invoicingStudent, setInvoicingStudent] = useState<IndependentStudent | null>(null);
   const [viewingInvoicesFor, setViewingInvoicesFor] = useState<IndependentStudent | null>(null);
   const [welcomingStudent, setWelcomingStudent] = useState<IndependentStudent | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | IndependentStudentStatus>('ALL');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
 
   const { data: paymentInfo } = useQuery({
     queryKey: ['independent-students-payment-info'],
@@ -68,6 +70,57 @@ export function IndependentStudentsPage() {
       return matchesStatus && Boolean(matchesSearch);
     });
   }, [search, statusFilter, students]);
+  const filteredStudentIds = filteredStudents.map((student) => student.id);
+  const selectableFilteredIds = filteredStudentIds.slice(0, 100);
+  const allFilteredSelected =
+    selectableFilteredIds.length > 0 &&
+    selectableFilteredIds.every((id) => selectedStudentIds.includes(id));
+
+  const deleteStudentsMutation = useMutation({
+    mutationFn: (ids: number[]) => independentStudentsApi.deleteStudents(ids),
+    onSuccess: () => {
+      setSelectedStudentIds([]);
+      queryClient.invalidateQueries({ queryKey: ['independent-students'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-students-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-student-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['independent-payment-claims'] });
+      queryClient.invalidateQueries({ queryKey: ['private-tutor-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['private-tutor-submissions'] });
+    },
+    onError: (error) => {
+      window.alert(apiErrorMessage(error, 'Could not delete the selected student accounts'));
+    },
+  });
+
+  function toggleStudent(studentId: number) {
+    setSelectedStudentIds((current) => {
+      if (current.includes(studentId)) {
+        return current.filter((id) => id !== studentId);
+      }
+      if (current.length >= 100) {
+        window.alert('You can delete up to 100 student accounts at a time.');
+        return current;
+      }
+      return [...current, studentId];
+    });
+  }
+
+  function toggleAllFiltered() {
+    setSelectedStudentIds((current) => {
+      if (allFilteredSelected) {
+        return current.filter((id) => !selectableFilteredIds.includes(id));
+      }
+      return Array.from(new Set([...current, ...selectableFilteredIds])).slice(0, 100);
+    });
+  }
+
+  function confirmBulkDelete() {
+    if (!selectedStudentIds.length) return;
+    const confirmed = window.confirm(
+      `Permanently delete ${selectedStudentIds.length} student account${selectedStudentIds.length === 1 ? '' : 's'}? Their submissions, STEM sessions, payment records and login access will also be deleted. This cannot be undone.`,
+    );
+    if (confirmed) deleteStudentsMutation.mutate(selectedStudentIds);
+  }
 
   return (
     <div className="space-y-6">
@@ -119,9 +172,23 @@ export function IndependentStudentsPage() {
         title="Student accounts"
         meta={isLoading ? undefined : `${filteredStudents.length} of ${students.length}`}
         action={
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
-            {summary?.studentsWithPhone ?? 0} with phone
-          </span>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+              {selectedStudentIds.length
+                ? `${selectedStudentIds.length} selected`
+                : `${summary?.studentsWithPhone ?? 0} with phone`}
+            </span>
+            {selectedStudentIds.length ? (
+              <button
+                type="button"
+                onClick={confirmBulkDelete}
+                disabled={deleteStudentsMutation.isPending}
+                className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                {deleteStudentsMutation.isPending ? 'Deleting...' : 'Delete selected'}
+              </button>
+            ) : null}
+          </div>
         }
       >
         <div className="mb-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
@@ -179,6 +246,15 @@ export function IndependentStudentsPage() {
             <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.1em] text-slate-500">
                 <tr>
+                  <th className="w-12 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleAllFiltered}
+                      className="h-4 w-4 rounded border-slate-300 accent-[#101820]"
+                      aria-label="Select all filtered students"
+                    />
+                  </th>
                   <th className="px-4 py-3 font-semibold">Student</th>
                   <th className="px-4 py-3 font-semibold">Phone</th>
                   <th className="px-4 py-3 font-semibold">Access</th>
@@ -190,6 +266,15 @@ export function IndependentStudentsPage() {
               <tbody className="divide-y divide-slate-100">
                 {filteredStudents.map((student) => (
                   <tr key={student.id} className="align-top transition hover:bg-slate-50/70">
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedStudentIds.includes(student.id)}
+                        onChange={() => toggleStudent(student.id)}
+                        className="h-4 w-4 rounded border-slate-300 accent-[#101820]"
+                        aria-label={`Select ${student.name}`}
+                      />
+                    </td>
                     <td className="px-4 py-4">
                       <p className="font-semibold text-[#101820]">{student.name}</p>
                       <p className="mt-1 text-xs text-slate-500">

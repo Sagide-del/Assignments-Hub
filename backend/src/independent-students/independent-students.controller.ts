@@ -6,6 +6,7 @@ import { RecordIndependentInvoiceDto } from './dto/record-invoice.dto';
 import { SubmitIndependentPaymentClaimDto } from './dto/submit-payment-claim.dto';
 import { RejectIndependentPaymentClaimDto } from './dto/reject-payment-claim.dto';
 import { SendIndependentWelcomeDto } from './dto/send-independent-welcome.dto';
+import { DeleteIndependentStudentsDto } from './dto/delete-independent-students.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -50,6 +51,13 @@ export class IndependentStudentsController {
   @AuditAction('independent_student.create')
   createStudent(@Body() dto: CreateIndependentStudentDto, @CurrentUser() actor: AuthenticatedUser) {
     return this.independentStudentsService.createStudent(dto, actor);
+  }
+
+  @Delete('students')
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction('independent_student.bulk_delete')
+  deleteStudents(@Body() dto: DeleteIndependentStudentsDto) {
+    return this.independentStudentsService.deleteStudents(dto.ids);
   }
 
   @Get('summary')
