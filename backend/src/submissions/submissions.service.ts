@@ -1,4 +1,11 @@
-import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
@@ -97,7 +104,7 @@ export class SubmissionsService {
         ? await this.prisma.submission.update({ where: { id: existing.id }, data })
         : await this.prisma.submission.create({ data: { assignmentId, studentId: actor.id, ...data } });
       if (isFinal) this.notifyParent(actor, assignment.title, assignmentId, completedAt!);
-      return submission;
+      return this.sanitizeStudentSubmission(submission);
     }
 
     const answerByQuestionId = new Map((dto.answers ?? []).map((a) => [a.questionId, a.answer]));
@@ -164,7 +171,7 @@ export class SubmissionsService {
     }
 
     if (isFinal) this.notifyParent(actor, assignment.title, assignmentId, completedAt!);
-    return submission;
+    return this.sanitizeStudentSubmission(submission);
   }
 
   // Fire-and-forget: looks up the student's parentPhone fresh (rather than
@@ -198,7 +205,7 @@ export class SubmissionsService {
       // its own in-progress draft to resume (see assignment-renderer.js).
       // Any view that lists a student's finished submissions (report card,
       // "My Submissions" history) must filter status !== 'DRAFT' itself.
-      return this.prisma.submission.findMany({
+      const submissions = await this.prisma.submission.findMany({
         where: { studentId: actor.id, assignmentId: filters.assignmentId },
         // gradedBy included so a student can see WHO graded their work
         // (ExamPlayer's already-submitted view) — never anything beyond
@@ -206,6 +213,7 @@ export class SubmissionsService {
         include: { assignment: true, answers: true, gradedBy: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
       });
+      return submissions.map((submission) => this.sanitizeStudentSubmission(submission));
     }
 
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? filters.schoolId : actor.schoolId;
@@ -244,8 +252,28 @@ export class SubmissionsService {
       if (submission.studentId !== actor.id) {
         throw new ForbiddenException('You can only view your own submissions');
       }
+      return this.sanitizeStudentSubmission(submission);
     } else if (actor.role !== Role.PLATFORM_ADMIN && submission.assignment.schoolId !== actor.schoolId) {
       throw new ForbiddenException('You cannot access another school\'s data');
+    }
+
+    return submission;
+  }
+
+  async getReleasedResults(id: number, actor: AuthenticatedUser) {
+    const submission = await this.prisma.submission.findUnique({
+      where: { id },
+      include: {
+        assignment: true,
+        gradedBy: { select: { id: true, name: true } },
+        answers: { include: { question: true }, orderBy: { questionId: 'asc' } },
+      },
+    });
+    if (!submission || submission.studentId !== actor.id) {
+      throw new NotFoundException('Submission not found');
+    }
+    if (!submission.resultsReleasedAt) {
+      throw new ForbiddenException('Results have not been released');
     }
 
     return submission;
@@ -295,6 +323,64 @@ export class SubmissionsService {
         answers: { include: { question: true } },
       },
     });
+  }
+
+  async releaseResults(id: number, actor: AuthenticatedUser) {
+    const submission = await this.findOne(id, actor);
+    if (submission.status !== SubmissionStatus.GRADED) {
+      throw new BadRequestException('Grade this submission before releasing its results');
+    }
+
+    return this.prisma.submission.update({
+      where: { id: submission.id },
+      data: { resultsReleasedAt: submission.resultsReleasedAt ?? new Date() },
+      include: {
+        student: { select: { id: true, name: true } },
+        gradedBy: { select: { id: true, name: true } },
+        answers: { include: { question: true } },
+      },
+    });
+  }
+
+  /**
+   * Student-facing submission payloads never expose grading outcomes until
+   * review is explicitly released. Question answer keys/config stay private
+   * on this general endpoint even after release; /:id/results is the only
+   * student endpoint that can return them.
+   */
+  private sanitizeStudentSubmission<T>(submission: T): T {
+    const source = submission as any;
+    const released = Boolean(source.resultsReleasedAt);
+    return {
+      ...source,
+      ...(released
+        ? {}
+        : {
+            score: null,
+            feedback: null,
+            gradedById: null,
+            gradedBy: null,
+            gradedAt: null,
+          }),
+      answers: Array.isArray(source.answers)
+        ? source.answers.map((answer: any) => {
+            const safeQuestion = answer.question
+              ? (({ correctAnswer, config, ...question }: any) => question)(answer.question)
+              : undefined;
+            return {
+              ...answer,
+              ...(released
+                ? {}
+                : {
+                    isCorrect: null,
+                    pointsAwarded: null,
+                    feedback: null,
+                  }),
+              ...(answer.question ? { question: safeQuestion } : {}),
+            };
+          })
+        : source.answers,
+    } as T;
   }
 
   // MULTIPLE_CHOICE/TRUE_FALSE/FILL_BLANK compare as plain text

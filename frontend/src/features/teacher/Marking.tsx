@@ -118,6 +118,16 @@ function GradeForm({ submissionId, questions }: { submissionId: number; question
     onError: (err) => setStatus(apiErrorMessage(err, 'Could not save grade')),
   });
 
+  const releaseMutation = useMutation({
+    mutationFn: () => submissionsApi.release(submissionId),
+    onSuccess: () => {
+      setStatus('Results released to the student.');
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['submission', submissionId] });
+    },
+    onError: (err) => setStatus(apiErrorMessage(err, 'Could not release results')),
+  });
+
   return (
     <div className="px-4 pb-4 space-y-3 bg-gray-50">
       {submission ? (
@@ -177,13 +187,32 @@ function GradeForm({ submissionId, questions }: { submissionId: number; question
 
       {status && <p className="text-sm text-gray-600">{status}</p>}
 
-      <button
-        onClick={() => gradeMutation.mutate()}
-        disabled={gradeMutation.isPending}
-        className="px-4 py-2 text-sm rounded bg-brand text-white disabled:opacity-60"
-      >
-        {gradeMutation.isPending ? 'Saving…' : 'Save Grade'}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => gradeMutation.mutate()}
+          disabled={gradeMutation.isPending}
+          className="px-4 py-2 text-sm rounded bg-brand text-white disabled:opacity-60"
+        >
+          {gradeMutation.isPending ? 'Saving…' : 'Save Grade'}
+        </button>
+        <button
+          type="button"
+          onClick={() => releaseMutation.mutate()}
+          disabled={
+            releaseMutation.isPending ||
+            submission?.status !== 'GRADED' ||
+            Boolean(submission?.resultsReleasedAt)
+          }
+          title={submission?.status !== 'GRADED' ? 'Save the grade before releasing results' : undefined}
+          className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          {releaseMutation.isPending
+            ? 'Releasing…'
+            : submission?.resultsReleasedAt
+              ? 'Results released'
+              : 'Release to student'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -83,6 +83,7 @@ export interface Submission {
   // The teacher/admin who graded this submission — null until graded.
   gradedBy?: { id: number; name: string } | null;
   gradedAt: string | null;
+  resultsReleasedAt: string | null;
   startedAt: string | null;
   timeSpentSeconds: number | null;
   completedAt: string | null;

@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentsApi } from '../../api/assignments.api';
+import { submissionsApi } from '../../api/submissions.api';
 import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
 import { RichContent } from '../../components/ui/RichContent';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
 import { ToolsPanel } from './tools/ToolsPanel';
-import type { AnswerInput, Question } from '../../types';
+import type { Answer, AnswerInput, Question } from '../../types';
 
 function CheckIcon() {
   return (
@@ -82,6 +83,110 @@ function StatTile({ label, value }: { label: string; value: string | number }) {
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
       <p className="mt-2 text-xl font-semibold text-[#101820]">{value}</p>
     </div>
+  );
+}
+
+function expectedAnswer(question: Question | undefined): string | null {
+  if (!question) return null;
+  if (question.questionType === 'NUMERIC') {
+    const numeric = question.config?.numeric;
+    if (numeric && typeof numeric === 'object') {
+      const config = numeric as Record<string, unknown>;
+      if (config.acceptedValue !== undefined) {
+        return `${String(config.acceptedValue)}${typeof config.unit === 'string' && config.unit ? ` ${config.unit}` : ''}`;
+      }
+    }
+  }
+  if (question.questionType === 'SHORT_ANSWER') {
+    const shortAnswer = question.config?.shortAnswer;
+    if (shortAnswer && typeof shortAnswer === 'object') {
+      const keywords = (shortAnswer as Record<string, unknown>).keywords;
+      if (Array.isArray(keywords) && keywords.length) {
+        return `Expected concepts: ${keywords.map(String).join(', ')}`;
+      }
+    }
+  }
+
+  const answer = question.correctAnswer?.trim();
+  if (!answer) return null;
+  if (question.questionType === 'ORDERING') {
+    try {
+      const order = JSON.parse(answer);
+      if (Array.isArray(order)) return order.map(String).join(' → ');
+    } catch {
+      return answer;
+    }
+  }
+  if (question.questionType === 'MATCHING') {
+    try {
+      const matches = JSON.parse(answer) as Record<string, string>;
+      const options = question.options as { left?: string[]; right?: string[] } | null;
+      if (options?.left && options.right) {
+        return Object.entries(matches)
+          .map(([leftIndex, rightIndex]) => `${options.left?.[Number(leftIndex)]} → ${options.right?.[Number(rightIndex)]}`)
+          .join('; ');
+      }
+    } catch {
+      return answer;
+    }
+  }
+  return answer;
+}
+
+function ResponseValue({ value }: { value: string }) {
+  if (/^https?:\/\//i.test(value)) {
+    return (
+      <a href={value} target="_blank" rel="noreferrer" className="font-medium text-sky-700 underline">
+        Open submitted file
+      </a>
+    );
+  }
+  if (/<[a-z][\s\S]*>/i.test(value)) {
+    return <RichContent html={value} className="assessment-question-copy" />;
+  }
+  return <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{value || 'No answer provided'}</p>;
+}
+
+function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }) {
+  const question = answer.question;
+  const correct = expectedAnswer(question);
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-[#101820]">Question {index + 1}</p>
+        <span className="text-sm font-medium text-slate-500">
+          {answer.pointsAwarded != null && question
+            ? `${answer.pointsAwarded} / ${question.points} pts`
+            : 'Not scored'}
+        </span>
+      </div>
+      {question ? (
+        <div className="mt-3">
+          {question.contentHtml ? (
+            <RichContent html={question.contentHtml} className="assessment-question-copy" />
+          ) : (
+            <p className="text-sm font-medium leading-6 text-[#101820]">{question.questionText}</p>
+          )}
+        </div>
+      ) : null}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Your answer</p>
+          <ResponseValue value={answer.studentAnswer} />
+        </div>
+        <div className="rounded-xl border border-lime-200 bg-lime-50 p-3">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-lime-800">Expected answer</p>
+          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+            {correct ?? 'Reviewed manually'}
+          </p>
+        </div>
+      </div>
+      {answer.feedback ? (
+        <p className="mt-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-6 text-slate-600">
+          {answer.feedback}
+        </p>
+      ) : null}
+    </article>
   );
 }
 
@@ -164,6 +269,11 @@ export function ExamPlayer() {
     enabled: !!assignmentId,
   });
   const existing = existingSubmissions?.[0];
+  const { data: releasedResults, isLoading: loadingReleasedResults } = useQuery({
+    queryKey: ['submission-results', existing?.id],
+    queryFn: () => submissionsApi.getResults(existing!.id),
+    enabled: Boolean(existing?.id && existing.resultsReleasedAt),
+  });
 
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<string | null>(null);
@@ -236,6 +346,8 @@ export function ExamPlayer() {
   }
 
   if (alreadyFinal) {
+    const displayedSubmission = releasedResults ?? existing;
+    const resultsReleased = Boolean(existing.resultsReleasedAt);
     return (
       <div className="space-y-6">
         <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
@@ -248,46 +360,37 @@ export function ExamPlayer() {
           </div>
           <div className="grid gap-4 p-6 md:grid-cols-4">
             <StatTile label="Submitted" value={formatDateTime(existing.completedAt ?? existing.createdAt)} />
-            <StatTile label="Submission status" value={existing.status} />
-            <StatTile label="Score" value={existing?.score != null ? `${existing.score} / ${assignmentMaxPoints}` : 'Pending'} />
-            <StatTile label="Feedback" value={existing?.gradedAt ? 'Available' : 'Awaiting grading'} />
+            <StatTile label="Submission status" value={resultsReleased ? 'RESULTS RELEASED' : existing.status} />
+            <StatTile label="Score" value={displayedSubmission?.score != null ? `${displayedSubmission.score} / ${assignmentMaxPoints}` : 'Pending'} />
+            <StatTile label="Feedback" value={resultsReleased ? 'Available' : 'Awaiting review'} />
           </div>
           <div className="border-t border-slate-200 p-6">
             <div className="rounded-[24px] border border-slate-200 bg-[#F8FAFC] p-5">
               <p className="text-sm leading-7 text-slate-600">
                 You already submitted this assignment
-                {existing?.gradedAt ? ' and it has been graded.' : ' and it is awaiting grading.'}
+                {resultsReleased ? ' and your reviewed results are available.' : ' and your tutor is reviewing it.'}
               </p>
-              {existing?.gradedAt ? (
+              {resultsReleased && displayedSubmission?.gradedAt ? (
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="text-sm font-semibold text-[#101820]">
-                    {existing.gradedBy?.name
-                      ? `Graded by ${existing.gradedBy.name}`
-                      : 'Automatically graded'} on {formatDateTime(existing.gradedAt)}
+                    {displayedSubmission.gradedBy?.name
+                      ? `Graded by ${displayedSubmission.gradedBy.name}`
+                      : 'Reviewed result'} on {formatDateTime(displayedSubmission.gradedAt)}
                   </p>
-                  {existing?.feedback ? (
-                    <p className="mt-2 text-sm leading-7 text-slate-600">{existing.feedback}</p>
+                  {displayedSubmission.feedback ? (
+                    <p className="mt-2 text-sm leading-7 text-slate-600">{displayedSubmission.feedback}</p>
                   ) : null}
                 </div>
               ) : null}
-              {existing?.gradedAt && existing.answers?.some((a) => a.pointsAwarded != null || a.feedback) ? (
+              {resultsReleased && loadingReleasedResults ? (
+                <p className="mt-4 text-sm text-slate-500">Loading released results...</p>
+              ) : null}
+              {resultsReleased && releasedResults?.answers?.length ? (
                 <div className="mt-4 space-y-3">
-                  <p className="text-sm font-semibold text-[#101820]">Question-by-question breakdown</p>
-                  {questionList.map((q, idx) => {
-                    const answer = existing.answers?.find((a) => a.questionId === q.id);
-                    if (!answer || (answer.pointsAwarded == null && !answer.feedback)) return null;
-                    return (
-                      <div key={q.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-[#101820]">Question {idx + 1}</p>
-                          <span className="text-sm text-slate-500">
-                            {answer.pointsAwarded != null ? `${answer.pointsAwarded} / ${q.points} pts` : 'Not scored'}
-                          </span>
-                        </div>
-                        {answer.feedback ? <p className="mt-2 text-sm leading-6 text-slate-600">{answer.feedback}</p> : null}
-                      </div>
-                    );
-                  })}
+                  <p className="text-sm font-semibold text-[#101820]">Reviewed answers</p>
+                  {releasedResults.answers.map((answer, index) => (
+                    <ReleasedAnswerCard key={answer.id} answer={answer} index={index} />
+                  ))}
                 </div>
               ) : null}
               <button

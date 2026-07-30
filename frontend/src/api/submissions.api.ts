@@ -10,6 +10,9 @@ export const submissionsApi = {
 
   findOne: (id: number) => api.get<Submission>(`/submissions/${id}`).then((r) => r.data),
 
+  getResults: (id: number) =>
+    api.get<Submission>(`/submissions/${id}/results`).then((r) => r.data),
+
   grade: (
     id: number,
     dto: {
@@ -18,4 +21,7 @@ export const submissionsApi = {
       answers?: { questionId: number; pointsAwarded?: number; feedback?: string }[];
     },
   ) => api.patch<Submission>(`/submissions/${id}/grade`, dto).then((r) => r.data),
+
+  release: (id: number) =>
+    api.patch<Submission>(`/submissions/${id}/release`).then((r) => r.data),
 };

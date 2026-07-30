@@ -654,6 +654,9 @@ model Submission {
   gradedById    Int?             @map("graded_by_id")
   gradedBy      User?            @relation("SubmissionGradedBy", fields: [gradedById], references: [id], onDelete: SetNull)
   gradedAt      DateTime?        @map("graded_at")
+  // Results remain private until a teacher or platform tutor explicitly
+  // releases the reviewed score, feedback, and answer key to the student.
+  resultsReleasedAt DateTime?     @map("results_released_at")
 
   // Autosave/draft support for the exam-taking UI: a student's in-progress
   // answers are saved here (via repeated PATCH-like POSTs with isDraft:

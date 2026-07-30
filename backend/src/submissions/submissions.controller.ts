@@ -26,6 +26,12 @@ export class SubmissionsController {
     return this.submissionsService.findOne(id, actor);
   }
 
+  @Get(':id/results')
+  @Roles(Role.STUDENT)
+  results(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
+    return this.submissionsService.getReleasedResults(id, actor);
+  }
+
   @Patch(':id/grade')
   @Roles(Role.TEACHER, Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   @AuditAction('submission.grade')
@@ -35,5 +41,12 @@ export class SubmissionsController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.submissionsService.grade(id, dto, actor);
+  }
+
+  @Patch(':id/release')
+  @Roles(Role.TEACHER, Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
+  @AuditAction('submission.results.release')
+  release(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
+    return this.submissionsService.releaseResults(id, actor);
   }
 }

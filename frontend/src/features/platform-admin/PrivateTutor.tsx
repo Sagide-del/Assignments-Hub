@@ -380,6 +380,17 @@ function ReviewSubmissionModal({
     onError: (error) => setNotice(apiErrorMessage(error, 'Could not save this review')),
   });
 
+  const releaseMutation = useMutation({
+    mutationFn: () => submissionsApi.release(submission.id),
+    onSuccess: () => {
+      setNotice('Results released to the student.');
+      queryClient.invalidateQueries({ queryKey: ['private-tutor-submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['private-tutor-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['submission', submission.id] });
+    },
+    onError: (error) => setNotice(apiErrorMessage(error, 'Could not release these results')),
+  });
+
   const detail = detailQuery.data;
   const total = Object.values(points).reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
 
@@ -413,13 +424,17 @@ function ReviewSubmissionModal({
             <EmptyState title="Submission could not be loaded." />
           ) : (
             <>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-4">
                 <ReviewMetric label="Current status" value={reviewLabel(submission)} />
                 <ReviewMetric
                   label="Current score"
                   value={detail.score != null ? `${detail.score}/${submission.assignment.maxPoints}` : 'Pending'}
                 />
                 <ReviewMetric label="Review total" value={`${total}/${submission.assignment.maxPoints}`} />
+                <ReviewMetric
+                  label="Student access"
+                  value={detail.resultsReleasedAt ? 'Released' : 'Private'}
+                />
               </div>
 
               <div className="space-y-4">
@@ -460,6 +475,23 @@ function ReviewSubmissionModal({
                   className="rounded-xl bg-[#B5E61D] px-5 py-3 text-sm font-semibold text-[#101820] disabled:opacity-60"
                 >
                   {gradeMutation.isPending ? 'Saving...' : 'Save review'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => releaseMutation.mutate()}
+                  disabled={
+                    releaseMutation.isPending ||
+                    detail.status !== 'GRADED' ||
+                    Boolean(detail.resultsReleasedAt)
+                  }
+                  className="rounded-xl border border-[#101820] bg-white px-5 py-3 text-sm font-semibold text-[#101820] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                  title={detail.status !== 'GRADED' ? 'Save the review before releasing results' : undefined}
+                >
+                  {releaseMutation.isPending
+                    ? 'Releasing...'
+                    : detail.resultsReleasedAt
+                      ? 'Results released'
+                      : 'Release to student'}
                 </button>
                 <button
                   type="button"
