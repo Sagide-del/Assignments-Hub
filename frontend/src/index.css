@@ -100,12 +100,6 @@ body {
   touch-action: manipulation;
 }
 
-.student-working-space .ql-editor {
-  min-height: 150px;
-  font-size: 16px;
-  line-height: 1.75;
-}
-
 .rich-text-editor .ql-toolbar .rich-toolbar-text-button {
   width: auto;
   min-width: 48px;
@@ -113,6 +107,89 @@ body {
   color: #334155;
   font-size: 11px;
   font-weight: 700;
+}
+
+.answer-input-with-symbols {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.smart-answer-textarea {
+  min-height: 8rem;
+  overflow-wrap: anywhere;
+  touch-action: manipulation;
+}
+
+.inline-symbol-toolbar {
+  margin-top: 0.625rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #f8fafc;
+  padding: 0.5rem;
+}
+
+.inline-symbol-scroll {
+  display: flex;
+  max-width: 100%;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 0.125rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inline-symbol-button,
+.inline-symbol-more,
+.inline-symbol-upload {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
+.inline-symbol-button {
+  min-width: 44px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #101820;
+  font-size: 1rem;
+}
+
+.inline-symbol-button:hover,
+.inline-symbol-button:focus-visible {
+  border-color: #b5e61d;
+  outline: none;
+}
+
+.inline-symbol-more,
+.inline-symbol-upload {
+  border: 0;
+  padding-inline: 0.875rem;
+  font-size: 0.8125rem;
+}
+
+.inline-symbol-more {
+  background: #e2e8f0;
+  color: #101820;
+}
+
+.inline-symbol-upload {
+  gap: 0.5rem;
+  background: #101820;
+  color: #fff;
+}
+
+.inline-symbol-upload:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 @media (max-width: 640px) {
@@ -147,11 +224,6 @@ body {
     width: auto;
   }
 
-  .student-working-space .ql-editor {
-    min-height: 180px;
-    padding: 14px;
-  }
-
   .assessment-workspace input:not([type='radio']):not([type='checkbox']),
   .assessment-workspace textarea,
   .assessment-workspace select {
@@ -166,5 +238,17 @@ body {
   .assessment-workspace .rich-content td {
     min-width: 7.5rem;
     padding: 0.625rem;
+  }
+
+  .smart-answer-textarea {
+    min-height: 9rem;
+    padding: 0.875rem;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  .inline-symbol-toolbar {
+    margin-inline: -0.125rem;
+    border-radius: 0.875rem;
   }
 }

@@ -6,8 +6,7 @@ import { submissionsApi } from '../../api/submissions.api';
 import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
 import { RichContent } from '../../components/ui/RichContent';
-import { RichTextEditor } from '../../components/ui/RichTextEditor';
-import { ToolsPanel } from './tools/ToolsPanel';
+import { AnswerInputWithSymbols } from './answer-input/AnswerInputWithSymbols';
 import type { Answer, AnswerInput, Question } from '../../types';
 
 function useMediaQuery(query: string) {
@@ -235,26 +234,6 @@ function isAnswered(question: Question, value: string) {
   return value.trim().length > 0;
 }
 
-const RESPONSE_SYMBOLS = ['π', '√', '²', '³', '×', '÷', '≤', '≥', '→', '⇌', '₁', '₂', '₃'];
-
-function SymbolPad({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2" aria-label="Math and chemistry symbols">
-      {RESPONSE_SYMBOLS.map((symbol) => (
-        <button
-          key={symbol}
-          type="button"
-          onClick={() => onChange(`${value}${symbol}`)}
-          className="flex h-11 min-w-11 touch-manipulation items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-base font-semibold text-[#101820] hover:border-[#B5E61D]"
-          aria-label={`Insert ${symbol}`}
-        >
-          {symbol}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // Real exam-taking flow: loads the assignment's question bank (with
 // correctAnswer already stripped server-side for STUDENT actors), lets the
 // student answer each question by its type, autosaves as a draft, and submits
@@ -300,7 +279,6 @@ export function ExamPlayer() {
   const [uploadingFor, setUploadingFor] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
   const startTime = useMemo(() => Date.now(), []);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -449,18 +427,9 @@ export function ExamPlayer() {
               <p className="break-words text-xs font-semibold uppercase tracking-[0.14em] text-white/55 sm:tracking-[0.18em]">
                 {reviewMode ? 'Review Mode' : `Question ${currentIndex + 1} of ${totalQuestions}`}
               </p>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm text-white">
-                  <ClockIcon />
-                  <span>{formatElapsed(elapsedSeconds)}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setToolsOpen(true)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                >
-                  Tools
-                </button>
+              <div className="mt-3 flex items-center gap-2 text-sm text-white">
+                <ClockIcon />
+                <span>{formatElapsed(elapsedSeconds)}</span>
               </div>
             </div>
           </div>
@@ -571,11 +540,6 @@ export function ExamPlayer() {
                   onChange={(val) => setAnswers((prev) => ({ ...prev, [currentQuestion.id]: val }))}
                   onFile={(file) => handleFileChange(currentQuestion.id, file)}
                   uploading={uploadingFor === currentQuestion.id}
-                />
-                <WorkingSpace
-                  key={`working-${currentQuestion.id}`}
-                  assignmentId={assignmentId}
-                  question={currentQuestion}
                 />
               </div>
             </div>
@@ -703,90 +667,7 @@ export function ExamPlayer() {
           </div>
         </section>
       </div>
-      {toolsOpen ? <ToolsPanel onClose={() => setToolsOpen(false)} /> : null}
     </div>
-  );
-}
-
-function WorkingSpace({
-  assignmentId,
-  question,
-}: {
-  assignmentId: number;
-  question: Question;
-}) {
-  const storageKey = `assignment-working:${assignmentId}:${question.id}`;
-  const [open, setOpen] = useState(
-    ['NUMERIC', 'SHORT_ANSWER', 'FILL_BLANK', 'ESSAY'].includes(question.questionType),
-  );
-  const [notes, setNotes] = useState(() => {
-    try {
-      return window.localStorage.getItem(storageKey) ?? '';
-    } catch {
-      return '';
-    }
-  });
-
-  useEffect(() => {
-    try {
-      if (notes) {
-        window.localStorage.setItem(storageKey, notes);
-      } else {
-        window.localStorage.removeItem(storageKey);
-      }
-    } catch {
-      // Private working notes remain usable even if browser storage is blocked.
-    }
-  }, [notes, storageKey]);
-
-  return (
-    <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] sm:rounded-[24px]">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        className="flex min-h-11 w-full touch-manipulation items-center justify-between gap-3 px-4 py-4 text-left sm:gap-4 sm:px-5"
-      >
-        <span className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#101820] text-[#B5E61D]">
-            <PencilIcon />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold text-[#101820]">Working space</span>
-            <span className="mt-0.5 block break-words text-xs leading-5 text-slate-500">Private notes for this question</span>
-          </span>
-        </span>
-        <span className="text-xs font-semibold text-slate-500">{open ? 'Close' : 'Open'}</span>
-      </button>
-
-      {open ? (
-        <div className="border-t border-slate-200 bg-white p-3 sm:p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs leading-5 text-slate-500">
-              Use equations, chemical notation, or upload a graph image. Working notes are not submitted.
-            </p>
-            {notes ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('Clear this working space?')) setNotes('');
-                }}
-                className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-red-600"
-              >
-                Clear notes
-              </button>
-            ) : null}
-          </div>
-          <div className="student-working-space">
-            <RichTextEditor
-              value={notes}
-              onChange={setNotes}
-              placeholder="Show your calculations or make private notes"
-            />
-          </div>
-        </div>
-      ) : null}
-    </section>
   );
 }
 
@@ -896,103 +777,67 @@ function QuestionInput({
       )}
 
       {question.questionType === 'FILL_BLANK' && (
-        <div className="space-y-3">
-          <input
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="min-h-12 w-full min-w-0 rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
-            placeholder="Enter your answer"
-          />
-          <SymbolPad value={value} onChange={onChange} />
-        </div>
+        <AnswerInputWithSymbols
+          value={value}
+          onChange={onChange}
+          rows={2}
+          placeholder="Enter your answer"
+        />
       )}
 
       {question.questionType === 'NUMERIC' && (
-        <div className="space-y-3">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-[#101820]">Your numeric answer</span>
-            <input
-              value={value}
-              inputMode="decimal"
-              autoComplete="off"
-              onChange={(e) => onChange(e.target.value)}
-              className="min-h-12 w-full min-w-0 rounded-2xl border border-slate-300 px-4 py-3.5 text-lg leading-7 text-[#101820] outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
-              placeholder="e.g. 2.73 cm or 3/4"
-            />
-          </label>
-          <SymbolPad value={value} onChange={onChange} />
-        </div>
+        <AnswerInputWithSymbols
+          value={value}
+          onChange={onChange}
+          rows={2}
+          inputMode="decimal"
+          placeholder="e.g. 2.73 cm or 3/4"
+        />
       )}
 
       {question.questionType === 'SHORT_ANSWER' && (
-        <div className="space-y-3">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-[#101820]">Your answer</span>
-            <textarea
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              rows={4}
-              className="min-h-32 w-full min-w-0 resize-y rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
-              placeholder="Write a clear, concise response"
-            />
-          </label>
-        </div>
+        <AnswerInputWithSymbols
+          value={value}
+          onChange={onChange}
+          placeholder="Write a clear, concise response"
+        />
       )}
 
       {question.questionType === 'ESSAY' && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-            <span className="rounded-full bg-[#F8FAFC] px-3 py-1.5">fx Math</span>
-            <span className="rounded-full bg-[#F8FAFC] px-3 py-1.5">Chem Chemical equation</span>
-            <span className="rounded-full bg-[#F8FAFC] px-3 py-1.5">Image Upload graph</span>
-          </div>
-          <RichTextEditor
-            value={value}
-            onChange={onChange}
-            placeholder="Write your response, calculation, or explanation"
-          />
-        </div>
+        <AnswerInputWithSymbols
+          value={value}
+          onChange={onChange}
+          rows={7}
+          allowImageUpload
+          placeholder="Write your response, calculation, or explanation"
+        />
       )}
 
       {(question.questionType === 'MATCHING' || question.questionType === 'ORDERING') && (
-        <div className="space-y-3">
-          <p className="text-sm text-slate-500">
-            Provide your structured response below. This input remains compatible with the current backend format.
-          </p>
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            rows={4}
-            placeholder="Enter your matched or ordered answer"
-            className="min-h-32 w-full min-w-0 rounded-2xl border border-slate-300 px-4 py-4 text-base font-mono leading-7 text-slate-700 outline-none focus:border-[#101820] sm:rounded-[24px]"
-          />
-        </div>
+        <AnswerInputWithSymbols
+          value={value}
+          onChange={onChange}
+          placeholder="Enter your matched or ordered answer"
+        />
       )}
 
       {question.questionType === 'FILE_UPLOAD' && (
         <div className="min-w-0 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-4 sm:rounded-[24px]">
-          <p className="text-sm font-medium text-[#101820]">Upload your file response</p>
+          <p className="text-sm font-medium text-[#101820]">Take or upload a photo of your graph</p>
           <input
             type="file"
+            accept="image/png,image/jpeg,image/webp"
+            capture="environment"
             disabled={uploading}
             onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
             className="mt-4 block min-h-11 w-full min-w-0 cursor-pointer text-base file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-xl file:border-0 file:bg-[#101820] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           />
           {uploading ? <p className="mt-3 text-xs text-slate-500">Uploading...</p> : null}
           {value && !uploading ? (
-            <p className="mt-3 text-xs font-medium text-green-700">Uploaded file reference saved.</p>
+            <p className="mt-3 text-xs font-medium text-green-700">Graph photo uploaded.</p>
           ) : null}
         </div>
       )}
     </div>
-  );
-}
-
-function PencilIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" strokeLinejoin="round" />
-      <path d="m13.5 8 3 3" />
-    </svg>
   );
 }
