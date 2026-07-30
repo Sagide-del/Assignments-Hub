@@ -41,6 +41,65 @@ body {
   margin-bottom: 0;
 }
 
+.assessment-workspace {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  overflow-x: hidden;
+}
+
+.assessment-workspace .rich-content {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overflow-wrap: anywhere;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.assessment-workspace .rich-content table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.assessment-workspace .rich-content th,
+.assessment-workspace .rich-content td {
+  min-width: 8rem;
+  max-width: 18rem;
+  border: 1px solid #cbd5e1;
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.assessment-workspace .rich-content th {
+  background: #f1f5f9;
+  color: #101820;
+  font-weight: 700;
+}
+
+.assessment-workspace .rich-content img,
+.assessment-workspace .rich-content figure,
+.assessment-workspace .rich-content video,
+.assessment-workspace .rich-content canvas {
+  height: auto;
+  max-width: 100%;
+}
+
+.assessment-workspace .rich-content figure {
+  margin-inline: 0;
+}
+
+.assessment-workspace button,
+.assessment-workspace label {
+  touch-action: manipulation;
+}
+
 .student-working-space .ql-editor {
   min-height: 150px;
   font-size: 16px;
@@ -57,6 +116,10 @@ body {
 }
 
 @media (max-width: 640px) {
+  .assessment-workspace {
+    overflow-wrap: anywhere;
+  }
+
   .assessment-question-copy {
     font-size: 1rem;
     line-height: 1.75;
@@ -76,8 +139,8 @@ body {
   }
 
   .rich-text-editor .ql-toolbar.ql-snow button {
-    height: 38px;
-    width: 38px;
+    height: 44px;
+    width: 44px;
   }
 
   .rich-text-editor .ql-toolbar.ql-snow .rich-toolbar-text-button {
@@ -85,7 +148,23 @@ body {
   }
 
   .student-working-space .ql-editor {
-    min-height: 135px;
+    min-height: 180px;
     padding: 14px;
+  }
+
+  .assessment-workspace input:not([type='radio']):not([type='checkbox']),
+  .assessment-workspace textarea,
+  .assessment-workspace select {
+    font-size: 16px;
+  }
+
+  .assessment-workspace .rich-content table {
+    font-size: 0.875rem;
+  }
+
+  .assessment-workspace .rich-content th,
+  .assessment-workspace .rich-content td {
+    min-width: 7.5rem;
+    padding: 0.625rem;
   }
 }

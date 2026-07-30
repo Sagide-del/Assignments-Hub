@@ -10,6 +10,22 @@ import { RichTextEditor } from '../../components/ui/RichTextEditor';
 import { ToolsPanel } from './tools/ToolsPanel';
 import type { Answer, AnswerInput, Question } from '../../types';
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() =>
+    typeof window === 'undefined' ? false : window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const updateMatch = () => setMatches(mediaQuery.matches);
+    updateMatch();
+    mediaQuery.addEventListener('change', updateMatch);
+    return () => mediaQuery.removeEventListener('change', updateMatch);
+  }, [query]);
+
+  return matches;
+}
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
@@ -79,9 +95,9 @@ function DocumentIcon() {
 
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-2 text-xl font-semibold text-[#101820]">{value}</p>
+      <p className="mt-2 break-words text-xl font-semibold text-[#101820]">{value}</p>
     </div>
   );
 }
@@ -229,7 +245,7 @@ function SymbolPad({ value, onChange }: { value: string; onChange: (value: strin
           key={symbol}
           type="button"
           onClick={() => onChange(`${value}${symbol}`)}
-          className="flex h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-base font-semibold text-[#101820] hover:border-[#B5E61D]"
+          className="flex h-11 min-w-11 touch-manipulation items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-base font-semibold text-[#101820] hover:border-[#B5E61D]"
           aria-label={`Insert ${symbol}`}
         >
           {symbol}
@@ -248,6 +264,10 @@ export function ExamPlayer() {
   const assignmentId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const workspaceClassName = `assessment-workspace min-w-0 max-w-full space-y-4 overflow-x-hidden sm:space-y-6 ${
+    isMobile ? 'assessment-workspace--mobile' : 'assessment-workspace--desktop'
+  }`;
 
   const { data: assignment } = useQuery({
     queryKey: ['assignment', assignmentId],
@@ -349,23 +369,23 @@ export function ExamPlayer() {
     const displayedSubmission = releasedResults ?? existing;
     const resultsReleased = Boolean(existing.resultsReleasedAt);
     return (
-      <div className="space-y-6">
-        <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
-          <div className="bg-[#101820] px-6 py-8 text-white md:px-8">
+      <div className={workspaceClassName}>
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)] sm:rounded-[32px]">
+          <div className="bg-[#101820] px-4 py-6 text-white sm:px-6 sm:py-8 md:px-8">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">Assessment Submitted</p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight">{assignment?.title}</h1>
-            <p className="mt-3 text-sm text-slate-300">
+            <h1 className="mt-4 break-words text-2xl font-semibold tracking-tight [overflow-wrap:anywhere] sm:text-3xl">{assignment?.title}</h1>
+            <p className="mt-3 break-words text-sm text-slate-300">
               {assignment?.subject} · {assignmentMaxPoints} marks
             </p>
           </div>
-          <div className="grid gap-4 p-6 md:grid-cols-4">
+          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6 md:grid-cols-4">
             <StatTile label="Submitted" value={formatDateTime(existing.completedAt ?? existing.createdAt)} />
             <StatTile label="Submission status" value={resultsReleased ? 'RESULTS RELEASED' : existing.status} />
             <StatTile label="Score" value={displayedSubmission?.score != null ? `${displayedSubmission.score} / ${assignmentMaxPoints}` : 'Pending'} />
             <StatTile label="Feedback" value={resultsReleased ? 'Available' : 'Awaiting review'} />
           </div>
-          <div className="border-t border-slate-200 p-6">
-            <div className="rounded-[24px] border border-slate-200 bg-[#F8FAFC] p-5">
+          <div className="border-t border-slate-200 p-4 sm:p-6">
+            <div className="min-w-0 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-4 sm:rounded-[24px] sm:p-5">
               <p className="text-sm leading-7 text-slate-600">
                 You already submitted this assignment
                 {resultsReleased ? ' and your reviewed results are available.' : ' and your tutor is reviewing it.'}
@@ -396,7 +416,7 @@ export function ExamPlayer() {
               <button
                 type="button"
                 onClick={() => navigate('/student/my-assignments')}
-                className="mt-5 rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white"
+                className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white sm:w-auto"
               >
                 Back to assignments
               </button>
@@ -412,23 +432,21 @@ export function ExamPlayer() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
+    <div className={workspaceClassName}>
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)] sm:rounded-[32px]">
         <div className="bg-[#101820] px-4 py-7 text-white sm:px-6 md:px-8 md:py-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
+            <div className="min-w-0 max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">Assessment Workspace</p>
-              <h1 className="mt-4 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{assignment?.title}</h1>
-              <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-300">
-                <span>{assignment?.subject}</span>
-                <span>·</span>
-                <span>{assignmentMaxPoints} marks</span>
-                <span>·</span>
-                <span>{totalQuestions} questions</span>
+              <h1 className="mt-4 break-words text-2xl font-semibold tracking-tight [overflow-wrap:anywhere] sm:text-3xl">{assignment?.title}</h1>
+              <div className="mt-4 flex max-w-full flex-wrap gap-2 text-sm text-slate-200">
+                <span className="max-w-full break-words rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{assignment?.subject}</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{assignmentMaxPoints} marks</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{totalQuestions} questions</span>
               </div>
             </div>
-            <div className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+            <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 sm:rounded-[24px] sm:px-5 lg:w-auto lg:min-w-64">
+              <p className="break-words text-xs font-semibold uppercase tracking-[0.14em] text-white/55 sm:tracking-[0.18em]">
                 {reviewMode ? 'Review Mode' : `Question ${currentIndex + 1} of ${totalQuestions}`}
               </p>
               <div className="mt-3 flex items-center justify-between gap-3">
@@ -439,7 +457,7 @@ export function ExamPlayer() {
                 <button
                   type="button"
                   onClick={() => setToolsOpen(true)}
-                  className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
                 >
                   Tools
                 </button>
@@ -447,7 +465,7 @@ export function ExamPlayer() {
             </div>
           </div>
           <div className="mt-6">
-            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/65 sm:tracking-[0.16em]">
               <span>Progress</span>
               <span>{progressPercent}% answered</span>
             </div>
@@ -458,16 +476,16 @@ export function ExamPlayer() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="order-2 space-y-6 xl:order-1">
+      <div className="grid min-w-0 gap-4 sm:gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="order-2 min-w-0 space-y-4 sm:space-y-6 xl:order-1">
           <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#101820] text-[#B5E61D]">
                 <DocumentIcon />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Assessment summary</p>
-                <p className="mt-1 text-sm font-semibold text-[#101820]">{assignment?.subject}</p>
+                <p className="mt-1 break-words text-sm font-semibold text-[#101820]">{assignment?.subject}</p>
               </div>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
@@ -526,26 +544,26 @@ export function ExamPlayer() {
           </section>
         </aside>
 
-        <section className="order-1 space-y-6 xl:order-2">
+        <section className="order-1 min-w-0 space-y-4 sm:space-y-6 xl:order-2">
           {!reviewMode && currentQuestion ? (
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px]">
-              <div className="border-b border-slate-200 px-6 py-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px]">
+              <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
+                <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                       Question {currentIndex + 1} of {totalQuestions}
                     </p>
-                    <p className="mt-2 text-sm font-medium text-slate-500">
+                    <p className="mt-2 break-words text-sm font-medium text-slate-500">
                       {currentQuestion.questionType.replace(/_/g, ' ')} · {currentQuestion.points} pts
                     </p>
                   </div>
-                  <span className="rounded-full border border-slate-200 bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-[#F8FAFC] px-3 py-1.5 text-xs font-semibold text-slate-600">
                     {isAnswered(currentQuestion, answers[currentQuestion.id] ?? '') ? 'Answered' : 'Awaiting answer'}
                   </span>
                 </div>
               </div>
 
-              <div className="px-4 py-5 sm:px-6 sm:py-6">
+              <div className="min-w-0 px-4 py-5 sm:px-6 sm:py-6">
                 <QuestionInput
                   index={currentIndex}
                   question={currentQuestion}
@@ -562,7 +580,7 @@ export function ExamPlayer() {
               </div>
             </div>
           ) : (
-            <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
+            <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px] sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Review before submit</p>
               <h2 className="mt-2 text-2xl font-semibold text-[#101820]">Assessment summary</h2>
               <p className="mt-3 text-sm leading-7 text-slate-500">
@@ -573,7 +591,7 @@ export function ExamPlayer() {
                 <StatTile label="Answered" value={answeredCount} />
                 <StatTile label="Unanswered" value={unansweredCount} />
               </div>
-              <div className="mt-6 rounded-[24px] border border-slate-200 bg-[#F8FAFC] p-5">
+              <div className="mt-6 min-w-0 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-3 sm:rounded-[24px] sm:p-5">
                 <div className="grid gap-3 md:grid-cols-2">
                   {questionList.map((question, index) => (
                     <button
@@ -583,7 +601,7 @@ export function ExamPlayer() {
                         setReviewMode(false);
                         setCurrentIndex(index);
                       }}
-                      className="flex items-start justify-between rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left"
+                      className="flex min-h-11 min-w-0 flex-col items-start justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left sm:flex-row"
                     >
                       <div>
                         <p className="text-sm font-semibold text-[#101820]">Question {index + 1}</p>
@@ -611,16 +629,16 @@ export function ExamPlayer() {
             </p>
           ) : null}
 
-          <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
+          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-4 shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px] sm:px-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+              <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 {!reviewMode ? (
                   <>
                     <button
                       type="button"
                       onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
                       disabled={currentIndex === 0}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#101820] disabled:opacity-50"
+                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#101820] disabled:opacity-50 sm:w-auto"
                     >
                       <ArrowIcon direction="left" />
                       Previous Question
@@ -629,7 +647,7 @@ export function ExamPlayer() {
                       <button
                         type="button"
                         onClick={() => setCurrentIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white"
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white sm:w-auto"
                       >
                         Next Question
                         <ArrowIcon direction="right" />
@@ -638,7 +656,7 @@ export function ExamPlayer() {
                       <button
                         type="button"
                         onClick={() => setReviewMode(true)}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white"
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white sm:w-auto"
                       >
                         Review Answers
                         <ArrowIcon direction="right" />
@@ -649,7 +667,7 @@ export function ExamPlayer() {
                   <button
                     type="button"
                     onClick={() => setReviewMode(false)}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#101820]"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#101820] sm:w-auto"
                   >
                     <ArrowIcon direction="left" />
                     Return to Questions
@@ -657,12 +675,12 @@ export function ExamPlayer() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+              <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 <button
                   type="button"
                   onClick={() => saveMutation.mutate(true)}
                   disabled={saveMutation.isPending}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#101820] disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#101820] disabled:opacity-60 sm:w-auto"
                 >
                   Save Draft
                 </button>
@@ -675,7 +693,7 @@ export function ExamPlayer() {
                       }
                     }}
                     disabled={saveMutation.isPending}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-[#B5E61D] px-4 py-3 text-sm font-semibold text-[#101820] disabled:opacity-60"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#B5E61D] px-4 py-3 text-sm font-semibold text-[#101820] disabled:opacity-60 sm:w-auto"
                   >
                     {saveMutation.isPending ? 'Submitting...' : 'Submit Assessment'}
                   </button>
@@ -722,20 +740,20 @@ function WorkingSpace({
   }, [notes, storageKey]);
 
   return (
-    <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] sm:rounded-[24px]">
+    <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] sm:rounded-[24px]">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-5"
+        className="flex min-h-11 w-full touch-manipulation items-center justify-between gap-3 px-4 py-4 text-left sm:gap-4 sm:px-5"
       >
         <span className="flex items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#101820] text-[#B5E61D]">
             <PencilIcon />
           </span>
-          <span>
+          <span className="min-w-0">
             <span className="block text-sm font-semibold text-[#101820]">Working space</span>
-            <span className="mt-0.5 block text-xs leading-5 text-slate-500">Notes saved on this device</span>
+            <span className="mt-0.5 block break-words text-xs leading-5 text-slate-500">Private notes for this question</span>
           </span>
         </span>
         <span className="text-xs font-semibold text-slate-500">{open ? 'Close' : 'Open'}</span>
@@ -753,7 +771,7 @@ function WorkingSpace({
                 onClick={() => {
                   if (window.confirm('Clear this working space?')) setNotes('');
                 }}
-                className="text-xs font-semibold text-red-600"
+                className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-red-600"
               >
                 Clear notes
               </button>
@@ -791,17 +809,17 @@ function QuestionInput({
   const mediaUrl = extractMediaUrl(question);
 
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="min-w-0 space-y-5">
+      <div className="min-w-0">
         {question.contentHtml ? (
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Question {index + 1}</p>
-            <div className="mt-2">
+            <div className="mt-2 min-w-0">
               <RichContent html={question.contentHtml} className="assessment-question-copy" />
             </div>
           </div>
         ) : (
-          <p className="break-words text-base font-semibold leading-7 text-[#101820] sm:text-lg sm:leading-8">
+          <p className="break-words text-base font-semibold leading-7 text-[#101820] [overflow-wrap:anywhere] sm:text-lg sm:leading-8">
             {index + 1}. {question.questionText}
           </p>
         )}
@@ -813,9 +831,9 @@ function QuestionInput({
       </div>
 
       {mediaUrl ? (
-        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#F8FAFC] p-4">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] p-3 sm:rounded-[24px] sm:p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Media reference</p>
-          <img src={mediaUrl} alt="Question media" className="mt-3 max-h-72 w-full rounded-2xl object-contain bg-white" />
+          <img src={mediaUrl} alt="Question media" className="mt-3 h-auto max-h-72 w-full max-w-full rounded-2xl object-contain bg-white" />
         </div>
       ) : null}
 
@@ -826,7 +844,7 @@ function QuestionInput({
             return (
               <label
                 key={opt}
-                className={`flex cursor-pointer items-start gap-4 rounded-[24px] border px-4 py-4 transition ${
+                className={`flex min-h-11 min-w-0 cursor-pointer touch-manipulation items-start gap-3 rounded-2xl border px-3 py-4 transition sm:gap-4 sm:rounded-[24px] sm:px-4 ${
                   selected
                     ? 'border-[#B5E61D] bg-[#FAFDEB] shadow-sm'
                     : 'border-slate-200 bg-white hover:border-slate-300'
@@ -843,7 +861,7 @@ function QuestionInput({
                   <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${selected ? 'bg-[#101820] text-white' : 'bg-[#F8FAFC] text-slate-600'}`}>
                     {String.fromCharCode(65 + optionIndex)}
                   </span>
-                  <span className="break-words text-base leading-7 text-slate-700">{opt}</span>
+                  <span className="min-w-0 break-words text-base leading-7 text-slate-700 [overflow-wrap:anywhere]">{opt}</span>
                 </div>
               </label>
             );
@@ -858,7 +876,7 @@ function QuestionInput({
             return (
               <label
                 key={opt}
-                className={`flex cursor-pointer items-center gap-3 rounded-[24px] border px-4 py-4 capitalize transition ${
+                className={`flex min-h-11 cursor-pointer touch-manipulation items-center gap-3 rounded-2xl border px-4 py-4 capitalize transition sm:rounded-[24px] ${
                   selected
                     ? 'border-[#B5E61D] bg-[#FAFDEB] shadow-sm'
                     : 'border-slate-200 bg-white hover:border-slate-300'
@@ -882,7 +900,7 @@ function QuestionInput({
           <input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
+            className="min-h-12 w-full min-w-0 rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
             placeholder="Enter your answer"
           />
           <SymbolPad value={value} onChange={onChange} />
@@ -898,7 +916,7 @@ function QuestionInput({
               inputMode="decimal"
               autoComplete="off"
               onChange={(e) => onChange(e.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-lg leading-7 text-[#101820] outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
+              className="min-h-12 w-full min-w-0 rounded-2xl border border-slate-300 px-4 py-3.5 text-lg leading-7 text-[#101820] outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
               placeholder="e.g. 2.73 cm or 3/4"
             />
           </label>
@@ -914,7 +932,7 @@ function QuestionInput({
               value={value}
               onChange={(e) => onChange(e.target.value)}
               rows={4}
-              className="w-full resize-y rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
+              className="min-h-32 w-full min-w-0 resize-y rounded-2xl border border-slate-300 px-4 py-3.5 text-base leading-7 text-slate-700 outline-none focus:border-[#101820] focus:ring-2 focus:ring-[#B5E61D]/30 sm:rounded-[24px]"
               placeholder="Write a clear, concise response"
             />
           </label>
@@ -946,19 +964,19 @@ function QuestionInput({
             onChange={(e) => onChange(e.target.value)}
             rows={4}
             placeholder="Enter your matched or ordered answer"
-            className="w-full rounded-[24px] border border-slate-300 px-4 py-4 text-sm font-mono text-slate-700"
+            className="min-h-32 w-full min-w-0 rounded-2xl border border-slate-300 px-4 py-4 text-base font-mono leading-7 text-slate-700 outline-none focus:border-[#101820] sm:rounded-[24px]"
           />
         </div>
       )}
 
       {question.questionType === 'FILE_UPLOAD' && (
-        <div className="rounded-[24px] border border-slate-200 bg-[#F8FAFC] p-4">
+        <div className="min-w-0 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-4 sm:rounded-[24px]">
           <p className="text-sm font-medium text-[#101820]">Upload your file response</p>
           <input
             type="file"
             disabled={uploading}
             onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-            className="mt-4 text-sm"
+            className="mt-4 block min-h-11 w-full min-w-0 cursor-pointer text-base file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-xl file:border-0 file:bg-[#101820] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           />
           {uploading ? <p className="mt-3 text-xs text-slate-500">Uploading...</p> : null}
           {value && !uploading ? (
