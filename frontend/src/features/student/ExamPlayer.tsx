@@ -7,7 +7,6 @@ import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
 import { RichContent } from '../../components/ui/RichContent';
 import { AnswerInputWithSymbols } from './answer-input/AnswerInputWithSymbols';
-import { MathsFunctionsPanel } from './tools/MathsFunctionsPanel';
 import type { Answer, AnswerInput, Question } from '../../types';
 
 function useMediaQuery(query: string) {
@@ -68,21 +67,6 @@ function ClockIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function MathsIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path d="M5 5h14M5 19h14M8 3v4M16 17v4M7 11l3 3M10 11l-3 3M14 12h4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -295,8 +279,6 @@ export function ExamPlayer() {
   const [uploadingFor, setUploadingFor] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
-  const [mathsPanelOpen, setMathsPanelOpen] = useState(false);
-  const [hasShownMathsPanel, setHasShownMathsPanel] = useState(false);
   const startTime = useMemo(() => Date.now(), []);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -356,21 +338,6 @@ export function ExamPlayer() {
   const unansweredCount = totalQuestions - answeredCount;
   const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
   const assignmentMaxPoints = assignment?.maxPoints ?? assignment?.totalMarks ?? 0;
-  const mathsSubject = /\b(math(?:s|ematics)?|algebra|geometry|calculus|statistics|trigonometry|arithmetic)\b/i.test(
-    assignment?.subject ?? '',
-  );
-  const isMathsQuestion =
-    !alreadyFinal &&
-    !reviewMode &&
-    Boolean(currentQuestion) &&
-    (mathsSubject || currentQuestion.questionType === 'NUMERIC');
-
-  useEffect(() => {
-    if (isMathsQuestion && !hasShownMathsPanel) {
-      setMathsPanelOpen(true);
-      setHasShownMathsPanel(true);
-    }
-  }, [hasShownMathsPanel, isMathsQuestion]);
 
   if (loadingQuestions) {
     return <p className="text-sm text-gray-500">Loading...</p>;
@@ -460,21 +427,9 @@ export function ExamPlayer() {
               <p className="break-words text-xs font-semibold uppercase tracking-[0.14em] text-white/55 sm:tracking-[0.18em]">
                 {reviewMode ? 'Review Mode' : `Question ${currentIndex + 1} of ${totalQuestions}`}
               </p>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm text-white">
-                  <ClockIcon />
-                  <span>{formatElapsed(elapsedSeconds)}</span>
-                </div>
-                {isMathsQuestion ? (
-                  <button
-                    type="button"
-                    onClick={() => setMathsPanelOpen(true)}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                  >
-                    <MathsIcon />
-                    Maths functions
-                  </button>
-                ) : null}
+              <div className="mt-3 flex items-center gap-2 text-sm text-white">
+                <ClockIcon />
+                <span>{formatElapsed(elapsedSeconds)}</span>
               </div>
             </div>
           </div>
@@ -712,9 +667,6 @@ export function ExamPlayer() {
           </div>
         </section>
       </div>
-      {mathsPanelOpen ? (
-        <MathsFunctionsPanel onClose={() => setMathsPanelOpen(false)} />
-      ) : null}
     </div>
   );
 }

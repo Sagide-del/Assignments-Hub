@@ -192,6 +192,100 @@ body {
   opacity: 0.6;
 }
 
+.inline-function-panel {
+  margin-top: 0.625rem;
+  min-width: 0;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.625rem;
+}
+
+.inline-function-tabs {
+  display: flex;
+  max-width: 100%;
+  gap: 0.375rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inline-function-tab {
+  min-height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding-inline: 0.875rem;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
+.inline-function-tab--active {
+  border-color: #101820;
+  background: #101820;
+  color: #b5e61d;
+}
+
+.inline-function-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  overscroll-behavior-block: contain;
+  padding: 0.125rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inline-function-button {
+  display: flex;
+  min-height: 58px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.2rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.inline-function-button:hover,
+.inline-function-button:focus-visible {
+  border-color: #b5e61d;
+  background: #faffeb;
+  outline: none;
+}
+
+.inline-function-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inline-function-symbol {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #101820;
+  font-size: 0.9375rem;
+  font-weight: 750;
+  line-height: 1.25rem;
+}
+
 @media (max-width: 640px) {
   .assessment-workspace {
     overflow-wrap: anywhere;
@@ -250,5 +344,14 @@ body {
   .inline-symbol-toolbar {
     margin-inline: -0.125rem;
     border-radius: 0.875rem;
+  }
+
+  .inline-function-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 18rem;
+  }
+
+  .inline-function-button {
+    min-height: 64px;
   }
 }

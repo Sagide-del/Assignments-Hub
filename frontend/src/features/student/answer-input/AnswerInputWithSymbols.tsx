@@ -3,27 +3,143 @@ import { apiErrorMessage } from '../../../api/axios';
 import { resolveUploadUrl, uploadsApi } from '../../../api/uploads.api';
 import { formatSmartText } from './smart-text';
 
-const PRIMARY_SYMBOLS = ['√', 'π', '²', '³', '→', '×', '÷', '≤', '≥', '±'];
-const MORE_SYMBOLS = [
-  '½',
-  '⅓',
-  '¼',
-  '¾',
-  '≠',
-  '≈',
-  '∞',
-  '∑',
-  'Δ',
-  'θ',
-  'α',
-  'β',
-  'γ',
-  '°',
-  '₁',
-  '₂',
-  '₃',
-  '₄',
-  '⇌',
+type InsertToken = {
+  name: string;
+  label: string;
+  value: string;
+  cursorBack?: number;
+};
+
+type FunctionTab = 'symbols' | 'scientific' | 'statistics' | 'complex' | 'bases' | 'equations';
+
+const PRIMARY_SYMBOLS: InsertToken[] = [
+  { name: 'Square root', label: '√', value: '√' },
+  { name: 'Pi', label: 'π', value: 'π' },
+  { name: 'Square', label: 'x²', value: '²' },
+  { name: 'Cube', label: 'x³', value: '³' },
+  { name: 'Arrow', label: '→', value: '→' },
+  { name: 'Multiply', label: '×', value: '×' },
+  { name: 'Divide', label: '÷', value: '÷' },
+  { name: 'Less than or equal', label: '≤', value: '≤' },
+  { name: 'Greater than or equal', label: '≥', value: '≥' },
+  { name: 'Plus or minus', label: '±', value: '±' },
+];
+
+const FUNCTION_TABS: { id: FunctionTab; label: string; tokens: InsertToken[] }[] = [
+  {
+    id: 'symbols',
+    label: 'Symbols',
+    tokens: [
+      { name: 'One half', label: '½', value: '½' },
+      { name: 'One third', label: '⅓', value: '⅓' },
+      { name: 'One quarter', label: '¼', value: '¼' },
+      { name: 'Three quarters', label: '¾', value: '¾' },
+      { name: 'Not equal', label: '≠', value: '≠' },
+      { name: 'Approximately equal', label: '≈', value: '≈' },
+      { name: 'Infinity', label: '∞', value: '∞' },
+      { name: 'Summation', label: '∑', value: '∑' },
+      { name: 'Delta', label: 'Δ', value: 'Δ' },
+      { name: 'Theta', label: 'θ', value: 'θ' },
+      { name: 'Alpha', label: 'α', value: 'α' },
+      { name: 'Beta', label: 'β', value: 'β' },
+      { name: 'Gamma', label: 'γ', value: 'γ' },
+      { name: 'Degree', label: '°', value: '°' },
+      { name: 'Subscript one', label: '₁', value: '₁' },
+      { name: 'Subscript two', label: '₂', value: '₂' },
+      { name: 'Subscript three', label: '₃', value: '₃' },
+      { name: 'Subscript four', label: '₄', value: '₄' },
+      { name: 'Reversible reaction', label: '⇌', value: '⇌' },
+    ],
+  },
+  {
+    id: 'scientific',
+    label: 'Scientific',
+    tokens: [
+      { name: 'Square', label: 'x²', value: '²' },
+      { name: 'Cube', label: 'x³', value: '³' },
+      { name: 'Power', label: 'xⁿ', value: '^' },
+      { name: 'Square root', label: '√', value: '√' },
+      { name: 'Cube root', label: '³√', value: '³√' },
+      { name: 'nth root', label: 'ⁿ√', value: 'ⁿ√' },
+      { name: 'Reciprocal', label: '1/x', value: '1/()', cursorBack: 1 },
+      { name: 'Factorial', label: 'x!', value: '!' },
+      { name: 'Pi', label: 'π', value: 'π' },
+      { name: 'Exponent', label: 'EXP', value: '×10^' },
+      { name: 'Logarithm', label: 'log', value: 'log()', cursorBack: 1 },
+      { name: 'Natural logarithm', label: 'ln', value: 'ln()', cursorBack: 1 },
+      { name: 'Sine', label: 'sin', value: 'sin()', cursorBack: 1 },
+      { name: 'Cosine', label: 'cos', value: 'cos()', cursorBack: 1 },
+      { name: 'Tangent', label: 'tan', value: 'tan()', cursorBack: 1 },
+      { name: 'Inverse sine', label: 'sin⁻¹', value: 'sin⁻¹()', cursorBack: 1 },
+      { name: 'Inverse cosine', label: 'cos⁻¹', value: 'cos⁻¹()', cursorBack: 1 },
+      { name: 'Inverse tangent', label: 'tan⁻¹', value: 'tan⁻¹()', cursorBack: 1 },
+      { name: 'Hyperbolic sine', label: 'sinh', value: 'sinh()', cursorBack: 1 },
+      { name: 'Hyperbolic cosine', label: 'cosh', value: 'cosh()', cursorBack: 1 },
+      { name: 'Hyperbolic tangent', label: 'tanh', value: 'tanh()', cursorBack: 1 },
+      { name: 'Degrees', label: '°', value: '°' },
+      { name: 'Minutes', label: '′', value: '′' },
+      { name: 'Seconds', label: '″', value: '″' },
+      { name: 'Polar coordinates', label: 'Pol()', value: 'Pol(,)', cursorBack: 2 },
+      { name: 'Rectangular coordinates', label: 'Rec()', value: 'Rec(,)', cursorBack: 2 },
+      { name: 'Absolute value', label: '|x|', value: '||', cursorBack: 1 },
+      { name: 'Random number', label: 'Ran#', value: 'Ran#' },
+      { name: 'Memory add', label: 'M+', value: 'M+' },
+      { name: 'Memory subtract', label: 'M−', value: 'M−' },
+      { name: 'Memory recall', label: 'MR', value: 'MR' },
+      { name: 'Memory clear', label: 'MC', value: 'MC' },
+    ],
+  },
+  {
+    id: 'statistics',
+    label: 'Statistics',
+    tokens: [
+      { name: 'Sum', label: 'Σx', value: 'Σx' },
+      { name: 'Mean', label: 'x̄', value: 'x̄' },
+      { name: 'Population standard deviation', label: 'σn', value: 'σn' },
+      { name: 'Sample standard deviation', label: 'σn−1', value: 'σn−1' },
+      { name: 'Variance', label: 'σ²', value: 'σ²' },
+      { name: 'Minimum', label: 'min', value: 'min()', cursorBack: 1 },
+      { name: 'Maximum', label: 'max', value: 'max()', cursorBack: 1 },
+      { name: 'Count', label: 'n', value: 'n' },
+      { name: 'Regression intercept', label: 'a', value: 'a' },
+      { name: 'Regression slope', label: 'b', value: 'b' },
+      { name: 'Correlation coefficient', label: 'r', value: 'r' },
+    ],
+  },
+  {
+    id: 'complex',
+    label: 'Complex',
+    tokens: [
+      { name: 'Imaginary unit', label: 'i', value: 'i' },
+      { name: 'Real part', label: 'Re()', value: 'Re()', cursorBack: 1 },
+      { name: 'Imaginary part', label: 'Im()', value: 'Im()', cursorBack: 1 },
+      { name: 'Argument', label: 'arg()', value: 'arg()', cursorBack: 1 },
+      { name: 'Complex mode', label: 'CMPLX', value: 'CMPLX' },
+    ],
+  },
+  {
+    id: 'bases',
+    label: 'Bases',
+    tokens: [
+      { name: 'Binary', label: 'bin', value: 'bin()₂', cursorBack: 2 },
+      { name: 'Octal', label: 'oct', value: 'oct()₈', cursorBack: 2 },
+      { name: 'Decimal', label: 'dec', value: 'dec()', cursorBack: 1 },
+      { name: 'Hexadecimal', label: 'hex', value: 'hex()₁₆', cursorBack: 3 },
+    ],
+  },
+  {
+    id: 'equations',
+    label: 'Equations',
+    tokens: [
+      { name: 'Linear equation', label: 'ax+b=c', value: 'ax + b = c' },
+      { name: 'Quadratic equation', label: 'ax²+bx+c=0', value: 'ax² + bx + c = 0' },
+      {
+        name: 'Simultaneous equations',
+        label: '2 equations',
+        value: 'ax + by = c\ndx + ey = f',
+      },
+    ],
+  },
 ];
 
 type SmartTextareaProps = {
@@ -71,7 +187,7 @@ export function SmartTextarea({
 }
 
 type InlineSymbolToolbarProps = {
-  onInsert: (symbol: string) => void;
+  onInsert: (value: string, cursorBack?: number) => void;
   allowImageUpload?: boolean;
   uploading?: boolean;
   onImageSelected?: (file: File) => void;
@@ -83,31 +199,33 @@ export function InlineSymbolToolbar({
   uploading = false,
   onImageSelected,
 }: InlineSymbolToolbarProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<FunctionTab | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const symbols = expanded ? [...PRIMARY_SYMBOLS, ...MORE_SYMBOLS] : PRIMARY_SYMBOLS;
+  const activeFunctions = FUNCTION_TABS.find((tab) => tab.id === activeTab);
 
   return (
     <div className="inline-symbol-toolbar" aria-label="Answer symbols and attachments">
       <div className="inline-symbol-scroll">
-        {symbols.map((symbol) => (
+        {PRIMARY_SYMBOLS.map((symbol) => (
           <button
-            key={symbol}
+            key={symbol.name}
             type="button"
-            onClick={() => onInsert(symbol)}
+            onClick={() => onInsert(symbol.value, symbol.cursorBack)}
             className="inline-symbol-button"
-            aria-label={`Insert ${symbol}`}
+            aria-label={`Insert ${symbol.name}`}
           >
-            {symbol}
+            {symbol.label}
           </button>
         ))}
         <button
           type="button"
-          onClick={() => setExpanded((current) => !current)}
+          onClick={() =>
+            setActiveTab((current) => (current === null ? 'scientific' : null))
+          }
           className="inline-symbol-more"
-          aria-expanded={expanded}
+          aria-expanded={activeTab !== null}
         >
-          {expanded ? 'Less' : 'More'}
+          {activeTab === null ? 'Maths functions' : 'Close functions'}
         </button>
         {allowImageUpload ? (
           <>
@@ -135,6 +253,46 @@ export function InlineSymbolToolbar({
           </>
         ) : null}
       </div>
+
+      {activeTab !== null ? (
+        <div className="inline-function-panel">
+          <div className="inline-function-tabs" role="tablist" aria-label="Maths function categories">
+            {FUNCTION_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-function-tab ${
+                  activeTab === tab.id ? 'inline-function-tab--active' : ''
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div
+            className="inline-function-grid"
+            role="tabpanel"
+            aria-label={`${activeFunctions?.label ?? 'Maths'} functions`}
+          >
+            {activeFunctions?.tokens.map((token) => (
+              <button
+                key={`${activeFunctions.id}-${token.name}`}
+                type="button"
+                onClick={() => onInsert(token.value, token.cursorBack)}
+                className="inline-function-button"
+                aria-label={`Insert ${token.name}`}
+                title={token.name}
+              >
+                <span className="inline-function-name">{token.name}</span>
+                <span className="inline-function-symbol">{token.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -221,13 +379,13 @@ export function AnswerInputWithSymbols({
     );
   }
 
-  function insertSymbol(symbol: string) {
+  function insertSymbol(symbol: string, cursorBack = 0) {
     const textarea = textareaRef.current;
     const start = textarea?.selectionStart ?? parsedAnswer.text.length;
     const end = textarea?.selectionEnd ?? start;
     const nextText =
       parsedAnswer.text.slice(0, start) + symbol + parsedAnswer.text.slice(end);
-    const nextCursor = start + symbol.length;
+    const nextCursor = start + symbol.length - cursorBack;
     updateText(nextText);
 
     window.requestAnimationFrame(() => {
