@@ -21,7 +21,11 @@ function formatWhen(iso: string) {
 // for a teacher) and a couple of labels. Any student can message any teacher
 // at their school and vice versa (see backend/src/messages) — school admins
 // get a separate read-only oversight view (features/school-admin/MessagesOversight.tsx).
-export function MessagesInbox({ viewerRole }: { viewerRole: 'STUDENT' | 'TEACHER' }) {
+export function MessagesInbox({
+  viewerRole,
+}: {
+  viewerRole: 'STUDENT' | 'TEACHER' | 'PLATFORM_ADMIN';
+}) {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const [activeContactId, setActiveContactId] = useState<number | null>(null);
@@ -39,14 +43,25 @@ export function MessagesInbox({ viewerRole }: { viewerRole: 'STUDENT' | 'TEACHER
   }, [contacts, activeContactId]);
 
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? null;
-  const counterpartLabel = viewerRole === 'STUDENT' ? 'teacher' : 'student';
+  const counterpartLabel =
+    viewerRole === 'PLATFORM_ADMIN'
+      ? 'independent students'
+      : viewerRole === 'STUDENT'
+        ? 'teachers'
+        : 'students';
   const totalUnread = contacts.reduce((sum, c) => sum + c.unreadCount, 0);
+  const pageMeta =
+    viewerRole === 'PLATFORM_ADMIN'
+      ? 'Private tutor conversations'
+      : viewerRole === 'STUDENT'
+        ? 'Contact your teacher'
+        : 'Student conversations';
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="News/Messages"
-        meta={viewerRole === 'STUDENT' ? 'Message any teacher at your school' : 'Message any student at your school'}
+        meta={pageMeta}
       />
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
@@ -54,7 +69,7 @@ export function MessagesInbox({ viewerRole }: { viewerRole: 'STUDENT' | 'TEACHER
           {isLoading ? (
             <EmptyState title="Loading..." />
           ) : contacts.length === 0 ? (
-            <EmptyState title={`No ${counterpartLabel}s found at your school yet.`} />
+            <EmptyState title={`No ${counterpartLabel} available yet.`} />
           ) : (
             <div className="-mx-2 max-h-[520px] space-y-1 overflow-y-auto">
               {contacts.map((contact) => (
@@ -64,7 +79,10 @@ export function MessagesInbox({ viewerRole }: { viewerRole: 'STUDENT' | 'TEACHER
           )}
         </ActionCard>
 
-        <ActionCard title={activeContact ? activeContact.name : 'Select a conversation'} meta={activeContact?.subject ?? activeContact?.grade ?? undefined}>
+        <ActionCard
+          title={activeContact ? activeContact.name : 'Select a conversation'}
+          meta={activeContact?.relationshipLabel}
+        >
           {activeContact ? (
             <ThreadView
               key={activeContact.id}
@@ -100,7 +118,9 @@ function ContactRow({ contact, active, onClick }: { contact: MessageContact; act
           </span>
         ) : null}
       </div>
-      <p className={`mt-0.5 truncate text-xs ${active ? 'text-white/70' : 'text-slate-400'}`}>{contact.subject ?? contact.grade ?? ''}</p>
+      <p className={`mt-0.5 truncate text-xs ${active ? 'text-white/70' : 'text-slate-400'}`}>
+        {contact.relationshipLabel}
+      </p>
       {contact.lastMessage ? (
         <p className={`mt-1 truncate text-xs ${active ? 'text-white/60' : 'text-slate-500'}`}>{contact.lastMessage.body}</p>
       ) : (

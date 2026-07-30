@@ -835,6 +835,8 @@ export interface MentorshipStats {
 export interface MessageContact {
   id: number;
   name: string;
+  role: Role;
+  relationshipLabel: string;
   subject: string | null;
   grade: string | null;
   assignedClass: string | null;

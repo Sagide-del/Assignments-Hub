@@ -49,6 +49,7 @@ import { IndependentStudentsPage } from '../../features/platform-admin/Independe
 import { MnemonicCardsStudio } from '../../features/platform-admin/MnemonicCardsStudio';
 import { IndependentAssignmentsPage } from '../../features/platform-admin/IndependentAssignments';
 import { PrivateTutorPage } from '../../features/platform-admin/PrivateTutor';
+import { TutorMessagesPage } from '../../features/platform-admin/TutorMessages';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -161,6 +162,10 @@ const platformAdminNav = [
   {
     to: '/platform/private-tutor',
     label: 'Private Tutor',
+  },
+  {
+    to: '/platform/messages',
+    label: 'Tutor Messages',
   },
   {
     to: '/platform/independent-assignments',
@@ -416,6 +421,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/private-tutor',
             element: <PrivateTutorPage />,
+          },
+          {
+            path: '/platform/messages',
+            element: <TutorMessagesPage />,
           },
           {
             path: '/platform/independent-assignments',

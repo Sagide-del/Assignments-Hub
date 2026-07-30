@@ -3,8 +3,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
+import type { Prisma } from '@prisma/client';
 
-const CONTACT_SELECT = { id: true, name: true, subject: true, grade: true, assignedClass: true } as const;
+const INDEPENDENT_SCHOOL_CODE = 'INDEPENDENT';
+const CONTACT_SELECT = {
+  id: true,
+  name: true,
+  role: true,
+  subject: true,
+  grade: true,
+  assignedClass: true,
+} as const;
 const PARTY_SELECT = { id: true, name: true, role: true } as const;
 
 @Injectable()
@@ -16,12 +25,39 @@ export class MessagesService {
   // their school" scope, just two-way. Not exported: every public method
   // below runs this before touching a Message row.
   private async assertCanMessage(actor: AuthenticatedUser, otherUserId: number) {
-    const expectedRole = actor.role === Role.STUDENT ? Role.TEACHER : Role.STUDENT;
-    const other = await this.prisma.user.findUnique({ where: { id: otherUserId } });
-    if (!other || other.schoolId !== actor.schoolId || other.role !== expectedRole) {
-      throw new NotFoundException('That person is not available to message at your school');
+    const other = await this.prisma.user.findUnique({
+      where: { id: otherUserId },
+      include: { school: { select: { code: true } } },
+    });
+    if (!other) throw new NotFoundException('That person is not available to message');
+
+    let allowed = false;
+    let conversationSchoolId = actor.schoolId;
+
+    if (actor.role === Role.PLATFORM_ADMIN) {
+      allowed =
+        other.role === Role.STUDENT &&
+        other.school.code === INDEPENDENT_SCHOOL_CODE;
+      conversationSchoolId = other.schoolId;
+    } else if (actor.role === Role.TEACHER) {
+      allowed =
+        other.role === Role.STUDENT &&
+        other.schoolId === actor.schoolId;
+    } else if (actor.role === Role.STUDENT) {
+      const actorSchool = await this.prisma.school.findUnique({
+        where: { id: actor.schoolId },
+        select: { code: true },
+      });
+      allowed =
+        actorSchool?.code === INDEPENDENT_SCHOOL_CODE
+          ? other.role === Role.PLATFORM_ADMIN
+          : other.role === Role.TEACHER && other.schoolId === actor.schoolId;
     }
-    return other;
+
+    if (!allowed) {
+      throw new NotFoundException('That person is not available to message');
+    }
+    return { other, conversationSchoolId };
   }
 
   // ==========================================================================
@@ -32,16 +68,49 @@ export class MessagesService {
   // contact.
   // ==========================================================================
   async findContacts(actor: AuthenticatedUser) {
-    const otherRole = actor.role === Role.STUDENT ? Role.TEACHER : Role.STUDENT;
+    let conversationSchoolId = actor.schoolId;
+    let contactWhere: Prisma.UserWhereInput;
+
+    if (actor.role === Role.PLATFORM_ADMIN) {
+      const independentSchool = await this.prisma.school.findUnique({
+        where: { code: INDEPENDENT_SCHOOL_CODE },
+        select: { id: true },
+      });
+      if (!independentSchool) return [];
+      conversationSchoolId = independentSchool.id;
+      contactWhere = {
+        schoolId: independentSchool.id,
+        role: Role.STUDENT,
+        isActive: true,
+      };
+    } else if (actor.role === Role.STUDENT) {
+      const actorSchool = await this.prisma.school.findUnique({
+        where: { id: actor.schoolId },
+        select: { code: true },
+      });
+      contactWhere =
+        actorSchool?.code === INDEPENDENT_SCHOOL_CODE
+          ? { role: Role.PLATFORM_ADMIN, isActive: true }
+          : { schoolId: actor.schoolId, role: Role.TEACHER, isActive: true };
+    } else {
+      contactWhere = {
+        schoolId: actor.schoolId,
+        role: Role.STUDENT,
+        isActive: true,
+      };
+    }
 
     const [contacts, messages] = await Promise.all([
       this.prisma.user.findMany({
-        where: { schoolId: actor.schoolId, role: otherRole, isActive: true },
+        where: contactWhere,
         select: CONTACT_SELECT,
         orderBy: { name: 'asc' },
       }),
       this.prisma.message.findMany({
-        where: { schoolId: actor.schoolId, OR: [{ senderId: actor.id }, { recipientId: actor.id }] },
+        where: {
+          schoolId: conversationSchoolId,
+          OR: [{ senderId: actor.id }, { recipientId: actor.id }],
+        },
         orderBy: { createdAt: 'desc' },
       }),
     ]);
@@ -62,6 +131,13 @@ export class MessagesService {
         return {
           id: contact.id,
           name: contact.name,
+          role: contact.role,
+          relationshipLabel:
+            contact.role === Role.PLATFORM_ADMIN
+              ? 'Private Tutor'
+              : contact.role === Role.STUDENT
+                ? contact.grade ?? 'Independent Student'
+                : contact.subject ?? 'Teacher',
           subject: contact.subject,
           grade: contact.grade,
           assignedClass: contact.assignedClass,
@@ -87,10 +163,10 @@ export class MessagesService {
   // Full thread with one counterpart, oldest first. Opening a thread marks
   // every unread message the actor received in it as read.
   async findThread(otherUserId: number, actor: AuthenticatedUser) {
-    await this.assertCanMessage(actor, otherUserId);
+    const { conversationSchoolId } = await this.assertCanMessage(actor, otherUserId);
 
     const where = {
-      schoolId: actor.schoolId,
+      schoolId: conversationSchoolId,
       OR: [
         { senderId: actor.id, recipientId: otherUserId },
         { senderId: otherUserId, recipientId: actor.id },
@@ -106,14 +182,17 @@ export class MessagesService {
   }
 
   async sendMessage(dto: SendMessageDto, actor: AuthenticatedUser) {
-    const recipient = await this.assertCanMessage(actor, dto.recipientId);
+    const { other: recipient, conversationSchoolId } = await this.assertCanMessage(
+      actor,
+      dto.recipientId,
+    );
     if (!recipient.isActive) {
       throw new ForbiddenException('That person\'s account is no longer active');
     }
 
     return this.prisma.message.create({
       data: {
-        schoolId: actor.schoolId,
+        schoolId: conversationSchoolId,
         senderId: actor.id,
         recipientId: recipient.id,
         body: dto.body,
@@ -142,7 +221,7 @@ export class MessagesService {
     >();
     for (const message of messages) {
       const student = message.sender.role === Role.STUDENT ? message.sender : message.recipient;
-      const teacher = message.sender.role === Role.TEACHER ? message.sender : message.recipient;
+      const teacher = message.sender.role === Role.STUDENT ? message.recipient : message.sender;
       const key = `${student.id}:${teacher.id}`;
       const entry = byPair.get(key) ?? { student, teacher, lastMessage: message, messageCount: 0 };
       entry.messageCount += 1;

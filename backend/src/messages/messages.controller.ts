@@ -15,25 +15,25 @@ export class MessagesController {
   // ---- Student / teacher inbox ----
 
   @Get('contacts')
-  @Roles(Role.STUDENT, Role.TEACHER)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PLATFORM_ADMIN)
   findContacts(@CurrentUser() actor: AuthenticatedUser) {
     return this.messagesService.findContacts(actor);
   }
 
   @Get('unread-count')
-  @Roles(Role.STUDENT, Role.TEACHER)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PLATFORM_ADMIN)
   getUnreadCount(@CurrentUser() actor: AuthenticatedUser) {
     return this.messagesService.getUnreadCount(actor);
   }
 
   @Get('thread/:userId')
-  @Roles(Role.STUDENT, Role.TEACHER)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PLATFORM_ADMIN)
   findThread(@Param('userId', ParseIntPipe) userId: number, @CurrentUser() actor: AuthenticatedUser) {
     return this.messagesService.findThread(userId, actor);
   }
 
   @Post()
-  @Roles(Role.STUDENT, Role.TEACHER)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.PLATFORM_ADMIN)
   @AuditAction('message.send')
   sendMessage(@Body() dto: SendMessageDto, @CurrentUser() actor: AuthenticatedUser) {
     return this.messagesService.sendMessage(dto, actor);
