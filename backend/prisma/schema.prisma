@@ -129,12 +129,15 @@ enum SmsStatus {
   FAILED
 }
 
-// AI Assignment Generator provider router (see backend/src/ai): DeepSeek is
-// primary, Claude is the fallback used when DeepSeek is out of balance,
-// rate-limited, or unavailable. See AiUsageLog / AiProviderRouterService.
+// AI Assignment Generator provider (see backend/src/ai). OpenAI is the only
+// active provider going forward — DEEPSEEK/CLAUDE are kept in the enum
+// (rather than removed) purely so historical AiUsageLog/AiGenerationJob rows
+// written before the OpenAI migration keep a valid, readable provider value;
+// no code path writes those two values anymore. See AiProviderRouterService.
 enum AiProvider {
   DEEPSEEK
   CLAUDE
+  OPENAI
 }
 
 enum AiUsageStatus {
@@ -192,6 +195,22 @@ enum CslSubmissionStatus {
   PENDING
   APPROVED
   NEEDS_REVISION
+}
+
+// Centralized Question Bank (see backend/src/question-bank). PLATFORM rows
+// are curated by PLATFORM_ADMIN and are global/read-only to every activated
+// school. SCHOOL is reserved for a possible future school-authored tier —
+// nothing in this change writes SCHOOL rows yet, but the column exists so
+// that tier doesn't require another migration later.
+enum QuestionBankSource {
+  PLATFORM
+  SCHOOL
+}
+
+enum QuestionBankStatus {
+  GENERATED
+  APPROVED
+  REJECTED
 }
 
 // Drives which per-student rate applies in the subscription pricing table
@@ -287,6 +306,8 @@ model School {
   aiExtractedContents  AiExtractedContent[]
   aiContentArtifacts   AiContentArtifact[]
   aiReviewEvents       AiReviewEvent[]
+  questionBankItems       QuestionBank[]
+  questionBankAccess      SchoolQuestionBankAccess?
 
   @@map("schools")
 }
@@ -373,6 +394,9 @@ model User {
   uploadedAiExtractedContents      AiExtractedContent[]        @relation("AiExtractedContentUploadedBy")
   reviewedAiArtifacts              AiContentArtifact[]         @relation("AiArtifactReviewedBy")
   aiReviewEvents                   AiReviewEvent[]             @relation("AiReviewEventReviewer")
+  createdQuestionBankItems         QuestionBank[]               @relation("QuestionBankCreatedBy")
+  reviewedQuestionBankItems        QuestionBank[]               @relation("QuestionBankReviewedBy")
+  activatedSchoolQuestionBanks     SchoolQuestionBankAccess[]   @relation("SchoolQuestionBankActivatedBy")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -597,6 +621,7 @@ model Assignment {
   rubric               Rubric?
   aiSourceJobs         AiGenerationJob[]   @relation("AiSourceAssignment")
   aiPublishedArtifacts AiContentArtifact[] @relation("AiPublishedAssignment")
+  questionBankPublishedItems QuestionBank[] @relation("QuestionBankPublishedAssignment")
 
   @@index([schoolId])
   @@map("assignments")
@@ -1874,4 +1899,99 @@ model IndependentPaymentClaim {
   @@index([studentId, status])
   @@index([status, createdAt])
   @@map("independent_payment_claims")
+}
+
+// ============================================================================
+// Centralized Question Bank
+// ----------------------------------------------------------------------------
+// Replaces per-teacher AI generation for the shared-content use case: a
+// PLATFORM_ADMIN uploads source material, generates a batch of questions
+// with OpenAI, reviews/approves them, and the approved questions become a
+// single global bank every activated school's teachers can browse (read
+// only) to assemble their own Assignment, and that can also be published
+// directly as an Assignment for independent students. This is intentionally
+// a separate pipeline from AiContentArtifact/AiGenerationJob (backend/src/
+// ai-content), which remains per-school and per-teacher — see
+// backend/src/question-bank/README.md for why the two aren't merged.
+// ============================================================================
+
+model QuestionBank {
+  id Int @id @default(autoincrement())
+
+  source   QuestionBankSource @default(PLATFORM)
+  isGlobal Boolean            @default(true) @map("is_global")
+
+  // Set only for a possible future SCHOOL-sourced row. Every row created by
+  // this change is PLATFORM/isGlobal=true with schoolId null.
+  schoolId Int?    @map("school_id")
+  school   School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  createdById Int  @map("created_by_id")
+  createdBy   User @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  subject String
+  grade   String
+  topic   String
+
+  questionText  String       @map("question_text")
+  contentHtml   String?      @map("content_html")
+  questionType  QuestionType @default(ESSAY) @map("question_type")
+  // Same shapes as Question.options (backend/prisma/schema.prisma:Question).
+  options       Json?
+  // Same shape as Question.config — private grading rules, never sent to
+  // students. Copied verbatim onto the real Question row at selection time.
+  config        Json?
+  correctAnswer String?      @map("correct_answer")
+  explanation   String?
+  points        Int          @default(10)
+  hint          String?
+  difficulty    String?
+
+  status QuestionBankStatus @default(GENERATED)
+
+  // Groups every question produced by one upload+generate call so the admin
+  // review screen can approve/reject a batch together. Not a foreign key —
+  // just a correlation id (crypto.randomUUID()).
+  generationBatchId String? @map("generation_batch_id")
+  sourceFileName    String? @map("source_file_name")
+
+  reviewedById Int?      @map("reviewed_by_id")
+  reviewedBy   User?     @relation("QuestionBankReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime? @map("reviewed_at")
+
+  // Set when this exact bank question was copied onto the standing
+  // "independent students" Assignment via the publish-to-independent-
+  // students action (see QuestionBankService.publishToIndependentStudents).
+  // Not set when a school teacher selects the question — that creates the
+  // teacher's own Assignment/Question rows and does not modify this row.
+  publishedAssignmentId Int?        @map("published_assignment_id")
+  publishedAssignment   Assignment? @relation("QuestionBankPublishedAssignment", fields: [publishedAssignmentId], references: [id], onDelete: SetNull)
+  publishedAt           DateTime?   @map("published_at")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isGlobal, status, subject, grade])
+  @@index([schoolId, status])
+  @@index([generationBatchId])
+  @@map("question_bank")
+}
+
+// One row per school that a PLATFORM_ADMIN has activated for Question Bank
+// access. Deliberately a separate join-style table rather than a column on
+// School, matching the existing AiFeatureConfig pattern, so the core School
+// model doesn't need a migration for this.
+model SchoolQuestionBankAccess {
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @unique @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  active Boolean @default(true)
+
+  activatedById Int?      @map("activated_by_id")
+  activatedBy   User?     @relation("SchoolQuestionBankActivatedBy", fields: [activatedById], references: [id], onDelete: SetNull)
+  activatedAt   DateTime  @default(now()) @map("activated_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("school_question_bank_access")
 }

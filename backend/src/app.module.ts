@@ -36,6 +36,7 @@ import { IndependentStudentsModule } from './independent-students/independent-st
 
 import { AiModule } from './ai/ai.module';
 import { AiContentModule } from './ai-content/ai-content.module';
+import { QuestionBankModule } from './question-bank/question-bank.module';
 import { SkillsModule } from './skills/skills.module';
 import { MnemonicCardsModule } from './mnemonic-cards/mnemonic-cards.module';
 
@@ -106,6 +107,8 @@ import { TenantGuard } from './common/guards/tenant.guard';
     AiModule,
 
     AiContentModule,
+
+    QuestionBankModule,
 
     SkillsModule,
 

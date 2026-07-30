@@ -25,7 +25,7 @@ import {
   CreateAssignmentRich,
   EditAssignmentRich,
 } from '../../features/teacher/CreateAssignmentRich';
-import AiAssignmentGenerator from '../../features/teacher/AiAssignmentGenerator';
+import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
 import { Marking } from '../../features/teacher/Marking';
 import { CslReview } from '../../features/teacher/CslReview';
 import { PathwaysStats } from '../../features/teacher/PathwaysStats';
@@ -42,6 +42,8 @@ import { MessagesOversight } from '../../features/school-admin/MessagesOversight
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
 import { AiManagement } from '../../features/platform-admin/AiManagement';
+import { QuestionBankManagement } from '../../features/platform-admin/QuestionBankManagement';
+import { SchoolActivation } from '../../features/platform-admin/SchoolActivation';
 import { StemContentStudio } from '../../features/platform-admin/StemContentStudio';
 import { PlatformBilling } from '../../features/platform-admin/Billing';
 import { SkillStudio } from '../../features/platform-admin/SkillStudio';
@@ -92,8 +94,8 @@ const teacherNav = [
     label: 'New Assignment',
   },
   {
-    to: '/teacher/assignments/generate',
-    label: 'AI Generator',
+    to: '/teacher/question-bank',
+    label: 'Question Bank',
   },
   {
     to: '/teacher/marking',
@@ -190,6 +192,14 @@ const platformAdminNav = [
   {
     to: '/platform/ai-management',
     label: 'AI Management',
+  },
+  {
+    to: '/platform/question-bank',
+    label: 'Question Bank',
+  },
+  {
+    to: '/platform/question-bank/schools',
+    label: 'Question Bank Schools',
   },
 ];
 
@@ -327,8 +337,14 @@ export const router = createBrowserRouter([
             element: <Navigate to="/teacher/assignments/new" replace />,
           },
           {
+            path: '/teacher/question-bank',
+            element: <QuestionBankBrowser />,
+          },
+          {
+            // AI generation moved to Platform Admin (Question Bank) —
+            // redirect old bookmarks/links rather than break them.
             path: '/teacher/assignments/generate',
-            element: <AiAssignmentGenerator />,
+            element: <Navigate to="/teacher/question-bank" replace />,
           },
           {
             path: '/teacher/marking',
@@ -471,6 +487,14 @@ export const router = createBrowserRouter([
           {
             path: '/platform/ai-analytics',
             element: <Navigate to="/platform/ai-management" replace />,
+          },
+          {
+            path: '/platform/question-bank',
+            element: <QuestionBankManagement />,
+          },
+          {
+            path: '/platform/question-bank/schools',
+            element: <SchoolActivation />,
           },
         ],
       },

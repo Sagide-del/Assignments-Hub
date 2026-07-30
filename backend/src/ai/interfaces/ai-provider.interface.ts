@@ -1,9 +1,9 @@
 /**
- * Shared contract implemented by every AI assignment-generation provider
- * (DeepSeek today, Claude next). AiProviderRouterService depends only on
- * this interface — never on a concrete provider — so adding another
- * provider later just means implementing this interface and registering it
- * in the router's chain; nothing else has to change.
+ * Shared contract implemented by every AI assignment-generation provider.
+ * OpenAI is the only active implementation (see OpenaiService) —
+ * AiProviderRouterService depends only on this interface, never on a
+ * concrete provider, so adding/swapping a provider means implementing this
+ * interface and registering it; nothing else has to change.
  */
 export interface AiGenerationUsage {
   promptTokens: number | null;
@@ -18,7 +18,7 @@ export interface AiGenerationResult {
   usage: AiGenerationUsage;
 }
 
-export type AiProviderName = 'DEEPSEEK' | 'CLAUDE';
+export type AiProviderName = 'OPENAI';
 
 export interface AiProviderService {
   /** Used for log messages and (later) usage-tracking rows. */

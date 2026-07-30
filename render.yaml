@@ -48,6 +48,19 @@ services:
         sync: false
       - key: AFRICASTALKING_SENDER_ID
         sync: false
+      # AI Assignment Generator / Question Bank — OpenAI is the sole
+      # provider (see backend/src/ai/openai.service.ts). Without
+      # OPENAI_API_KEY set, generation throws NOT_CONFIGURED; without
+      # AI_FEATURES_ENABLED="true" the whole AI surface stays disabled
+      # regardless of the key (see AiFeatureConfigService.assertEnabled).
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4
+      - key: AI_FEATURES_ENABLED
+        value: "false"
 
   - type: web
     name: assignments-hub-frontend

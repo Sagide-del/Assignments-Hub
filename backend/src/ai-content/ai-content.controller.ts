@@ -63,7 +63,14 @@ import { UpdateAiFeatureConfigDto } from "./dto/update-ai-feature-config.dto";
 import { AiFeatureGuard } from "./guards/ai-feature.guard";
 import { AiQuotaGuard } from "./guards/ai-quota.guard";
 
-const STAFF_ROLES = [Role.TEACHER, Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN];
+// Per-teacher AI generation (this controller) was retired in favor of the
+// centralized Question Bank (backend/src/question-bank): PLATFORM_ADMIN now
+// generates questions once via QuestionBankController, teachers browse and
+// select from the resulting global bank read-only. This controller/pipeline
+// (AiContentArtifact/AiGenerationJob, per-school quotas, human review) is
+// kept rather than deleted — nothing here breaks by existing — but is now
+// PLATFORM_ADMIN-only so a teacher/school-admin JWT can no longer reach it.
+const STAFF_ROLES = [Role.PLATFORM_ADMIN];
 
 @ApiTags("AI Content")
 @ApiBearerAuth()

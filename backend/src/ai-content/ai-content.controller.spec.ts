@@ -81,10 +81,8 @@ describe("AiContentController", () => {
     }
   });
 
-  it("excludes students from the controller and restricts admin routes", () => {
+  it("restricts the whole controller to Platform Admin (per-teacher AI generation moved to the Question Bank)", () => {
     expect(Reflect.getMetadata(ROLES_KEY, AiContentController)).toEqual([
-      Role.TEACHER,
-      Role.SCHOOL_ADMIN,
       Role.PLATFORM_ADMIN,
     ]);
     expect(

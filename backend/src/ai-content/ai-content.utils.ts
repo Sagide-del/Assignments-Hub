@@ -43,6 +43,11 @@ export function slug(value: string): string {
 
 export function providerFromModel(model: string): AiProvider | null {
   const normalized = model.toLowerCase();
+  if (normalized.includes("gpt") || normalized.includes("openai"))
+    return AiProvider.OPENAI;
+  // DEEPSEEK/CLAUDE stay recognized here even though nothing generates them
+  // anymore, so historical AiGenerationJob rows re-processed or re-read
+  // through this helper still classify correctly.
   if (normalized.includes("deepseek")) return AiProvider.DEEPSEEK;
   if (normalized.includes("claude")) return AiProvider.CLAUDE;
   return null;
