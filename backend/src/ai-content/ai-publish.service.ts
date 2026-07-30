@@ -22,7 +22,7 @@ type AssignmentView = Awaited<ReturnType<AssignmentsService["findOne"]>>;
 type ArtifactView =
   Awaited<ReturnType<AiArtifactService["findOne"]>> | AiContentArtifact;
 
-interface AiPublishResult {
+export interface AiPublishResult {
   assignmentId: number;
   assignment: AssignmentView;
   artifact: ArtifactView;

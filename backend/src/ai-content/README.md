@@ -57,14 +57,15 @@ read them.
 
 ## Worker boundary
 
-Phase 2 exposes idempotent worker entry points:
+The BullMQ worker invokes these idempotent entry points:
 
 - `AiExtractionService.processExtraction(extractionId)`
 - `AiTopicAssignmentService.processGeneration(jobId)`
 
-Phase 5 can invoke these from BullMQ. The queue processors should contain no
-provider or learning-system business logic.
+Configure `REDIS_URL` for durable production queues. `AI_WORKERS_ENABLED=false`
+lets an API-only process enqueue jobs while a separate process runs workers.
+Without Redis, jobs use a non-durable local development fallback.
 
-This phase intentionally adds no HTTP controller. The services are not
-externally reachable until the authenticated, role-protected Phase 3 API is
-implemented.
+Authenticated endpoints are documented at `/api/docs`. The AI controller
+requires JWT authentication and staff roles; students cannot access any AI
+content route.

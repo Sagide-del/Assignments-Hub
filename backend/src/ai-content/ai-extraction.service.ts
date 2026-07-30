@@ -275,6 +275,43 @@ export class AiExtractionService {
     };
   }
 
+  async getContent(id: number, actor: AuthenticatedUser) {
+    await this.featureConfig.assertEnabled(actor, AiFeature.ASSIGNMENT_DRAFT);
+    const extraction = await this.prisma.aiExtractedContent.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        schoolId: true,
+        uploadedById: true,
+        fileName: true,
+        subject: true,
+        grade: true,
+        topicCount: true,
+        content: true,
+        status: true,
+        error: true,
+        processedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (
+      !extraction ||
+      (actor.role !== Role.PLATFORM_ADMIN &&
+        extraction.schoolId !== actor.schoolId)
+    ) {
+      throw new NotFoundException("AI PDF extraction not found");
+    }
+
+    return {
+      ...extraction,
+      content:
+        extraction.status === AiExtractionStatus.COMPLETED
+          ? this.readContent(extraction.content)
+          : { topics: [] },
+    };
+  }
+
   async getTopic(topicId: string, actor: AuthenticatedUser) {
     await this.featureConfig.assertEnabled(actor, AiFeature.ASSIGNMENT_DRAFT);
     const { extractionId } = this.parseTopicId(topicId);

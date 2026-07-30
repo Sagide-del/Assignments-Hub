@@ -140,6 +140,74 @@ export class AiQuotaService {
     throw new ServiceUnavailableException("Could not reserve AI capacity");
   }
 
+  async getQuota(actor: AuthenticatedUser) {
+    const config = await this.featureConfig.assertEnabled(
+      actor,
+      AiFeature.ASSIGNMENT_DRAFT,
+      actor.schoolId,
+    );
+    const limit =
+      config.monthlyRequestLimit ??
+      (await this.resolvePlanLimit(actor.schoolId));
+    const monthStart = this.monthStart();
+    const resetAt = new Date(
+      Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1),
+    );
+    const [reserved, succeeded, failed] = await Promise.all([
+      this.prisma.aiGenerationJob.count({
+        where: {
+          schoolId: actor.schoolId,
+          feature: AiFeature.ASSIGNMENT_DRAFT,
+          createdAt: { gte: monthStart },
+          status: {
+            in: [
+              AiJobStatus.QUEUED,
+              AiJobStatus.RUNNING,
+              AiJobStatus.SUCCEEDED,
+            ],
+          },
+        },
+      }),
+      this.prisma.aiGenerationJob.count({
+        where: {
+          schoolId: actor.schoolId,
+          feature: AiFeature.ASSIGNMENT_DRAFT,
+          createdAt: { gte: monthStart },
+          status: AiJobStatus.SUCCEEDED,
+        },
+      }),
+      this.prisma.aiGenerationJob.count({
+        where: {
+          schoolId: actor.schoolId,
+          feature: AiFeature.ASSIGNMENT_DRAFT,
+          createdAt: { gte: monthStart },
+          status: AiJobStatus.FAILED,
+        },
+      }),
+    ]);
+
+    return {
+      feature: AiFeature.ASSIGNMENT_DRAFT,
+      periodStart: monthStart.toISOString(),
+      resetsAt: resetAt.toISOString(),
+      limit,
+      used: reserved,
+      succeeded,
+      failed,
+      remaining: limit === null ? null : Math.max(limit - reserved, 0),
+    };
+  }
+
+  async assertAvailable(actor: AuthenticatedUser) {
+    const quota = await this.getQuota(actor);
+    if (quota.limit !== null && quota.remaining === 0) {
+      throw new ForbiddenException(
+        `This school has reached its monthly AI generation limit (${quota.limit})`,
+      );
+    }
+    return quota;
+  }
+
   private async resolvePlanLimit(schoolId: number): Promise<number | null> {
     const subscription = await this.prisma.subscription.findFirst({
       where: { schoolId },
@@ -147,6 +215,13 @@ export class AiQuotaService {
       select: { plan: true },
     });
     return resolveAiMonthlyLimit(subscription?.plan);
+  }
+
+  private monthStart() {
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    return monthStart;
   }
 
   private isRetryableTransactionError(error: unknown) {

@@ -19,6 +19,7 @@ import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interfa
 import { Role } from "../common/enums/role.enum";
 import { AiProviderRouterService } from "../ai/ai-provider-router.service";
 import { GenerateTopicAssignmentDto } from "./dto/generate-topic-assignment.dto";
+import { ListAiGenerationsDto } from "./dto/list-ai-generations.dto";
 import { AiExtractionService } from "./ai-extraction.service";
 import { AiFeatureConfigService } from "./ai-feature-config.service";
 import { AiQuotaService } from "./ai-quota.service";
@@ -272,6 +273,52 @@ export class AiTopicAssignmentService {
       );
     }
     return job;
+  }
+
+  async listJobs(actor: AuthenticatedUser, query: ListAiGenerationsDto) {
+    const skip = Math.max(query.skip ?? 0, 0);
+    const take = Math.min(Math.max(query.take ?? 25, 1), 100);
+    const schoolId =
+      actor.role === Role.PLATFORM_ADMIN ? query.schoolId : actor.schoolId;
+    const where: Prisma.AiGenerationJobWhereInput = {
+      feature: AiFeature.ASSIGNMENT_DRAFT,
+      schoolId,
+      status: query.status,
+      ...(actor.role === Role.TEACHER ? { requestedById: actor.id } : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.aiGenerationJob.findMany({
+        where,
+        include: {
+          school: { select: { id: true, name: true, code: true } },
+          requestedBy: { select: { id: true, name: true, role: true } },
+          extractedContent: {
+            select: {
+              id: true,
+              fileName: true,
+              subject: true,
+              grade: true,
+            },
+          },
+          artifacts: {
+            select: {
+              id: true,
+              status: true,
+              version: true,
+              publishedAssignmentId: true,
+            },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      this.prisma.aiGenerationJob.count({ where }),
+    ]);
+
+    return { items, total, skip, take };
   }
 
   private assertQuestionTypes(questionTypes: QuestionType[]) {

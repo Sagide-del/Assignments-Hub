@@ -11,6 +11,7 @@ import { AuditService } from "../audit/audit.service";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { Role } from "../common/enums/role.enum";
 import { UpsertAiFeatureConfigDto } from "./dto/upsert-ai-feature-config.dto";
+import { UpdateAiFeatureConfigDto } from "./dto/update-ai-feature-config.dto";
 import { AI_FEATURE_ENV_FLAGS } from "./ai-content.constants";
 import { envEnabled } from "./ai-content.utils";
 
@@ -181,5 +182,121 @@ export class AiFeatureConfigService {
       },
     });
     return saved;
+  }
+
+  async getAdminFeatures(actor: AuthenticatedUser, schoolId?: number) {
+    this.assertPlatformAdmin(actor);
+    const schools = await this.prisma.school.findMany({
+      where: { id: schoolId },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        subscriptionStatus: true,
+        aiFeatureConfigs: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    if (schoolId && schools.length === 0) {
+      throw new NotFoundException("School not found");
+    }
+
+    const globalEnabled = envEnabled(
+      this.config.get<string>("AI_FEATURES_ENABLED"),
+    );
+    return schools.flatMap((school) =>
+      Object.values(AiFeature).map((feature) => {
+        const saved = school.aiFeatureConfigs.find(
+          (entry) => entry.feature === feature,
+        );
+        const featureGloballyEnabled =
+          globalEnabled &&
+          envEnabled(this.config.get<string>(AI_FEATURE_ENV_FLAGS[feature]));
+        return {
+          id: `${school.id}:${feature}`,
+          configId: saved?.id ?? null,
+          school: {
+            id: school.id,
+            name: school.name,
+            code: school.code,
+            subscriptionStatus: school.subscriptionStatus,
+          },
+          feature,
+          configuredEnabled: saved?.enabled ?? false,
+          effectiveEnabled: Boolean(featureGloballyEnabled && saved?.enabled),
+          globallyEnabled: featureGloballyEnabled,
+          previewOnly: saved?.previewOnly ?? true,
+          monthlyRequestLimit: saved?.monthlyRequestLimit ?? null,
+          configuration: saved?.configuration ?? null,
+          updatedAt: saved?.updatedAt ?? null,
+        };
+      }),
+    );
+  }
+
+  async updateAdminFeature(
+    identifier: string,
+    dto: UpdateAiFeatureConfigDto,
+    actor: AuthenticatedUser,
+  ) {
+    this.assertPlatformAdmin(actor);
+    const target = await this.resolveFeatureIdentifier(identifier);
+    const existing = await this.prisma.aiFeatureConfig.findUnique({
+      where: {
+        schoolId_feature: {
+          schoolId: target.schoolId,
+          feature: target.feature,
+        },
+      },
+    });
+
+    return this.upsert(
+      target.schoolId,
+      target.feature,
+      {
+        enabled: dto.enabled ?? existing?.enabled ?? false,
+        previewOnly: dto.previewOnly ?? existing?.previewOnly ?? true,
+        monthlyRequestLimit:
+          dto.monthlyRequestLimit ?? existing?.monthlyRequestLimit ?? undefined,
+        configuration:
+          dto.configuration ??
+          (existing?.configuration as Record<string, unknown> | null) ??
+          undefined,
+      },
+      actor,
+    );
+  }
+
+  private async resolveFeatureIdentifier(identifier: string) {
+    const numericId = Number(identifier);
+    if (Number.isInteger(numericId) && numericId > 0) {
+      const config = await this.prisma.aiFeatureConfig.findUnique({
+        where: { id: numericId },
+        select: { schoolId: true, feature: true },
+      });
+      if (!config) throw new NotFoundException("AI feature config not found");
+      return config;
+    }
+
+    const separator = identifier.indexOf(":");
+    const schoolId = Number(identifier.slice(0, separator));
+    const feature = identifier.slice(separator + 1) as AiFeature;
+    if (
+      separator < 1 ||
+      !Number.isInteger(schoolId) ||
+      schoolId < 1 ||
+      !Object.values(AiFeature).includes(feature)
+    ) {
+      throw new BadRequestException("Invalid AI feature identifier");
+    }
+    return { schoolId, feature };
+  }
+
+  private assertPlatformAdmin(actor: AuthenticatedUser) {
+    if (actor.role !== Role.PLATFORM_ADMIN) {
+      throw new ForbiddenException(
+        "Only platform admins can configure AI features",
+      );
+    }
   }
 }

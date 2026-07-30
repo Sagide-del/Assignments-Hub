@@ -41,7 +41,7 @@ import { MessagesOversight } from '../../features/school-admin/MessagesOversight
 
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
-import { AiAnalytics } from '../../features/platform-admin/AiAnalytics';
+import { AiManagement } from '../../features/platform-admin/AiManagement';
 import { StemContentStudio } from '../../features/platform-admin/StemContentStudio';
 import { PlatformBilling } from '../../features/platform-admin/Billing';
 import { SkillStudio } from '../../features/platform-admin/SkillStudio';
@@ -188,8 +188,8 @@ const platformAdminNav = [
     label: 'Billing',
   },
   {
-    to: '/platform/ai-analytics',
-    label: 'AI Analytics',
+    to: '/platform/ai-management',
+    label: 'AI Management',
   },
 ];
 
@@ -465,8 +465,12 @@ export const router = createBrowserRouter([
             element: <PlatformBilling />,
           },
           {
+            path: '/platform/ai-management',
+            element: <AiManagement />,
+          },
+          {
             path: '/platform/ai-analytics',
-            element: <AiAnalytics />,
+            element: <Navigate to="/platform/ai-management" replace />,
           },
         ],
       },
