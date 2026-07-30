@@ -142,6 +142,52 @@ enum AiUsageStatus {
   FAILED
 }
 
+enum AiFeature {
+  ASSIGNMENT_DRAFT
+  QUESTION_SET
+  FEEDBACK_DRAFT
+  GRADING_SUGGESTION
+  LEARNING_RECOMMENDATION
+}
+
+enum AiJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum AiExtractionStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AiArtifactType {
+  ASSIGNMENT_DRAFT
+  QUESTION_SET
+  FEEDBACK_DRAFT
+  GRADING_SUGGESTION
+  LEARNING_RECOMMENDATION
+}
+
+enum AiArtifactStatus {
+  GENERATED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AiReviewDecision {
+  APPROVED
+  REJECTED
+  EDITED
+  PUBLISHED
+}
+
 enum CslSubmissionStatus {
   PENDING
   APPROVED
@@ -206,61 +252,66 @@ enum InstitutionType {
 }
 
 model School {
-  id                  Int                @id @default(autoincrement())
-  name                String
-  code                String             @unique // short code students use to log in, e.g. "GHSCH"
-  logoUrl             String? // NOT @map'd — matches the original unmapped "logoUrl" column from the initial migration.
-  address             String?
-  phone               String?
-  contactEmail        String?            @map("contact_email")
-  subscriptionStatus  SubscriptionStatus @default(TRIAL)
-  type                SchoolType         @default(DAY) @map("school_type")
-  themeTemplate       SchoolThemeTemplate @default(ACADEMIC_NAVY) @map("theme_template")
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  code               String              @unique // short code students use to log in, e.g. "GHSCH"
+  logoUrl            String? // NOT @map'd — matches the original unmapped "logoUrl" column from the initial migration.
+  address            String?
+  phone              String?
+  contactEmail       String?             @map("contact_email")
+  subscriptionStatus SubscriptionStatus  @default(TRIAL)
+  type               SchoolType          @default(DAY) @map("school_type")
+  themeTemplate      SchoolThemeTemplate @default(ACADEMIC_NAVY) @map("theme_template")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
-  users               User[]
-  assignments         Assignment[]
-  subscriptions       Subscription[]
-  auditLogs           AuditLog[]
-  labSessions         LabSession[]
-  smsLogs             SmsLog[]
-  cslSubmissions      CslSubmission[]
-  pathwaySelections   StudentPathwaySelection[]
-  supportAssessments  StudentSupportAssessment[]
-  aiUsageLogs         AiUsageLog[]
-  invoices            Invoice[]
-  paymentTransactions PaymentTransaction[]
+  users                User[]
+  assignments          Assignment[]
+  subscriptions        Subscription[]
+  auditLogs            AuditLog[]
+  labSessions          LabSession[]
+  smsLogs              SmsLog[]
+  cslSubmissions       CslSubmission[]
+  pathwaySelections    StudentPathwaySelection[]
+  supportAssessments   StudentSupportAssessment[]
+  aiUsageLogs          AiUsageLog[]
+  invoices             Invoice[]
+  paymentTransactions  PaymentTransaction[]
   aiUsageLedgerEntries AIUsageLedger[]
-  mentorProfiles      MentorProfile[]
-  mentorshipRequests  MentorshipRequest[]
-  talentProfiles      StudentTalentProfile[]
-  messages            Message[]
+  mentorProfiles       MentorProfile[]
+  mentorshipRequests   MentorshipRequest[]
+  talentProfiles       StudentTalentProfile[]
+  messages             Message[]
+  aiFeatureConfigs     AiFeatureConfig[]
+  aiGenerationJobs     AiGenerationJob[]
+  aiExtractedContents  AiExtractedContent[]
+  aiContentArtifacts   AiContentArtifact[]
+  aiReviewEvents       AiReviewEvent[]
 
   @@map("schools")
 }
 
 model User {
-  id              Int       @id @default(autoincrement())
-  schoolId        Int       @map("school_id")
-  school          School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  name            String
-  role            Role
+  name String
+  role Role
 
   // Staff credentials (Teacher / School Admin / Platform Admin)
-  email           String?
-  passwordHash    String?   @map("password_hash")
+  email        String?
+  passwordHash String? @map("password_hash")
 
   // Student credentials
-  admissionNumber String?   @map("admission_number")
+  admissionNumber String? @map("admission_number")
   // Student's grade/class (e.g. "Grade 7"), used to scope which assignments
   // they see. Not applicable to staff roles.
   grade           String?
   // Parent/guardian phone number in international format (e.g.
   // "+254712345678"), used by SmsService to notify the parent when this
   // student completes an assignment or a new one is posted. Student-only.
-  parentPhone     String?   @map("parent_phone")
+  parentPhone     String? @map("parent_phone")
 
   // Set only for an "independent" student — one enrolled directly by
   // PLATFORM_ADMIN under the system's dedicated "Independent Students"
@@ -274,49 +325,54 @@ model User {
 
   // Teacher-only metadata (credential allocation): subject specialty and
   // the class they're assigned to. Not applicable to other roles.
-  subject         String?
-  assignedClass   String?   @map("assigned_class")
+  subject       String?
+  assignedClass String? @map("assigned_class")
 
-  isActive        Boolean   @default(true) @map("is_active")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  submissions     Submission[]
-  auditLogs       AuditLog[]
-  createdAssignments Assignment[] @relation("AssignmentCreatedBy")
-  labSessions     LabSession[]
-  createdLabs     Lab[]          @relation("LabCreatedBy")
-  gradedSubmissions Submission[] @relation("SubmissionGradedBy")
-  sentSmsLogs     SmsLog[]       @relation("SmsSentBy")
-  smsLogsAboutMe  SmsLog[]       @relation("SmsAboutStudent")
-  createdCslActivities CslActivity[]   @relation("CslActivityCreatedBy")
-  cslSubmissions       CslSubmission[] @relation("CslSubmissionByStudent")
-  reviewedCslSubmissions CslSubmission[] @relation("CslSubmissionReviewedBy")
-  pathwaySelections    StudentPathwaySelection[]
-  refreshTokens        RefreshToken[]
-  supportAssessments   StudentSupportAssessment[]
-  aiUsageLogs          AiUsageLog[]
-  verifiedPayments     PaymentTransaction[] @relation("PaymentVerifiedBy")
-  studentProfile       StudentProfile?
-  skillEnrollments     SkillEnrollment[] @relation("SkillEnrollmentStudent")
-  skillPayments        SkillPayment[] @relation("SkillPaymentStudent")
+  submissions                      Submission[]
+  auditLogs                        AuditLog[]
+  createdAssignments               Assignment[]                @relation("AssignmentCreatedBy")
+  labSessions                      LabSession[]
+  createdLabs                      Lab[]                       @relation("LabCreatedBy")
+  gradedSubmissions                Submission[]                @relation("SubmissionGradedBy")
+  sentSmsLogs                      SmsLog[]                    @relation("SmsSentBy")
+  smsLogsAboutMe                   SmsLog[]                    @relation("SmsAboutStudent")
+  createdCslActivities             CslActivity[]               @relation("CslActivityCreatedBy")
+  cslSubmissions                   CslSubmission[]             @relation("CslSubmissionByStudent")
+  reviewedCslSubmissions           CslSubmission[]             @relation("CslSubmissionReviewedBy")
+  pathwaySelections                StudentPathwaySelection[]
+  refreshTokens                    RefreshToken[]
+  supportAssessments               StudentSupportAssessment[]
+  aiUsageLogs                      AiUsageLog[]
+  verifiedPayments                 PaymentTransaction[]        @relation("PaymentVerifiedBy")
+  studentProfile                   StudentProfile?
+  skillEnrollments                 SkillEnrollment[]           @relation("SkillEnrollmentStudent")
+  skillPayments                    SkillPayment[]              @relation("SkillPaymentStudent")
   // Set only when role = TEACHER and they've opted into the mentor
   // directory (see MentorProfile's comment).
-  mentorProfile        MentorProfile?
-  mentorshipRequestsMade MentorshipRequest[] @relation("MentorshipRequestStudent")
-  mentorshipLogEntries MentorshipLogEntry[]
-  talentProfile        StudentTalentProfile?
+  mentorProfile                    MentorProfile?
+  mentorshipRequestsMade           MentorshipRequest[]         @relation("MentorshipRequestStudent")
+  mentorshipLogEntries             MentorshipLogEntry[]
+  talentProfile                    StudentTalentProfile?
   // News/Messages: any STUDENT can message any TEACHER at their school and
   // vice versa — see MessagesService.assertCanMessage. Not applicable to
   // SCHOOL_ADMIN/PLATFORM_ADMIN, who instead get read-only oversight via
   // GET /messages/admin/* (no send/receive relation needed for them).
-  sentMessages         Message[] @relation("MessageSender")
-  receivedMessages     Message[] @relation("MessageRecipient")
+  sentMessages                     Message[]                   @relation("MessageSender")
+  receivedMessages                 Message[]                   @relation("MessageRecipient")
   // Independent-student billing — see IndependentStudentInvoice's comment.
-  independentInvoices          IndependentStudentInvoice[] @relation("IndependentInvoiceStudent")
-  recordedIndependentInvoices  IndependentStudentInvoice[] @relation("IndependentInvoiceRecordedBy")
-  independentPaymentClaims     IndependentPaymentClaim[] @relation("IndependentPaymentClaimStudent")
-  reviewedIndependentPaymentClaims IndependentPaymentClaim[] @relation("IndependentPaymentClaimReviewedBy")
+  independentInvoices              IndependentStudentInvoice[] @relation("IndependentInvoiceStudent")
+  recordedIndependentInvoices      IndependentStudentInvoice[] @relation("IndependentInvoiceRecordedBy")
+  independentPaymentClaims         IndependentPaymentClaim[]   @relation("IndependentPaymentClaimStudent")
+  reviewedIndependentPaymentClaims IndependentPaymentClaim[]   @relation("IndependentPaymentClaimReviewedBy")
+  updatedAiFeatureConfigs          AiFeatureConfig[]           @relation("AiFeatureConfigUpdatedBy")
+  requestedAiGenerationJobs        AiGenerationJob[]           @relation("AiGenerationRequestedBy")
+  uploadedAiExtractedContents      AiExtractedContent[]        @relation("AiExtractedContentUploadedBy")
+  reviewedAiArtifacts              AiContentArtifact[]         @relation("AiArtifactReviewedBy")
+  aiReviewEvents                   AiReviewEvent[]             @relation("AiReviewEventReviewer")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -325,21 +381,21 @@ model User {
 }
 
 model StudentProfile {
-  id              Int      @id @default(autoincrement())
-  userId          Int      @unique @map("user_id")
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  admissionNumber String?  @map("admission_number")
+  admissionNumber String? @map("admission_number")
   grade           String?
-  className       String?  @map("class_name")
+  className       String? @map("class_name")
   stream          String?
   pathway         String?
-  parentName      String?  @map("parent_name")
-  parentPhone     String?  @map("parent_phone")
-  parentEmail     String?  @map("parent_email")
+  parentName      String? @map("parent_name")
+  parentPhone     String? @map("parent_phone")
+  parentEmail     String? @map("parent_email")
 
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([admissionNumber])
   @@index([grade])
@@ -470,75 +526,77 @@ model MnemonicCard {
 // POST /auth/refresh call, where it also gives us real revocation (logout,
 // theft detection) that a stateless JWT can't provide on its own.
 model RefreshToken {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @map("user_id")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     Int  @id @default(autoincrement())
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // SHA-256 hex digest of the actual token the client holds — never store
   // the plaintext token server-side.
-  tokenHash String    @unique @map("token_hash")
-  expiresAt DateTime  @map("expires_at")
-  revokedAt DateTime? @map("revoked_at")
+  tokenHash           String    @unique @map("token_hash")
+  expiresAt           DateTime  @map("expires_at")
+  revokedAt           DateTime? @map("revoked_at")
   // Set when this token was rotated out for a newer one (normal refresh
   // flow). If a request ever presents a token that has this set AND is
   // being reused (not the case that replaced it), that's a strong signal
   // of token theft — AuthService.refresh() responds by revoking every
   // token for the user.
-  replacedByTokenHash String? @map("replaced_by_token_hash")
-  createdByIp String?   @map("created_by_ip")
-  createdAt DateTime  @default(now())
+  replacedByTokenHash String?   @map("replaced_by_token_hash")
+  createdByIp         String?   @map("created_by_ip")
+  createdAt           DateTime  @default(now())
 
   @@index([userId])
   @@map("refresh_tokens")
 }
 
 model Assignment {
-  id            Int            @id @default(autoincrement())
-  schoolId      Int            @map("school_id")
-  school        School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  title         String
-  description   String?
-  subject       String
-  grade         String
-  type          AssignmentType @default(TEACHER_MARKED)
+  title       String
+  description String?
+  subject     String
+  grade       String
+  type        AssignmentType @default(TEACHER_MARKED)
 
-  dueDate       DateTime?      @map("due_date")
-  maxPoints     Int            @default(100) @map("max_points")
-  isPublished   Boolean        @default(true) @map("is_published")
+  dueDate     DateTime? @map("due_date")
+  maxPoints   Int       @default(100) @map("max_points")
+  isPublished Boolean   @default(true) @map("is_published")
   // Optional future-dated release. The service layer, not a cron job, hides
   // unpublished/not-yet-due assignments from students — see
   // AssignmentsService.findAll.
-  publishDate   DateTime?      @map("publish_date")
+  publishDate DateTime? @map("publish_date")
 
   // JSON array of { filename, url, size } — uploaded via POST /uploads and
   // referenced here, not stored as DB blobs.
-  attachments   Json?
+  attachments Json?
   // JSON array of plain URL strings (reference links, KEC content, etc.)
-  resources     Json?
+  resources   Json?
 
   // Exam-paper metadata, populated when an assignment is created via
   // POST /assignments/from-json (see AssignmentJsonDto). Both nullable so
   // assignments created via the older manual question-builder form (no
   // sections, no timer) are unaffected.
-  timeAllowedMinutes Int?      @map("time_allowed_minutes")
+  timeAllowedMinutes Int?    @map("time_allowed_minutes")
   instructions       String?
   // The exact JSON payload originally uploaded (POST /assignments/from-json),
   // kept verbatim so a teacher can re-download/re-diff what they uploaded —
   // the relational rows below (Section/Question) are the source of truth for
   // everything the app actually reads and grades from.
-  rawJson            Json?    @map("raw_json")
+  rawJson            Json?   @map("raw_json")
 
-  createdById   Int?           @map("created_by_id")
-  createdBy     User?          @relation("AssignmentCreatedBy", fields: [createdById], references: [id])
+  createdById Int?  @map("created_by_id")
+  createdBy   User? @relation("AssignmentCreatedBy", fields: [createdById], references: [id])
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  submissions   Submission[]
-  questions     Question[]
-  sections      Section[]
-  rubric        Rubric?
+  submissions          Submission[]
+  questions            Question[]
+  sections             Section[]
+  rubric               Rubric?
+  aiSourceJobs         AiGenerationJob[]   @relation("AiSourceAssignment")
+  aiPublishedArtifacts AiContentArtifact[] @relation("AiPublishedAssignment")
 
   @@index([schoolId])
   @@map("assignments")
@@ -549,35 +607,35 @@ model Assignment {
 // assignments created via the manual question-builder form have no
 // sections, and their questions simply have sectionId = null.
 model Section {
-  id            Int        @id @default(autoincrement())
-  assignmentId  Int        @map("assignment_id")
-  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  id           Int        @id @default(autoincrement())
+  assignmentId Int        @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
-  name          String
-  description   String?
-  order         Int        @default(0)
+  name        String
+  description String?
+  order       Int     @default(0)
 
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  questions     Question[]
+  questions Question[]
 
   @@index([assignmentId])
   @@map("sections")
 }
 
 model Question {
-  id             Int          @id @default(autoincrement())
-  assignmentId   Int          @map("assignment_id")
-  assignment     Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  id           Int        @id @default(autoincrement())
+  assignmentId Int        @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   // Nullable — only set for questions uploaded as part of a JSON exam paper
   // with sections. A question with sectionId = null is either from the
   // manual question-builder form, or (rare) a JSON upload with no sections.
-  sectionId      Int?         @map("section_id")
-  section        Section?     @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  sectionId Int?     @map("section_id")
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
 
-  questionText   String       @map("question_text")
+  questionText  String       @map("question_text")
   // Optional rich-HTML version of the question body — produced by the
   // teacher "Rich Editor" (Quill), can contain formatting, KaTeX-rendered
   // math/chemistry equations, and embedded/labeled diagram images. Nullable
@@ -587,31 +645,31 @@ model Question {
   // ALWAYS sanitized with DOMPurify before being rendered (dangerouslySetInnerHTML)
   // since it's teacher-authored HTML — never trust it as-is (see
   // frontend/src/components/ui/RichContent.tsx).
-  contentHtml    String?      @map("content_html")
-  questionType   QuestionType @default(ESSAY) @map("question_type")
+  contentHtml   String?      @map("content_html")
+  questionType  QuestionType @default(ESSAY) @map("question_type")
   // JSON — shape depends on questionType:
   //  MULTIPLE_CHOICE: array of option strings, e.g. ["12", "14", "16", "18"]
   //  MATCHING:         { "left": [...], "right": [...] }
   //  ORDERING:         array of items in the (scrambled) display order
   //  everything else:  unused (null)
-  options        Json?
+  options       Json?
   // Private grading rules for NUMERIC and SHORT_ANSWER questions. This is
   // stripped from student-facing assignment responses with correctAnswer.
-  config         Json?
+  config        Json?
   // Only used for auto-gradable types (MULTIPLE_CHOICE, TRUE_FALSE,
   // FILL_BLANK, MATCHING, ORDERING) — see SubmissionsService.AUTO_GRADABLE_TYPES.
   // MATCHING/ORDERING store a JSON-encoded string (object/array) here, same
   // as the student's answer — compared structurally, not as raw text. Never
   // returned to students — see AssignmentsService.stripAnswersForStudent.
-  correctAnswer  String?      @map("correct_answer")
-  points         Int          @default(10)
-  order          Int          @default(0)
-  hint           String?
+  correctAnswer String?      @map("correct_answer")
+  points        Int          @default(10)
+  order         Int          @default(0)
+  hint          String?
 
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  answers        Answer[]
+  answers Answer[]
 
   @@index([assignmentId])
   @@index([sectionId])
@@ -619,44 +677,44 @@ model Question {
 }
 
 model Rubric {
-  id            Int        @id @default(autoincrement())
-  assignmentId  Int        @unique @map("assignment_id")
-  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  id           Int        @id @default(autoincrement())
+  assignmentId Int        @unique @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   // JSON array of { criteria, points }
-  criteria      Json
-  totalPoints   Int        @map("total_points")
+  criteria    Json
+  totalPoints Int  @map("total_points")
 
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("rubrics")
 }
 
 model Submission {
-  id            Int              @id @default(autoincrement())
-  assignmentId  Int              @map("assignment_id")
-  assignment    Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  id           Int        @id @default(autoincrement())
+  assignmentId Int        @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
-  studentId     Int              @map("student_id")
-  student       User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int  @map("student_id")
+  student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   // Total awarded points. Kept as the pre-existing field name (rather than
   // renaming to totalPoints) so ReportsService's existing score-based
   // aggregates keep working unmodified.
-  score         Int?
-  status        SubmissionStatus @default(SUBMITTED)
-  isLate        Boolean          @default(false) @map("is_late")
-  feedback      String?
+  score       Int?
+  status      SubmissionStatus @default(SUBMITTED)
+  isLate      Boolean          @default(false) @map("is_late")
+  feedback    String?
   // JSON array of { filename, url, size } for non-per-question uploads.
-  attachments   Json?
+  attachments Json?
 
-  gradedById    Int?             @map("graded_by_id")
-  gradedBy      User?            @relation("SubmissionGradedBy", fields: [gradedById], references: [id], onDelete: SetNull)
-  gradedAt      DateTime?        @map("graded_at")
+  gradedById        Int?      @map("graded_by_id")
+  gradedBy          User?     @relation("SubmissionGradedBy", fields: [gradedById], references: [id], onDelete: SetNull)
+  gradedAt          DateTime? @map("graded_at")
   // Results remain private until a teacher or platform tutor explicitly
   // releases the reviewed score, feedback, and answer key to the student.
-  resultsReleasedAt DateTime?     @map("results_released_at")
+  resultsReleasedAt DateTime? @map("results_released_at")
 
   // Autosave/draft support for the exam-taking UI: a student's in-progress
   // answers are saved here (via repeated PATCH-like POSTs with isDraft:
@@ -665,13 +723,14 @@ model Submission {
   // saved; timeSpentSeconds accumulates client-reported elapsed time and is
   // purely informational (never used for grading/lateness — isLate is still
   // computed from Assignment.dueDate).
-  startedAt        DateTime?      @map("started_at")
-  timeSpentSeconds Int?           @map("time_spent_seconds")
+  startedAt        DateTime? @map("started_at")
+  timeSpentSeconds Int?      @map("time_spent_seconds")
 
-  completedAt   DateTime?        @map("completed_at")
-  createdAt     DateTime         @default(now())
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now())
 
-  answers       Answer[]
+  answers      Answer[]
+  aiSourceJobs AiGenerationJob[] @relation("AiSourceSubmission")
 
   @@index([assignmentId])
   @@index([studentId])
@@ -679,22 +738,22 @@ model Submission {
 }
 
 model Answer {
-  id             Int        @id @default(autoincrement())
-  submissionId   Int        @map("submission_id")
-  submission     Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  id           Int        @id @default(autoincrement())
+  submissionId Int        @map("submission_id")
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
-  questionId     Int        @map("question_id")
-  question       Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId Int      @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   // Raw student response — selected option text, true/false string, essay
   // text, or an uploaded file's URL (see POST /uploads) for FILE_UPLOAD.
-  studentAnswer  String     @map("student_answer")
-  isCorrect      Boolean?   @map("is_correct")
-  pointsAwarded  Int?       @map("points_awarded")
-  feedback       String?
+  studentAnswer String   @map("student_answer")
+  isCorrect     Boolean? @map("is_correct")
+  pointsAwarded Int?     @map("points_awarded")
+  feedback      String?
 
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([submissionId, questionId])
   @@index([submissionId])
@@ -702,9 +761,9 @@ model Answer {
 }
 
 model Subscription {
-  id        Int                @id @default(autoincrement())
-  schoolId  Int                @map("school_id")
-  school    School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   // `plan` is now the auto-resolved tier name (Free/Starter/Standard/
   // Premium/Enterprise) at the time this subscription was created/paid —
@@ -715,17 +774,17 @@ model Subscription {
   // reporting even as a school's enrollment changes later. All three are
   // nullable so older rows (created before this pricing model existed, e.g.
   // the seeded demo trial) remain valid.
-  plan         String
-  status       SubscriptionStatus @default(TRIAL)
-  amountKES    Int?               @map("amount_kes")
-  studentCount Int?               @map("student_count")
-  schoolType   SchoolType?        @map("school_type")
-  interval     SubscriptionInterval @default(MONTHLY)
-  paymentMethod PaymentMethod?    @map("payment_method")
-  startedAt    DateTime           @default(now()) @map("started_at")
-  currentPeriodStart DateTime?    @map("current_period_start")
-  currentPeriodEnd   DateTime?    @map("current_period_end")
-  expiresAt    DateTime?          @map("expires_at")
+  plan               String
+  status             SubscriptionStatus   @default(TRIAL)
+  amountKES          Int?                 @map("amount_kes")
+  studentCount       Int?                 @map("student_count")
+  schoolType         SchoolType?          @map("school_type")
+  interval           SubscriptionInterval @default(MONTHLY)
+  paymentMethod      PaymentMethod?       @map("payment_method")
+  startedAt          DateTime             @default(now()) @map("started_at")
+  currentPeriodStart DateTime?            @map("current_period_start")
+  currentPeriodEnd   DateTime?            @map("current_period_end")
+  expiresAt          DateTime?            @map("expires_at")
 
   invoices            Invoice[]
   paymentTransactions PaymentTransaction[]
@@ -735,35 +794,35 @@ model Subscription {
 }
 
 model PaymentTransaction {
-  id                 Int           @id @default(autoincrement())
-  schoolId           Int           @map("school_id")
-  school             School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  subscriptionId     Int?          @map("subscription_id")
-  subscription       Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  invoiceId          Int?          @map("invoice_id")
-  invoice            Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  id             Int           @id @default(autoincrement())
+  schoolId       Int           @map("school_id")
+  school         School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subscriptionId Int?          @map("subscription_id")
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  invoiceId      Int?          @map("invoice_id")
+  invoice        Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
-  method             PaymentMethod
-  status             PaymentStatus @default(PENDING)
-  providerReference  String?       @map("provider_reference")
-  paymentReference   String?       @map("payment_reference")
-  providerName       String?       @map("provider_name")
-  amountKES          Int           @map("amount_kes")
-  currency           String        @default("KES")
-  payerName          String?       @map("payer_name")
-  payerPhone         String?       @map("payer_phone")
-  verifiedById       Int?          @map("verified_by_id")
-  verifiedBy         User?         @relation("PaymentVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
-  verifiedAt         DateTime?     @map("verified_at")
-  rejectedAt         DateTime?     @map("rejected_at")
-  rejectionReason    String?       @map("rejection_reason")
-  metadata           Json?
-  initiatedAt        DateTime      @default(now()) @map("initiated_at")
-  confirmedAt        DateTime?     @map("confirmed_at")
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  providerReference String?       @map("provider_reference")
+  paymentReference  String?       @map("payment_reference")
+  providerName      String?       @map("provider_name")
+  amountKES         Int           @map("amount_kes")
+  currency          String        @default("KES")
+  payerName         String?       @map("payer_name")
+  payerPhone        String?       @map("payer_phone")
+  verifiedById      Int?          @map("verified_by_id")
+  verifiedBy        User?         @relation("PaymentVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt        DateTime?     @map("verified_at")
+  rejectedAt        DateTime?     @map("rejected_at")
+  rejectionReason   String?       @map("rejection_reason")
+  metadata          Json?
+  initiatedAt       DateTime      @default(now()) @map("initiated_at")
+  confirmedAt       DateTime?     @map("confirmed_at")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  webhookEvents      PaymentWebhookEvent[]
+  webhookEvents PaymentWebhookEvent[]
 
   @@index([schoolId])
   @@index([subscriptionId])
@@ -774,32 +833,32 @@ model PaymentTransaction {
 }
 
 model Invoice {
-  id                  Int                  @id @default(autoincrement())
-  schoolId            Int                  @map("school_id")
-  school              School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  subscriptionId      Int?                 @map("subscription_id")
-  subscription        Subscription?        @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  id             Int           @id @default(autoincrement())
+  schoolId       Int           @map("school_id")
+  school         School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subscriptionId Int?          @map("subscription_id")
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
 
-  invoiceNumber       String               @unique @map("invoice_number")
-  status              InvoiceStatus        @default(DRAFT)
-  interval            SubscriptionInterval @default(MONTHLY)
-  paymentMethod       PaymentMethod?       @map("payment_method")
-  amountKES           Int                  @map("amount_kes")
-  currency            String               @default("KES")
-  studentCountSnapshot Int?                @map("student_count_snapshot")
-  schoolTypeSnapshot  SchoolType?          @map("school_type_snapshot")
-  planSnapshot        String?              @map("plan_snapshot")
-  issuedAt            DateTime?            @map("issued_at")
-  dueAt               DateTime?            @map("due_at")
-  paidAt              DateTime?            @map("paid_at")
-  voidedAt            DateTime?            @map("voided_at")
-  pdfPath             String?              @map("pdf_path")
-  notes               String?
-  metadata            Json?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  invoiceNumber        String               @unique @map("invoice_number")
+  status               InvoiceStatus        @default(DRAFT)
+  interval             SubscriptionInterval @default(MONTHLY)
+  paymentMethod        PaymentMethod?       @map("payment_method")
+  amountKES            Int                  @map("amount_kes")
+  currency             String               @default("KES")
+  studentCountSnapshot Int?                 @map("student_count_snapshot")
+  schoolTypeSnapshot   SchoolType?          @map("school_type_snapshot")
+  planSnapshot         String?              @map("plan_snapshot")
+  issuedAt             DateTime?            @map("issued_at")
+  dueAt                DateTime?            @map("due_at")
+  paidAt               DateTime?            @map("paid_at")
+  voidedAt             DateTime?            @map("voided_at")
+  pdfPath              String?              @map("pdf_path")
+  notes                String?
+  metadata             Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
-  paymentTransactions PaymentTransaction[]
+  paymentTransactions  PaymentTransaction[]
   aiUsageLedgerEntries AIUsageLedger[]
 
   @@index([schoolId])
@@ -809,15 +868,15 @@ model Invoice {
 }
 
 model PaymentProviderConfig {
-  id             Int           @id @default(autoincrement())
-  method         PaymentMethod @unique
-  displayName    String        @map("display_name")
-  logoUrl        String?       @map("logo_url")
-  instructions   String?
-  isActive       Boolean       @default(true) @map("is_active")
-  configuration  Json?         @map("configuration")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id            Int           @id @default(autoincrement())
+  method        PaymentMethod @unique
+  displayName   String        @map("display_name")
+  logoUrl       String?       @map("logo_url")
+  instructions  String?
+  isActive      Boolean       @default(true) @map("is_active")
+  configuration Json?         @map("configuration")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@map("payment_provider_configs")
 }
@@ -827,14 +886,14 @@ model PaymentWebhookEvent {
   paymentTransactionId Int?                @map("payment_transaction_id")
   paymentTransaction   PaymentTransaction? @relation(fields: [paymentTransactionId], references: [id], onDelete: SetNull)
 
-  method               PaymentMethod
-  status               PaymentStatus?
-  eventType            String              @map("event_type")
-  providerReference    String?             @map("provider_reference")
-  payload              Json
-  receivedAt           DateTime            @default(now()) @map("received_at")
-  processedAt          DateTime?           @map("processed_at")
-  processingNotes      String?             @map("processing_notes")
+  method            PaymentMethod
+  status            PaymentStatus?
+  eventType         String         @map("event_type")
+  providerReference String?        @map("provider_reference")
+  payload           Json
+  receivedAt        DateTime       @default(now()) @map("received_at")
+  processedAt       DateTime?      @map("processed_at")
+  processingNotes   String?        @map("processing_notes")
 
   @@index([paymentTransactionId])
   @@index([method, eventType])
@@ -842,25 +901,25 @@ model PaymentWebhookEvent {
 }
 
 model AIUsageLedger {
-  id                  Int           @id @default(autoincrement())
-  schoolId            Int           @map("school_id")
-  school              School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  invoiceId           Int?          @map("invoice_id")
-  invoice             Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  id        Int      @id @default(autoincrement())
+  schoolId  Int      @map("school_id")
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  invoiceId Int?     @map("invoice_id")
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
-  billingPeriodStart  DateTime      @map("billing_period_start")
-  billingPeriodEnd    DateTime      @map("billing_period_end")
-  provider            AiProvider?
-  model               String?
-  promptTokens        Int           @default(0) @map("prompt_tokens")
-  completionTokens    Int           @default(0) @map("completion_tokens")
-  totalTokens         Int           @default(0) @map("total_tokens")
-  amountKES           Int           @default(0) @map("amount_kes")
-  currency            String        @default("KES")
-  notes               String?
-  metadata            Json?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  billingPeriodStart DateTime    @map("billing_period_start")
+  billingPeriodEnd   DateTime    @map("billing_period_end")
+  provider           AiProvider?
+  model              String?
+  promptTokens       Int         @default(0) @map("prompt_tokens")
+  completionTokens   Int         @default(0) @map("completion_tokens")
+  totalTokens        Int         @default(0) @map("total_tokens")
+  amountKES          Int         @default(0) @map("amount_kes")
+  currency           String      @default("KES")
+  notes              String?
+  metadata           Json?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   @@index([schoolId])
   @@index([invoiceId])
@@ -870,34 +929,34 @@ model AIUsageLedger {
 
 // STEM Labs foundation (per backend/modules/stem_labs.md)
 model LabSession {
-  id            Int       @id @default(autoincrement())
-  schoolId      Int       @map("school_id")
-  school        School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  studentId     Int       @map("student_id")
-  student       User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int  @map("student_id")
+  student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  labKey        String    @map("lab_key") // identifies the simulation/experiment
-  competency    String? // CBC competency mapping
-  completedAt   DateTime? @map("completed_at")
+  labKey      String    @map("lab_key") // identifies the simulation/experiment
+  competency  String? // CBC competency mapping
+  completedAt DateTime? @map("completed_at")
 
   // Post-simulation knowledge-check quiz results (see LabQuestion). Both
   // null if the lab had no quiz questions at the time it was completed, or
   // the student hasn't taken the quiz yet — see LabSessionsService.create.
   // Reflected on the student's report card (ReportsService.studentReportCard).
-  score         Int?
-  maxScore      Int?      @map("max_score")
+  score             Int?
+  maxScore          Int?      @map("max_score")
   // JSON array of { questionId, answer, isCorrect, pointsAwarded } — kept as
   // JSON rather than a relational table since lab quizzes are short and
   // never teacher-graded, unlike assignment submissions.
-  answers       Json?
-  quizCompletedAt DateTime? @map("quiz_completed_at")
-  reflectionAnswers Json?    @map("reflection_answers")
-  stepProgress      Json?    @map("step_progress")
-  completionSummary Json?    @map("completion_summary")
-  timeSpentSeconds  Int?     @map("time_spent_seconds")
+  answers           Json?
+  quizCompletedAt   DateTime? @map("quiz_completed_at")
+  reflectionAnswers Json?     @map("reflection_answers")
+  stepProgress      Json?     @map("step_progress")
+  completionSummary Json?     @map("completion_summary")
+  timeSpentSeconds  Int?      @map("time_spent_seconds")
 
-  createdAt     DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([schoolId])
   @@index([studentId])
@@ -909,52 +968,52 @@ model LabSession {
 // completes one (loose reference, not a DB foreign key, so existing
 // LabSession rows referencing a key that predates the catalog still work).
 model Lab {
-  id            Int       @id @default(autoincrement())
-  key           String    @unique
-  title         String
-  categoryId    Int?      @map("category_id")
-  category      StemCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  stemSubjectId Int?      @map("stem_subject_id")
-  stemSubject   StemSubject? @relation(fields: [stemSubjectId], references: [id], onDelete: SetNull)
-  subject       String
+  id              Int           @id @default(autoincrement())
+  key             String        @unique
+  title           String
+  categoryId      Int?          @map("category_id")
+  category        StemCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stemSubjectId   Int?          @map("stem_subject_id")
+  stemSubject     StemSubject?  @relation(fields: [stemSubjectId], references: [id], onDelete: SetNull)
+  subject         String
   // Student's grade/class level this lab targets (e.g. "Grade 7"), matching
   // User.grade / Assignment.grade — students only see labs for their own
   // grade (see LabsService.findAll), same rule as assignments.
-  grade         String
+  grade           String
   // Narrower classification within `subject`, e.g. "Cell Biology" under
   // subject "Biology" — used for catalog filtering/grouping in the UI.
-  topicArea     String?   @map("topic_area")
+  topicArea       String?       @map("topic_area")
   // Senior School pathway grouping (e.g. "Pure Sciences", "Applied Sciences
   // - Agriculture", "Technical Studies"). Null for Junior School labs, which
   // aren't organized by pathway.
-  pathway       String?
-  topic         String?
-  competency    String?
+  pathway         String?
+  topic           String?
+  competency      String?
   // Human-readable description of the lab shown in the catalog (what the
   // student will watch/do).
-  description   String?
+  description     String?
   // Expected video length in minutes. Drives the frontend's watch-timer:
   // the "Continue to Quiz" button stays disabled for roughly this long
   // after the video starts, so a student can't skip straight to the quiz
   // without at least watching through (see frontend/stem-labs/index.html).
-  durationMinutes Int?    @map("duration_minutes")
-  type          LabType   @default(SIMULATION)
-  status        LabStatus @default(PUBLISHED)
+  durationMinutes Int?          @map("duration_minutes")
+  type            LabType       @default(SIMULATION)
+  status          LabStatus     @default(PUBLISHED)
   // A YouTube video URL (embed or watch link — the frontend normalizes it)
   // the student watches before taking the quiz. Null for labs that haven't
   // had real content added yet.
-  resourceUrl   String?   @map("resource_url")
-  introVideoUrl String?   @map("intro_video_url")
-  animationUrl  String?   @map("animation_url")
-  voiceAudioUrl String?   @map("voice_audio_url")
-  isPublished   Boolean   @default(true) @map("is_published")
+  resourceUrl     String?       @map("resource_url")
+  introVideoUrl   String?       @map("intro_video_url")
+  animationUrl    String?       @map("animation_url")
+  voiceAudioUrl   String?       @map("voice_audio_url")
+  isPublished     Boolean       @default(true) @map("is_published")
 
   // Ordered list of narration lines the frontend's female text-to-speech
   // voice-over reads aloud: an intro before the video plays, and an outro
   // once the quiz is submitted. Null/empty for labs without bespoke
   // narration yet — the frontend falls back to a generic line built from
   // `title`/`description`.
-  guidanceSteps Json?     @map("guidance_steps")
+  guidanceSteps Json? @map("guidance_steps")
 
   // BECF (Kenyan CBC Basic Education Curriculum Framework) alignment
   // metadata. All additive/optional — a lab authored before these existed
@@ -984,16 +1043,16 @@ model Lab {
   // An activity a parent/guardian can do at home with the student.
   parentActivity     String?  @map("parent_activity")
 
-  createdById   Int?      @map("created_by_id")
-  createdBy     User?     @relation("LabCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById Int?  @map("created_by_id")
+  createdBy   User? @relation("LabCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  questions     LabQuestion[]
-  media         LabMedia[]
-  steps         LabStep[]
-  reflectionPrompts LabReflectionPrompt[]
+  questions                LabQuestion[]
+  media                    LabMedia[]
+  steps                    LabStep[]
+  reflectionPrompts        LabReflectionPrompt[]
   completionReportTemplate LabCompletionReportTemplate?
 
   @@index([categoryId])
@@ -1012,41 +1071,41 @@ model StemCategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  subjects    StemSubject[]
-  labs        Lab[]
+  subjects StemSubject[]
+  labs     Lab[]
 
   @@map("stem_categories")
 }
 
 model StemSubject {
-  id          Int      @id @default(autoincrement())
-  categoryId  Int      @map("category_id")
+  id          Int          @id @default(autoincrement())
+  categoryId  Int          @map("category_id")
   category    StemCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  key         String   @unique
-  name        String   @unique
+  key         String       @unique
+  name        String       @unique
   description String?
-  order       Int      @default(0)
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order       Int          @default(0)
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  labs        Lab[]
+  labs Lab[]
 
   @@index([categoryId])
   @@map("stem_subjects")
 }
 
 model LabMedia {
-  id          Int      @id @default(autoincrement())
-  labId       Int      @map("lab_id")
-  lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
-  type        String
-  title       String?
-  caption     String?
-  url         String
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  labId     Int      @map("lab_id")
+  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  type      String
+  title     String?
+  caption   String?
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([labId])
   @@map("lab_media")
@@ -1102,9 +1161,9 @@ model LabCompletionReportTemplate {
 // are left ungraded for now since there's no teacher-marking flow for lab
 // quizzes yet).
 model LabQuestion {
-  id            Int          @id @default(autoincrement())
-  labId         Int          @map("lab_id")
-  lab           Lab          @relation(fields: [labId], references: [id], onDelete: Cascade)
+  id    Int @id @default(autoincrement())
+  labId Int @map("lab_id")
+  lab   Lab @relation(fields: [labId], references: [id], onDelete: Cascade)
 
   questionText  String       @map("question_text")
   questionType  QuestionType @default(MULTIPLE_CHOICE) @map("question_type")
@@ -1114,8 +1173,8 @@ model LabQuestion {
   points        Int          @default(10)
   order         Int          @default(0)
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([labId])
   @@map("lab_questions")
@@ -1127,25 +1186,25 @@ model LabQuestion {
 // outstanding until an APPROVED submission exists — see
 // ReportsService.studentReportCard.
 model CslActivity {
-  id            Int       @id @default(autoincrement())
-  key           String    @unique
-  title         String
-  description   String?
+  id          Int     @id @default(autoincrement())
+  key         String  @unique
+  title       String
+  description String?
   // Student grade/class this activity targets, e.g. "Grade 7" — same
   // grade-scoping rule as Lab.grade.
-  grade         String
-  competency    String?
-  isRequired    Boolean   @default(true) @map("is_required")
-  targetHours   Int?      @map("target_hours")
-  isPublished   Boolean   @default(true) @map("is_published")
+  grade       String
+  competency  String?
+  isRequired  Boolean @default(true) @map("is_required")
+  targetHours Int?    @map("target_hours")
+  isPublished Boolean @default(true) @map("is_published")
 
-  createdById   Int?      @map("created_by_id")
-  createdBy     User?     @relation("CslActivityCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById Int?  @map("created_by_id")
+  createdBy   User? @relation("CslActivityCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  submissions   CslSubmission[]
+  submissions CslSubmission[]
 
   @@index([grade])
   @@map("csl_activities")
@@ -1157,30 +1216,30 @@ model CslActivity {
 // (activity, student) — resubmitting after NEEDS_REVISION updates this same
 // row rather than creating a new one (see CslSubmissionsService.create).
 model CslSubmission {
-  id            Int       @id @default(autoincrement())
-  schoolId      Int       @map("school_id")
-  school        School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   cslActivityId Int         @map("csl_activity_id")
   cslActivity   CslActivity @relation(fields: [cslActivityId], references: [id], onDelete: Cascade)
 
-  studentId     Int       @map("student_id")
-  student       User      @relation("CslSubmissionByStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int  @map("student_id")
+  student   User @relation("CslSubmissionByStudent", fields: [studentId], references: [id], onDelete: Cascade)
 
-  evidenceUrl   String?   @map("evidence_url")
-  reflection    String?
+  evidenceUrl String? @map("evidence_url")
+  reflection  String?
 
-  status        CslSubmissionStatus @default(PENDING)
-  score         Int?
-  maxScore      Int?      @map("max_score")
-  feedback      String?
+  status   CslSubmissionStatus @default(PENDING)
+  score    Int?
+  maxScore Int?                @map("max_score")
+  feedback String?
 
-  reviewedById  Int?      @map("reviewed_by_id")
-  reviewedBy    User?     @relation("CslSubmissionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  reviewedAt    DateTime? @map("reviewed_at")
+  reviewedById Int?      @map("reviewed_by_id")
+  reviewedBy   User?     @relation("CslSubmissionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime? @map("reviewed_at")
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([cslActivityId, studentId])
   @@index([schoolId])
@@ -1190,12 +1249,12 @@ model CslSubmission {
 
 // Security_Model.md: audit logging of sensitive actions
 model AuditLog {
-  id        Int      @id @default(autoincrement())
-  schoolId  Int?     @map("school_id")
-  school    School?  @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  id       Int     @id @default(autoincrement())
+  schoolId Int?    @map("school_id")
+  school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 
-  userId    Int?     @map("user_id")
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId Int?  @map("user_id")
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   action    String // e.g. "auth.login", "user.create", "assignment.update"
   resource  String? // e.g. "User:42"
@@ -1213,28 +1272,28 @@ model AuditLog {
 // recipient phone number so a broadcast to 200 parents produces 200 rows
 // with individually tracked delivery status — useful for retry/audit.
 model SmsLog {
-  id          Int       @id @default(autoincrement())
-  schoolId    Int       @map("school_id")
-  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  type        SmsType
-  toPhone     String    @map("to_phone")
-  message     String
-  status      SmsStatus @default(SENT)
-  errorMessage String?  @map("error_message")
+  type         SmsType
+  toPhone      String    @map("to_phone")
+  message      String
+  status       SmsStatus @default(SENT)
+  errorMessage String?   @map("error_message")
 
   // Optional linkage — set for ASSIGNMENT_COMPLETED / NEW_ASSIGNMENT so a
   // sent message can be traced back to the student/assignment involved.
   // No FK to Assignment (assignments are freely deletable; keeping the log
   // row around after that shouldn't require a schema-level cascade rule).
-  studentId   Int?      @map("student_id")
-  student     User?     @relation("SmsAboutStudent", fields: [studentId], references: [id], onDelete: SetNull)
-  assignmentId Int?     @map("assignment_id")
+  studentId    Int?  @map("student_id")
+  student      User? @relation("SmsAboutStudent", fields: [studentId], references: [id], onDelete: SetNull)
+  assignmentId Int?  @map("assignment_id")
 
-  sentById    Int?      @map("sent_by_id")
-  sentBy      User?     @relation("SmsSentBy", fields: [sentById], references: [id], onDelete: SetNull)
+  sentById Int?  @map("sent_by_id")
+  sentBy   User? @relation("SmsSentBy", fields: [sentById], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([schoolId])
   @@index([studentId])
@@ -1248,14 +1307,14 @@ model SmsLog {
 // admin analytics — none of those are implemented yet, this model only
 // records the data they'll need.
 model AiUsageLog {
-  id               Int           @id @default(autoincrement())
-  schoolId         Int           @map("school_id")
-  school           School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   // Nullable + SetNull (like AuditLog.userId) so the usage row — and any
   // future billing/report built on it — survives the user being removed.
-  userId           Int?          @map("user_id")
-  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId Int?  @map("user_id")
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   provider         AiProvider
   // Provider's model identifier, e.g. "deepseek-chat" or a dated Claude
@@ -1273,6 +1332,146 @@ model AiUsageLog {
   @@map("ai_usage_logs")
 }
 
+model AiFeatureConfig {
+  id                  Int       @id @default(autoincrement())
+  schoolId            Int       @map("school_id")
+  school              School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  feature             AiFeature
+  enabled             Boolean   @default(false)
+  previewOnly         Boolean   @default(true) @map("preview_only")
+  monthlyRequestLimit Int?      @map("monthly_request_limit")
+  configuration       Json?
+  updatedById         Int?      @map("updated_by_id")
+  updatedBy           User?     @relation("AiFeatureConfigUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@unique([schoolId, feature])
+  @@index([schoolId, enabled])
+  @@map("ai_feature_configs")
+}
+
+model AiGenerationJob {
+  id                    Int                 @id @default(autoincrement())
+  schoolId              Int                 @map("school_id")
+  school                School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  requestedById         Int                 @map("requested_by_id")
+  requestedBy           User                @relation("AiGenerationRequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  feature               AiFeature
+  status                AiJobStatus         @default(QUEUED)
+  extractedContentId    Int?                @map("extracted_content_id")
+  extractedContent      AiExtractedContent? @relation(fields: [extractedContentId], references: [id], onDelete: SetNull)
+  sourceAssignmentId    Int?                @map("source_assignment_id")
+  sourceAssignment      Assignment?         @relation("AiSourceAssignment", fields: [sourceAssignmentId], references: [id], onDelete: SetNull)
+  sourceSubmissionId    Int?                @map("source_submission_id")
+  sourceSubmission      Submission?         @relation("AiSourceSubmission", fields: [sourceSubmissionId], references: [id], onDelete: SetNull)
+  provider              AiProvider?
+  model                 String?
+  promptTemplateVersion String              @map("prompt_template_version")
+  idempotencyKey        String              @map("idempotency_key")
+  inputHash             String              @map("input_hash")
+  parameters            Json?
+  promptTokens          Int?                @map("prompt_tokens")
+  completionTokens      Int?                @map("completion_tokens")
+  totalTokens           Int?                @map("total_tokens")
+  errorCode             String?             @map("error_code")
+  errorMessage          String?             @map("error_message")
+  startedAt             DateTime?           @map("started_at")
+  completedAt           DateTime?           @map("completed_at")
+  expiresAt             DateTime?           @map("expires_at")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  artifacts             AiContentArtifact[]
+
+  @@unique([schoolId, idempotencyKey])
+  @@index([schoolId, feature, status, createdAt])
+  @@index([requestedById, createdAt])
+  @@index([extractedContentId])
+  @@index([sourceAssignmentId])
+  @@index([sourceSubmissionId])
+  @@map("ai_generation_jobs")
+}
+
+model AiExtractedContent {
+  id             Int                 @id @default(autoincrement())
+  schoolId       Int                 @map("school_id")
+  school         School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  uploadedById   Int                 @map("uploaded_by_id")
+  uploadedBy     User                @relation("AiExtractedContentUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  fileName       String              @map("file_name")
+  fileUrl        String?             @map("file_url")
+  storageKey     String?             @map("storage_key")
+  subject        String
+  grade          String?
+  topicCount     Int                 @default(0) @map("topic_count")
+  content        Json
+  status         AiExtractionStatus  @default(PROCESSING)
+  error          String?
+  idempotencyKey String              @map("idempotency_key")
+  inputHash      String              @map("input_hash")
+  startedAt      DateTime?           @map("started_at")
+  processedAt    DateTime?           @map("processed_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  jobs           AiGenerationJob[]
+  artifacts      AiContentArtifact[]
+
+  @@unique([schoolId, idempotencyKey])
+  @@index([schoolId, status, createdAt])
+  @@index([uploadedById, createdAt])
+  @@map("ai_extracted_contents")
+}
+
+model AiContentArtifact {
+  id                    Int                 @id @default(autoincrement())
+  schoolId              Int                 @map("school_id")
+  school                School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  generationJobId       Int                 @map("generation_job_id")
+  generationJob         AiGenerationJob     @relation(fields: [generationJobId], references: [id], onDelete: Cascade)
+  extractedContentId    Int?                @map("extracted_content_id")
+  extractedContent      AiExtractedContent? @relation(fields: [extractedContentId], references: [id], onDelete: SetNull)
+  type                  AiArtifactType
+  status                AiArtifactStatus    @default(GENERATED)
+  version               Int                 @default(1)
+  content               Json
+  contentHash           String              @map("content_hash")
+  publishedAssignmentId Int?                @map("published_assignment_id")
+  publishedAssignment   Assignment?         @relation("AiPublishedAssignment", fields: [publishedAssignmentId], references: [id], onDelete: SetNull)
+  reviewedById          Int?                @map("reviewed_by_id")
+  reviewedBy            User?               @relation("AiArtifactReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt            DateTime?           @map("reviewed_at")
+  publishedAt           DateTime?           @map("published_at")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  reviews               AiReviewEvent[]
+
+  @@index([schoolId, type, status, createdAt])
+  @@index([generationJobId])
+  @@index([extractedContentId])
+  @@index([publishedAssignmentId])
+  @@map("ai_content_artifacts")
+}
+
+model AiReviewEvent {
+  id          Int               @id @default(autoincrement())
+  schoolId    Int               @map("school_id")
+  school      School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  artifactId  Int               @map("artifact_id")
+  artifact    AiContentArtifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  reviewerId  Int               @map("reviewer_id")
+  reviewer    User              @relation("AiReviewEventReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  decision    AiReviewDecision
+  notes       String?
+  contentHash String?           @map("content_hash")
+  metadata    Json?
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  @@index([schoolId, createdAt])
+  @@index([artifactId, createdAt])
+  @@index([reviewerId, createdAt])
+  @@map("ai_review_events")
+}
+
 // ============================================================================
 // Career Pathway Assessment (KICD Senior School Pathways, Grades 10-12)
 // ----------------------------------------------------------------------------
@@ -1286,18 +1485,18 @@ model AiUsageLog {
 
 // One of the 3 KICD Senior School pathways.
 model Pathway {
-  id          Int      @id @default(autoincrement())
-  key         String   @unique // "stem" | "arts" | "social"
+  id          Int    @id @default(autoincrement())
+  key         String @unique // "stem" | "arts" | "social"
   name        String
   description String
-  icon        String   // Font Awesome class, e.g. "fa-flask"
-  colorHex    String   @default("#BBD125") @map("color_hex")
-  order       Int      @default(0)
+  icon        String // Font Awesome class, e.g. "fa-flask"
+  colorHex    String @default("#BBD125") @map("color_hex")
+  order       Int    @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  tracks      Track[]
+  tracks Track[]
 
   @@map("pathways")
 }
@@ -1317,46 +1516,46 @@ model Pathway {
 //   universitiesIntl:  [{ name, country, programs: string[] }]
 //   nextSteps / extracurriculars / certifications / workExperience: string[]
 model Track {
-  id          Int     @id @default(autoincrement())
-  pathwayId   Int     @map("pathway_id")
-  pathway     Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  id        Int     @id @default(autoincrement())
+  pathwayId Int     @map("pathway_id")
+  pathway   Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
 
-  key         String  // "pure-sciences" — unique within its pathway
+  key         String // "pure-sciences" — unique within its pathway
   name        String
   description String
   icon        String
-  order       Int     @default(0)
+  order       Int    @default(0)
 
   requiredSubjects Json    @map("required_subjects")
   // Overall KCSE mean grade requirement, e.g. "B+". Nullable — some tracks
   // (e.g. Sports) are less strictly grade-gated than the pure sciences.
   minMeanGrade     String? @map("min_mean_grade")
 
-  careers           Json
-  skills            Json
-  jobOutlook        String? @map("job_outlook")
-  jobGrowthRate     String? @map("job_growth_rate")
+  careers       Json
+  skills        Json
+  jobOutlook    String? @map("job_outlook")
+  jobGrowthRate String? @map("job_growth_rate")
 
-  universitiesKenya Json    @map("universities_kenya")
-  universitiesIntl  Json    @map("universities_intl")
-  degreeDurationYears Int?  @default(4) @map("degree_duration_years")
+  universitiesKenya   Json @map("universities_kenya")
+  universitiesIntl    Json @map("universities_intl")
+  degreeDurationYears Int? @default(4) @map("degree_duration_years")
 
   // string[] of interest keywords (e.g. "science", "art", "sports") used
   // purely by PathwaysService's recommendation engine to score a student's
   // self-reported interests against each track — see
   // seed-pathways-data.ts for the fixed vocabulary.
-  interestTags      Json?   @map("interest_tags")
+  interestTags Json? @map("interest_tags")
 
-  nextSteps         Json?   @map("next_steps")
-  extracurriculars  Json?
-  certifications    Json?
-  workExperience    Json?   @map("work_experience")
+  nextSteps        Json? @map("next_steps")
+  extracurriculars Json?
+  certifications   Json?
+  workExperience   Json? @map("work_experience")
 
   isPublished Boolean  @default(true) @map("is_published")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  selections  StudentPathwaySelection[]
+  selections StudentPathwaySelection[]
 
   @@unique([pathwayId, key])
   @@index([pathwayId])
@@ -1372,21 +1571,21 @@ model Track {
 // satisfying "track their pathway selection history" without a separate
 // audit table.
 model StudentPathwaySelection {
-  id        Int      @id @default(autoincrement())
-  schoolId  Int      @map("school_id")
-  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  studentId Int      @map("student_id")
-  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int  @map("student_id")
+  student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  trackId   Int      @map("track_id")
-  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId Int   @map("track_id")
+  track   Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
-  isActive  Boolean         @default(true) @map("is_active")
+  isActive Boolean         @default(true) @map("is_active")
   // Optional student-written reasoning ("why I chose this track"), shown to
   // teachers/parents on the report and editable any time.
-  notes     String?
-  source    SelectionSource @default(MANUAL)
+  notes    String?
+  source   SelectionSource @default(MANUAL)
 
   createdAt DateTime @default(now())
 
@@ -1405,30 +1604,30 @@ model StudentPathwaySelection {
 // file rather than relational per-field tables, since this is reference
 // content that's always read as a whole.
 model SupportInstitution {
-  id          Int              @id @default(autoincrement())
-  key         String           @unique
-  name        String
-  type        InstitutionType
+  id              Int             @id @default(autoincrement())
+  key             String          @unique
+  name            String
+  type            InstitutionType
   // A given institution can serve more than one category (e.g. a school for
   // "physical and multiple disabilities") — stored as a JSON string array
   // of DisabilityCategory values rather than a native Postgres enum array,
   // consistent with the Json-columns-for-catalog-data convention already
   // used by Track's careers/universitiesKenya/etc.
-  categories  Json
-  county      String
-  town        String?
-  boardingType String?          @map("boarding_type") // "Day" | "Boarding" | "Day & Boarding"
-  ageRange    String?           @map("age_range")
-  description String
-  servicesOffered Json?         @map("services_offered")
-  contactPhone String?          @map("contact_phone")
-  contactEmail String?          @map("contact_email")
-  website     String?
-  sourceNote  String?           @map("source_note") // brief attribution/last-verified note shown on the results view
-  order       Int               @default(0)
-  isPublished Boolean           @default(true) @map("is_published")
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  categories      Json
+  county          String
+  town            String?
+  boardingType    String?         @map("boarding_type") // "Day" | "Boarding" | "Day & Boarding"
+  ageRange        String?         @map("age_range")
+  description     String
+  servicesOffered Json?           @map("services_offered")
+  contactPhone    String?         @map("contact_phone")
+  contactEmail    String?         @map("contact_email")
+  website         String?
+  sourceNote      String?         @map("source_note") // brief attribution/last-verified note shown on the results view
+  order           Int             @default(0)
+  isPublished     Boolean         @default(true) @map("is_published")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([type])
   @@map("support_institutions")
@@ -1445,27 +1644,27 @@ model SupportInstitution {
 // inserts a new row and flips the previous one's isActive to false rather
 // than overwriting it, so a teacher/parent can see how things evolved.
 model StudentSupportAssessment {
-  id          Int                @id @default(autoincrement())
-  schoolId    Int                @map("school_id")
-  school      School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  studentId   Int                @map("student_id")
-  student     User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id        Int    @id @default(autoincrement())
+  schoolId  Int    @map("school_id")
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId Int    @map("student_id")
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  category    DisabilityCategory
-  supportLevel SupportLevel      @map("support_level")
+  category            DisabilityCategory
+  supportLevel        SupportLevel       @map("support_level")
   // Has the student/family already been through a formal EARC functional
   // assessment? Drives whether the results view leads with "go get
   // assessed first" or with the institution shortlist.
-  hasFormalAssessment Boolean    @default(false) @map("has_formal_assessment")
-  currentChallenges String?      @map("current_challenges")
+  hasFormalAssessment Boolean            @default(false) @map("has_formal_assessment")
+  currentChallenges   String?            @map("current_challenges")
   // Same free-text-tag shape as Track.interestTags, so results can lean on
   // shared vocabulary where relevant (e.g. a student interested in "art" or
   // "sports" gets that reflected in next-step suggestions too).
-  interests   Json?
-  notes       String?
-  isActive    Boolean            @default(true) @map("is_active")
+  interests           Json?
+  notes               String?
+  isActive            Boolean            @default(true) @map("is_active")
 
-  createdAt   DateTime           @default(now())
+  createdAt DateTime @default(now())
 
   @@index([schoolId])
   @@index([studentId])
@@ -1478,11 +1677,11 @@ model StudentSupportAssessment {
 // of talents naturally gets edited in place rather than needing a full
 // audit trail, so this is a plain upsert-by-studentId record.
 model StudentTalentProfile {
-  id         Int      @id @default(autoincrement())
-  schoolId   Int      @map("school_id")
-  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  studentId  Int      @unique @map("student_id")
-  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id        Int    @id @default(autoincrement())
+  schoolId  Int    @map("school_id")
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId Int    @unique @map("student_id")
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   talents    String[] @default([])
   strengths  String[] @default([])
@@ -1492,8 +1691,8 @@ model StudentTalentProfile {
   // talent — shown back to them and to staff as a nurturing prompt.
   growthPlan String?  @map("growth_plan")
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([schoolId])
   @@map("student_talent_profiles")
@@ -1504,20 +1703,20 @@ model StudentTalentProfile {
 // directory — no new user type, per the explicit product decision to reuse
 // existing teacher accounts rather than build a separate mentor directory.
 model MentorProfile {
-  id             Int      @id @default(autoincrement())
-  teacherId      Int      @unique @map("teacher_id")
-  teacher        User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  schoolId       Int      @map("school_id")
-  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id        Int    @id @default(autoincrement())
+  teacherId Int    @unique @map("teacher_id")
+  teacher   User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  schoolId  Int    @map("school_id")
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   bio            String?
   expertiseAreas String[] @default([]) @map("expertise_areas")
   isAvailable    Boolean  @default(true) @map("is_available")
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  requests       MentorshipRequest[]
+  requests MentorshipRequest[]
 
   @@index([schoolId])
   @@map("mentor_profiles")
@@ -1535,22 +1734,22 @@ enum MentorshipStatus {
 // this is an ongoing relationship rather than a point-in-time choice, so
 // unlike StudentPathwaySelection it isn't history-versioned via isActive.
 model MentorshipRequest {
-  id              Int               @id @default(autoincrement())
-  schoolId        Int               @map("school_id")
-  school          School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  studentId       Int               @map("student_id")
-  student         User              @relation("MentorshipRequestStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  mentorProfileId Int               @map("mentor_profile_id")
-  mentorProfile   MentorProfile     @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
+  id              Int           @id @default(autoincrement())
+  schoolId        Int           @map("school_id")
+  school          School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId       Int           @map("student_id")
+  student         User          @relation("MentorshipRequestStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  mentorProfileId Int           @map("mentor_profile_id")
+  mentorProfile   MentorProfile @relation(fields: [mentorProfileId], references: [id], onDelete: Cascade)
 
-  topic           String
-  message         String?
-  status          MentorshipStatus  @default(PENDING)
+  topic   String
+  message String?
+  status  MentorshipStatus @default(PENDING)
 
-  createdAt       DateTime          @default(now())
-  respondedAt     DateTime?         @map("responded_at")
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime? @map("responded_at")
 
-  logEntries      MentorshipLogEntry[]
+  logEntries MentorshipLogEntry[]
 
   @@index([schoolId])
   @@index([studentId])
@@ -1562,14 +1761,14 @@ model MentorshipRequest {
 // mentoring teacher) can add one once the request is ACCEPTED. This is the
 // "mentorship log."
 model MentorshipLogEntry {
-  id          Int                @id @default(autoincrement())
-  requestId   Int                @map("request_id")
-  request     MentorshipRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  authorId    Int                @map("author_id")
-  author      User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  note        String
+  id        Int               @id @default(autoincrement())
+  requestId Int               @map("request_id")
+  request   MentorshipRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId  Int               @map("author_id")
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  note      String
 
-  createdAt   DateTime           @default(now())
+  createdAt DateTime @default(now())
 
   @@index([requestId])
   @@map("mentorship_log_entries")
@@ -1588,22 +1787,22 @@ model MentorshipLogEntry {
 // than a separate thread table, since there's exactly one thread per
 // student-teacher pair.
 model Message {
-  id          Int      @id @default(autoincrement())
-  schoolId    Int      @map("school_id")
-  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  senderId    Int      @map("sender_id")
-  sender      User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId Int  @map("sender_id")
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
-  recipientId Int      @map("recipient_id")
-  recipient   User     @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId Int  @map("recipient_id")
+  recipient   User @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
 
-  body        String
+  body   String
   // Set the first time the recipient opens the thread containing this
   // message — see MessagesService.findThread. Null = unread.
-  readAt      DateTime? @map("read_at")
+  readAt DateTime? @map("read_at")
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([schoolId])
   @@index([senderId, recipientId])
@@ -1625,52 +1824,52 @@ model Message {
 // verifying the M-Pesa confirmation code; recording one extends the
 // student's User.subscriptionExpiresAt and reactivates them.
 model IndependentStudentInvoice {
-  id            Int      @id @default(autoincrement())
-  studentId     Int      @map("student_id")
-  student       User     @relation("IndependentInvoiceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  id        Int  @id @default(autoincrement())
+  studentId Int  @map("student_id")
+  student   User @relation("IndependentInvoiceStudent", fields: [studentId], references: [id], onDelete: Cascade)
 
-  invoiceNumber String   @unique @map("invoice_number")
+  invoiceNumber String               @unique @map("invoice_number")
   // Snapshot of the student's name at the time of this invoice, so the
   // record stays meaningful even if the account is later renamed.
-  studentName   String   @map("student_name")
-  amountKES     Int      @map("amount_kes")
+  studentName   String               @map("student_name")
+  amountKES     Int                  @map("amount_kes")
   interval      SubscriptionInterval @default(MONTHLY)
-  periodStart   DateTime @map("period_start")
-  periodEnd     DateTime @map("period_end")
+  periodStart   DateTime             @map("period_start")
+  periodEnd     DateTime             @map("period_end")
 
   // The M-Pesa confirmation code from the Till Number payment, entered by
   // the platform admin after verifying it — this is the actual proof of
   // payment, since there's no live payment-gateway integration here.
-  mpesaCode     String   @map("mpesa_code")
-  payerPhone    String?  @map("payer_phone")
+  mpesaCode  String  @map("mpesa_code")
+  payerPhone String? @map("payer_phone")
 
-  recordedById  Int?     @map("recorded_by_id")
-  recordedBy    User?    @relation("IndependentInvoiceRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedById Int?  @map("recorded_by_id")
+  recordedBy   User? @relation("IndependentInvoiceRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([studentId])
   @@map("independent_student_invoices")
 }
 
 model IndependentPaymentClaim {
-  id          Int      @id @default(autoincrement())
-  studentId   Int      @map("student_id")
-  student     User     @relation("IndependentPaymentClaimStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  id        Int  @id @default(autoincrement())
+  studentId Int  @map("student_id")
+  student   User @relation("IndependentPaymentClaimStudent", fields: [studentId], references: [id], onDelete: Cascade)
 
-  amountKES   Int      @map("amount_kes")
-  interval    SubscriptionInterval @default(MONTHLY)
-  mpesaCode   String   @unique @map("mpesa_code")
-  payerPhone  String?  @map("payer_phone")
-  status      IndependentPaymentClaimStatus @default(AWAITING_VERIFICATION)
+  amountKES  Int                           @map("amount_kes")
+  interval   SubscriptionInterval          @default(MONTHLY)
+  mpesaCode  String                        @unique @map("mpesa_code")
+  payerPhone String?                       @map("payer_phone")
+  status     IndependentPaymentClaimStatus @default(AWAITING_VERIFICATION)
 
-  reviewedById Int?    @map("reviewed_by_id")
-  reviewedBy   User?   @relation("IndependentPaymentClaimReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  reviewedAt   DateTime? @map("reviewed_at")
-  rejectionReason String? @map("rejection_reason")
+  reviewedById    Int?      @map("reviewed_by_id")
+  reviewedBy      User?     @relation("IndependentPaymentClaimReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime? @map("reviewed_at")
+  rejectionReason String?   @map("rejection_reason")
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([studentId, status])
   @@index([status, createdAt])

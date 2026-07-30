@@ -35,6 +35,7 @@ import { MessagesModule } from './messages/messages.module';
 import { IndependentStudentsModule } from './independent-students/independent-students.module';
 
 import { AiModule } from './ai/ai.module';
+import { AiContentModule } from './ai-content/ai-content.module';
 import { SkillsModule } from './skills/skills.module';
 import { MnemonicCardsModule } from './mnemonic-cards/mnemonic-cards.module';
 
@@ -103,6 +104,8 @@ import { TenantGuard } from './common/guards/tenant.guard';
     IndependentStudentsModule,
 
     AiModule,
+
+    AiContentModule,
 
     SkillsModule,
 

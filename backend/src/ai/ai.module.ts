@@ -19,6 +19,8 @@ import { DeepseekService } from './deepseek.service';
   ],
   exports: [
     AiService,
+    AiProviderRouterService,
+    AiUsageService,
   ],
 })
 export class AiModule {}
