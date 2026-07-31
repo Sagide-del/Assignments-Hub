@@ -41,10 +41,15 @@ export class QuestionBankAdminController {
   @Post("generate")
   @UseInterceptors(FileInterceptor("file", { limits: { files: 1, fileSize: 15 * 1024 * 1024 } }))
   @ApiConsumes("multipart/form-data")
-  @ApiOperation({ summary: "Upload a PDF and generate a batch of questions with OpenAI" })
+  @ApiOperation({
+    summary:
+      "Generate a batch of questions with OpenAI from an uploaded PDF (inputType=PDF, default) or pasted text (inputType=TEXT, use the sourceText field instead of a file)",
+  })
   @AuditAction("question_bank.generate")
   generate(
-    @UploadedFile() file: Express.Multer.File,
+    // No file is sent when dto.inputType is TEXT — QuestionBankService.generate
+    // branches on inputType and only requires `file` for the PDF path.
+    @UploadedFile() file: Express.Multer.File | undefined,
     @Body() dto: GenerateQuestionBankDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {

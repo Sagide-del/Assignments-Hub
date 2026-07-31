@@ -52,4 +52,15 @@ export class CreateQuestionDto {
   @IsOptional()
   @IsString()
   hint?: string;
+
+  // Never sent back to students until their submission's results are
+  // released — same sensitivity as correctAnswer/config (see
+  // AssignmentsService.stripAnswersForStudent /
+  // SubmissionsService.sanitizeStudentSubmission). Populated by
+  // QuestionBankService when a question comes from the Question Bank;
+  // absent for the older manual builder / JSON upload paths.
+  @IsOptional()
+  @IsString()
+  @MaxLength(5_000)
+  explanation?: string;
 }

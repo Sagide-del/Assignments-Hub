@@ -35,4 +35,19 @@ export class UpdateQuestionBankItemDto {
   @IsString()
   @MaxLength(120)
   topic?: string;
+
+  // Set via the existing generic /api/v1/uploads/single endpoint — the
+  // frontend uploads the file there first and PUTs the returned URL here.
+  // An empty string clears a previously-set diagram (see
+  // QuestionBankService.update); omitting the field entirely leaves it
+  // unchanged.
+  @IsOptional()
+  @IsString()
+  @MaxLength(2_048)
+  diagramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  diagramAlt?: string;
 }

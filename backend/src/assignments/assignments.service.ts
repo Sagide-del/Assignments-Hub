@@ -84,6 +84,7 @@ export class AssignmentsService {
                 points: q.points ?? 10,
                 order: q.order ?? index,
                 hint: q.hint,
+                explanation: q.explanation,
               })),
             }
           : undefined,
@@ -688,15 +689,22 @@ export class AssignmentsService {
 
   // Removes every answer-key field from student responses. Numeric accepted
   // values and short-answer keywords live in config, so config is as private
-  // as correctAnswer and must never reach the assessment client.
+  // as correctAnswer and must never reach the assessment client. explanation
+  // is just as sensitive — it directly explains the correct answer — so it
+  // is stripped here too; SubmissionsService.sanitizeStudentSubmission is
+  // the equivalent gate for the post-submission /submissions endpoints.
   private stripAnswersForStudent<
-    T extends { questions: { correctAnswer: string | null; config: unknown }[] },
+    T extends {
+      questions: { correctAnswer: string | null; config: unknown; explanation?: string | null }[];
+    },
   >(
     assignment: T,
   ): T {
     return {
       ...assignment,
-      questions: assignment.questions.map(({ correctAnswer, config, ...rest }) => rest) as any,
+      questions: assignment.questions.map(
+        ({ correctAnswer, config, explanation, ...rest }) => rest,
+      ) as any,
     };
   }
 

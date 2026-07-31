@@ -364,8 +364,16 @@ export class SubmissionsService {
           }),
       answers: Array.isArray(source.answers)
         ? source.answers.map((answer: any) => {
+            // explanation is as sensitive as correctAnswer/config (it
+            // directly explains the answer) — stripped here on every
+            // general endpoint the same way, regardless of release status.
+            // getReleasedResults (/submissions/:id/results) is still the
+            // only student endpoint that returns it, exactly like
+            // correctAnswer/config.
             const safeQuestion = answer.question
-              ? (({ correctAnswer, config, ...question }: any) => question)(answer.question)
+              ? (({ correctAnswer, config, explanation, ...question }: any) => question)(
+                  answer.question,
+                )
               : undefined;
             return {
               ...answer,
@@ -485,14 +493,23 @@ export class SubmissionsService {
       typeof config?.tolerance === 'number' && Number.isFinite(config.tolerance)
         ? Math.max(0, config.tolerance)
         : 0;
+    const expectedUnitText = typeof config?.unit === 'string' && config.unit.trim() ? ` ${config.unit.trim()}` : '';
+    // Only shown once a submission is graded AND its results are released
+    // (SubmissionsService.sanitizeStudentSubmission / getReleasedResults
+    // are the gate — this string is just the feedback text stored on
+    // Answer.feedback, private until then like everything else there).
+    const expectedText =
+      tolerance > 0
+        ? `Expected: ${acceptedValue}${expectedUnitText} (±${tolerance}).`
+        : `Expected: ${acceptedValue}${expectedUnitText}.`;
     const difference = Math.abs(parsed.value - acceptedValue);
     if (difference > tolerance) {
       const isClose = tolerance > 0 && difference <= tolerance * 10;
       return {
         pointsAwarded: isClose ? Math.round(question.points * 0.5) : 0,
         feedback: isClose
-          ? 'The answer is close. Check the calculation and rounding.'
-          : 'The numeric answer is outside the accepted range.',
+          ? `The answer is close. Check the calculation and rounding. ${expectedText}`
+          : `The numeric answer is outside the accepted range. ${expectedText}`,
         isCorrect: false,
       };
     }
@@ -529,25 +546,33 @@ export class SubmissionsService {
     }
 
     const config = this.shortAnswerConfig(question.config);
-    const keywords = Array.isArray(config?.keywords)
+    // Keep the original (pre-normalization) keyword text alongside the
+    // normalized form used for matching, so feedback can show the student
+    // something readable rather than the lowercased/trimmed match key.
+    const keywordPairs = Array.isArray(config?.keywords)
       ? config.keywords
-          .filter((keyword): keyword is string => typeof keyword === 'string')
-          .map((keyword) => this.normalizeText(keyword))
-          .filter(Boolean)
+          .filter((keyword): keyword is string => typeof keyword === 'string' && keyword.trim())
+          .map((keyword) => ({ original: keyword.trim(), normalized: this.normalizeText(keyword) }))
+          .filter((pair) => pair.normalized)
       : [];
 
-    if (!keywords.length) {
+    if (!keywordPairs.length) {
       const expected = this.normalizeText(question.correctAnswer ?? '');
       const isCorrect = Boolean(expected) && normalizedAnswer === expected;
       return {
         pointsAwarded: isCorrect ? question.points : 0,
-        feedback: isCorrect ? 'Correct.' : 'The response needs teacher review.',
+        feedback: isCorrect
+          ? 'Correct.'
+          : question.correctAnswer?.trim()
+            ? `The response needs teacher review. Suggested answer: ${question.correctAnswer.trim()}.`
+            : 'The response needs teacher review.',
         isCorrect,
       };
     }
 
-    const matched = keywords.filter((keyword) => normalizedAnswer.includes(keyword)).length;
-    const ratio = matched / keywords.length;
+    const matchedPairs = keywordPairs.filter((pair) => normalizedAnswer.includes(pair.normalized));
+    const missingPairs = keywordPairs.filter((pair) => !normalizedAnswer.includes(pair.normalized));
+    const ratio = matchedPairs.length / keywordPairs.length;
     const configuredThreshold = config?.passThreshold;
     const passThreshold =
       typeof configuredThreshold === 'number' && configuredThreshold > 0 && configuredThreshold <= 1
@@ -556,13 +581,21 @@ export class SubmissionsService {
     const pointsAwarded = Math.round(ratio * question.points);
     const isCorrect = ratio >= passThreshold;
 
+    // Only shown once results are released, same as the numeric-question
+    // "Expected:" text above — Answer.feedback is private until then.
+    const keywordDetail = missingPairs.length
+      ? ` Missing: ${missingPairs.map((pair) => pair.original).join(', ')}.`
+      : matchedPairs.length
+        ? ` Covered: ${matchedPairs.map((pair) => pair.original).join(', ')}.`
+        : '';
+
     return {
       pointsAwarded,
       feedback: isCorrect
-        ? 'The response covers the required key points.'
+        ? `The response covers the required key points.${keywordDetail}`
         : ratio > 0
-          ? 'The response includes some key points but needs more detail.'
-          : 'The response does not yet cover the required key points.',
+          ? `The response includes some key points but needs more detail.${keywordDetail}`
+          : `The response does not yet cover the required key points.${keywordDetail}`,
       isCorrect,
     };
   }

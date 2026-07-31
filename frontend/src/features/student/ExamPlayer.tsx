@@ -162,13 +162,34 @@ function ResponseValue({ value }: { value: string }) {
   return <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{value || 'No answer provided'}</p>;
 }
 
+// Full marks = correct, zero = incorrect, anything in between (e.g. a
+// partially-matched short answer or a numeric answer that missed units) =
+// partial. Matches the same pointsAwarded values SubmissionsService already
+// computes — this is purely a display label, not a new grading rule.
+function resultBadge(answer: Answer, maxPoints: number | undefined) {
+  if (answer.pointsAwarded == null || maxPoints == null) {
+    return { label: 'Awaiting review', className: 'bg-slate-100 text-slate-600' };
+  }
+  if (answer.pointsAwarded <= 0) {
+    return { label: 'Incorrect', className: 'bg-red-50 text-red-700' };
+  }
+  if (answer.pointsAwarded >= maxPoints) {
+    return { label: 'Correct', className: 'bg-emerald-50 text-emerald-700' };
+  }
+  return { label: 'Partial', className: 'bg-amber-50 text-amber-700' };
+}
+
 function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }) {
   const question = answer.question;
   const correct = expectedAnswer(question);
+  const badge = resultBadge(answer, question?.points);
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-[#101820]">Question {index + 1}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-semibold text-[#101820]">Question {index + 1}</p>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}>{badge.label}</span>
+        </div>
         <span className="text-sm font-medium text-slate-500">
           {answer.pointsAwarded != null && question
             ? `${answer.pointsAwarded} / ${question.points} pts`
@@ -200,6 +221,12 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
         <p className="mt-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-6 text-slate-600">
           {answer.feedback}
         </p>
+      ) : null}
+      {question?.explanation ? (
+        <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-800">Explanation</p>
+          <p className="text-sm leading-6 text-slate-700">{question.explanation}</p>
+        </div>
       ) : null}
     </article>
   );

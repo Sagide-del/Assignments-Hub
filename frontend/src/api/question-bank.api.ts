@@ -9,6 +9,14 @@ export type QuestionBankQuestionType =
   | 'SHORT_ANSWER'
   | 'ESSAY';
 
+export type QuestionBankBloomLevel =
+  | 'REMEMBER'
+  | 'UNDERSTAND'
+  | 'APPLY'
+  | 'ANALYZE'
+  | 'EVALUATE'
+  | 'CREATE';
+
 export interface QuestionBankItem {
   id: number;
   source: 'PLATFORM' | 'SCHOOL';
@@ -25,6 +33,9 @@ export interface QuestionBankItem {
   points: number;
   hint: string | null;
   difficulty: string | null;
+  bloomLevel: QuestionBankBloomLevel | string | null;
+  diagramUrl: string | null;
+  diagramAlt: string | null;
   status: QuestionBankStatus;
   generationBatchId: string | null;
   sourceFileName: string | null;
@@ -41,17 +52,28 @@ export interface SchoolQuestionBankAccess {
   school: { id: number; name: string; code: string };
 }
 
-function questionBankFormData(input: {
-  file: File;
+export interface GenerateQuestionBankInput {
+  // PDF is the default. TEXT uses `sourceText` instead of `file` — URL and
+  // Video are not implemented yet (see QuestionGenerator's input selector).
+  inputType?: 'PDF' | 'TEXT';
+  file?: File;
+  sourceText?: string;
   subject: string;
   grade: string;
   topic: string;
   questionCount?: number;
   difficulty?: string;
   questionTypes?: QuestionBankQuestionType[];
-}) {
+  autoTagTopic?: boolean;
+  includeDiagramPlaceholders?: boolean;
+  prioritizeHigherOrder?: boolean;
+}
+
+function questionBankFormData(input: GenerateQuestionBankInput) {
   const body = new FormData();
-  body.append('file', input.file);
+  if (input.file) body.append('file', input.file);
+  if (input.inputType) body.append('inputType', input.inputType);
+  if (input.sourceText) body.append('sourceText', input.sourceText);
   body.append('subject', input.subject);
   body.append('grade', input.grade);
   body.append('topic', input.topic);
@@ -60,19 +82,14 @@ function questionBankFormData(input: {
   if (input.questionTypes?.length) {
     body.append('questionTypes', JSON.stringify(input.questionTypes));
   }
+  if (input.autoTagTopic) body.append('autoTagTopic', 'true');
+  if (input.includeDiagramPlaceholders) body.append('includeDiagramPlaceholders', 'true');
+  if (input.prioritizeHigherOrder) body.append('prioritizeHigherOrder', 'true');
   return body;
 }
 
 export const questionBankAdminApi = {
-  generate: (input: {
-    file: File;
-    subject: string;
-    grade: string;
-    topic: string;
-    questionCount?: number;
-    difficulty?: string;
-    questionTypes?: QuestionBankQuestionType[];
-  }) =>
+  generate: (input: GenerateQuestionBankInput) =>
     api
       .post<QuestionBankItem[]>('/admin/question-bank/generate', questionBankFormData(input))
       .then((response) => response.data),
@@ -92,8 +109,15 @@ export const questionBankAdminApi = {
       )
       .then((response) => response.data),
 
-  update: (id: number, update: Partial<Pick<QuestionBankItem, 'questionText' | 'options' | 'correctAnswer' | 'explanation' | 'points' | 'hint' | 'topic'>>) =>
-    api.put<QuestionBankItem>(`/admin/question-bank/${id}`, update).then((response) => response.data),
+  update: (
+    id: number,
+    update: Partial<
+      Pick<
+        QuestionBankItem,
+        'questionText' | 'options' | 'correctAnswer' | 'explanation' | 'points' | 'hint' | 'topic' | 'diagramUrl' | 'diagramAlt'
+      >
+    >,
+  ) => api.put<QuestionBankItem>(`/admin/question-bank/${id}`, update).then((response) => response.data),
 
   remove: (id: number) =>
     api.delete<{ id: number; deleted: boolean }>(`/admin/question-bank/${id}`).then((response) => response.data),

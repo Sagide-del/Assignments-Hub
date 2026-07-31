@@ -690,6 +690,14 @@ model Question {
   points        Int          @default(10)
   order         Int          @default(0)
   hint          String?
+  // Shown to students only after their submission's results are released
+  // (see SubmissionsService.sanitizeStudentSubmission) and always stripped
+  // before that (AssignmentsService.stripAnswersForStudent) — it directly
+  // implies the correct answer, same sensitivity as correctAnswer/config.
+  // Populated when a question comes from the Question Bank (copied from
+  // QuestionBank.explanation at publish/select time); null for questions
+  // created the older manual/JSON-upload ways.
+  explanation   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1946,6 +1954,16 @@ model QuestionBank {
   points        Int          @default(10)
   hint          String?
   difficulty    String?
+  // AI-classified Bloom's Taxonomy level (e.g. "REMEMBER", "UNDERSTAND",
+  // "APPLY", "ANALYZE", "EVALUATE", "CREATE") — metadata for review/filtering,
+  // not a QuestionType. Null for rows generated before this existed.
+  bloomLevel    String?      @map("bloom_level")
+  // Set by an admin uploading an image in the review queue (via the
+  // existing generic /api/v1/uploads/single endpoint — this column just
+  // stores the URL it returns). A "suggested diagram" from generation only
+  // sets diagramAlt as a caption for the admin to act on, never diagramUrl.
+  diagramUrl    String?      @map("diagram_url")
+  diagramAlt    String?      @map("diagram_alt")
 
   status QuestionBankStatus @default(GENERATED)
 

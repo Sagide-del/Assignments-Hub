@@ -26,6 +26,7 @@ import {
   EditAssignmentRich,
 } from '../../features/teacher/CreateAssignmentRich';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
+import { AnalyticsDashboard } from '../../features/teacher/AnalyticsDashboard';
 import { Marking } from '../../features/teacher/Marking';
 import { CslReview } from '../../features/teacher/CslReview';
 import { PathwaysStats } from '../../features/teacher/PathwaysStats';
@@ -96,6 +97,10 @@ const teacherNav = [
   {
     to: '/teacher/question-bank',
     label: 'Question Bank',
+  },
+  {
+    to: '/teacher/analytics',
+    label: 'Analytics',
   },
   {
     to: '/teacher/marking',
@@ -339,6 +344,10 @@ export const router = createBrowserRouter([
           {
             path: '/teacher/question-bank',
             element: <QuestionBankBrowser />,
+          },
+          {
+            path: '/teacher/analytics',
+            element: <AnalyticsDashboard />,
           },
           {
             // AI generation moved to Platform Admin (Question Bank) —

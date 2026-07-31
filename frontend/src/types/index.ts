@@ -196,6 +196,11 @@ export interface Question {
   points: number;
   order: number;
   hint: string | null;
+  // Only ever present on the /submissions/:id/results payload after a
+  // teacher releases results (see SubmissionsService.getReleasedResults) —
+  // every other endpoint strips it for the same reason correctAnswer is
+  // absent above. Null for questions built the older manual/JSON ways.
+  explanation?: string | null;
 }
 
 export interface Section {
