@@ -13,7 +13,7 @@ import { AiGenerationResult, AiProviderService } from './interfaces/ai-provider.
  */
 @Injectable()
 export class OpenaiService implements AiProviderService {
-  readonly providerName = 'DEEPSEEK' as const;
+  readonly providerName = 'OPENAI' as const;
 
   private readonly logger = new Logger(OpenaiService.name);
   private readonly client: OpenAI | null;
@@ -31,7 +31,7 @@ export class OpenaiService implements AiProviderService {
   async generateAssignment(prompt: string): Promise<AiGenerationResult> {
     if (!this.client) {
       throw new AiProviderError(
-        'DEEPSEEK',
+        'OPENAI',
         'NOT_CONFIGURED',
         'DeepSeek API key is not configured',
         false,
@@ -65,7 +65,7 @@ export class OpenaiService implements AiProviderService {
 
     if (!content) {
       throw new AiProviderError(
-        'DEEPSEEK',
+        'OPENAI',
         'INVALID_RESPONSE',
         'DeepSeek returned no content',
         false,
@@ -78,7 +78,7 @@ export class OpenaiService implements AiProviderService {
       parsed = JSON.parse(content);
     } catch {
       throw new AiProviderError(
-        'DEEPSEEK',
+        'OPENAI',
         'INVALID_RESPONSE',
         'DeepSeek response was not valid JSON',
         false,
@@ -107,19 +107,19 @@ export class OpenaiService implements AiProviderService {
     this.logger.warn(`DeepSeek request failed (status ${status ?? 'unknown'}): ${message}`);
 
     if (status === 401 || status === 403) {
-      return new AiProviderError('DEEPSEEK', 'NOT_CONFIGURED', message, false);
+      return new AiProviderError('OPENAI', 'NOT_CONFIGURED', message, false);
     }
     if (status === 429) {
-      return new AiProviderError('DEEPSEEK', 'RATE_LIMITED', message);
+      return new AiProviderError('OPENAI', 'RATE_LIMITED', message);
     }
     if (status !== undefined && status >= 500) {
-      return new AiProviderError('DEEPSEEK', 'UNAVAILABLE', message);
+      return new AiProviderError('OPENAI', 'UNAVAILABLE', message);
     }
     if (status === undefined) {
       // No status at all means the request never reached DeepSeek (network
       // failure, DNS, timeout) rather than an API-level rejection.
-      return new AiProviderError('DEEPSEEK', 'UNAVAILABLE', message);
+      return new AiProviderError('OPENAI', 'UNAVAILABLE', message);
     }
-    return new AiProviderError('DEEPSEEK', 'UNKNOWN', message, false);
+    return new AiProviderError('OPENAI', 'UNKNOWN', message, false);
   }
 }
