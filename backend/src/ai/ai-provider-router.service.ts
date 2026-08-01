@@ -23,14 +23,10 @@ export interface GenerateAssignmentContext {
  * AI Provider Router.
  *
  *   Teacher/Platform-Admin flow -> AiService / QuestionBankService -> AI
- *   Provider Router (this class) -> OpenAI.
+ *   Provider Router (this class) -> DeepSeek.
  *
- * OpenAI is the sole provider (previously DeepSeek-primary/Claude-fallback —
- * that dual-provider chain and its retryable-error fallback logic were
- * removed as part of the OpenAI migration; OpenAI's own SDK-level retry
- * behavior plus the AiQueueService/BullMQ retry wrapper around callers is
- * considered sufficient reliability without a second provider to fail over
- * to).
+ * DeepSeek is the sole provider. The OpenAI SDK is used with a custom
+ * baseURL pointing to DeepSeek's API endpoint.
  *
  * Every attempt (success or failure) is still recorded to AiUsageLog via
  * AiUsageService — logging is fire-and-forget (not awaited), so a slow or
@@ -40,7 +36,7 @@ export interface GenerateAssignmentContext {
  * Before the provider is called, generateAssignment checks the school's
  * monthly AI usage quota (AiUsageService.assertWithinMonthlyLimit). Unlike
  * usage logging, this check IS awaited and DOES throw (ForbiddenException)
- * — an over-quota school must never reach OpenAI. The check only runs when
+ * — an over-quota school must never reach DeepSeek. The check only runs when
  * context.schoolId is supplied.
  */
 @Injectable()
@@ -60,7 +56,7 @@ export class AiProviderRouterService {
       // Throws ForbiddenException if this school is already at its monthly
       // quota. Intentionally BEFORE the provider call below, and awaited
       // (unlike usage logging further down), so an over-quota school incurs
-      // no OpenAI call at all.
+      // no AI call at all.
       await this.aiUsageService.assertWithinMonthlyLimit(context.schoolId);
     }
 
@@ -84,13 +80,13 @@ export class AiProviderRouterService {
         err instanceof AiProviderError
           ? err
           : new AiProviderError(
-              'OPENAI',
+              'DEEPSEEK',
               'UNKNOWN',
               (err as Error)?.message ?? 'Unknown AI provider error',
               false,
             );
 
-      this.logger.warn(`OpenAI generation failed (${aiError.reason}): ${aiError.message}`);
+      this.logger.warn(`DeepSeek generation failed (${aiError.reason}): ${aiError.message}`);
 
       void this.aiUsageService.record({
         schoolId: context?.schoolId,
