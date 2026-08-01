@@ -1,126 +1,90 @@
-import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
-import { ConfigService } from '@nestjs/config';
-import { AiProviderError } from './errors/ai-provider.error';
-import { AiGenerationResult } from './interfaces/ai-provider.interface';
+import { Injectable } from '@nestjs/common';
+import { AiProviderRouterService } from './ai-provider-router.service';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { GenerateAssignmentDto } from './dto/generate-assignment.dto';
 
 @Injectable()
-export class OpenaiService {
-  private readonly client: OpenAI;
-  private readonly logger = new Logger(OpenaiService.name);
-  public readonly providerName = 'DEEPSEEK';
+export class AiService {
+  constructor(
+    private readonly aiProviderRouter: AiProviderRouterService,
+  ) {}
 
-  constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('DEEPSEEK_API_KEY');
-    const baseURL = 'https://api.deepseek.com';
+  async generateAssignment(dto: GenerateAssignmentDto, user: AuthenticatedUser) {
+    const questionTypes = dto.questionTypes.join(', ');
 
-    if (!apiKey) {
-      this.logger.warn('DEEPSEEK_API_KEY is not set. AI features will not work.');
+    const prompt = `
+Create a school assessment assignment.
+
+Return ONLY valid JSON.
+
+Requirements:
+
+Grade:
+${dto.grade}
+
+Subject:
+${dto.subject}
+
+Topic:
+${dto.topic}
+
+Strand:
+${dto.strand || 'Not specified'}
+
+Sub Strand:
+${dto.subStrand || 'Not specified'}
+
+Number of Questions:
+${dto.numberOfQuestions}
+
+Question Types:
+${questionTypes}
+
+
+The JSON must follow this exact structure:
+
+{
+  "title": "",
+  "description": "",
+  "subject": "",
+  "grade": "",
+  "sections": [
+    {
+      "title": "Section A",
+      "instructions": "",
+      "questions": [
+        {
+          "questionText": "",
+          "questionType": "MULTIPLE_CHOICE",
+          "points": 5,
+          "options": [],
+          "correctAnswer": ""
+        }
+      ]
     }
+  ]
+}
 
-    this.client = new OpenAI({
-      apiKey: apiKey || 'missing-api-key',
-      baseURL: baseURL,
+
+Rules:
+
+- Create age-appropriate questions.
+- Ensure questions match the grade level.
+- Multiple choice questions must have options.
+- Include correct answers where applicable.
+- Essay questions must not have options.
+- Assign reasonable marks.
+- Do not include explanations.
+- Do not include markdown.
+`;
+
+    const result = await this.aiProviderRouter.generateAssignment(prompt, {
+      schoolId: user.schoolId,
+      userId: user.id,
     });
-  }
 
-  async generateAssignment(prompt: string): Promise<AiGenerationResult> {
-    try {
-      const startTime = Date.now();
-
-      const response = await this.client.chat.completions.create({
-        model: 'deepseek-v4-pro',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert educational content creator specializing in school assessments.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-      });
-
-      const duration = Date.now() - startTime;
-
-      if (!response.choices || response.choices.length === 0) {
-        throw new AiProviderError(
-          'DEEPSEEK',
-          'EMPTY_RESPONSE',
-          'No choices returned from DeepSeek API',
-          true,
-        );
-      }
-
-      const content = response.choices[0]?.message?.content || '';
-
-      // Attempt to parse JSON to validate
-      try {
-        JSON.parse(content);
-      } catch {
-        throw new AiProviderError(
-          'DEEPSEEK',
-          'INVALID_JSON',
-          'DeepSeek returned invalid JSON',
-          true,
-        );
-      }
-
-      return {
-        content,
-        model: response.model || 'deepseek-v4-pro',
-        usage: {
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0,
-        },
-        duration,
-      };
-    } catch (error) {
-      if (error instanceof AiProviderError) {
-        throw error;
-      }
-
-      // Handle OpenAI SDK errors
-      const status = (error as any)?.status;
-      const message = (error as Error)?.message || 'Unknown error';
-
-      if (status === 401) {
-        throw new AiProviderError(
-          'DEEPSEEK',
-          'AUTH_ERROR',
-          'DeepSeek API key is invalid or missing',
-          false,
-        );
-      }
-
-      if (status === 429) {
-        throw new AiProviderError(
-          'DEEPSEEK',
-          'RATE_LIMITED',
-          'DeepSeek rate limit exceeded. Please try again later.',
-          true,
-        );
-      }
-
-      if (status === 503 || status === 504) {
-        throw new AiProviderError(
-          'DEEPSEEK',
-          'PROVIDER_UNAVAILABLE',
-          'DeepSeek service is temporarily unavailable. Please try again later.',
-          true,
-        );
-      }
-
-      throw new AiProviderError(
-        'DEEPSEEK',
-        'PROVIDER_ERROR',
-        message,
-        false,
-      );
-    }
+    // Unwrap so the HTTP response shape is byte-for-byte identical to
+    // before this refactor — callers still get the raw assignment JSON.
+    return result.content;
   }
 }
