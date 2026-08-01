@@ -427,7 +427,7 @@ export class SubmissionsService {
     if (question.questionType === QuestionType.SHORT_ANSWER) {
       const keywords = this.shortAnswerConfig(question.config)?.keywords;
       return (
-        (Array.isArray(keywords) && keywords.some((keyword) => typeof keyword === 'string' && keyword.trim())) ||
+        (Array.isArray(keywords) && keywords.some((keyword) => typeof keyword === 'string' && !!keyword.trim())) ||
         Boolean(question.correctAnswer?.trim())
       );
     }
@@ -551,7 +551,7 @@ export class SubmissionsService {
     // something readable rather than the lowercased/trimmed match key.
     const keywordPairs = Array.isArray(config?.keywords)
       ? config.keywords
-          .filter((keyword): keyword is string => typeof keyword === 'string' && keyword.trim())
+          .filter((keyword): keyword is string => typeof keyword === 'string' && !!keyword.trim())
           .map((keyword) => ({ original: keyword.trim(), normalized: this.normalizeText(keyword) }))
           .filter((pair) => pair.normalized)
       : [];
