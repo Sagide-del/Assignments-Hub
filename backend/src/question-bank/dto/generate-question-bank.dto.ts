@@ -27,6 +27,26 @@ function toBoolean({ value }: { value: unknown }) {
   return value;
 }
 
+// questionTypes arrives as a JSON-encoded string in the multipart body (see
+// questionBankFormData in the frontend's question-bank.api.ts, e.g.
+// '["MULTIPLE_CHOICE","SHORT_ANSWER"]') since multipart fields are always
+// strings. Parse it back into an array here, before the @IsArray/@IsEnum
+// validators below run — without this, class-validator sees a raw string
+// and rejects it as "must be an array" / "each value ... must be one of
+// the following values" etc.
+function toArray({ value }: { value: unknown }) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : value;
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
 // Multipart form fields alongside the uploaded PDF (see
 // QuestionBankController.generate) — all values arrive as strings, so
 // numeric/array/boolean fields use @Type/@Transform/manual parsing rather
@@ -61,10 +81,9 @@ export class GenerateQuestionBankDto {
   @IsIn(["EASY", "MEDIUM", "HARD", "MIXED"])
   difficulty?: "EASY" | "MEDIUM" | "HARD" | "MIXED" = "MIXED";
 
-  // Sent as a JSON-encoded string in the multipart body (e.g.
-  // '["MULTIPLE_CHOICE","SHORT_ANSWER"]") since multipart fields are always
-  // strings — QuestionBankController parses it before validation.
+  // See toArray() above — this field is sent JSON-encoded, not as a real array.
   @IsOptional()
+  @Transform(toArray)
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
