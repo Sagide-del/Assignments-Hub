@@ -70,6 +70,7 @@ export function Marking() {
               >
                 <span>
                   <span className="font-medium">{sub.student?.name ?? `Student #${sub.studentId}`}</span>
+                  {sub.student?.studentProfile?.stream ? ` · Stream ${sub.student.studentProfile.stream}` : ''}
                   <span className="text-gray-400"> · submitted {submittedAt(sub)}{sub.isLate ? ' (late)' : ''} · {sub.status}</span>
                 </span>
                 <span className="text-gray-500">

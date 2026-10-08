@@ -1,4 +1,4 @@
-import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 // Role, schoolId, email, and admissionNumber are immutable via this endpoint
 // to avoid accidentally moving a user between tenants or credential types.
@@ -17,6 +17,11 @@ export class UpdateUserDto {
   @IsString()
   @MinLength(8)
   password?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4,8}$/, { message: 'Student PIN must contain 4 to 8 digits' })
+  studentPin?: string;
 
   @IsOptional()
   @IsString()

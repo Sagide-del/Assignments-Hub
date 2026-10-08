@@ -81,7 +81,8 @@ export class AuthService {
   }
 
   async loginStudent(dto: StudentLoginDto, ipAddress?: string) {
-    const school = await this.prisma.school.findUnique({ where: { code: dto.schoolCode } });
+    const schoolCode = dto.schoolCode.trim().toUpperCase();
+    const school = await this.prisma.school.findUnique({ where: { code: schoolCode } });
     const invalidCredentials = () => new UnauthorizedException('Invalid credentials');
 
     if (!school) throw invalidCredentials();
@@ -90,7 +91,7 @@ export class AuthService {
       where: {
         schoolId_admissionNumber: {
           schoolId: school.id,
-          admissionNumber: dto.admissionNumber,
+          admissionNumber: dto.admissionNumber.trim(),
         },
       },
     });
@@ -103,6 +104,24 @@ export class AuthService {
     // login so this rollout remains backward compatible.
     if (school.code === INDEPENDENT_SCHOOL_CODE && user.passwordHash) {
       throw invalidCredentials();
+    }
+
+    // New school accounts store a hashed learner PIN in the existing
+    // credential column. Accounts imported before the PIN rollout have no
+    // hash and retain admission-number login until their school resets them.
+    if (user.passwordHash) {
+      const pinMatches = dto.pin
+        ? await bcrypt.compare(dto.pin, user.passwordHash)
+        : false;
+      if (!pinMatches) {
+        await this.auditService.record({
+          action: 'auth.login.failed',
+          schoolId: school.id,
+          resource: `User:${user.id}`,
+          ipAddress,
+        });
+        throw invalidCredentials();
+      }
     }
 
     // Independent students (enrolled without a school — see

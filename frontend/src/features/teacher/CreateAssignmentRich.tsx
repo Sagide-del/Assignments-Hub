@@ -334,6 +334,8 @@ export function CreateAssignmentRich({
   const [description, setDescription] = useState(initialAssignment?.description ?? '');
   const [subject, setSubject] = useState(initialAssignment?.subject ?? '');
   const [grade, setGrade] = useState(gradeValue(initialAssignment?.grade));
+  const [targetClass, setTargetClass] = useState(initialAssignment?.targetClass ?? '');
+  const [targetStream, setTargetStream] = useState(initialAssignment?.targetStream ?? '');
   const [dueDate, setDueDate] = useState(dateInputValue(initialAssignment?.dueDate));
   const [timeAllowedMinutes, setTimeAllowedMinutes] = useState(
     initialAssignment?.timeAllowedMinutes
@@ -543,6 +545,18 @@ export function CreateAssignmentRich({
         description: description.trim() || undefined,
         subject: subject.trim(),
         grade: `Grade ${grade}`,
+        targetClass:
+          target === 'school'
+            ? isEditing
+              ? targetClass.trim()
+              : targetClass.trim() || undefined
+            : undefined,
+        targetStream:
+          target === 'school'
+            ? isEditing
+              ? targetStream.trim()
+              : targetStream.trim() || undefined
+            : undefined,
         dueDate: dueDate || undefined,
         maxPoints: totalPoints,
         timeAllowedMinutes: timeAllowedMinutes ? Number(timeAllowedMinutes) : undefined,
@@ -622,14 +636,19 @@ export function CreateAssignmentRich({
           description={description}
           subject={subject}
           grade={grade}
+          targetClass={targetClass}
+          targetStream={targetStream}
           dueDate={dueDate}
           timeAllowedMinutes={timeAllowedMinutes}
           onTitle={setTitle}
           onDescription={setDescription}
           onSubject={setSubject}
           onGrade={setGrade}
+          onTargetClass={setTargetClass}
+          onTargetStream={setTargetStream}
           onDueDate={setDueDate}
           onTimeAllowed={setTimeAllowedMinutes}
+          showAudienceTargeting={target === 'school'}
         />
       ) : null}
 
@@ -656,6 +675,8 @@ export function CreateAssignmentRich({
           description={description}
           subject={subject}
           grade={grade}
+          targetClass={targetClass}
+          targetStream={targetStream}
           dueDate={dueDate}
           timeAllowedMinutes={timeAllowedMinutes}
           totalPoints={totalPoints}
@@ -797,27 +818,37 @@ function SetupStep({
   description,
   subject,
   grade,
+  targetClass,
+  targetStream,
   dueDate,
   timeAllowedMinutes,
   onTitle,
   onDescription,
   onSubject,
   onGrade,
+  onTargetClass,
+  onTargetStream,
   onDueDate,
   onTimeAllowed,
+  showAudienceTargeting,
 }: {
   title: string;
   description: string;
   subject: string;
   grade: string;
+  targetClass: string;
+  targetStream: string;
   dueDate: string;
   timeAllowedMinutes: string;
   onTitle: (value: string) => void;
   onDescription: (value: string) => void;
   onSubject: (value: string) => void;
   onGrade: (value: string) => void;
+  onTargetClass: (value: string) => void;
+  onTargetStream: (value: string) => void;
   onDueDate: (value: string) => void;
   onTimeAllowed: (value: string) => void;
+  showAudienceTargeting: boolean;
 }) {
   return (
     <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_16px_40px_rgba(16,24,32,0.05)] sm:p-7">
@@ -850,6 +881,26 @@ function SetupStep({
             ))}
           </select>
         </Field>
+        {showAudienceTargeting ? (
+          <>
+            <Field label="Class (optional)">
+              <input
+                value={targetClass}
+                onChange={(event) => onTargetClass(event.target.value)}
+                placeholder="e.g. Grade 7"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Stream (optional)">
+              <input
+                value={targetStream}
+                onChange={(event) => onTargetStream(event.target.value)}
+                placeholder="e.g. A"
+                className={inputClass}
+              />
+            </Field>
+          </>
+        ) : null}
         <Field label="Description" className="sm:col-span-2">
           <textarea
             value={description}
@@ -1336,6 +1387,8 @@ function ReviewStep({
   description,
   subject,
   grade,
+  targetClass,
+  targetStream,
   dueDate,
   timeAllowedMinutes,
   totalPoints,
@@ -1349,6 +1402,8 @@ function ReviewStep({
   description: string;
   subject: string;
   grade: string;
+  targetClass: string;
+  targetStream: string;
   dueDate: string;
   timeAllowedMinutes: string;
   totalPoints: number;
@@ -1363,6 +1418,11 @@ function ReviewStep({
         <div className="bg-[#101820] px-5 py-6 text-white sm:px-7">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B5E61D]">{subject} / Grade {grade}</p>
           <h2 className="mt-2 text-2xl font-semibold">{title}</h2>
+          {targetClass || targetStream ? (
+            <p className="mt-2 text-sm font-medium text-[#B5E61D]">
+              {[targetClass, targetStream ? `Stream ${targetStream}` : ''].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
           {description ? <p className="mt-2 max-w-3xl text-sm text-slate-300">{description}</p> : null}
         </div>
         <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 sm:grid-cols-4 sm:divide-y-0">

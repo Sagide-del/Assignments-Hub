@@ -69,6 +69,19 @@ export class SubmissionsService {
     if (assignment.schoolId !== actor.schoolId) {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
+    if (actor.role === Role.STUDENT) {
+      const profile = await this.prisma.studentProfile.findUnique({
+        where: { userId: actor.id },
+        select: { className: true, stream: true },
+      });
+      const outsideScope =
+        !assignment.isPublished ||
+        (assignment.publishDate && assignment.publishDate > new Date()) ||
+        (actor.grade && assignment.grade !== actor.grade) ||
+        (assignment.targetClass && assignment.targetClass !== profile?.className) ||
+        (assignment.targetStream && assignment.targetStream !== profile?.stream);
+      if (outsideScope) throw new NotFoundException('Assignment not found');
+    }
 
     const existing = await this.prisma.submission.findFirst({
       where: { assignmentId, studentId: actor.id },
@@ -145,6 +158,11 @@ export class SubmissionsService {
       // reports aggregates that key off score != null.
       score: fullyGraded ? totalScore : null,
       gradedAt: fullyGraded ? new Date() : null,
+      // Objective assessments are graded entirely by trusted server-side
+      // rules, so their results can be released immediately. Mixed or
+      // subjective work remains private until a teacher reviews and
+      // explicitly releases it through the existing marking workflow.
+      resultsReleasedAt: fullyGraded ? new Date() : (existing?.resultsReleasedAt ?? null),
       isLate,
       completedAt,
       startedAt,
@@ -221,14 +239,27 @@ export class SubmissionsService {
     return this.prisma.submission.findMany({
       where: {
         assignmentId: filters.assignmentId,
-        assignment: targetSchoolId ? { schoolId: targetSchoolId } : undefined,
+        assignment: targetSchoolId
+          ? {
+              schoolId: targetSchoolId,
+              ...(actor.role === Role.TEACHER ? { createdById: actor.id } : {}),
+            }
+          : actor.role === Role.TEACHER
+            ? { createdById: actor.id }
+            : undefined,
         // Never show a student's still-in-progress draft to a teacher/admin
         // as if it were something waiting to be graded.
         status: { not: SubmissionStatus.DRAFT },
       },
       include: {
         assignment: true,
-        student: { select: { id: true, name: true } },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            studentProfile: { select: { className: true, stream: true } },
+          },
+        },
         gradedBy: { select: { id: true, name: true } },
         answers: true,
       },
@@ -241,7 +272,13 @@ export class SubmissionsService {
       where: { id },
       include: {
         assignment: true,
-        student: { select: { id: true, name: true } },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            studentProfile: { select: { className: true, stream: true } },
+          },
+        },
         gradedBy: { select: { id: true, name: true } },
         answers: { include: { question: true }, orderBy: { questionId: 'asc' } },
       },
@@ -255,6 +292,8 @@ export class SubmissionsService {
       return this.sanitizeStudentSubmission(submission);
     } else if (actor.role !== Role.PLATFORM_ADMIN && submission.assignment.schoolId !== actor.schoolId) {
       throw new ForbiddenException('You cannot access another school\'s data');
+    } else if (actor.role === Role.TEACHER && submission.assignment.createdById !== actor.id) {
+      throw new ForbiddenException('You can only review submissions for assignments you created');
     }
 
     return submission;
@@ -318,7 +357,13 @@ export class SubmissionsService {
         gradedAt: new Date(),
       },
       include: {
-        student: { select: { id: true, name: true } },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            studentProfile: { select: { className: true, stream: true } },
+          },
+        },
         gradedBy: { select: { id: true, name: true } },
         answers: { include: { question: true } },
       },

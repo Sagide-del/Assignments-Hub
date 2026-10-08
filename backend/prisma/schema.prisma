@@ -581,6 +581,11 @@ model Assignment {
   description String?
   subject     String
   grade       String
+  // Optional school delivery scope. Null keeps the historical grade-wide
+  // behaviour; populated values restrict visibility/submission to learners
+  // whose StudentProfile matches the selected class and/or stream.
+  targetClass  String? @map("target_class")
+  targetStream String? @map("target_stream")
   type        AssignmentType @default(TEACHER_MARKED)
 
   dueDate     DateTime? @map("due_date")
@@ -624,6 +629,8 @@ model Assignment {
   questionBankPublishedItems QuestionBank[] @relation("QuestionBankPublishedAssignment")
 
   @@index([schoolId])
+  @@index([createdById])
+  @@index([schoolId, grade, targetStream, isPublished])
   @@map("assignments")
 }
 

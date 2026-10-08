@@ -1,4 +1,10 @@
-import { PrismaClient, Role, SubscriptionStatus } from '@prisma/client';
+import {
+  AssignmentType,
+  PrismaClient,
+  QuestionType,
+  Role,
+  SubscriptionStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { LAB_CATALOG } from './seed-labs-data';
 import { STEM_CATEGORY_CATALOG } from './seed-stem-taxonomy-data';
@@ -134,6 +140,166 @@ async function main() {
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
       },
     });
+  }
+
+  // Optional school-tenant smoke-test account. Production requires an
+  // explicit flag and secret PIN so a usable credential is never committed
+  // to source control. This is a regular school learner: independent-student
+  // Till/payment checks do not apply.
+  const seedMbaleDemo = process.env.SEED_MBALE_DEMO === 'true';
+  if (seedMbaleDemo) {
+    const mbaleStudentPin = process.env.SEED_MBALE_STUDENT_PIN?.trim();
+    const mbaleTeacherPassword = process.env.SEED_MBALE_TEACHER_PASSWORD?.trim();
+    if (!mbaleStudentPin || !/^\d{4,8}$/.test(mbaleStudentPin)) {
+      throw new Error('SEED_MBALE_STUDENT_PIN must contain 4 to 8 digits when SEED_MBALE_DEMO=true');
+    }
+    if (!mbaleTeacherPassword || mbaleTeacherPassword.length < 8) {
+      throw new Error('SEED_MBALE_TEACHER_PASSWORD must contain at least 8 characters when SEED_MBALE_DEMO=true');
+    }
+
+    const mbaleSchool = await prisma.school.upsert({
+      where: { code: 'MBALE' },
+      update: { subscriptionStatus: SubscriptionStatus.ACTIVE },
+      create: {
+        name: 'Mbale School',
+        code: 'MBALE',
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+      },
+    });
+
+    const mbalePinHash = await bcrypt.hash(mbaleStudentPin, 12);
+    const mbaleTeacherPasswordHash = await bcrypt.hash(mbaleTeacherPassword, 12);
+    const mbaleMathTeacher = await prisma.user.upsert({
+      where: {
+        schoolId_email: {
+          schoolId: mbaleSchool.id,
+          email: 'math@mbale.school',
+        },
+      },
+      update: {
+        name: 'Ken Mathematics Teacher',
+        role: Role.TEACHER,
+        passwordHash: mbaleTeacherPasswordHash,
+        subject: 'Mathematics',
+        assignedClass: 'Grade 7 A',
+        isActive: true,
+      },
+      create: {
+        schoolId: mbaleSchool.id,
+        name: 'Ken Mathematics Teacher',
+        role: Role.TEACHER,
+        email: 'math@mbale.school',
+        passwordHash: mbaleTeacherPasswordHash,
+        subject: 'Mathematics',
+        assignedClass: 'Grade 7 A',
+        isActive: true,
+      },
+    });
+
+    const mbaleStudent = await prisma.user.upsert({
+      where: {
+        schoolId_admissionNumber: {
+          schoolId: mbaleSchool.id,
+          admissionNumber: 'MBA001',
+        },
+      },
+      update: {
+        name: 'Mbale Test Student',
+        grade: 'Grade 7',
+        passwordHash: mbalePinHash,
+        isActive: true,
+        subscriptionExpiresAt: null,
+      },
+      create: {
+        schoolId: mbaleSchool.id,
+        name: 'Mbale Test Student',
+        role: Role.STUDENT,
+        admissionNumber: 'MBA001',
+        grade: 'Grade 7',
+        passwordHash: mbalePinHash,
+        isActive: true,
+      },
+    });
+
+    await prisma.studentProfile.upsert({
+      where: { userId: mbaleStudent.id },
+      update: {
+        admissionNumber: 'MBA001',
+        grade: 'Grade 7',
+        className: 'Grade 7',
+        stream: 'A',
+      },
+      create: {
+        userId: mbaleStudent.id,
+        admissionNumber: 'MBA001',
+        grade: 'Grade 7',
+        className: 'Grade 7',
+        stream: 'A',
+      },
+    });
+
+    const mbaleAssignment = await prisma.assignment.findFirst({
+      where: {
+        schoolId: mbaleSchool.id,
+        title: 'Mbale Mathematics Readiness Check',
+      },
+    });
+    if (!mbaleAssignment) {
+      await prisma.assignment.create({
+        data: {
+          schoolId: mbaleSchool.id,
+          title: 'Mbale Mathematics Readiness Check',
+          description: 'A short mobile-ready assessment for verifying the school learner experience.',
+          subject: 'Mathematics',
+          grade: 'Grade 7',
+          type: AssignmentType.AUTO_MARKED,
+          maxPoints: 20,
+          isPublished: true,
+          createdById: mbaleMathTeacher.id,
+          questions: {
+            create: [
+              {
+                questionText: 'What is 1/2 + 1/4?',
+                questionType: QuestionType.MULTIPLE_CHOICE,
+                options: ['1/4', '2/4', '3/4', '1'],
+                correctAnswer: '3/4',
+                points: 5,
+                order: 0,
+              },
+              {
+                questionText: 'A triangle has three sides.',
+                questionType: QuestionType.TRUE_FALSE,
+                options: ['True', 'False'],
+                correctAnswer: 'True',
+                points: 5,
+                order: 1,
+              },
+              {
+                questionText: 'Calculate 3 x 4.',
+                questionType: QuestionType.NUMERIC,
+                correctAnswer: '12',
+                config: { numeric: { acceptedValue: 12, tolerance: 0 } },
+                points: 5,
+                order: 2,
+              },
+              {
+                questionText: 'Which number is a prime number?',
+                questionType: QuestionType.MULTIPLE_CHOICE,
+                options: ['9', '12', '13', '15'],
+                correctAnswer: '13',
+                points: 5,
+                order: 3,
+              },
+            ],
+          },
+        },
+      });
+    } else if (mbaleAssignment.createdById !== mbaleMathTeacher.id) {
+      await prisma.assignment.update({
+        where: { id: mbaleAssignment.id },
+        data: { createdById: mbaleMathTeacher.id },
+      });
+    }
   }
 
   // STEM category/subject taxonomy — platform-wide, upserted by key. These
@@ -325,6 +491,11 @@ async function main() {
   console.log('Demo teacher: teacher@demo.school / DemoTeacher123!');
   console.log('Demo student: admission number ADM001 (Grade 7)');
   console.log('Demo assignment: "Fractions Worksheet 1" (Grade 7, Mathematics)');
+  if (seedMbaleDemo) {
+    console.log('Mbale school login: /school/MBALE/login');
+    console.log('Mbale test learner: MBA001 (PIN supplied via SEED_MBALE_STUDENT_PIN)');
+    console.log('Mbale Mathematics teacher: math@mbale.school (password supplied via SEED_MBALE_TEACHER_PASSWORD)');
+  }
   console.log(
     `STEM taxonomy: ${stemCategoriesCreated} new categories / ${STEM_CATEGORY_CATALOG.length} total, ${stemSubjectsCreated} new subjects`,
   );

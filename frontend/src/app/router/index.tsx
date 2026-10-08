@@ -7,7 +7,6 @@ import Login from '../../pages/Login';
 import IndependentRegister from '../../pages/IndependentRegister';
 import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 
-import { StudentDashboard } from '../../features/student/Dashboard';
 import { ExamPlayer } from '../../features/student/ExamPlayer';
 import { StemLabsPage } from '../../features/student/StemLabs';
 import { StemLabPlayerPage } from '../../features/student/StemLabPlayer';
@@ -217,6 +216,11 @@ export const router = createBrowserRouter([
   },
 
   {
+    path: '/school/:schoolCode/login',
+    element: <Login />,
+  },
+
+  {
     path: '/register',
     element: <IndependentRegister />,
   },
@@ -245,7 +249,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/student',
-            element: <StudentDashboard />,
+            element: <Navigate to="/student/my-assignments" replace />,
           },
           {
             path: '/student/my-assignments',

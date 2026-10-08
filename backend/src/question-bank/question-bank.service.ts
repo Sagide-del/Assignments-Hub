@@ -492,6 +492,8 @@ export class QuestionBankService {
         description: dto.description,
         subject: items[0].subject,
         grade: items[0].grade,
+        targetClass: dto.targetClass,
+        targetStream: dto.targetStream,
         dueDate: dto.dueDate,
         isPublished: dto.isPublished ?? true,
         maxPoints: items.reduce((sum, item) => sum + item.points, 0),

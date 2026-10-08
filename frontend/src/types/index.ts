@@ -52,8 +52,11 @@ export interface Assignment {
   description?: string | null;
   subject: string;
   grade: string;
-  totalMarks: number;
+  targetClass?: string | null;
+  targetStream?: string | null;
+  totalMarks?: number;
   maxPoints?: number;
+  type?: 'TEACHER_MARKED' | 'AUTO_MARKED' | 'MIXED' | string;
   dueDate?: string | null;
   timeAllowedMinutes?: number | null;
   isPublished: boolean;
@@ -74,7 +77,11 @@ export interface Submission {
   // student's own submissions (ExamPlayer's already-submitted view) — see
   // SubmissionsService.findAll/findOne. Absent only if the backend hasn't
   // been redeployed with this include yet.
-  student?: { id: number; name: string };
+  student?: {
+    id: number;
+    name: string;
+    studentProfile?: { className: string | null; stream: string | null } | null;
+  };
   score: number | null;
   status: 'DRAFT' | 'SUBMITTED' | 'GRADED' | string;
   isLate: boolean;

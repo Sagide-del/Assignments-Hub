@@ -16,11 +16,22 @@ export class AnalyticsService {
   async assignmentAnalytics(assignmentId: number, actor: AuthenticatedUser) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      select: { id: true, title: true, schoolId: true, maxPoints: true },
+      select: {
+        id: true,
+        title: true,
+        schoolId: true,
+        maxPoints: true,
+        createdById: true,
+        targetClass: true,
+        targetStream: true,
+      },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (actor.role !== Role.PLATFORM_ADMIN && assignment.schoolId !== actor.schoolId) {
       throw new ForbiddenException("You cannot access another school's data");
+    }
+    if (actor.role === Role.TEACHER && assignment.createdById !== actor.id) {
+      throw new ForbiddenException('You can only view analytics for assignments you created');
     }
 
     const questions = await this.prisma.question.findMany({
@@ -34,7 +45,13 @@ export class AnalyticsService {
     const submissions = await this.prisma.submission.findMany({
       where: { assignmentId, status: { not: SubmissionStatus.DRAFT } },
       include: {
-        student: { select: { id: true, name: true } },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            studentProfile: { select: { className: true, stream: true } },
+          },
+        },
         answers: { select: { questionId: true, isCorrect: true, pointsAwarded: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -106,6 +123,8 @@ export class AnalyticsService {
       .map((s) => ({
         studentId: s.studentId,
         studentName: s.student?.name ?? `Student #${s.studentId}`,
+        className: s.student?.studentProfile?.className ?? null,
+        stream: s.student?.studentProfile?.stream ?? null,
         score: s.score as number,
         percentage: percentageOf(s.score as number),
         timeSpentSeconds: s.timeSpentSeconds,
@@ -116,10 +135,31 @@ export class AnalyticsService {
       .filter((s) => s.percentage < PASS_THRESHOLD_PERCENT)
       .slice(0, 20);
     const topPerformers = studentPerformance.slice(0, 5);
+    const streamGroups = new Map<string, typeof studentPerformance>();
+    for (const student of studentPerformance) {
+      const key = student.stream || 'Not assigned';
+      streamGroups.set(key, [...(streamGroups.get(key) ?? []), student]);
+    }
+    const streamPerformance = Array.from(streamGroups.entries())
+      .map(([stream, students]) => ({
+        stream,
+        studentCount: students.length,
+        averagePercentage: Math.round(average(students.map((student) => student.percentage)) * 10) / 10,
+        passRate: students.length
+          ? Math.round(
+              (students.filter((student) => student.percentage >= PASS_THRESHOLD_PERCENT).length /
+                students.length) *
+                1000,
+            ) / 10
+          : 0,
+      }))
+      .sort((a, b) => a.stream.localeCompare(b.stream));
 
     return {
       assignmentId: assignment.id,
       assignmentTitle: assignment.title,
+      targetClass: assignment.targetClass,
+      targetStream: assignment.targetStream,
       maxPoints,
       overview: {
         totalSubmissions: submissions.length,
@@ -134,6 +174,7 @@ export class AnalyticsService {
       studentPerformance,
       strugglingStudents,
       topPerformers,
+      streamPerformance,
     };
   }
 }

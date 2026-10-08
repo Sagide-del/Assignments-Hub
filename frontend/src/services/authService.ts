@@ -8,8 +8,16 @@ import { authApi } from '../api/auth.api';
 import { useAuthStore } from '../store/auth.store';
 import type { AuthenticatedUser, Role } from '../types';
 
-export async function loginStudent(schoolCode: string, admissionNumber: string): Promise<AuthenticatedUser> {
-  const pair = await authApi.loginStudent(schoolCode.trim().toUpperCase(), admissionNumber.trim());
+export async function loginStudent(
+  schoolCode: string,
+  admissionNumber: string,
+  pin?: string,
+): Promise<AuthenticatedUser> {
+  const pair = await authApi.loginStudent(
+    schoolCode.trim().toUpperCase(),
+    admissionNumber.trim(),
+    pin?.trim(),
+  );
   useAuthStore.getState().setSession(pair);
   return pair.user;
 }

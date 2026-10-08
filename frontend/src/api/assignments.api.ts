@@ -19,6 +19,8 @@ export interface CreateAssignmentInput {
   description?: string;
   subject: string;
   grade: string;
+  targetClass?: string;
+  targetStream?: string;
   type?: string;
   dueDate?: string;
   maxPoints?: number;

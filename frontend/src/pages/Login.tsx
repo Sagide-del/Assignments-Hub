@@ -1,223 +1,86 @@
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { LoginCard } from '../components/auth/LoginCard';
 import type { LoginType } from '../components/auth/LoginTabs';
 
 export default function Login() {
+  const { schoolCode } = useParams<{ schoolCode?: string }>();
+  const fixedSchoolCode = schoolCode?.trim().toUpperCase();
   const [loginType, setLoginType] = useState<LoginType>('student');
+  const activeLoginType = fixedSchoolCode ? 'student' : loginType;
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#F8FAFC] text-[#101820]">
+      <div className="pointer-events-none absolute inset-0 opacity-60" aria-hidden="true">
+        <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-[#B5E61D]/15 blur-3xl" />
+        <div className="absolute -bottom-36 left-1/3 h-80 w-80 rounded-full bg-slate-200/80 blur-3xl" />
+      </div>
 
-      {/* LEFT BRAND PANEL */}
-      <section
-        className="
-          hidden
-          lg:flex
-          lg:w-1/2
-          relative
-          overflow-hidden
-          text-white
-        "
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, rgba(10,15,20,0.92) 0%, rgba(10,15,20,0.72) 45%, rgba(10,15,20,0.40) 100%), url('/classroom-environment.png')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center right',
-        }}
-      >
+      <div className="relative mx-auto grid min-h-screen max-w-[1500px] lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="relative hidden overflow-hidden bg-[#101820] lg:flex lg:min-h-screen">
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-30"
+            style={{ backgroundImage: "url('/classroom-environment.png')" }}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#101820]/60 via-[#101820]/85 to-[#101820]" />
 
-        <div
-          className="
-            relative
-            z-10
-            w-full
-            px-10
-            xl:px-16
-            py-14
-            flex
-            flex-col
-            justify-between
-          "
-        >
-
-          {/* LEFT BRANDING */}
-          <div>
-
-            <h2
-              className="
-                text-3xl
-                xl:text-4xl
-                font-bold
-                tracking-tight
-              "
-            >
-              Assignment Hub
-            </h2>
-
-
-            <p className="mt-2 text-gray-300 text-lg">
-              Smart Learning Platform
-            </p>
-
-
-
-            <h1
-              className="
-                mt-16
-                text-4xl
-                xl:text-5xl
-                font-bold
-                leading-tight
-                max-w-xl
-              "
-            >
-              Smarter Assignments.
-              <br />
-
-              <span className="text-[#B5E61D]">
-                Stronger Learning.
+          <div className="relative z-10 flex w-full flex-col justify-between px-12 py-14 xl:px-16">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B5E61D] text-lg font-black text-[#101820]">
+                AH
               </span>
-
-            </h1>
-
-
-
-            <p
-              className="
-                mt-8
-                text-lg
-                text-gray-200
-                leading-relaxed
-                max-w-lg
-              "
-            >
-              Connect schools, teachers, students and parents
-              through one intelligent platform built for
-              modern CBC education.
-            </p>
-
-
-
-            <div className="mt-12 space-y-6">
-
-              <Feature text="Smart digital assignment workflows" />
-
-              <Feature text="Real-time student progress insights" />
-
-              <Feature text="Secure school learning management" />
-
+              <div>
+                <p className="font-semibold tracking-wide text-white">Assignment Hub</p>
+                <p className="text-sm text-slate-400">School learning workspace</p>
+              </div>
             </div>
 
-
+            <div className="max-w-xl pb-10">
+              <div className="mb-6 h-1 w-14 rounded-full bg-[#B5E61D]" />
+              <h1 className="text-4xl font-semibold leading-tight text-white xl:text-5xl">
+                Learn, practise and progress in one place.
+              </h1>
+              <div className="mt-9 grid grid-cols-3 gap-3 text-sm">
+                {['Assignments', 'STEM Labs', 'Learning progress'].map((label) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-slate-200 backdrop-blur"
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+        </section>
 
+        <section className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-8 lg:px-14">
+          <div className="w-full max-w-[540px]">
+            <div className="mb-5 flex items-center gap-3 px-2 lg:hidden">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#101820] text-sm font-black text-[#B5E61D]">
+                AH
+              </span>
+              <div>
+                <p className="font-semibold">Assignment Hub</p>
+                <p className="text-xs text-slate-500">School learning workspace</p>
+              </div>
+            </div>
 
+            <div className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_24px_70px_rgba(16,24,32,0.10)] sm:p-10">
+              <LoginCard
+                loginType={activeLoginType}
+                setLoginType={setLoginType}
+                fixedSchoolCode={fixedSchoolCode}
+              />
+            </div>
 
-          {/* TRUST CARD */}
-
-          <div
-            className="
-              bg-black/40
-              backdrop-blur-md
-              border
-              border-white/10
-              rounded-2xl
-              p-5
-              max-w-md
-            "
-          >
-
-            <p className="text-lg font-semibold">
-              Empowering teachers.
+            <p className="mt-5 text-center text-xs text-slate-500">
+              Secure access for students, teachers and school administrators.
             </p>
-
-            <p className="text-lg font-semibold">
-              Inspiring students.
-            </p>
-
-            <p className="text-lg font-semibold text-[#B5E61D]">
-              Elevating schools.
-            </p>
-
           </div>
-
-
-        </div>
-
-
-      </section>
-
-
-
-
-      {/* RIGHT LOGIN PANEL */}
-
-      <section
-        className="
-          w-full
-          lg:w-1/2
-          flex
-          items-center
-          justify-center
-          px-6
-          sm:px-10
-          bg-white
-        "
-      >
-
-        <div
-          className="
-            w-full
-            max-w-md
-            bg-white
-            rounded-3xl
-            shadow-xl
-            border
-            border-gray-100
-            p-8
-            sm:p-10
-          "
-        >
-
-          <LoginCard
-            loginType={loginType}
-            setLoginType={setLoginType}
-          />
-
-        </div>
-
-
-      </section>
-
-
-    </div>
+        </section>
+      </div>
+    </main>
   );
-}
-
-
-
-function Feature({ text }: { text: string }) {
-
-  return (
-
-    <div className="flex items-center gap-4">
-
-      <div
-        className="
-          w-3
-          h-3
-          rounded-full
-          bg-[#B5E61D]
-          shadow-[0_0_12px_#B5E61D]
-        "
-      />
-
-      <p className="text-gray-100 text-base">
-        {text}
-      </p>
-
-    </div>
-
-  );
-
 }

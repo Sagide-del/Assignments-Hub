@@ -64,7 +64,15 @@ export interface StudentImportResponse {
     failed: number;
     duplicates: number;
   };
+  generatedPins: StudentGeneratedPin[];
   errors: ImportErrorDetail[];
+}
+
+export interface StudentGeneratedPin {
+  row: number;
+  name?: string;
+  admissionNumber: string;
+  pin: string;
 }
 
 export interface TeacherGeneratedPassword {
@@ -99,6 +107,7 @@ const LEGACY_HEADER_ALIASES: Record<string, string[]> = {
 const STUDENT_HEADER_ALIASES: Record<string, string[]> = {
   name: ['name', 'full name', 'student name'],
   admissionNumber: ['admission number', 'admission no', 'admission_number', 'adm no', 'admno'],
+  studentPin: ['login pin', 'student pin', 'pin'],
   grade: ['grade', 'form', 'student grade'],
   studentClass: ['class', 'student class'],
   stream: ['stream'],
@@ -127,6 +136,7 @@ interface ParsedImportRow {
   email: string;
   password: string;
   admissionNumber: string;
+  studentPin: string;
   grade: string;
   studentClass: string;
   stream: string;
@@ -151,6 +161,7 @@ interface ProcessWorkbookResult {
   duplicates: number;
   missingRequiredFields: number;
   generatedPasswords: TeacherGeneratedPassword[];
+  generatedStudentPins: StudentGeneratedPin[];
   legacyResults: ImportRowResult[];
 }
 
@@ -223,6 +234,7 @@ export class UsersImportService {
         failed: result.errors.length,
         duplicates: result.duplicates,
       },
+      generatedPins: result.generatedStudentPins,
       errors: result.errors,
     };
   }
@@ -253,6 +265,7 @@ export class UsersImportService {
       { header: 'Email', key: 'email', width: 28 },
       { header: 'Password', key: 'password', width: 18 },
       { header: 'Admission Number', key: 'admissionNumber', width: 20 },
+      { header: 'Login PIN', key: 'studentPin', width: 14 },
       { header: 'Grade', key: 'grade', width: 14 },
       { header: 'Parent Phone', key: 'parentPhone', width: 18 },
       { header: 'Subject', key: 'subject', width: 20 },
@@ -306,9 +319,9 @@ export class UsersImportService {
       { header: 'Pathway', key: 'pathway', width: 22 },
     ];
     sheet.getRow(1).font = { bold: true };
-    sheet.getCell('K1').value =
-      'Required today: Name, Admission Number, Grade. Parent Phone remains supported for SMS. ' +
-      'Class, Stream, Parent Name, Parent Email, and Pathway are future-ready columns and are not yet persisted.';
+    sheet.getCell('L1').value =
+      'Required: Name, Admission Number, Grade. Login PIN is optional; a secure six-digit PIN is generated when blank. ' +
+      'Class, Stream, Pathway, and parent details are stored in the learner profile.';
     return workbook.xlsx.writeBuffer();
   }
 
@@ -358,6 +371,7 @@ export class UsersImportService {
         duplicates: 0,
         missingRequiredFields: 0,
         generatedPasswords: [],
+        generatedStudentPins: [],
         legacyResults: [],
       };
     }
@@ -365,6 +379,7 @@ export class UsersImportService {
     const columnMap = this.mapColumns(sheet.getRow(1), headerAliases);
     const errors: ImportErrorDetail[] = [];
     const generatedPasswords: TeacherGeneratedPassword[] = [];
+    const generatedStudentPins: StudentGeneratedPin[] = [];
     const legacyResults: ImportRowResult[] = [];
     let totalRows = 0;
     let createdStudents = 0;
@@ -411,6 +426,7 @@ export class UsersImportService {
 
       const raw = this.readRow(row, columnMap, options.allowedRoles);
       let generatedPassword: string | undefined;
+      let generatedStudentPin: string | undefined;
 
       try {
         if (!options.allowedRoles.includes(raw.role as ImportRole)) {
@@ -447,6 +463,9 @@ export class UsersImportService {
         if (raw.role === Role.TEACHER && !raw.password) {
           generatedPassword = this.generateTempPassword();
         }
+        if (raw.role === Role.STUDENT && !raw.studentPin && !options.previewOnly) {
+          generatedStudentPin = this.generateStudentPin();
+        }
 
         const dto = plainToInstance(CreateUserDto, {
           name: raw.name || undefined,
@@ -454,6 +473,7 @@ export class UsersImportService {
           email: raw.email || undefined,
           password: raw.password || generatedPassword,
           admissionNumber: raw.admissionNumber || undefined,
+          studentPin: raw.studentPin || generatedStudentPin,
           grade: normalizeGrade(raw.grade),
           studentClass: raw.studentClass || undefined,
           stream: raw.stream || undefined,
@@ -490,7 +510,7 @@ export class UsersImportService {
           name: raw.name || undefined,
           role: raw.role || undefined,
           status: 'created',
-          generatedPassword,
+          generatedPassword: generatedPassword || generatedStudentPin,
         });
 
         if (generatedPassword && raw.email) {
@@ -499,6 +519,14 @@ export class UsersImportService {
             name: raw.name || undefined,
             email: raw.email,
             password: generatedPassword,
+          });
+        }
+        if (generatedStudentPin && raw.admissionNumber) {
+          generatedStudentPins.push({
+            row: rowNumber,
+            name: raw.name || undefined,
+            admissionNumber: raw.admissionNumber,
+            pin: generatedStudentPin,
           });
         }
       } catch (err) {
@@ -524,6 +552,7 @@ export class UsersImportService {
       duplicates,
       missingRequiredFields,
       generatedPasswords,
+      generatedStudentPins,
       legacyResults,
     };
   }
@@ -542,6 +571,7 @@ export class UsersImportService {
       email: this.cell(row, columnMap.email),
       password: this.cell(row, columnMap.password),
       admissionNumber: this.cell(row, columnMap.admissionNumber),
+      studentPin: this.cell(row, columnMap.studentPin),
       grade: this.cell(row, columnMap.grade),
       studentClass: this.cell(row, columnMap.studentClass),
       stream: this.cell(row, columnMap.stream),
@@ -685,5 +715,9 @@ export class UsersImportService {
 
   private generateTempPassword(): string {
     return `${crypto.randomBytes(9).toString('base64url')}Aa1!`;
+  }
+
+  private generateStudentPin(): string {
+    return crypto.randomInt(100000, 1000000).toString();
   }
 }

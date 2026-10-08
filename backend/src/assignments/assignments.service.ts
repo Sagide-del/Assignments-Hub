@@ -59,6 +59,8 @@ export class AssignmentsService {
         description: dto.description,
         subject: dto.subject,
         grade,
+        targetClass: dto.targetClass?.trim() || undefined,
+        targetStream: dto.targetStream?.trim() || undefined,
         type: dto.type,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints ?? 100,
@@ -164,11 +166,25 @@ export class AssignmentsService {
   // thrown — a flaky SMS gateway must never fail or delay assignment
   // creation for the teacher.
   private notifyParentsOfNewAssignment(
-    assignment: { id: number; schoolId: number; title: string; subject: string; grade: string; dueDate: Date | null },
+    assignment: {
+      id: number;
+      schoolId: number;
+      title: string;
+      subject: string;
+      grade: string;
+      targetClass: string | null;
+      targetStream: string | null;
+      dueDate: Date | null;
+    },
     sentById: number,
   ) {
     this.smsService
-      .getStudentRecipients(assignment.schoolId, assignment.grade)
+      .getStudentRecipients(
+        assignment.schoolId,
+        assignment.grade,
+        assignment.targetClass,
+        assignment.targetStream,
+      )
       .then((recipients) =>
         this.smsService.notifyNewAssignment({
           schoolId: assignment.schoolId,
@@ -184,13 +200,22 @@ export class AssignmentsService {
       .catch((err) => this.logger.error('Failed to send new-assignment SMS:', err?.message || err));
   }
 
-  findAll(actor: AuthenticatedUser, schoolId?: number) {
+  async findAll(actor: AuthenticatedUser, schoolId?: number) {
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
     const isStudent = actor.role === Role.STUDENT;
+    const studentProfile = isStudent
+      ? await this.prisma.studentProfile.findUnique({
+          where: { userId: actor.id },
+          select: { className: true, stream: true },
+        })
+      : null;
 
     return this.prisma.assignment.findMany({
       where: {
         schoolId: targetSchoolId,
+        // A teacher's workspace is intentionally focused on assignments
+        // they own. School admins retain the complete school-wide view.
+        ...(actor.role === Role.TEACHER ? { createdById: actor.id } : {}),
         // Students only see assignments for their own grade. If a student
         // has no grade on file yet, fall back to showing everything for
         // their school rather than hiding all assignments.
@@ -202,6 +227,24 @@ export class AssignmentsService {
           ? {
               isPublished: true,
               OR: [{ publishDate: null }, { publishDate: { lte: new Date() } }],
+              AND: [
+                {
+                  OR: [
+                    { targetClass: null },
+                    ...(studentProfile?.className
+                      ? [{ targetClass: studentProfile.className }]
+                      : []),
+                  ],
+                },
+                {
+                  OR: [
+                    { targetStream: null },
+                    ...(studentProfile?.stream
+                      ? [{ targetStream: studentProfile.stream }]
+                      : []),
+                  ],
+                },
+              ],
             }
           : {}),
       },
@@ -231,11 +274,20 @@ export class AssignmentsService {
     if (!assignment) throw new NotFoundException('Assignment not found');
     this.assertSameTenant(assignment.schoolId, actor);
 
+    if (actor.role === Role.TEACHER && assignment.createdById !== actor.id) {
+      throw new NotFoundException('Assignment not found');
+    }
+
     if (actor.role === Role.STUDENT) {
+      const studentProfile = await this.prisma.studentProfile.findUnique({
+        where: { userId: actor.id },
+        select: { className: true, stream: true },
+      });
       const unavailable =
         !assignment.isPublished ||
         (assignment.publishDate && assignment.publishDate > new Date()) ||
-        (actor.grade && assignment.grade !== actor.grade);
+        (actor.grade && assignment.grade !== actor.grade) ||
+        !this.matchesStudentScope(assignment, studentProfile);
       if (unavailable) throw new NotFoundException('Assignment not found');
       return this.stripAnswersForStudent(assignment);
     }
@@ -508,6 +560,8 @@ export class AssignmentsService {
           description: dto.description,
           subject: dto.subject,
           grade: normalizeGrade(dto.grade) ?? dto.grade,
+          targetClass: dto.targetClass?.trim() || undefined,
+          targetStream: dto.targetStream?.trim() || undefined,
           type: dto.type ?? AssignmentType.TEACHER_MARKED,
           dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
           maxPoints: dto.totalMarks ?? computedTotalMarks,
@@ -581,6 +635,8 @@ export class AssignmentsService {
         description: dto.description,
         subject: dto.subject,
         grade: dto.grade !== undefined ? (normalizeGrade(dto.grade) ?? dto.grade) : undefined,
+        targetClass: dto.targetClass !== undefined ? (dto.targetClass.trim() || null) : undefined,
+        targetStream: dto.targetStream !== undefined ? (dto.targetStream.trim() || null) : undefined,
         type: dto.type,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints,
@@ -624,6 +680,8 @@ export class AssignmentsService {
               dto.grade !== undefined
                 ? (normalizeGrade(dto.grade) ?? dto.grade)
                 : undefined,
+            targetClass: dto.targetClass !== undefined ? (dto.targetClass.trim() || null) : undefined,
+            targetStream: dto.targetStream !== undefined ? (dto.targetStream.trim() || null) : undefined,
             type: dto.type,
             dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
             maxPoints: dto.maxPoints,
@@ -722,5 +780,14 @@ export class AssignmentsService {
     if (actor.schoolId !== schoolId) {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
+  }
+
+  private matchesStudentScope(
+    assignment: { targetClass: string | null; targetStream: string | null },
+    profile: { className: string | null; stream: string | null } | null,
+  ) {
+    const classMatches = !assignment.targetClass || assignment.targetClass === profile?.className;
+    const streamMatches = !assignment.targetStream || assignment.targetStream === profile?.stream;
+    return classMatches && streamMatches;
   }
 }

@@ -70,6 +70,12 @@ export interface StudentImportResponse {
     failed: number;
     duplicates: number;
   };
+  generatedPins: {
+    row: number;
+    name?: string;
+    admissionNumber: string;
+    pin: string;
+  }[];
   errors: ImportErrorDetail[];
 }
 
@@ -89,7 +95,7 @@ export interface TeacherImportResponse {
 }
 
 export const usersApi = {
-  create: (dto: Partial<UserRecord> & { password?: string }) =>
+  create: (dto: Partial<UserRecord> & { password?: string; studentPin?: string }) =>
     api.post<UserRecord>('/users', dto).then((r) => r.data),
 
   findAll: (schoolId?: number) =>

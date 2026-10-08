@@ -17,6 +17,8 @@ export interface QuestionPerformance {
 export interface StudentPerformance {
   studentId: number;
   studentName: string;
+  className: string | null;
+  stream: string | null;
   score: number;
   percentage: number;
   timeSpentSeconds: number | null;
@@ -26,6 +28,8 @@ export interface StudentPerformance {
 export interface AssignmentAnalytics {
   assignmentId: number;
   assignmentTitle: string;
+  targetClass: string | null;
+  targetStream: string | null;
   maxPoints: number;
   overview: {
     totalSubmissions: number;
@@ -40,6 +44,12 @@ export interface AssignmentAnalytics {
   studentPerformance: StudentPerformance[];
   strugglingStudents: StudentPerformance[];
   topPerformers: StudentPerformance[];
+  streamPerformance: Array<{
+    stream: string;
+    studentCount: number;
+    averagePercentage: number;
+    passRate: number;
+  }>;
 }
 
 // Matches backend/src/analytics/analytics.controller.ts.

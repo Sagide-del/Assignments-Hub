@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { assignmentsApi } from '../../api/assignments.api';
-import { analyticsApi } from '../../api/analytics.api';
+import { analyticsApi, type AssignmentAnalytics } from '../../api/analytics.api';
 import { apiErrorMessage } from '../../api/axios';
 import { EmptyState, MetricCard, PageHeader } from '../../components/ui/Saas';
 
@@ -16,6 +16,55 @@ function difficultyBadge(level: 'EASY' | 'MEDIUM' | 'HARD' | null) {
   if (level === 'MEDIUM') return { label: 'Medium (observed)', className: 'bg-amber-50 text-amber-700' };
   if (level === 'EASY') return { label: 'Easy (observed)', className: 'bg-emerald-50 text-emerald-700' };
   return { label: 'Not enough data', className: 'bg-slate-100 text-slate-500' };
+}
+
+function csvCell(value: string | number | boolean | null) {
+  const normalized = value == null ? '' : String(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function downloadAnalyticsReport(data: AssignmentAnalytics) {
+  const rows: Array<Array<string | number | boolean | null>> = [
+    ['Assignment', data.assignmentTitle],
+    ['Target class', data.targetClass],
+    ['Target stream', data.targetStream],
+    [],
+    ['Stream', 'Students', 'Average percentage', 'Pass rate'],
+    ...data.streamPerformance.map((stream) => [
+      stream.stream,
+      stream.studentCount,
+      stream.averagePercentage,
+      stream.passRate,
+    ]),
+    [],
+    ['Student', 'Class', 'Stream', 'Score', 'Percentage', 'Time spent (seconds)', 'Late'],
+    ...data.studentPerformance.map((student) => [
+      student.studentName,
+      student.className,
+      student.stream,
+      student.score,
+      student.percentage,
+      student.timeSpentSeconds,
+      student.isLate,
+    ]),
+    [],
+    ['Question', 'Type', 'Answered', 'Graded', 'Correct percentage', 'Observed difficulty'],
+    ...data.questionPerformance.map((question, index) => [
+      `Q${index + 1}: ${question.questionText}`,
+      question.questionType,
+      question.timesAnswered,
+      question.timesGraded,
+      question.percentCorrect,
+      question.observedDifficulty,
+    ]),
+  ];
+  const csv = rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${data.assignmentTitle.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'assignment'}-performance.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 // Teacher-facing performance dashboard for a single assignment: overview
@@ -72,6 +121,24 @@ export function AnalyticsDashboard() {
         </div>
       ) : data ? (
         <>
+          <section className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-[#101820]">{data.assignmentTitle}</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {[data.targetClass, data.targetStream ? `Stream ${data.targetStream}` : null]
+                  .filter(Boolean)
+                  .join(' · ') || 'All students in the assigned grade'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => downloadAnalyticsReport(data)}
+              className="min-h-11 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Download report
+            </button>
+          </section>
+
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard label="Average score" value={`${data.overview.averageScore} / ${data.maxPoints}`} />
             <MetricCard label="Average percentage" value={`${data.overview.averagePercentage}%`} />
@@ -82,6 +149,36 @@ export function AnalyticsDashboard() {
             <MetricCard compact label="Total submissions" value={data.overview.totalSubmissions} />
             <MetricCard compact label="Graded" value={data.overview.gradedCount} />
             <MetricCard compact label="Pending review" value={data.overview.pendingReviewCount} />
+          </section>
+
+          <section className="rounded-[24px] border border-slate-200 bg-white p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-[#101820]">Stream performance</h2>
+            {data.streamPerformance.length === 0 ? (
+              <EmptyState title="Stream results will appear after submissions are graded" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-[620px] w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.1em] text-slate-400">
+                      <th className="pb-3 font-semibold">Stream</th>
+                      <th className="pb-3 font-semibold">Students</th>
+                      <th className="pb-3 font-semibold">Average</th>
+                      <th className="pb-3 font-semibold">Pass rate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {data.streamPerformance.map((stream) => (
+                      <tr key={stream.stream}>
+                        <td className="py-3 font-semibold text-[#101820]">{stream.stream}</td>
+                        <td className="py-3 text-slate-600">{stream.studentCount}</td>
+                        <td className="py-3 text-slate-600">{stream.averagePercentage}%</td>
+                        <td className="py-3 text-slate-600">{stream.passRate}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
 
           <section className="rounded-[24px] border border-slate-200 bg-white p-6 space-y-4">
@@ -134,7 +231,10 @@ export function AnalyticsDashboard() {
                 <ul className="space-y-2">
                   {data.strugglingStudents.map((student) => (
                     <li key={student.studentId} className="flex items-center justify-between rounded-xl bg-[#F8FAFC] px-3 py-2 text-sm">
-                      <span className="font-medium text-[#101820]">{student.studentName}</span>
+                      <span className="font-medium text-[#101820]">
+                        {student.studentName}
+                        {student.stream ? <span className="ml-2 text-xs text-slate-400">Stream {student.stream}</span> : null}
+                      </span>
                       <span className="text-slate-500">{student.percentage}%</span>
                     </li>
                   ))}
@@ -149,7 +249,10 @@ export function AnalyticsDashboard() {
                 <ul className="space-y-2">
                   {data.topPerformers.map((student) => (
                     <li key={student.studentId} className="flex items-center justify-between rounded-xl bg-[#F8FAFC] px-3 py-2 text-sm">
-                      <span className="font-medium text-[#101820]">{student.studentName}</span>
+                      <span className="font-medium text-[#101820]">
+                        {student.studentName}
+                        {student.stream ? <span className="ml-2 text-xs text-slate-400">Stream {student.stream}</span> : null}
+                      </span>
                       <span className="text-slate-500">{student.percentage}%</span>
                     </li>
                   ))}

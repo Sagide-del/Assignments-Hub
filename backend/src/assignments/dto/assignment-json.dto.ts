@@ -133,6 +133,16 @@ export class AssignmentJsonDto {
   grade: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  targetClass?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  targetStream?: string;
+
+  @IsOptional()
   @IsEnum(AssignmentType)
   type?: AssignmentType;
 

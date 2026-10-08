@@ -284,8 +284,13 @@ export class SmsService {
     });
   }
 
-  /** Every active student in the school (optionally filtered by grade) who has a parent phone on file. */
-  async getStudentRecipients(schoolId: number, grade?: string): Promise<SmsRecipient[]> {
+  /** Active students in the requested academic scope who have a parent phone on file. */
+  async getStudentRecipients(
+    schoolId: number,
+    grade?: string,
+    targetClass?: string | null,
+    targetStream?: string | null,
+  ): Promise<SmsRecipient[]> {
     const students = await this.prisma.user.findMany({
       where: {
         schoolId,
@@ -293,6 +298,16 @@ export class SmsService {
         isActive: true,
         parentPhone: { not: null },
         ...(grade ? { grade } : {}),
+        ...(targetClass || targetStream
+          ? {
+              studentProfile: {
+                is: {
+                  ...(targetClass ? { className: targetClass } : {}),
+                  ...(targetStream ? { stream: targetStream } : {}),
+                },
+              },
+            }
+          : {}),
       },
       select: { id: true, parentPhone: true },
     });

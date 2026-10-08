@@ -4,11 +4,11 @@ import { authApi } from '../../api/auth.api';
 import { apiErrorMessage } from '../../api/axios';
 import { useAuthStore } from '../../store/auth.store';
 
-// Matches POST /auth/student/login exactly: school code + admission number,
-// no password (see backend/src/auth/auth.service.ts loginStudent).
+// Legacy standalone form. The unified login page is the primary entry point.
 export function StudentLogin() {
   const [schoolCode, setSchoolCode] = useState('');
   const [admissionNumber, setAdmissionNumber] = useState('');
+  const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
@@ -19,7 +19,11 @@ export function StudentLogin() {
     setError(null);
     setLoading(true);
     try {
-      const pair = await authApi.loginStudent(schoolCode.trim().toUpperCase(), admissionNumber.trim());
+      const pair = await authApi.loginStudent(
+        schoolCode.trim().toUpperCase(),
+        admissionNumber.trim(),
+        pin.trim() || undefined,
+      );
       setSession(pair);
       navigate('/student', { replace: true });
     } catch (err) {
@@ -45,6 +49,20 @@ export function StudentLogin() {
           spellCheck={false}
           autoComplete="off"
           className="w-full rounded border-gray-300 focus:border-brand focus:ring-brand text-sm py-2 px-3 border"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-700">Learner PIN</label>
+        <input
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+          placeholder="Leave blank only for a legacy account"
+          autoComplete="current-password"
+          className="w-full rounded border border-gray-300 px-3 py-2 text-base focus:border-brand focus:ring-brand"
         />
       </div>
 

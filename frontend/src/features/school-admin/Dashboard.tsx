@@ -221,6 +221,24 @@ export function SchoolAdminDashboard() {
           errorTitle="Student validation details"
           expanded={showStudentErrors}
           onToggleExpanded={() => setShowStudentErrors((prev) => !prev)}
+          footer={
+            studentImportMutation.data?.generatedPins?.length ? (
+              <div className="rounded-2xl border border-lime-200 bg-lime-50 p-4 text-xs">
+                <p className="font-semibold text-[#101820]">Generated student PINs (shown once)</p>
+                <p className="mt-1 text-slate-600">Share each PIN privately with the matching learner.</p>
+                <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto text-slate-800">
+                  {studentImportMutation.data.generatedPins?.map((entry) => (
+                    <li key={`${entry.row}-${entry.admissionNumber}`} className="flex justify-between gap-3">
+                      <span className="truncate">{entry.name ?? entry.admissionNumber}</span>
+                      <span className="shrink-0 font-mono font-semibold">
+                        {entry.admissionNumber} / {entry.pin}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null
+          }
           inputRef={studentFileInput}
         />
 

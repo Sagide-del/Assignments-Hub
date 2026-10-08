@@ -49,6 +49,9 @@ export class UsersService {
       if (existing) throw new ConflictException('Admission number already in use at this school');
 
       const grade = normalizeGrade(dto.grade);
+      const passwordHash = dto.studentPin
+        ? await bcrypt.hash(dto.studentPin, 12)
+        : undefined;
 
       return this.prisma.user.create({
         data: {
@@ -56,6 +59,7 @@ export class UsersService {
           name: dto.name,
           role: dto.role,
           admissionNumber: dto.admissionNumber,
+          passwordHash,
           grade,
           parentPhone: dto.parentPhone,
           studentProfile: {
@@ -152,6 +156,9 @@ export class UsersService {
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.password !== undefined) data.passwordHash = await bcrypt.hash(dto.password, 12);
+    if (dto.studentPin !== undefined && user.role === Role.STUDENT) {
+      data.passwordHash = await bcrypt.hash(dto.studentPin, 12);
+    }
     if (dto.grade !== undefined && user.role === Role.STUDENT) data.grade = normalizedGrade;
     if (dto.parentPhone !== undefined && user.role === Role.STUDENT) data.parentPhone = dto.parentPhone;
     if (dto.subject !== undefined && user.role === Role.TEACHER) data.subject = dto.subject;

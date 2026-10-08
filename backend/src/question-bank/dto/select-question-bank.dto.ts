@@ -35,6 +35,16 @@ export class SelectQuestionBankDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  targetClass?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  targetStream?: string;
+
+  @IsOptional()
   @IsDateString()
   dueDate?: string;
 

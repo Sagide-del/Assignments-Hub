@@ -4,6 +4,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   MinLength,
   ValidateIf,
 } from 'class-validator';
@@ -39,6 +40,13 @@ export class CreateUserDto {
   @IsString()
   @MinLength(1)
   admissionNumber?: string;
+
+  // Optional for manual creation; student imports generate one when blank.
+  // Stored as a bcrypt hash, never returned by the users API.
+  @ValidateIf((o) => o.role === Role.STUDENT && o.studentPin !== undefined)
+  @IsString()
+  @Matches(/^\d{4,8}$/, { message: 'Student PIN must contain 4 to 8 digits' })
+  studentPin?: string;
 
   // Optional, meaningful only for STUDENT — scopes which assignments they
   // see (see AssignmentsService.findAll). Ignored for staff roles.

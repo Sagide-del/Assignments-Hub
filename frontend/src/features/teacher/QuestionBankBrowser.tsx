@@ -13,6 +13,8 @@ export default function QuestionBankBrowser() {
   const [topic, setTopic] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [title, setTitle] = useState('');
+  const [targetClass, setTargetClass] = useState('');
+  const [targetStream, setTargetStream] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -41,11 +43,15 @@ export default function QuestionBankBrowser() {
       questionBankApi.select({
         questionIds: Array.from(selected),
         title,
+        targetClass: targetClass.trim() || undefined,
+        targetStream: targetStream.trim() || undefined,
       }),
     onSuccess: () => {
       setNotice('Assignment created from the Question Bank.');
       setSelected(new Set());
       setTitle('');
+      setTargetClass('');
+      setTargetStream('');
       void queryClient.invalidateQueries({ queryKey: ['assignments'] });
     },
     onError: (err) => setError(apiErrorMessage(err, 'Could not create the assignment')),
@@ -166,19 +172,33 @@ export default function QuestionBankBrowser() {
 
           <section className="rounded-[24px] border border-slate-200 bg-white p-6 space-y-3">
             <h2 className="text-lg font-semibold text-[#101820]">Create assignment from selection</h2>
-            <div className="flex flex-wrap gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <input
                 type="text"
                 placeholder="Assignment title"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="min-h-11 flex-1 rounded-xl border border-slate-200 px-3 text-sm"
+                className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm sm:col-span-2"
+              />
+              <input
+                type="text"
+                placeholder="Class (optional, e.g. Grade 7)"
+                value={targetClass}
+                onChange={(event) => setTargetClass(event.target.value)}
+                className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Stream (optional, e.g. A)"
+                value={targetStream}
+                onChange={(event) => setTargetStream(event.target.value)}
+                className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
               />
               <button
                 type="button"
                 disabled={!title || selected.size === 0 || select.isPending}
                 onClick={() => select.mutate()}
-                className="min-h-11 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white disabled:opacity-40"
+                className="min-h-11 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white disabled:opacity-40 sm:col-span-2 sm:justify-self-end"
               >
                 {select.isPending ? 'Creating...' : `Create from ${selected.size || ''} question(s)`}
               </button>

@@ -339,8 +339,15 @@ export function ExamPlayer() {
       return assignmentsApi.submit(assignmentId, { answers: answerList, isDraft, timeSpentSeconds });
     },
     onSuccess: (submission, isDraft) => {
-      setStatus(isDraft ? 'Draft saved.' : 'Assessment submitted.');
+      setStatus(
+        isDraft
+          ? 'Draft saved.'
+          : submission.resultsReleasedAt
+            ? 'Assessment submitted. Your results are ready.'
+            : 'Assessment submitted.',
+      );
       queryClient.setQueryData(['my-submission', assignmentId], [submission]);
+      queryClient.invalidateQueries({ queryKey: ['student-submissions'] });
     },
     onError: (err) => setStatus(apiErrorMessage(err, 'Could not save')),
   });

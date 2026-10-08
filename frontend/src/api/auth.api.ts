@@ -6,8 +6,14 @@ export const authApi = {
   loginStaff: (schoolCode: string, email: string, password: string) =>
     api.post<TokenPair>('/auth/staff/login', { schoolCode, email, password }).then((r) => r.data),
 
-  loginStudent: (schoolCode: string, admissionNumber: string) =>
-    api.post<TokenPair>('/auth/student/login', { schoolCode, admissionNumber }).then((r) => r.data),
+  loginStudent: (schoolCode: string, admissionNumber: string, pin?: string) =>
+    api
+      .post<TokenPair>('/auth/student/login', {
+        schoolCode,
+        admissionNumber,
+        ...(pin ? { pin } : {}),
+      })
+      .then((r) => r.data),
 
   loginIndependent: (identifier: string, password: string) =>
     api.post<TokenPair>('/auth/independent/login', { identifier, password }).then((r) => r.data),

@@ -154,6 +154,8 @@ export const questionBankApi = {
     questionIds: number[];
     title: string;
     description?: string;
+    targetClass?: string;
+    targetStream?: string;
     dueDate?: string;
     isPublished?: boolean;
     notifyParents?: boolean;
