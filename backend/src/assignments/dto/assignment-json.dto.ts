@@ -13,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AssignmentType, QuestionType } from '@prisma/client';
+import { AssignmentKind, AssignmentType, QuestionType } from '@prisma/client';
 
 // ============================================================================
 // JSON exam-paper schema
@@ -145,6 +145,10 @@ export class AssignmentJsonDto {
   @IsOptional()
   @IsEnum(AssignmentType)
   type?: AssignmentType;
+
+  @IsOptional()
+  @IsEnum(AssignmentKind)
+  kind?: AssignmentKind;
 
   @IsOptional()
   @IsDateString()

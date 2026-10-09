@@ -21,6 +21,7 @@ export interface CreateAssignmentInput {
   grade: string;
   targetClass?: string;
   targetStream?: string;
+  kind?: 'STANDARD' | 'KCSE_PAPER';
   type?: string;
   dueDate?: string;
   maxPoints?: number;
@@ -39,6 +40,8 @@ export interface CreateAssignmentInput {
 export const assignmentsApi = {
   findAll: (schoolId?: number) =>
     api.get<Assignment[]>('/assignments', { params: { schoolId } }).then((r) => r.data),
+
+  findKcse: () => api.get<Assignment[]>('/assignments/kcse').then((r) => r.data),
 
   findOne: (id: number) => api.get<Assignment>(`/assignments/${id}`).then((r) => r.data),
 

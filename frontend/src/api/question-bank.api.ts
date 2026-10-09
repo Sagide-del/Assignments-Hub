@@ -52,10 +52,22 @@ export interface SchoolQuestionBankAccess {
   school: { id: number; name: string; code: string };
 }
 
+export interface QuestionBankSourceDocument {
+  id: number;
+  title: string;
+  subject: string;
+  grade: string;
+  fileName: string | null;
+  sourceType: 'PDF' | 'TEXT';
+  createdAt: string;
+  _count: { chunks: number; questions: number };
+}
+
 export interface GenerateQuestionBankInput {
   // PDF is the default. TEXT uses `sourceText` instead of `file` — URL and
   // Video are not implemented yet (see QuestionGenerator's input selector).
-  inputType?: 'PDF' | 'TEXT';
+  inputType?: 'PDF' | 'TEXT' | 'KNOWLEDGE';
+  sourceDocumentId?: number;
   file?: File;
   sourceText?: string;
   subject: string;
@@ -74,6 +86,7 @@ function questionBankFormData(input: GenerateQuestionBankInput) {
   if (input.file) body.append('file', input.file);
   if (input.inputType) body.append('inputType', input.inputType);
   if (input.sourceText) body.append('sourceText', input.sourceText);
+  if (input.sourceDocumentId) body.append('sourceDocumentId', String(input.sourceDocumentId));
   body.append('subject', input.subject);
   body.append('grade', input.grade);
   body.append('topic', input.topic);
@@ -138,6 +151,9 @@ export const questionBankAdminApi = {
 
   listSchoolAccess: () =>
     api.get<SchoolQuestionBankAccess[]>('/admin/question-bank/school-access/list').then((response) => response.data),
+
+  sources: () =>
+    api.get<QuestionBankSourceDocument[]>('/admin/question-bank/sources/list').then((response) => response.data),
 };
 
 export const questionBankApi = {
@@ -159,5 +175,21 @@ export const questionBankApi = {
     dueDate?: string;
     isPublished?: boolean;
     notifyParents?: boolean;
+    kind?: 'STANDARD' | 'KCSE_PAPER';
   }) => api.post('/question-bank/select', input).then((response) => response.data),
+
+  rotate: (input: {
+    title: string;
+    subject: string;
+    grade: string;
+    topic: string;
+    questionCount: number;
+    difficulty?: string;
+    targetClass?: string;
+    targetStream?: string;
+    dueDate?: string;
+    isPublished?: boolean;
+    notifyParents?: boolean;
+    kind?: 'STANDARD' | 'KCSE_PAPER';
+  }) => api.post('/question-bank/rotate', input).then((response) => response.data),
 };

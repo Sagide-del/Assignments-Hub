@@ -11,6 +11,7 @@ import { ExamPlayer } from '../../features/student/ExamPlayer';
 import { StemLabsPage } from '../../features/student/StemLabs';
 import { StemLabPlayerPage } from '../../features/student/StemLabPlayer';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
+import { KcsePapersPage } from '../../features/student/KcsePapers';
 import { LearnSkillsPage } from '../../features/student/LearnSkills';
 import { SkillDetailPage } from '../../features/student/SkillDetail';
 import { MyPathwayPage } from '../../features/student/my-pathway/MyPathwayPage';
@@ -60,6 +61,10 @@ const studentNav = [
   {
     to: '/student/my-assignments',
     label: 'My Assignments',
+  },
+  {
+    to: '/student/kcse-papers',
+    label: 'KCSE Papers',
   },
   {
     to: '/student/mnemonic-cards',
@@ -254,6 +259,10 @@ export const router = createBrowserRouter([
           {
             path: '/student/my-assignments',
             element: <MyAssignmentsPage />,
+          },
+          {
+            path: '/student/kcse-papers',
+            element: <KcsePapersPage />,
           },
           {
             path: '/student/mnemonic-cards',

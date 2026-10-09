@@ -67,6 +67,11 @@ enum AssignmentType {
   PRACTICAL
 }
 
+enum AssignmentKind {
+  STANDARD
+  KCSE_PAPER
+}
+
 enum LabType {
   SIMULATION
   PRACTICAL
@@ -306,8 +311,9 @@ model School {
   aiExtractedContents  AiExtractedContent[]
   aiContentArtifacts   AiContentArtifact[]
   aiReviewEvents       AiReviewEvent[]
-  questionBankItems       QuestionBank[]
-  questionBankAccess      SchoolQuestionBankAccess?
+  questionBankItems    QuestionBank[]
+  questionBankAccess   SchoolQuestionBankAccess?
+  questionBankUsages   QuestionBankUsage[]
 
   @@map("schools")
 }
@@ -355,46 +361,48 @@ model User {
 
   submissions                      Submission[]
   auditLogs                        AuditLog[]
-  createdAssignments               Assignment[]                @relation("AssignmentCreatedBy")
+  createdAssignments               Assignment[]                 @relation("AssignmentCreatedBy")
   labSessions                      LabSession[]
-  createdLabs                      Lab[]                       @relation("LabCreatedBy")
-  gradedSubmissions                Submission[]                @relation("SubmissionGradedBy")
-  sentSmsLogs                      SmsLog[]                    @relation("SmsSentBy")
-  smsLogsAboutMe                   SmsLog[]                    @relation("SmsAboutStudent")
-  createdCslActivities             CslActivity[]               @relation("CslActivityCreatedBy")
-  cslSubmissions                   CslSubmission[]             @relation("CslSubmissionByStudent")
-  reviewedCslSubmissions           CslSubmission[]             @relation("CslSubmissionReviewedBy")
+  createdLabs                      Lab[]                        @relation("LabCreatedBy")
+  gradedSubmissions                Submission[]                 @relation("SubmissionGradedBy")
+  sentSmsLogs                      SmsLog[]                     @relation("SmsSentBy")
+  smsLogsAboutMe                   SmsLog[]                     @relation("SmsAboutStudent")
+  createdCslActivities             CslActivity[]                @relation("CslActivityCreatedBy")
+  cslSubmissions                   CslSubmission[]              @relation("CslSubmissionByStudent")
+  reviewedCslSubmissions           CslSubmission[]              @relation("CslSubmissionReviewedBy")
   pathwaySelections                StudentPathwaySelection[]
   refreshTokens                    RefreshToken[]
   supportAssessments               StudentSupportAssessment[]
   aiUsageLogs                      AiUsageLog[]
-  verifiedPayments                 PaymentTransaction[]        @relation("PaymentVerifiedBy")
+  verifiedPayments                 PaymentTransaction[]         @relation("PaymentVerifiedBy")
   studentProfile                   StudentProfile?
-  skillEnrollments                 SkillEnrollment[]           @relation("SkillEnrollmentStudent")
-  skillPayments                    SkillPayment[]              @relation("SkillPaymentStudent")
+  skillEnrollments                 SkillEnrollment[]            @relation("SkillEnrollmentStudent")
+  skillPayments                    SkillPayment[]               @relation("SkillPaymentStudent")
   // Set only when role = TEACHER and they've opted into the mentor
   // directory (see MentorProfile's comment).
   mentorProfile                    MentorProfile?
-  mentorshipRequestsMade           MentorshipRequest[]         @relation("MentorshipRequestStudent")
+  mentorshipRequestsMade           MentorshipRequest[]          @relation("MentorshipRequestStudent")
   mentorshipLogEntries             MentorshipLogEntry[]
   talentProfile                    StudentTalentProfile?
   // News/Messages: any STUDENT can message any TEACHER at their school and
   // vice versa — see MessagesService.assertCanMessage. Not applicable to
   // SCHOOL_ADMIN/PLATFORM_ADMIN, who instead get read-only oversight via
   // GET /messages/admin/* (no send/receive relation needed for them).
-  sentMessages                     Message[]                   @relation("MessageSender")
-  receivedMessages                 Message[]                   @relation("MessageRecipient")
+  sentMessages                     Message[]                    @relation("MessageSender")
+  receivedMessages                 Message[]                    @relation("MessageRecipient")
   // Independent-student billing — see IndependentStudentInvoice's comment.
-  independentInvoices              IndependentStudentInvoice[] @relation("IndependentInvoiceStudent")
-  recordedIndependentInvoices      IndependentStudentInvoice[] @relation("IndependentInvoiceRecordedBy")
-  independentPaymentClaims         IndependentPaymentClaim[]   @relation("IndependentPaymentClaimStudent")
-  reviewedIndependentPaymentClaims IndependentPaymentClaim[]   @relation("IndependentPaymentClaimReviewedBy")
-  updatedAiFeatureConfigs          AiFeatureConfig[]           @relation("AiFeatureConfigUpdatedBy")
-  requestedAiGenerationJobs        AiGenerationJob[]           @relation("AiGenerationRequestedBy")
-  uploadedAiExtractedContents      AiExtractedContent[]        @relation("AiExtractedContentUploadedBy")
-  reviewedAiArtifacts              AiContentArtifact[]         @relation("AiArtifactReviewedBy")
-  aiReviewEvents                   AiReviewEvent[]             @relation("AiReviewEventReviewer")
+  independentInvoices              IndependentStudentInvoice[]  @relation("IndependentInvoiceStudent")
+  recordedIndependentInvoices      IndependentStudentInvoice[]  @relation("IndependentInvoiceRecordedBy")
+  independentPaymentClaims         IndependentPaymentClaim[]    @relation("IndependentPaymentClaimStudent")
+  reviewedIndependentPaymentClaims IndependentPaymentClaim[]    @relation("IndependentPaymentClaimReviewedBy")
+  updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
+  requestedAiGenerationJobs        AiGenerationJob[]            @relation("AiGenerationRequestedBy")
+  uploadedAiExtractedContents      AiExtractedContent[]         @relation("AiExtractedContentUploadedBy")
+  reviewedAiArtifacts              AiContentArtifact[]          @relation("AiArtifactReviewedBy")
+  aiReviewEvents                   AiReviewEvent[]              @relation("AiReviewEventReviewer")
   createdQuestionBankItems         QuestionBank[]               @relation("QuestionBankCreatedBy")
+  createdQuestionBankSources       QuestionBankSourceDocument[] @relation("QuestionBankSourceCreatedBy")
+  selectedQuestionBankUsages       QuestionBankUsage[]          @relation("QuestionBankUsageSelectedBy")
   reviewedQuestionBankItems        QuestionBank[]               @relation("QuestionBankReviewedBy")
   activatedSchoolQuestionBanks     SchoolQuestionBankAccess[]   @relation("SchoolQuestionBankActivatedBy")
 
@@ -577,16 +585,17 @@ model Assignment {
   schoolId Int    @map("school_id")
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  title       String
-  description String?
-  subject     String
-  grade       String
+  title        String
+  description  String?
+  subject      String
+  grade        String
   // Optional school delivery scope. Null keeps the historical grade-wide
   // behaviour; populated values restrict visibility/submission to learners
   // whose StudentProfile matches the selected class and/or stream.
-  targetClass  String? @map("target_class")
-  targetStream String? @map("target_stream")
-  type        AssignmentType @default(TEACHER_MARKED)
+  targetClass  String?        @map("target_class")
+  targetStream String?        @map("target_stream")
+  type         AssignmentType @default(TEACHER_MARKED)
+  kind         AssignmentKind @default(STANDARD)
 
   dueDate     DateTime? @map("due_date")
   maxPoints   Int       @default(100) @map("max_points")
@@ -620,17 +629,19 @@ model Assignment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  submissions          Submission[]
-  questions            Question[]
-  sections             Section[]
-  rubric               Rubric?
-  aiSourceJobs         AiGenerationJob[]   @relation("AiSourceAssignment")
-  aiPublishedArtifacts AiContentArtifact[] @relation("AiPublishedAssignment")
-  questionBankPublishedItems QuestionBank[] @relation("QuestionBankPublishedAssignment")
+  submissions                Submission[]
+  questions                  Question[]
+  sections                   Section[]
+  rubric                     Rubric?
+  aiSourceJobs               AiGenerationJob[]   @relation("AiSourceAssignment")
+  aiPublishedArtifacts       AiContentArtifact[] @relation("AiPublishedAssignment")
+  questionBankPublishedItems QuestionBank[]      @relation("QuestionBankPublishedAssignment")
+  questionBankUsages         QuestionBankUsage[]
 
   @@index([schoolId])
   @@index([createdById])
   @@index([schoolId, grade, targetStream, isPublished])
+  @@index([schoolId, kind, grade, isPublished])
   @@map("assignments")
 }
 
@@ -1944,6 +1955,9 @@ model QuestionBank {
   createdById Int  @map("created_by_id")
   createdBy   User @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
 
+  sourceDocumentId Int?                        @map("source_document_id")
+  sourceDocument   QuestionBankSourceDocument? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+
   subject String
   grade   String
   topic   String
@@ -1993,13 +2007,73 @@ model QuestionBank {
   publishedAssignment   Assignment? @relation("QuestionBankPublishedAssignment", fields: [publishedAssignmentId], references: [id], onDelete: SetNull)
   publishedAt           DateTime?   @map("published_at")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  usages    QuestionBankUsage[]
 
   @@index([isGlobal, status, subject, grade])
   @@index([schoolId, status])
   @@index([generationBatchId])
+  @@index([sourceDocumentId])
   @@map("question_bank")
+}
+
+// Platform-owned curriculum sources are retained as searchable chunks so a
+// new question batch can be grounded in the relevant topic without sending
+// an entire textbook to the AI provider on every request.
+model QuestionBankSourceDocument {
+  id          Int      @id @default(autoincrement())
+  title       String
+  subject     String
+  grade       String
+  fileName    String?  @map("file_name")
+  sourceType  String   @map("source_type")
+  contentHash String   @map("content_hash")
+  createdById Int      @map("created_by_id")
+  createdBy   User     @relation("QuestionBankSourceCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  chunks    QuestionBankSourceChunk[]
+  questions QuestionBank[]
+
+  @@unique([contentHash, subject, grade])
+  @@index([subject, grade, createdAt])
+  @@map("question_bank_source_documents")
+}
+
+model QuestionBankSourceChunk {
+  id         Int                        @id @default(autoincrement())
+  documentId Int                        @map("document_id")
+  document   QuestionBankSourceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  ordinal    Int
+  content    String                     @db.Text
+  searchText String                     @map("search_text") @db.Text
+  createdAt  DateTime                   @default(now()) @map("created_at")
+
+  @@unique([documentId, ordinal])
+  @@index([documentId])
+  @@map("question_bank_source_chunks")
+}
+
+// Records which curated questions each school has already used. Rotation
+// selects the least-used questions first and never exposes this ledger to
+// students.
+model QuestionBankUsage {
+  id             Int          @id @default(autoincrement())
+  schoolId       Int          @map("school_id")
+  school         School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  questionBankId Int          @map("question_bank_id")
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  assignmentId   Int          @map("assignment_id")
+  assignment     Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  selectedById   Int          @map("selected_by_id")
+  selectedBy     User         @relation("QuestionBankUsageSelectedBy", fields: [selectedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@unique([assignmentId, questionBankId])
+  @@index([schoolId, questionBankId, createdAt])
+  @@map("question_bank_usages")
 }
 
 // One row per school that a PLATFORM_ADMIN has activated for Question Bank
@@ -2013,10 +2087,10 @@ model SchoolQuestionBankAccess {
 
   active Boolean @default(true)
 
-  activatedById Int?      @map("activated_by_id")
-  activatedBy   User?     @relation("SchoolQuestionBankActivatedBy", fields: [activatedById], references: [id], onDelete: SetNull)
-  activatedAt   DateTime  @default(now()) @map("activated_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  activatedById Int?     @map("activated_by_id")
+  activatedBy   User?    @relation("SchoolQuestionBankActivatedBy", fields: [activatedById], references: [id], onDelete: SetNull)
+  activatedAt   DateTime @default(now()) @map("activated_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("school_question_bank_access")
 }

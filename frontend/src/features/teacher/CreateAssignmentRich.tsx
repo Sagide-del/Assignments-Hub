@@ -336,6 +336,7 @@ export function CreateAssignmentRich({
   const [grade, setGrade] = useState(gradeValue(initialAssignment?.grade));
   const [targetClass, setTargetClass] = useState(initialAssignment?.targetClass ?? '');
   const [targetStream, setTargetStream] = useState(initialAssignment?.targetStream ?? '');
+  const [kind, setKind] = useState<'STANDARD' | 'KCSE_PAPER'>(initialAssignment?.kind ?? 'STANDARD');
   const [dueDate, setDueDate] = useState(dateInputValue(initialAssignment?.dueDate));
   const [timeAllowedMinutes, setTimeAllowedMinutes] = useState(
     initialAssignment?.timeAllowedMinutes
@@ -557,6 +558,7 @@ export function CreateAssignmentRich({
               ? targetStream.trim()
               : targetStream.trim() || undefined
             : undefined,
+        kind,
         dueDate: dueDate || undefined,
         maxPoints: totalPoints,
         timeAllowedMinutes: timeAllowedMinutes ? Number(timeAllowedMinutes) : undefined,
@@ -640,6 +642,7 @@ export function CreateAssignmentRich({
           targetStream={targetStream}
           dueDate={dueDate}
           timeAllowedMinutes={timeAllowedMinutes}
+          kind={kind}
           onTitle={setTitle}
           onDescription={setDescription}
           onSubject={setSubject}
@@ -648,6 +651,7 @@ export function CreateAssignmentRich({
           onTargetStream={setTargetStream}
           onDueDate={setDueDate}
           onTimeAllowed={setTimeAllowedMinutes}
+          onKind={setKind}
           showAudienceTargeting={target === 'school'}
         />
       ) : null}
@@ -679,6 +683,7 @@ export function CreateAssignmentRich({
           targetStream={targetStream}
           dueDate={dueDate}
           timeAllowedMinutes={timeAllowedMinutes}
+          kind={kind}
           totalPoints={totalPoints}
           questions={questions}
           notifyParents={notifyParents}
@@ -822,6 +827,7 @@ function SetupStep({
   targetStream,
   dueDate,
   timeAllowedMinutes,
+  kind,
   onTitle,
   onDescription,
   onSubject,
@@ -830,6 +836,7 @@ function SetupStep({
   onTargetStream,
   onDueDate,
   onTimeAllowed,
+  onKind,
   showAudienceTargeting,
 }: {
   title: string;
@@ -840,6 +847,7 @@ function SetupStep({
   targetStream: string;
   dueDate: string;
   timeAllowedMinutes: string;
+  kind: 'STANDARD' | 'KCSE_PAPER';
   onTitle: (value: string) => void;
   onDescription: (value: string) => void;
   onSubject: (value: string) => void;
@@ -848,6 +856,7 @@ function SetupStep({
   onTargetStream: (value: string) => void;
   onDueDate: (value: string) => void;
   onTimeAllowed: (value: string) => void;
+  onKind: (value: 'STANDARD' | 'KCSE_PAPER') => void;
   showAudienceTargeting: boolean;
 }) {
   return (
@@ -857,6 +866,27 @@ function SetupStep({
         <p className="mt-1 text-sm text-slate-500">Set the learning context and delivery details.</p>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
+        <Field label="Format" className="sm:col-span-2">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {([
+              ['STANDARD', 'Learning assignment'],
+              ['KCSE_PAPER', 'KCSE-style paper'],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onKind(value)}
+                className={`min-h-11 rounded-xl border px-4 text-sm font-semibold ${
+                  kind === value
+                    ? 'border-[#101820] bg-[#101820] text-white'
+                    : 'border-slate-200 bg-white text-slate-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </Field>
         <Field label="Assignment title" required className="sm:col-span-2">
           <input
             value={title}
@@ -1391,6 +1421,7 @@ function ReviewStep({
   targetStream,
   dueDate,
   timeAllowedMinutes,
+  kind,
   totalPoints,
   questions,
   notifyParents,
@@ -1406,6 +1437,7 @@ function ReviewStep({
   targetStream: string;
   dueDate: string;
   timeAllowedMinutes: string;
+  kind: 'STANDARD' | 'KCSE_PAPER';
   totalPoints: number;
   questions: DraftQuestion[];
   notifyParents: boolean;
@@ -1416,6 +1448,9 @@ function ReviewStep({
     <div className="space-y-5">
       <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_40px_rgba(16,24,32,0.05)]">
         <div className="bg-[#101820] px-5 py-6 text-white sm:px-7">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+            {kind === 'KCSE_PAPER' ? 'KCSE-style paper' : 'Learning assignment'}
+          </p>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B5E61D]">{subject} / Grade {grade}</p>
           <h2 className="mt-2 text-2xl font-semibold">{title}</h2>
           {targetClass || targetStream ? (

@@ -26,6 +26,8 @@ import { UpdateQuestionBankItemDto } from "./dto/update-question-bank-item.dto";
 import { ActivateSchoolDto } from "./dto/activate-school.dto";
 import { PublishQuestionBankDto } from "./dto/publish-question-bank.dto";
 import { SelectQuestionBankDto } from "./dto/select-question-bank.dto";
+import { RotateQuestionBankDto } from './dto/rotate-question-bank.dto';
+import { QuestionBankRetrievalService } from './question-bank-retrieval.service';
 import {
   QUESTION_BANK_MIN_ACCEPTABLE_RATIO,
   QUESTION_BANK_SOURCE_MAX_BYTES,
@@ -64,6 +66,7 @@ export class QuestionBankService {
     private readonly providerRouter: AiProviderRouterService,
     private readonly assignments: AssignmentsService,
     private readonly audit: AuditService,
+    private readonly retrieval: QuestionBankRetrievalService,
   ) {}
 
   // ==========================================================================
@@ -80,6 +83,7 @@ export class QuestionBankService {
     const inputType = dto.inputType ?? "PDF";
     let text: string;
     let sourceFileName: string | null;
+    let sourceDocumentId: number;
     if (inputType === "TEXT") {
       // ValidateIf on the DTO only enforces the 50-char minimum when this
       // field is present at all — a request with inputType TEXT and no
@@ -92,10 +96,51 @@ export class QuestionBankService {
       }
       text = dto.sourceText.trim().slice(0, QUESTION_BANK_SOURCE_TEXT_MAX_CHARACTERS);
       sourceFileName = null;
+      const source = await this.retrieval.storeSource({
+        title: `${dto.subject} - ${dto.topic}`,
+        subject: dto.subject,
+        grade: dto.grade,
+        sourceType: 'TEXT',
+        text,
+        createdById: actor.id,
+      });
+      sourceDocumentId = source.id;
+    } else if (inputType === 'KNOWLEDGE') {
+      if (!dto.sourceDocumentId) {
+        throw new BadRequestException('Choose a knowledge source');
+      }
+      sourceDocumentId = dto.sourceDocumentId;
+      const retrieved = await this.retrieval.retrieveText(
+        sourceDocumentId,
+        `${dto.subject} ${dto.grade} ${dto.topic}`,
+      );
+      sourceFileName = retrieved.source.fileName;
+      text = retrieved.text;
     } else {
       this.validatePdf(file as Express.Multer.File);
       text = await this.extractText((file as Express.Multer.File).buffer);
       sourceFileName = (file as Express.Multer.File).originalname;
+      const source = await this.retrieval.storeSource({
+        title: sourceFileName,
+        subject: dto.subject,
+        grade: dto.grade,
+        fileName: sourceFileName,
+        sourceType: 'PDF',
+        text,
+        createdById: actor.id,
+      });
+      sourceDocumentId = source.id;
+    }
+
+    // Retrieve only chunks relevant to this topic. For newly uploaded text
+    // this also avoids repeatedly sending unrelated chapters to the model.
+    if (inputType !== 'KNOWLEDGE') {
+      text = (
+        await this.retrieval.retrieveText(
+          sourceDocumentId,
+          `${dto.subject} ${dto.grade} ${dto.topic}`,
+        )
+      ).text;
     }
 
     const questionTypes =
@@ -136,6 +181,7 @@ export class QuestionBankService {
         source: QuestionBankSource.PLATFORM,
         isGlobal: true,
         createdById: actor.id,
+        sourceDocumentId,
         subject: dto.subject.trim(),
         grade: dto.grade.trim(),
         topic: (autoTagTopic && question.topic) || dto.topic.trim(),
@@ -204,6 +250,11 @@ export class QuestionBankService {
       this.prisma.questionBank.count({ where }),
     ]);
     return { items, total, skip, take };
+  }
+
+  async listSources(actor: AuthenticatedUser) {
+    this.assertPlatformAdmin(actor);
+    return this.retrieval.listSources();
   }
 
   async getOneAdmin(id: number, actor: AuthenticatedUser) {
@@ -494,6 +545,7 @@ export class QuestionBankService {
         grade: items[0].grade,
         targetClass: dto.targetClass,
         targetStream: dto.targetStream,
+        kind: dto.kind,
         dueDate: dto.dueDate,
         isPublished: dto.isPublished ?? true,
         maxPoints: items.reduce((sum, item) => sum + item.points, 0),
@@ -514,12 +566,91 @@ export class QuestionBankService {
       actor,
     );
 
+    await this.recordUsage(assignment.id, dto.questionIds, actor);
+
     void this.audit.record({
       action: "question_bank.selected",
       schoolId: actor.schoolId,
       userId: actor.id,
       resource: `Assignment:${assignment.id}`,
       metadata: { questionIds: dto.questionIds },
+    });
+    return assignment;
+  }
+
+  async rotateForAssignment(dto: RotateQuestionBankDto, actor: AuthenticatedUser) {
+    await this.assertReadAccess(actor);
+    const candidates = await this.prisma.questionBank.findMany({
+      where: {
+        isGlobal: true,
+        status: QuestionBankStatus.APPROVED,
+        subject: { equals: dto.subject, mode: 'insensitive' },
+        grade: { equals: dto.grade, mode: 'insensitive' },
+        topic: { contains: dto.topic, mode: 'insensitive' },
+        ...(dto.difficulty && dto.difficulty !== 'MIXED'
+          ? { difficulty: dto.difficulty }
+          : {}),
+      },
+      include: {
+        usages: {
+          where: { schoolId: actor.schoolId },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+        _count: { select: { usages: { where: { schoolId: actor.schoolId } } } },
+      },
+    });
+    if (candidates.length < dto.questionCount) {
+      throw new BadRequestException(
+        `Only ${candidates.length} approved questions match this topic. Add more approved questions or lower the question count.`,
+      );
+    }
+    const selected = candidates
+      .sort((a, b) => {
+        const usageDifference = a._count.usages - b._count.usages;
+        if (usageDifference !== 0) return usageDifference;
+        const aLast = a.usages[0]?.createdAt.getTime() ?? 0;
+        const bLast = b.usages[0]?.createdAt.getTime() ?? 0;
+        return aLast - bLast || a.id - b.id;
+      })
+      .slice(0, dto.questionCount);
+
+    const assignment = await this.assignments.create(
+      {
+        title: dto.title,
+        description: `Curated ${dto.topic} question set`,
+        subject: dto.subject,
+        grade: dto.grade,
+        targetClass: dto.targetClass,
+        targetStream: dto.targetStream,
+        dueDate: dto.dueDate,
+        isPublished: dto.isPublished ?? true,
+        notifyParents: dto.notifyParents,
+        kind: dto.kind,
+        maxPoints: selected.reduce((sum, item) => sum + item.points, 0),
+        questions: selected.map((item, index) => ({
+          questionText: item.questionText,
+          contentHtml: item.contentHtml ?? undefined,
+          questionType: item.questionType,
+          options: (item.options as string[] | null) ?? undefined,
+          correctAnswer: item.correctAnswer ?? undefined,
+          config: (item.config as Record<string, unknown> | null) ?? undefined,
+          points: item.points,
+          order: index,
+          hint: item.hint ?? undefined,
+          explanation: item.explanation ?? undefined,
+        })),
+      },
+      actor,
+    );
+    const questionIds = selected.map((item) => item.id);
+    await this.recordUsage(assignment.id, questionIds, actor);
+    void this.audit.record({
+      action: 'question_bank.rotated',
+      schoolId: actor.schoolId,
+      userId: actor.id,
+      resource: `Assignment:${assignment.id}`,
+      metadata: { questionIds, subject: dto.subject, grade: dto.grade, topic: dto.topic },
     });
     return assignment;
   }
@@ -532,6 +663,22 @@ export class QuestionBankService {
     const item = await this.prisma.questionBank.findUnique({ where: { id } });
     if (!item) throw new NotFoundException("Question not found");
     return item;
+  }
+
+  private async recordUsage(
+    assignmentId: number,
+    questionIds: number[],
+    actor: AuthenticatedUser,
+  ) {
+    await this.prisma.questionBankUsage.createMany({
+      data: questionIds.map((questionBankId) => ({
+        schoolId: actor.schoolId,
+        questionBankId,
+        assignmentId,
+        selectedById: actor.id,
+      })),
+      skipDuplicates: true,
+    });
   }
 
   private assertPlatformAdmin(actor: AuthenticatedUser) {

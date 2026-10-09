@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -11,6 +12,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
+import { AssignmentKind } from '@prisma/client';
 
 // A teacher's read-only selection from the bank, used to build their own
 // Assignment (scoped to their own school — see AssignmentsService.create).
@@ -55,4 +57,8 @@ export class SelectQuestionBankDto {
   @IsOptional()
   @IsBoolean()
   notifyParents?: boolean;
+
+  @IsOptional()
+  @IsEnum(AssignmentKind)
+  kind?: AssignmentKind;
 }

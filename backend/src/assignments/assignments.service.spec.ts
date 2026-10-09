@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Role } from '../common/enums/role.enum';
 import { AssignmentsService } from './assignments.service';
+import { AssignmentKind } from '@prisma/client';
 
 describe('AssignmentsService academic scoping', () => {
   function createService() {
@@ -34,11 +35,30 @@ describe('AssignmentsService academic scoping', () => {
         where: expect.objectContaining({
           schoolId: 8,
           grade: 'Grade 7',
+          kind: AssignmentKind.STANDARD,
           isPublished: true,
           AND: [
             { OR: [{ targetClass: null }, { targetClass: 'Form 1' }] },
             { OR: [{ targetStream: null }, { targetStream: 'East' }] },
           ],
+        }),
+      }),
+    );
+  });
+
+  it('keeps KCSE papers in the dedicated student catalogue', async () => {
+    const { service, prisma } = createService();
+    prisma.studentProfile.findUnique.mockResolvedValue({ className: 'Form 4', stream: 'A' });
+
+    await service.findKcse({ id: 42, schoolId: 8, role: Role.STUDENT, grade: 'Grade 12' } as any);
+
+    expect(prisma.assignment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          schoolId: 8,
+          grade: 'Grade 12',
+          kind: AssignmentKind.KCSE_PAPER,
+          isPublished: true,
         }),
       }),
     );

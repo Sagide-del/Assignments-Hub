@@ -3,6 +3,8 @@ import {
   PrismaClient,
   QuestionType,
   Role,
+  SkillContentStatus,
+  SkillLevel,
   SubscriptionStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +13,7 @@ import { STEM_CATEGORY_CATALOG } from './seed-stem-taxonomy-data';
 import { CSL_ACTIVITY_CATALOG } from './seed-csl-data';
 import { PATHWAY_CATALOG } from './seed-pathways-data';
 import { SUPPORT_INSTITUTION_CATALOG } from './seed-support-institutions-data';
+import { CBC_SKILL_CATALOG } from './seed-skills-data';
 
 // Senior School lab keys are formatted "ss-<subject>-10-<n>" — the source
 // curriculum table didn't distinguish which of Grades 10/11/12 each lab
@@ -496,6 +499,63 @@ async function main() {
     console.log('Mbale test learner: MBA001 (PIN supplied via SEED_MBALE_STUDENT_PIN)');
     console.log('Mbale Mathematics teacher: math@mbale.school (password supplied via SEED_MBALE_TEACHER_PASSWORD)');
   }
+
+  const skillProvider = await prisma.skillProvider.upsert({
+    where: { name: 'Assignment Hub Learning Studio' },
+    update: { verified: true, status: SkillContentStatus.PUBLISHED },
+    create: {
+      name: 'Assignment Hub Learning Studio',
+      description: 'Platform-owned practical skills for CBC learners.',
+      verified: true,
+      status: SkillContentStatus.PUBLISHED,
+    },
+  });
+  let skillCoursesCreated = 0;
+  for (const [categoryIndex, entry] of CBC_SKILL_CATALOG.entries()) {
+    const category = await prisma.skillCategory.upsert({
+      where: { name: entry.category },
+      update: {
+        description: entry.description,
+        displayOrder: categoryIndex,
+        status: SkillContentStatus.PUBLISHED,
+      },
+      create: {
+        name: entry.category,
+        description: entry.description,
+        displayOrder: categoryIndex,
+        status: SkillContentStatus.PUBLISHED,
+      },
+    });
+    for (const course of entry.courses) {
+      const existing = await prisma.skillCourse.findFirst({
+        where: { providerId: skillProvider.id, title: course.title },
+      });
+      const data = {
+        categoryId: category.id,
+        providerId: skillProvider.id,
+        title: course.title,
+        shortDescription: course.shortDescription,
+        fullDescription: course.shortDescription,
+        durationWeeks: course.durationWeeks,
+        level: SkillLevel.BEGINNER,
+        costKES: 0,
+        certificateAvailable: false,
+        learningOutcomes: [...course.outcomes],
+        courseStructure: course.outcomes.map((outcome, index) => ({
+          order: index + 1,
+          title: outcome,
+          type: 'PRACTICAL',
+        })),
+        status: SkillContentStatus.PUBLISHED,
+      };
+      if (existing) {
+        await prisma.skillCourse.update({ where: { id: existing.id }, data });
+      } else {
+        await prisma.skillCourse.create({ data });
+        skillCoursesCreated++;
+      }
+    }
+  }
   console.log(
     `STEM taxonomy: ${stemCategoriesCreated} new categories / ${STEM_CATEGORY_CATALOG.length} total, ${stemSubjectsCreated} new subjects`,
   );
@@ -509,6 +569,7 @@ async function main() {
   console.log(
     `Support Institution catalog: ${institutionsCreated} new / ${SUPPORT_INSTITUTION_CATALOG.length} total (upserted by key)`,
   );
+  console.log(`CBC skills catalog: ${skillCoursesCreated} new platform courses`);
 }
 
 main()

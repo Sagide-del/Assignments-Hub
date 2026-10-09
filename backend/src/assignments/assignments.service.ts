@@ -8,6 +8,7 @@ import { AssignmentJsonDto, ExamQuestionDto } from './dto/assignment-json.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
 import {
+  AssignmentKind,
   AssignmentType,
   Prisma,
   QuestionType,
@@ -62,6 +63,7 @@ export class AssignmentsService {
         targetClass: dto.targetClass?.trim() || undefined,
         targetStream: dto.targetStream?.trim() || undefined,
         type: dto.type,
+        kind: dto.kind,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints ?? 100,
         timeAllowedMinutes: dto.timeAllowedMinutes,
@@ -201,6 +203,18 @@ export class AssignmentsService {
   }
 
   async findAll(actor: AuthenticatedUser, schoolId?: number) {
+    return this.findAllForStudentKind(actor, schoolId, AssignmentKind.STANDARD);
+  }
+
+  async findKcse(actor: AuthenticatedUser) {
+    return this.findAllForStudentKind(actor, undefined, AssignmentKind.KCSE_PAPER);
+  }
+
+  private async findAllForStudentKind(
+    actor: AuthenticatedUser,
+    schoolId: number | undefined,
+    studentKind: AssignmentKind,
+  ) {
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
     const isStudent = actor.role === Role.STUDENT;
     const studentProfile = isStudent
@@ -220,6 +234,7 @@ export class AssignmentsService {
         // has no grade on file yet, fall back to showing everything for
         // their school rather than hiding all assignments.
         ...(isStudent && actor.grade ? { grade: actor.grade } : {}),
+        ...(isStudent ? { kind: studentKind } : {}),
         // Staff (teacher/admin) see everything they own, including drafts
         // and not-yet-published assignments, so they can manage them.
         // Students only ever see published + already-released assignments.
@@ -563,6 +578,7 @@ export class AssignmentsService {
           targetClass: dto.targetClass?.trim() || undefined,
           targetStream: dto.targetStream?.trim() || undefined,
           type: dto.type ?? AssignmentType.TEACHER_MARKED,
+          kind: dto.kind,
           dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
           maxPoints: dto.totalMarks ?? computedTotalMarks,
           timeAllowedMinutes: dto.timeAllowedMinutes,
@@ -638,6 +654,7 @@ export class AssignmentsService {
         targetClass: dto.targetClass !== undefined ? (dto.targetClass.trim() || null) : undefined,
         targetStream: dto.targetStream !== undefined ? (dto.targetStream.trim() || null) : undefined,
         type: dto.type,
+        kind: dto.kind,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         maxPoints: dto.maxPoints,
         timeAllowedMinutes: dto.timeAllowedMinutes,
@@ -683,6 +700,7 @@ export class AssignmentsService {
             targetClass: dto.targetClass !== undefined ? (dto.targetClass.trim() || null) : undefined,
             targetStream: dto.targetStream !== undefined ? (dto.targetStream.trim() || null) : undefined,
             type: dto.type,
+            kind: dto.kind,
             dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
             maxPoints: dto.maxPoints,
             timeAllowedMinutes: dto.timeAllowedMinutes,

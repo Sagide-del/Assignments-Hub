@@ -57,6 +57,7 @@ export interface Assignment {
   totalMarks?: number;
   maxPoints?: number;
   type?: 'TEACHER_MARKED' | 'AUTO_MARKED' | 'MIXED' | string;
+  kind?: 'STANDARD' | 'KCSE_PAPER';
   dueDate?: string | null;
   timeAllowedMinutes?: number | null;
   isPublished: boolean;
@@ -173,6 +174,7 @@ export interface AssignmentJsonPayload {
   description?: string;
   subject: string;
   grade: string;
+  kind?: 'STANDARD' | 'KCSE_PAPER';
   sections: AssignmentJsonPayloadSection[];
 }
 

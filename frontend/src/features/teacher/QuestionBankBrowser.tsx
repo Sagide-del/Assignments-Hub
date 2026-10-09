@@ -15,6 +15,8 @@ export default function QuestionBankBrowser() {
   const [title, setTitle] = useState('');
   const [targetClass, setTargetClass] = useState('');
   const [targetStream, setTargetStream] = useState('');
+  const [assignmentKind, setAssignmentKind] = useState<'STANDARD' | 'KCSE_PAPER'>('STANDARD');
+  const [rotationCount, setRotationCount] = useState(10);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -45,6 +47,7 @@ export default function QuestionBankBrowser() {
         title,
         targetClass: targetClass.trim() || undefined,
         targetStream: targetStream.trim() || undefined,
+        kind: assignmentKind,
       }),
     onSuccess: () => {
       setNotice('Assignment created from the Question Bank.');
@@ -55,6 +58,25 @@ export default function QuestionBankBrowser() {
       void queryClient.invalidateQueries({ queryKey: ['assignments'] });
     },
     onError: (err) => setError(apiErrorMessage(err, 'Could not create the assignment')),
+  });
+
+  const rotate = useMutation({
+    mutationFn: () => questionBankApi.rotate({
+      title,
+      subject,
+      grade,
+      topic,
+      questionCount: rotationCount,
+      targetClass: targetClass.trim() || undefined,
+      targetStream: targetStream.trim() || undefined,
+      kind: assignmentKind,
+    }),
+    onSuccess: () => {
+      setNotice('A least-used question set was created without a new AI generation call.');
+      setTitle('');
+      void queryClient.invalidateQueries({ queryKey: ['assignments'] });
+    },
+    onError: (err) => setError(apiErrorMessage(err, 'Could not create a rotated question set')),
   });
 
   const items = browseQuery.data?.items ?? [];
@@ -194,6 +216,14 @@ export default function QuestionBankBrowser() {
                 onChange={(event) => setTargetStream(event.target.value)}
                 className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
               />
+              <select
+                value={assignmentKind}
+                onChange={(event) => setAssignmentKind(event.target.value as 'STANDARD' | 'KCSE_PAPER')}
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm sm:col-span-2"
+              >
+                <option value="STANDARD">Learning assignment</option>
+                <option value="KCSE_PAPER">KCSE-style paper</option>
+              </select>
               <button
                 type="button"
                 disabled={!title || selected.size === 0 || select.isPending}
@@ -201,6 +231,29 @@ export default function QuestionBankBrowser() {
                 className="min-h-11 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white disabled:opacity-40 sm:col-span-2 sm:justify-self-end"
               >
                 {select.isPending ? 'Creating...' : `Create from ${selected.size || ''} question(s)`}
+              </button>
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-[24px] border border-slate-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-[#101820]">Create rotated set</h2>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={rotationCount}
+                onChange={(event) => setRotationCount(Number(event.target.value))}
+                aria-label="Number of questions"
+                className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
+              />
+              <button
+                type="button"
+                disabled={!title || !subject || !grade || !topic || rotate.isPending}
+                onClick={() => rotate.mutate()}
+                className="min-h-11 rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {rotate.isPending ? 'Creating...' : 'Use least-used questions'}
               </button>
             </div>
           </section>

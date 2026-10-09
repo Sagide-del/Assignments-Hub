@@ -86,6 +86,12 @@ export class AssignmentsController {
     return this.assignmentsService.findAll(actor, schoolId);
   }
 
+  @Get('kcse')
+  @Roles(Role.STUDENT)
+  findKcse(@CurrentUser() actor: AuthenticatedUser) {
+    return this.assignmentsService.findKcse(actor);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
     return this.assignmentsService.findOne(id, actor);

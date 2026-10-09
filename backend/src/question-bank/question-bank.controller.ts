@@ -26,6 +26,7 @@ import { RejectQuestionBankItemDto } from "./dto/review-question-bank-item.dto";
 import { ActivateSchoolDto } from "./dto/activate-school.dto";
 import { PublishQuestionBankDto } from "./dto/publish-question-bank.dto";
 import { SelectQuestionBankDto } from "./dto/select-question-bank.dto";
+import { RotateQuestionBankDto } from './dto/rotate-question-bank.dto';
 
 // Platform Admin: full CRUD + generation + review + publishing.
 // STUDENT is never included in @Roles on either controller below, so a
@@ -60,6 +61,12 @@ export class QuestionBankAdminController {
   @ApiOperation({ summary: "List all question bank items (any status)" })
   list(@Query() query: ListQuestionBankDto, @CurrentUser() actor: AuthenticatedUser) {
     return this.questionBank.listAdmin(actor, query);
+  }
+
+  @Get('sources/list')
+  @ApiOperation({ summary: 'List indexed curriculum sources available for grounded generation' })
+  listSources(@CurrentUser() actor: AuthenticatedUser) {
+    return this.questionBank.listSources(actor);
   }
 
   @Get(":id")
@@ -165,6 +172,13 @@ export class QuestionBankBrowseController {
   @AuditAction("question_bank.select")
   select(@Body() dto: SelectQuestionBankDto, @CurrentUser() actor: AuthenticatedUser) {
     return this.questionBank.selectForAssignment(dto, actor);
+  }
+
+  @Post('rotate')
+  @ApiOperation({ summary: 'Create an assignment from the least-used approved questions for a topic' })
+  @AuditAction('question_bank.rotate')
+  rotate(@Body() dto: RotateQuestionBankDto, @CurrentUser() actor: AuthenticatedUser) {
+    return this.questionBank.rotateForAssignment(dto, actor);
   }
 
   // Static route declared after /select, /subjects, /grades, /topics —

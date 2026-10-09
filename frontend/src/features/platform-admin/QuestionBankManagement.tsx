@@ -52,7 +52,8 @@ export function QuestionBankManagement() {
   const [topic, setTopic] = useState('');
   const [questionCount, setQuestionCount] = useState(60);
   const [difficulty, setDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD' | 'MIXED'>('MIXED');
-  const [inputType, setInputType] = useState<'PDF' | 'TEXT'>('PDF');
+  const [inputType, setInputType] = useState<'PDF' | 'TEXT' | 'KNOWLEDGE'>('PDF');
+  const [sourceDocumentId, setSourceDocumentId] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [sourceText, setSourceText] = useState('');
   const [questionTypes, setQuestionTypes] = useState<Set<QuestionBankQuestionType>>(
@@ -75,6 +76,10 @@ export function QuestionBankManagement() {
         take: 100,
       }),
   });
+  const sourcesQuery = useQuery({
+    queryKey: ['question-bank-sources'],
+    queryFn: questionBankAdminApi.sources,
+  });
 
   const generate = useMutation({
     mutationFn: () => {
@@ -82,10 +87,14 @@ export function QuestionBankManagement() {
       if (inputType === 'TEXT' && sourceText.trim().length < 50) {
         throw new Error('Paste at least 50 characters of source text');
       }
+      if (inputType === 'KNOWLEDGE' && !sourceDocumentId) {
+        throw new Error('Choose a saved curriculum source');
+      }
       return questionBankAdminApi.generate({
         inputType,
         file: inputType === 'PDF' ? (file as File) : undefined,
         sourceText: inputType === 'TEXT' ? sourceText.trim() : undefined,
+        sourceDocumentId: inputType === 'KNOWLEDGE' ? Number(sourceDocumentId) : undefined,
         subject,
         grade,
         topic,
@@ -104,6 +113,7 @@ export function QuestionBankManagement() {
       setSourceText('');
       setStatusFilter('GENERATED');
       void queryClient.invalidateQueries({ queryKey: ['question-bank-admin'] });
+      void queryClient.invalidateQueries({ queryKey: ['question-bank-sources'] });
     },
     onError: (err) => setError(apiErrorMessage(err, 'Could not generate questions')),
   });
@@ -195,7 +205,11 @@ export function QuestionBankManagement() {
     !!grade &&
     !!topic &&
     questionTypes.size > 0 &&
-    (inputType === 'PDF' ? !!file : sourceText.trim().length >= 50) &&
+    (inputType === 'PDF'
+      ? !!file
+      : inputType === 'TEXT'
+        ? sourceText.trim().length >= 50
+        : !!sourceDocumentId) &&
     !generate.isPending;
 
   return (
@@ -225,7 +239,7 @@ export function QuestionBankManagement() {
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Source</p>
           <div className="flex flex-wrap gap-2">
-            {(['PDF', 'TEXT'] as const).map((type) => (
+            {(['PDF', 'TEXT', 'KNOWLEDGE'] as const).map((type) => (
               <button
                 key={type}
                 type="button"
@@ -234,7 +248,7 @@ export function QuestionBankManagement() {
                   inputType === type ? 'bg-[#101820] text-white' : 'bg-slate-100 text-slate-600'
                 }`}
               >
-                {type === 'PDF' ? 'PDF Upload' : 'Text Paste'}
+                {type === 'PDF' ? 'PDF Upload' : type === 'TEXT' ? 'Text Paste' : 'Knowledge Library'}
               </button>
             ))}
             {['URL/Link', 'Video Transcript'].map((label) => (
@@ -282,7 +296,7 @@ export function QuestionBankManagement() {
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             className="min-h-11 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
           />
-        ) : (
+        ) : inputType === 'TEXT' ? (
           <textarea
             value={sourceText}
             onChange={(event) => setSourceText(event.target.value)}
@@ -290,6 +304,27 @@ export function QuestionBankManagement() {
             rows={6}
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
           />
+        ) : (
+          <select
+            value={sourceDocumentId}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              setSourceDocumentId(nextId);
+              const source = sourcesQuery.data?.find((entry) => entry.id === Number(nextId));
+              if (source) {
+                setSubject(source.subject);
+                setGrade(source.grade);
+              }
+            }}
+            className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+          >
+            <option value="">Select a saved curriculum source</option>
+            {(sourcesQuery.data ?? []).map((source) => (
+              <option key={source.id} value={source.id}>
+                {source.title} · {source.subject} · {source.grade}
+              </option>
+            ))}
+          </select>
         )}
 
         <div>

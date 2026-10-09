@@ -13,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AssignmentType } from '@prisma/client';
+import { AssignmentKind, AssignmentType } from '@prisma/client';
 import { CreateQuestionDto } from './create-question.dto';
 import { RubricCriterionDto } from './rubric-criterion.dto';
 import { AttachmentRefDto } from './attachment-ref.dto';
@@ -49,6 +49,10 @@ export class CreateAssignmentDto {
   @IsOptional()
   @IsEnum(AssignmentType)
   type?: AssignmentType;
+
+  @IsOptional()
+  @IsEnum(AssignmentKind)
+  kind?: AssignmentKind;
 
   @IsOptional()
   @IsDateString()

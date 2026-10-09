@@ -98,8 +98,14 @@ export class GenerateQuestionBankDto {
   // codebase); the frontend only offers PDF/TEXT and shows the other two
   // as disabled "coming soon" options.
   @IsOptional()
-  @IsIn(["PDF", "TEXT"])
-  inputType?: "PDF" | "TEXT" = "PDF";
+  @IsIn(["PDF", "TEXT", "KNOWLEDGE"])
+  inputType?: "PDF" | "TEXT" | "KNOWLEDGE" = "PDF";
+
+  @ValidateIf((dto: GenerateQuestionBankDto) => dto.inputType === "KNOWLEDGE")
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  sourceDocumentId?: number;
 
   // Required when inputType is TEXT (checked in QuestionBankService.generate,
   // not here, since the requirement is conditional on another field).

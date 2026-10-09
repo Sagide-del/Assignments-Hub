@@ -34,7 +34,7 @@ export function LearnSkillsPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader title="Learn a Skill" meta="Practical, industry-relevant skills sourced from our training partners." />
+      <PageHeader title="Learn a Skill" />
 
       <section className="grid gap-4 sm:grid-cols-3">
         <MetricCard label="Available courses" value={coursesQuery.isLoading ? '-' : courses.length} compact />
