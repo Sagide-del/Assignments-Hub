@@ -105,7 +105,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
 
   return (
     <div className="min-h-screen md:flex" style={{ backgroundColor: 'var(--school-background, #F8FAFC)' }}>
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur md:hidden">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden">
         <div className="flex min-w-0 items-center gap-3">
           <Logo src={logoSrc} name={brandTitle} size="sm" />
           <div className="min-w-0">
@@ -119,7 +119,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         <button
           type="button"
           onClick={() => setMobileNavOpen((open) => !open)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[#101820] shadow-sm transition hover:text-[#101820]"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#101820] transition hover:text-[#101820]"
           style={{ borderColor: mobileNavOpen ? 'var(--school-accent, #B5E61D)' : '#e2e8f0' }}
           aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
           aria-expanded={mobileNavOpen}
@@ -197,15 +197,17 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         </div>
 
         <div className="border-t border-white/10 p-6">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="truncate text-sm font-semibold">{user?.name}</p>
-            <p className="mt-1 text-sm text-white/60">{footerMeta}</p>
-          </div>
+          {!isStudentPortal ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="truncate text-sm font-semibold">{user?.name}</p>
+              <p className="mt-1 text-sm text-white/60">{footerMeta}</p>
+            </div>
+          ) : null}
 
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-4 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-[#101820] transition hover:opacity-95"
+            className={`${isStudentPortal ? '' : 'mt-4 '}inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-[#101820] transition hover:opacity-95`}
             style={{ backgroundColor: 'var(--school-accent, #B5E61D)' }}
           >
             Log out
@@ -217,7 +219,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>
-        <Footer />
+        {!isStudentPortal ? <Footer /> : null}
       </div>
     </div>
   );
