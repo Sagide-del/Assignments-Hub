@@ -71,32 +71,11 @@ function ClockIcon() {
   );
 }
 
-function DocumentIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path
-        d="M8 4h6l4 4v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 4v4h4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-2 break-words text-xl font-semibold text-[#101820]">{value}</p>
+    <div className="min-w-0 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-[#101820] sm:text-base">{value}</p>
     </div>
   );
 }
@@ -184,7 +163,8 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
   const correct = expectedAnswer(question);
   const badge = resultBadge(answer, question?.points);
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm font-semibold text-[#101820]">Question {index + 1}</p>
@@ -196,8 +176,10 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
             : 'Not scored'}
         </span>
       </div>
+      </div>
+      <div className="px-4 py-4 sm:px-5">
       {question ? (
-        <div className="mt-3">
+        <div>
           {question.contentHtml ? (
             <RichContent html={question.contentHtml} className="assessment-question-copy" />
           ) : (
@@ -205,12 +187,12 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
           )}
         </div>
       ) : null}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-lg bg-[#F8FAFC] p-3">
           <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Your answer</p>
           <ResponseValue value={answer.studentAnswer} />
         </div>
-        <div className="rounded-xl border border-lime-200 bg-lime-50 p-3">
+        <div className="rounded-lg border border-lime-200 bg-lime-50 p-3">
           <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-lime-800">Expected answer</p>
           <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
             {correct ?? 'Reviewed manually'}
@@ -218,16 +200,21 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
         </div>
       </div>
       {answer.feedback ? (
-        <p className="mt-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-6 text-slate-600">
-          {answer.feedback}
-        </p>
-      ) : null}
-      {question?.explanation ? (
-        <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-800">Explanation</p>
-          <p className="text-sm leading-6 text-slate-700">{question.explanation}</p>
+        <div className="mt-3 border-l-2 border-slate-300 pl-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Feedback</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{answer.feedback}</p>
         </div>
       ) : null}
+      {question?.explanation ? (
+        <details className="group mt-3 rounded-lg border border-sky-200 bg-sky-50">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-sky-900">
+            Explanation
+            <span className="text-base transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+          </summary>
+          <p className="border-t border-sky-200 px-3 py-3 text-sm leading-6 text-slate-700">{question.explanation}</p>
+        </details>
+      ) : null}
+      </div>
     </article>
   );
 }
@@ -372,6 +359,7 @@ export function ExamPlayer() {
   const unansweredCount = totalQuestions - answeredCount;
   const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
   const assignmentMaxPoints = assignment?.maxPoints ?? assignment?.totalMarks ?? 0;
+  const assignmentListPath = assignment?.kind === 'KCSE_PAPER' ? '/student/kcse-papers' : '/student/my-assignments';
 
   if (loadingQuestions) {
     return <p className="text-sm text-gray-500">Loading...</p>;
@@ -382,28 +370,41 @@ export function ExamPlayer() {
     const resultsReleased = Boolean(existing.resultsReleasedAt);
     return (
       <div className={workspaceClassName}>
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)] sm:rounded-[32px]">
-          <div className="bg-[#101820] px-4 py-6 text-white sm:px-6 sm:py-8 md:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">Assessment Submitted</p>
-            <h1 className="mt-4 break-words text-2xl font-semibold tracking-tight [overflow-wrap:anywhere] sm:text-3xl">{assignment?.title}</h1>
-            <p className="mt-3 break-words text-sm text-slate-300">
-              {assignment?.subject} · {assignmentMaxPoints} marks
-            </p>
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 px-4 py-5 sm:px-6">
+            <button
+              type="button"
+              onClick={() => navigate(assignmentListPath)}
+              className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#101820]"
+            >
+              <ArrowIcon direction="left" />
+              Back
+            </button>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Submitted</p>
+                <h1 className="mt-2 break-words text-xl font-semibold tracking-tight text-[#101820] [overflow-wrap:anywhere] sm:text-2xl">
+                  {assignment?.title}
+                </h1>
+                <p className="mt-2 break-words text-sm text-slate-500">
+                  {assignment?.subject} · {assignmentMaxPoints} marks
+                </p>
+              </div>
+              <span className="inline-flex min-h-9 shrink-0 items-center rounded-full bg-[#EEF8D1] px-3 text-xs font-semibold text-[#4D6310]">
+                {resultsReleased ? 'Results released' : 'Awaiting review'}
+              </span>
+            </div>
           </div>
-          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6 md:grid-cols-4">
+          <div className="grid divide-y divide-slate-200 border-b border-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
             <StatTile label="Submitted" value={formatDateTime(existing.completedAt ?? existing.createdAt)} />
             <StatTile label="Submission status" value={resultsReleased ? 'RESULTS RELEASED' : existing.status} />
             <StatTile label="Score" value={displayedSubmission?.score != null ? `${displayedSubmission.score} / ${assignmentMaxPoints}` : 'Pending'} />
             <StatTile label="Feedback" value={resultsReleased ? 'Available' : 'Awaiting review'} />
           </div>
-          <div className="border-t border-slate-200 p-4 sm:p-6">
-            <div className="min-w-0 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-4 sm:rounded-[24px] sm:p-5">
-              <p className="text-sm leading-7 text-slate-600">
-                You already submitted this assignment
-                {resultsReleased ? ' and your reviewed results are available.' : ' and your tutor is reviewing it.'}
-              </p>
+          <div className="p-4 sm:p-6">
+            <div className="min-w-0">
               {resultsReleased && displayedSubmission?.gradedAt ? (
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4">
                   <p className="text-sm font-semibold text-[#101820]">
                     {displayedSubmission.gradedBy?.name
                       ? `Graded by ${displayedSubmission.gradedBy.name}`
@@ -427,10 +428,10 @@ export function ExamPlayer() {
               ) : null}
               <button
                 type="button"
-                onClick={() => navigate('/student/my-assignments')}
-                className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white sm:w-auto"
+                onClick={() => navigate(assignmentListPath)}
+                className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white sm:w-auto"
               >
-                Back to assignments
+                Back to list
               </button>
             </div>
           </div>
@@ -445,61 +446,50 @@ export function ExamPlayer() {
 
   return (
     <div className={workspaceClassName}>
-      <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)] sm:rounded-[32px]">
-        <div className="bg-[#101820] px-4 py-7 text-white sm:px-6 md:px-8 md:py-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0 max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#B5E61D]">Assessment Workspace</p>
-              <h1 className="mt-4 break-words text-2xl font-semibold tracking-tight [overflow-wrap:anywhere] sm:text-3xl">{assignment?.title}</h1>
-              <div className="mt-4 flex max-w-full flex-wrap gap-2 text-sm text-slate-200">
-                <span className="max-w-full break-words rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{assignment?.subject}</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{assignmentMaxPoints} marks</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">{totalQuestions} questions</span>
-              </div>
-            </div>
-            <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 sm:rounded-[24px] sm:px-5 lg:w-auto lg:min-w-64">
-              <p className="break-words text-xs font-semibold uppercase tracking-[0.14em] text-white/55 sm:tracking-[0.18em]">
-                {reviewMode ? 'Review Mode' : `Question ${currentIndex + 1} of ${totalQuestions}`}
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={() => navigate(assignmentListPath)}
+                className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#101820]"
+              >
+                <ArrowIcon direction="left" />
+                Back
+              </button>
+              <p className="mt-2 break-words text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                {assignment?.subject}
               </p>
-              <div className="mt-3 flex items-center gap-2 text-sm text-white">
-                <ClockIcon />
-                <span>{formatElapsed(elapsedSeconds)}</span>
+              <h1 className="mt-1 break-words text-xl font-semibold tracking-tight text-[#101820] [overflow-wrap:anywhere] sm:text-2xl">
+                {assignment?.title}
+              </h1>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                <span>{assignmentMaxPoints} marks</span>
+                <span>{totalQuestions} questions</span>
+                <span className="inline-flex items-center gap-1.5"><ClockIcon /> {formatElapsed(elapsedSeconds)}</span>
               </div>
             </div>
+            <span className="inline-flex min-h-9 shrink-0 items-center rounded-full bg-[#F1F5F9] px-3 text-xs font-semibold text-slate-600">
+              {reviewMode ? 'Review' : `Question ${currentIndex + 1} of ${totalQuestions}`}
+            </span>
           </div>
-          <div className="mt-6">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/65 sm:tracking-[0.16em]">
-              <span>Progress</span>
-              <span>{progressPercent}% answered</span>
+          <div className="mt-4 flex items-center gap-3">
+            <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-[#B5E61D]" style={{ width: `${progressPercent}%` }} />
             </div>
-            <div className="mt-3 h-3 rounded-full bg-white/10">
-              <div className="h-3 rounded-full bg-[#B5E61D]" style={{ width: `${progressPercent}%` }} />
-            </div>
+            <span className="shrink-0 text-xs font-semibold text-slate-500">{answeredCount}/{totalQuestions} answered</span>
           </div>
         </div>
       </section>
 
       <div className="grid min-w-0 gap-4 sm:gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="order-2 min-w-0 space-y-4 sm:space-y-6 xl:order-1">
-          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#101820] text-[#B5E61D]">
-                <DocumentIcon />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Assessment summary</p>
-                <p className="mt-1 break-words text-sm font-semibold text-[#101820]">{assignment?.subject}</p>
-              </div>
+        <aside className="order-1 min-w-0 xl:order-1">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-[#101820]">Questions</p>
+              <span className="text-xs font-medium text-slate-500">{unansweredCount} unanswered</span>
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-              <StatTile label="Questions" value={totalQuestions} />
-              <StatTile label="Answered" value={answeredCount} />
-              <StatTile label="Unanswered" value={unansweredCount} />
-            </div>
-          </section>
-
-          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Question navigator</p>
             <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 xl:grid-cols-5">
               {questionList.map((question, index) => {
                 const answered = isAnswered(question, answers[question.id] ?? '');
@@ -513,7 +503,7 @@ export function ExamPlayer() {
                       setCurrentIndex(index);
                     }}
                     className={[
-                      'flex h-11 items-center justify-center rounded-2xl border text-sm font-semibold transition',
+                      'flex h-11 items-center justify-center rounded-xl border text-sm font-semibold transition',
                       isCurrent
                         ? 'border-[#101820] bg-[#101820] text-white'
                         : answered
@@ -530,26 +520,16 @@ export function ExamPlayer() {
                 );
               })}
             </div>
-            <div className="mt-4 space-y-2 text-xs text-slate-500">
-              <p className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-[#EEF8D1]" />
-                Answered
-              </p>
-              <p className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-[#101820]" />
-                Current
-              </p>
-              <p className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full border border-slate-300 bg-white" />
-                Unanswered
-              </p>
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#EEF8D1]" /> Answered</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#101820]" /> Current</span>
             </div>
           </section>
         </aside>
 
-        <section className="order-1 min-w-0 space-y-4 sm:space-y-6 xl:order-2">
+        <section className="order-2 min-w-0 space-y-4 sm:space-y-6 xl:order-2">
           {!reviewMode && currentQuestion ? (
-            <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px]">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
                 <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   <div className="min-w-0">
@@ -578,18 +558,14 @@ export function ExamPlayer() {
               </div>
             </div>
           ) : (
-            <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px] sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Review before submit</p>
-              <h2 className="mt-2 text-2xl font-semibold text-[#101820]">Assessment summary</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-500">
-                Review your answers before final submission. You can return to any question using the navigator.
-              </p>
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+              <h2 className="text-xl font-semibold text-[#101820] sm:text-2xl">Review answers</h2>
+              <div className="mt-5 grid divide-y divide-slate-200 rounded-xl border border-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <StatTile label="Total Questions" value={totalQuestions} />
                 <StatTile label="Answered" value={answeredCount} />
                 <StatTile label="Unanswered" value={unansweredCount} />
               </div>
-              <div className="mt-6 min-w-0 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-3 sm:rounded-[24px] sm:p-5">
+              <div className="mt-5 min-w-0 rounded-xl bg-[#F8FAFC] p-3 sm:p-4">
                 <div className="grid gap-3 md:grid-cols-2">
                   {questionList.map((question, index) => (
                     <button
@@ -627,7 +603,7 @@ export function ExamPlayer() {
             </p>
           ) : null}
 
-          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-4 shadow-[0_12px_36px_rgba(16,24,32,0.06)] sm:rounded-[28px] sm:px-5">
+          <div className="sticky bottom-3 z-20 rounded-2xl border border-slate-200 bg-white/95 px-3 py-3 shadow-[0_12px_30px_rgba(16,24,32,0.12)] backdrop-blur sm:px-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 {!reviewMode ? (
