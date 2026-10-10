@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { DashboardLayout } from '../../layouts/DashboardLayout';
@@ -7,9 +8,7 @@ import Login from '../../pages/Login';
 import IndependentRegister from '../../pages/IndependentRegister';
 import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 
-import { ExamPlayer } from '../../features/student/ExamPlayer';
 import { StemLabsPage } from '../../features/student/StemLabs';
-import { StemLabPlayerPage } from '../../features/student/StemLabPlayer';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
 import { KcsePapersPage } from '../../features/student/KcsePapers';
 import { LearnSkillsPage } from '../../features/student/LearnSkills';
@@ -21,10 +20,6 @@ import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
-import {
-  CreateAssignmentRich,
-  EditAssignmentRich,
-} from '../../features/teacher/CreateAssignmentRich';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
 import { AnalyticsDashboard } from '../../features/teacher/AnalyticsDashboard';
 import { Marking } from '../../features/teacher/Marking';
@@ -43,18 +38,41 @@ import { MessagesOversight } from '../../features/school-admin/MessagesOversight
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
 import { AiManagement } from '../../features/platform-admin/AiManagement';
-import { QuestionBankManagement } from '../../features/platform-admin/QuestionBankManagement';
 import { SchoolActivation } from '../../features/platform-admin/SchoolActivation';
-import { StemContentStudio } from '../../features/platform-admin/StemContentStudio';
-import { PlatformBilling } from '../../features/platform-admin/Billing';
-import { SkillStudio } from '../../features/platform-admin/SkillStudio';
 import { IndependentStudentsPage } from '../../features/platform-admin/IndependentStudents';
-import { MnemonicCardsStudio } from '../../features/platform-admin/MnemonicCardsStudio';
 import { IndependentAssignmentsPage } from '../../features/platform-admin/IndependentAssignments';
 import { PrivateTutorPage } from '../../features/platform-admin/PrivateTutor';
 import { TutorMessagesPage } from '../../features/platform-admin/TutorMessages';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
+
+const ExamPlayer = lazy(() =>
+  import('../../features/student/ExamPlayer').then((module) => ({ default: module.ExamPlayer })),
+);
+const StemLabPlayerPage = lazy(() =>
+  import('../../features/student/StemLabPlayer').then((module) => ({ default: module.StemLabPlayerPage })),
+);
+const CreateAssignmentRich = lazy(() =>
+  import('../../features/teacher/CreateAssignmentRich').then((module) => ({ default: module.CreateAssignmentRich })),
+);
+const EditAssignmentRich = lazy(() =>
+  import('../../features/teacher/CreateAssignmentRich').then((module) => ({ default: module.EditAssignmentRich })),
+);
+const QuestionBankManagement = lazy(() =>
+  import('../../features/platform-admin/QuestionBankManagement').then((module) => ({ default: module.QuestionBankManagement })),
+);
+const StemContentStudio = lazy(() =>
+  import('../../features/platform-admin/StemContentStudio').then((module) => ({ default: module.StemContentStudio })),
+);
+const PlatformBilling = lazy(() =>
+  import('../../features/platform-admin/Billing').then((module) => ({ default: module.PlatformBilling })),
+);
+const SkillStudio = lazy(() =>
+  import('../../features/platform-admin/SkillStudio').then((module) => ({ default: module.SkillStudio })),
+);
+const MnemonicCardsStudio = lazy(() =>
+  import('../../features/platform-admin/MnemonicCardsStudio').then((module) => ({ default: module.MnemonicCardsStudio })),
+);
 
 
 const studentNav = [
