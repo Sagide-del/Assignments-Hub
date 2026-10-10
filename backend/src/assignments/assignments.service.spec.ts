@@ -10,7 +10,8 @@ describe('AssignmentsService academic scoping', () => {
       assignment: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
     };
     const sms = { getStudentRecipients: jest.fn(), notifyNewAssignment: jest.fn() };
-    return { service: new AssignmentsService(prisma as any, sms as any), prisma };
+    const delivery = { questionsForStudent: jest.fn() };
+    return { service: new AssignmentsService(prisma as any, sms as any, delivery as any), prisma };
   }
 
   it('limits a teacher assignment list to assignments they created', async () => {

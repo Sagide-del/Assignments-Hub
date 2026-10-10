@@ -17,6 +17,8 @@ export default function QuestionBankBrowser() {
   const [targetStream, setTargetStream] = useState('');
   const [assignmentKind, setAssignmentKind] = useState<'STANDARD' | 'KCSE_PAPER'>('STANDARD');
   const [rotationCount, setRotationCount] = useState(10);
+  const [uniquePerStudent, setUniquePerStudent] = useState(false);
+  const [poolSize, setPoolSize] = useState(30);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -67,12 +69,18 @@ export default function QuestionBankBrowser() {
       grade,
       topic,
       questionCount: rotationCount,
+      uniquePerStudent,
+      poolSize: uniquePerStudent ? Math.max(poolSize, rotationCount + 1) : undefined,
       targetClass: targetClass.trim() || undefined,
       targetStream: targetStream.trim() || undefined,
       kind: assignmentKind,
     }),
     onSuccess: () => {
-      setNotice('A least-used question set was created without a new AI generation call.');
+      setNotice(
+        uniquePerStudent
+          ? 'Assignment created with a balanced question variant for each learner.'
+          : 'A least-used question set was created without a new AI generation call.',
+      );
       setTitle('');
       void queryClient.invalidateQueries({ queryKey: ['assignments'] });
     },
@@ -237,7 +245,7 @@ export default function QuestionBankBrowser() {
 
           <section className="space-y-3 rounded-[24px] border border-slate-200 bg-white p-6">
             <h2 className="text-lg font-semibold text-[#101820]">Create rotated set</h2>
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <div className="grid gap-3 sm:grid-cols-2">
               <input
                 type="number"
                 min={1}
@@ -247,11 +255,31 @@ export default function QuestionBankBrowser() {
                 aria-label="Number of questions"
                 className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
               />
+              {uniquePerStudent ? (
+                <input
+                  type="number"
+                  min={rotationCount + 1}
+                  max={300}
+                  value={poolSize}
+                  onChange={(event) => setPoolSize(Number(event.target.value))}
+                  aria-label="Question pool size"
+                  className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
+                />
+              ) : <div />}
+              <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-700 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={uniquePerStudent}
+                  onChange={(event) => setUniquePerStudent(event.target.checked)}
+                  className="h-4 w-4 accent-[#101820]"
+                />
+                Give each learner a balanced question variant
+              </label>
               <button
                 type="button"
                 disabled={!title || !subject || !grade || !topic || rotate.isPending}
                 onClick={() => rotate.mutate()}
-                className="min-h-11 rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 sm:justify-self-end"
               >
                 {rotate.isPending ? 'Creating...' : 'Use least-used questions'}
               </button>

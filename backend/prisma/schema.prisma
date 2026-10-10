@@ -289,31 +289,33 @@ model School {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
-  users                User[]
-  assignments          Assignment[]
-  subscriptions        Subscription[]
-  auditLogs            AuditLog[]
-  labSessions          LabSession[]
-  smsLogs              SmsLog[]
-  cslSubmissions       CslSubmission[]
-  pathwaySelections    StudentPathwaySelection[]
-  supportAssessments   StudentSupportAssessment[]
-  aiUsageLogs          AiUsageLog[]
-  invoices             Invoice[]
-  paymentTransactions  PaymentTransaction[]
-  aiUsageLedgerEntries AIUsageLedger[]
-  mentorProfiles       MentorProfile[]
-  mentorshipRequests   MentorshipRequest[]
-  talentProfiles       StudentTalentProfile[]
-  messages             Message[]
-  aiFeatureConfigs     AiFeatureConfig[]
-  aiGenerationJobs     AiGenerationJob[]
-  aiExtractedContents  AiExtractedContent[]
-  aiContentArtifacts   AiContentArtifact[]
-  aiReviewEvents       AiReviewEvent[]
-  questionBankItems    QuestionBank[]
-  questionBankAccess   SchoolQuestionBankAccess?
-  questionBankUsages   QuestionBankUsage[]
+  users                     User[]
+  assignments               Assignment[]
+  subscriptions             Subscription[]
+  auditLogs                 AuditLog[]
+  labSessions               LabSession[]
+  smsLogs                   SmsLog[]
+  cslSubmissions            CslSubmission[]
+  pathwaySelections         StudentPathwaySelection[]
+  supportAssessments        StudentSupportAssessment[]
+  aiUsageLogs               AiUsageLog[]
+  invoices                  Invoice[]
+  paymentTransactions       PaymentTransaction[]
+  aiUsageLedgerEntries      AIUsageLedger[]
+  mentorProfiles            MentorProfile[]
+  mentorshipRequests        MentorshipRequest[]
+  talentProfiles            StudentTalentProfile[]
+  messages                  Message[]
+  aiFeatureConfigs          AiFeatureConfig[]
+  aiGenerationJobs          AiGenerationJob[]
+  aiExtractedContents       AiExtractedContent[]
+  aiContentArtifacts        AiContentArtifact[]
+  aiReviewEvents            AiReviewEvent[]
+  questionBankItems         QuestionBank[]
+  questionBankAccess        SchoolQuestionBankAccess?
+  questionBankUsages        QuestionBankUsage[]
+  assignmentDeliveryConfigs AssignmentDeliveryConfig[]
+  studentAssignmentVariants StudentAssignmentVariant[]
 
   @@map("schools")
 }
@@ -405,6 +407,7 @@ model User {
   selectedQuestionBankUsages       QuestionBankUsage[]          @relation("QuestionBankUsageSelectedBy")
   reviewedQuestionBankItems        QuestionBank[]               @relation("QuestionBankReviewedBy")
   activatedSchoolQuestionBanks     SchoolQuestionBankAccess[]   @relation("SchoolQuestionBankActivatedBy")
+  assignmentVariants               StudentAssignmentVariant[]   @relation("StudentAssignmentVariantStudent")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -633,10 +636,12 @@ model Assignment {
   questions                  Question[]
   sections                   Section[]
   rubric                     Rubric?
-  aiSourceJobs               AiGenerationJob[]   @relation("AiSourceAssignment")
-  aiPublishedArtifacts       AiContentArtifact[] @relation("AiPublishedAssignment")
-  questionBankPublishedItems QuestionBank[]      @relation("QuestionBankPublishedAssignment")
+  aiSourceJobs               AiGenerationJob[]          @relation("AiSourceAssignment")
+  aiPublishedArtifacts       AiContentArtifact[]        @relation("AiPublishedAssignment")
+  questionBankPublishedItems QuestionBank[]             @relation("QuestionBankPublishedAssignment")
   questionBankUsages         QuestionBankUsage[]
+  deliveryConfig             AssignmentDeliveryConfig?
+  studentVariants            StudentAssignmentVariant[]
 
   @@index([schoolId])
   @@index([createdById])
@@ -2093,4 +2098,49 @@ model SchoolQuestionBankAccess {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("school_question_bank_access")
+}
+
+// Optional per-assignment delivery policy for question-bank assessments.
+// The Assignment still owns ordinary Question rows; this configuration only
+// controls how many of those approved pool questions each learner receives.
+model AssignmentDeliveryConfig {
+  id           Int        @id @default(autoincrement())
+  schoolId     Int        @map("school_id")
+  school       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assignmentId Int        @unique @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  questionCount  Int     @map("question_count")
+  poolSize       Int     @map("pool_size")
+  shuffleOptions Boolean @default(true) @map("shuffle_options")
+  enabled        Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([schoolId, enabled])
+  @@map("assignment_delivery_configs")
+}
+
+// Immutable learner-specific selection generated on first open. Question IDs
+// refer to the Assignment's existing Question rows, so grading, feedback and
+// reports continue through the established submission pipeline.
+model StudentAssignmentVariant {
+  id           Int        @id @default(autoincrement())
+  schoolId     Int        @map("school_id")
+  school       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assignmentId Int        @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    Int        @map("student_id")
+  student      User       @relation("StudentAssignmentVariantStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  questionIds  Int[] @map("question_ids")
+  optionOrders Json? @map("option_orders")
+  totalPoints  Int   @map("total_points")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([assignmentId, studentId])
+  @@index([schoolId, studentId, createdAt])
+  @@map("student_assignment_variants")
 }

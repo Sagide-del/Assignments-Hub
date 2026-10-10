@@ -184,6 +184,8 @@ export const questionBankApi = {
     grade: string;
     topic: string;
     questionCount: number;
+    uniquePerStudent?: boolean;
+    poolSize?: number;
     difficulty?: string;
     targetClass?: string;
     targetStream?: string;

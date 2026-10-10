@@ -605,15 +605,37 @@ export class QuestionBankService {
         `Only ${candidates.length} approved questions match this topic. Add more approved questions or lower the question count.`,
       );
     }
-    const selected = candidates
-      .sort((a, b) => {
+    const sortedCandidates = candidates.sort((a, b) => {
         const usageDifference = a._count.usages - b._count.usages;
         if (usageDifference !== 0) return usageDifference;
         const aLast = a.usages[0]?.createdAt.getTime() ?? 0;
         const bLast = b.usages[0]?.createdAt.getTime() ?? 0;
         return aLast - bLast || a.id - b.id;
-      })
-      .slice(0, dto.questionCount);
+      });
+
+    let selected = sortedCandidates.slice(0, dto.questionCount);
+    if (dto.uniquePerStudent) {
+      const requestedPoolSize = dto.poolSize
+        ?? Math.min(candidates.length, Math.max(dto.questionCount * 3, dto.questionCount + 2));
+      if (requestedPoolSize <= dto.questionCount) {
+        throw new BadRequestException(
+          'A unique learner pool must contain more questions than each learner receives.',
+        );
+      }
+      const byPoints = new Map<number, typeof sortedCandidates>();
+      for (const candidate of sortedCandidates) {
+        byPoints.set(candidate.points, [...(byPoints.get(candidate.points) ?? []), candidate]);
+      }
+      const compatiblePool = Array.from(byPoints.values())
+        .sort((left, right) => right.length - left.length)
+        .find((group) => group.length >= requestedPoolSize);
+      if (!compatiblePool) {
+        throw new BadRequestException(
+          `Unique delivery needs ${requestedPoolSize} approved questions with the same mark value. Add more compatible questions or lower the pool size.`,
+        );
+      }
+      selected = compatiblePool.slice(0, requestedPoolSize);
+    }
 
     const assignment = await this.assignments.create(
       {
@@ -627,7 +649,9 @@ export class QuestionBankService {
         isPublished: dto.isPublished ?? true,
         notifyParents: dto.notifyParents,
         kind: dto.kind,
-        maxPoints: selected.reduce((sum, item) => sum + item.points, 0),
+        maxPoints: dto.uniquePerStudent
+          ? dto.questionCount * selected[0].points
+          : selected.reduce((sum, item) => sum + item.points, 0),
         questions: selected.map((item, index) => ({
           questionText: item.questionText,
           contentHtml: item.contentHtml ?? undefined,
@@ -643,6 +667,17 @@ export class QuestionBankService {
       },
       actor,
     );
+    if (dto.uniquePerStudent) {
+      await this.prisma.assignmentDeliveryConfig.create({
+        data: {
+          schoolId: actor.schoolId,
+          assignmentId: assignment.id,
+          questionCount: dto.questionCount,
+          poolSize: selected.length,
+          shuffleOptions: true,
+        },
+      });
+    }
     const questionIds = selected.map((item) => item.id);
     await this.recordUsage(assignment.id, questionIds, actor);
     void this.audit.record({
@@ -650,7 +685,15 @@ export class QuestionBankService {
       schoolId: actor.schoolId,
       userId: actor.id,
       resource: `Assignment:${assignment.id}`,
-      metadata: { questionIds, subject: dto.subject, grade: dto.grade, topic: dto.topic },
+      metadata: {
+        questionIds,
+        subject: dto.subject,
+        grade: dto.grade,
+        topic: dto.topic,
+        uniquePerStudent: Boolean(dto.uniquePerStudent),
+        questionsPerStudent: dto.questionCount,
+        poolSize: selected.length,
+      },
     });
     return assignment;
   }

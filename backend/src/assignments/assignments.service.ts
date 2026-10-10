@@ -16,6 +16,7 @@ import {
 } from '@prisma/client';
 import { SmsService } from '../sms/sms.service';
 import { normalizeGrade } from '../common/utils/grade.util';
+import { AssignmentDeliveryService } from '../assignment-delivery/assignment-delivery.service';
 
 @Injectable()
 export class AssignmentsService {
@@ -24,6 +25,7 @@ export class AssignmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsService: SmsService,
+    private readonly delivery: AssignmentDeliveryService,
   ) {}
 
   async create(dto: CreateAssignmentDto, actor: AuthenticatedUser) {
@@ -224,7 +226,7 @@ export class AssignmentsService {
         })
       : null;
 
-    return this.prisma.assignment.findMany({
+    const assignments = await this.prisma.assignment.findMany({
       where: {
         schoolId: targetSchoolId,
         // A teacher's workspace is intentionally focused on assignments
@@ -263,9 +265,22 @@ export class AssignmentsService {
             }
           : {}),
       },
-      include: { _count: { select: { questions: true, submissions: true } } },
+      include: {
+        _count: { select: { questions: true, submissions: true } },
+        deliveryConfig: { select: { enabled: true, questionCount: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
+    return assignments.map((assignment) => ({
+      ...assignment,
+      _count: {
+        ...assignment._count,
+        questions:
+          isStudent && assignment.deliveryConfig?.enabled
+            ? assignment.deliveryConfig.questionCount
+            : assignment._count.questions,
+      },
+    }));
   }
 
   async findOne(id: number, actor: AuthenticatedUser) {
@@ -283,6 +298,7 @@ export class AssignmentsService {
         questions: { orderBy: { order: 'asc' } },
         sections: { orderBy: { order: 'asc' } },
         rubric: true,
+        deliveryConfig: true,
         _count: { select: { questions: true, submissions: true } },
       },
     });
@@ -304,7 +320,13 @@ export class AssignmentsService {
         (actor.grade && assignment.grade !== actor.grade) ||
         !this.matchesStudentScope(assignment, studentProfile);
       if (unavailable) throw new NotFoundException('Assignment not found');
-      return this.stripAnswersForStudent(assignment);
+      const delivered = await this.delivery.questionsForStudent(assignment, actor.id);
+      return this.stripAnswersForStudent({
+        ...assignment,
+        maxPoints: delivered.totalPoints,
+        questions: delivered.questions,
+        _count: { ...assignment._count, questions: delivered.questions.length },
+      });
     }
 
     return assignment;

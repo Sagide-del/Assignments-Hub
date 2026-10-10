@@ -13,6 +13,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { Role } from '../common/enums/role.enum';
 import { AssignmentType, QuestionType, SubmissionStatus } from '@prisma/client';
 import { SmsService } from '../sms/sms.service';
+import { AssignmentDeliveryService } from '../assignment-delivery/assignment-delivery.service';
 
 // Question types the server can grade automatically by comparing the
 // student's answer to Question.correctAnswer. MATCHING/ORDERING are
@@ -49,6 +50,7 @@ export class SubmissionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsService: SmsService,
+    private readonly delivery: AssignmentDeliveryService,
   ) {}
 
   /**
@@ -63,7 +65,7 @@ export class SubmissionsService {
   async create(assignmentId: number, dto: CreateSubmissionDto, actor: AuthenticatedUser) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      include: { questions: true },
+      include: { questions: true, deliveryConfig: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.schoolId !== actor.schoolId) {
@@ -81,6 +83,9 @@ export class SubmissionsService {
         (assignment.targetClass && assignment.targetClass !== profile?.className) ||
         (assignment.targetStream && assignment.targetStream !== profile?.stream);
       if (outsideScope) throw new NotFoundException('Assignment not found');
+      const delivered = await this.delivery.questionsForStudent(assignment, actor.id);
+      assignment.questions = delivered.questions;
+      assignment.maxPoints = delivered.totalPoints;
     }
 
     const existing = await this.prisma.submission.findFirst({

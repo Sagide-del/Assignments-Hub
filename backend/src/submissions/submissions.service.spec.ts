@@ -51,7 +51,16 @@ describe('SubmissionsService instant results', () => {
       },
     };
     const sms = { notifyAssignmentCompleted: jest.fn() };
-    return { service: new SubmissionsService(prisma as any, sms as any), prisma };
+    const delivery = {
+      questionsForStudent: jest.fn().mockImplementation((assignment) => ({
+        questions: assignment.questions,
+        totalPoints: assignment.questions.reduce(
+          (sum: number, item: { points: number }) => sum + item.points,
+          0,
+        ),
+      })),
+    };
+    return { service: new SubmissionsService(prisma as any, sms as any, delivery as any), prisma };
   }
 
   it('immediately releases a fully server-graded objective assessment', async () => {

@@ -30,6 +30,12 @@ export class RotateQuestionBankDto {
   @Type(() => Number) @IsInt() @Min(1) @Max(100)
   questionCount: number;
 
+  @IsOptional() @IsBoolean()
+  uniquePerStudent?: boolean;
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(2) @Max(300)
+  poolSize?: number;
+
   @IsOptional() @IsIn(['EASY', 'MEDIUM', 'HARD', 'MIXED'])
   difficulty?: string;
 
