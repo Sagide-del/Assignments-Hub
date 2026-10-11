@@ -58,6 +58,22 @@ export class SkillsController {
     return this.skillsService.findCourse(id, actor);
   }
 
+  @Get('courses/:id/progress')
+  @Roles(Role.STUDENT)
+  courseProgress(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
+    return this.skillsService.getStudentCourseProgress(id, actor);
+  }
+
+  @Post('courses/:id/lessons/:lessonKey/complete')
+  @Roles(Role.STUDENT)
+  completeLesson(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('lessonKey') lessonKey: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.skillsService.completeStudentLesson(id, lessonKey, actor);
+  }
+
   @Post('courses')
   @Roles(Role.PLATFORM_ADMIN)
   createCourse(@Body() dto: CreateSkillCourseDto) {

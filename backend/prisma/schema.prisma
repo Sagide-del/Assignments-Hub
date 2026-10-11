@@ -510,11 +510,26 @@ model SkillEnrollment {
   requestedAt   DateTime              @default(now()) @map("requested_at")
   approvedAt    DateTime?             @map("approved_at")
   completedAt   DateTime?             @map("completed_at")
+  lessonProgress SkillLessonProgress[]
 
   @@unique([studentId, courseId])
   @@index([courseId, status])
   @@index([studentId, status])
   @@map("skill_enrollments")
+}
+
+model SkillLessonProgress {
+  id           Int             @id @default(autoincrement())
+  enrollmentId Int             @map("enrollment_id")
+  enrollment   SkillEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonKey    String          @map("lesson_key")
+  startedAt    DateTime        @default(now()) @map("started_at")
+  completedAt  DateTime?       @map("completed_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  @@unique([enrollmentId, lessonKey])
+  @@index([enrollmentId, completedAt])
+  @@map("skill_lesson_progress")
 }
 
 model SkillPayment {

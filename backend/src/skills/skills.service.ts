@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   PaymentStatus,
   Prisma,
@@ -93,6 +93,40 @@ export class SkillsService {
     return course;
   }
 
+  async getStudentCourseProgress(courseId: number, actor: AuthenticatedUser) {
+    const enrollment = await this.learningEnrollment(courseId, actor);
+    return this.prisma.skillLessonProgress.findMany({
+      where: { enrollmentId: enrollment.id },
+      orderBy: { startedAt: 'asc' },
+    });
+  }
+
+  async completeStudentLesson(
+    courseId: number,
+    lessonKey: string,
+    actor: AuthenticatedUser,
+  ) {
+    const normalizedKey = lessonKey.trim();
+    if (!/^[a-z0-9][a-z0-9_-]{0,79}$/i.test(normalizedKey)) {
+      throw new ConflictException('Invalid lesson key');
+    }
+    const enrollment = await this.learningEnrollment(courseId, actor);
+    return this.prisma.skillLessonProgress.upsert({
+      where: {
+        enrollmentId_lessonKey: {
+          enrollmentId: enrollment.id,
+          lessonKey: normalizedKey,
+        },
+      },
+      create: {
+        enrollmentId: enrollment.id,
+        lessonKey: normalizedKey,
+        completedAt: new Date(),
+      },
+      update: { completedAt: new Date() },
+    });
+  }
+
   createCategory(dto: CreateSkillCategoryDto) {
     return this.prisma.skillCategory.create({ data: dto });
   }
@@ -170,6 +204,47 @@ export class SkillsService {
     }
 
     return enrollment;
+  }
+
+  private async learningEnrollment(courseId: number, actor: AuthenticatedUser) {
+    const course = await this.prisma.skillCourse.findFirst({
+      where: {
+        id: courseId,
+        status: SkillContentStatus.PUBLISHED,
+        category: { status: SkillContentStatus.PUBLISHED },
+        provider: { status: SkillContentStatus.PUBLISHED },
+      },
+    });
+    if (!course) throw new NotFoundException('Skill course not found');
+
+    const enrollment = await this.prisma.skillEnrollment.findUnique({
+      where: { studentId_courseId: { studentId: actor.id, courseId } },
+    });
+    if (
+      enrollment?.status === SkillEnrollmentStatus.ACTIVE
+      || enrollment?.status === SkillEnrollmentStatus.COMPLETED
+    ) {
+      return enrollment;
+    }
+    if (course.costKES > 0) {
+      throw new ForbiddenException('An active enrollment is required');
+    }
+
+    return this.prisma.skillEnrollment.upsert({
+      where: { studentId_courseId: { studentId: actor.id, courseId } },
+      create: {
+        studentId: actor.id,
+        courseId,
+        status: SkillEnrollmentStatus.ACTIVE,
+        paymentStatus: PaymentStatus.CONFIRMED,
+        approvedAt: new Date(),
+      },
+      update: {
+        status: SkillEnrollmentStatus.ACTIVE,
+        paymentStatus: PaymentStatus.CONFIRMED,
+        approvedAt: new Date(),
+      },
+    });
   }
 
   findStudentEnrollments(actor: AuthenticatedUser) {
