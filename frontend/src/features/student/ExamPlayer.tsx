@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentsApi } from '../../api/assignments.api';
@@ -178,44 +179,40 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
       </div>
       </div>
       <div className="px-4 py-4 sm:px-5">
-      {question ? (
-        <div>
-          {question.contentHtml ? (
-            <RichContent html={question.contentHtml} className="assessment-question-copy" />
-          ) : (
-            <p className="text-sm font-medium leading-6 text-[#101820]">{question.questionText}</p>
-          )}
+        {question ? (
+          <div>
+            {question.contentHtml ? (
+              <RichContent html={question.contentHtml} className="assessment-question-copy" />
+            ) : (
+              <p className="break-words text-sm font-medium leading-6 text-[#101820]">{question.questionText}</p>
+            )}
+          </div>
+        ) : null}
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 divide-y divide-slate-200">
+          <ReviewRow label="Your response"><ResponseValue value={answer.studentAnswer} /></ReviewRow>
+          <ReviewRow label="Correct answer">
+            <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{correct ?? 'Reviewed manually'}</p>
+          </ReviewRow>
+          {answer.feedback ? (
+            <ReviewRow label="Teacher feedback"><p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{answer.feedback}</p></ReviewRow>
+          ) : null}
+          {question?.explanation ? (
+            <ReviewRow label="Explanation"><p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{question.explanation}</p></ReviewRow>
+          ) : null}
         </div>
-      ) : null}
-      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Your answer</p>
-          <ResponseValue value={answer.studentAnswer} />
-        </div>
-        <div className="rounded-lg border border-lime-200 bg-lime-50 p-3">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-lime-800">Expected answer</p>
-          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
-            {correct ?? 'Reviewed manually'}
-          </p>
-        </div>
-      </div>
-      {answer.feedback ? (
-        <div className="mt-3 border-l-2 border-slate-300 pl-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Feedback</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">{answer.feedback}</p>
-        </div>
-      ) : null}
-      {question?.explanation ? (
-        <details className="group mt-3 rounded-lg border border-sky-200 bg-sky-50">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-sky-900">
-            Explanation
-            <span className="text-base transition-transform group-open:rotate-45" aria-hidden="true">+</span>
-          </summary>
-          <p className="border-t border-sky-200 px-3 py-3 text-sm leading-6 text-slate-700">{question.explanation}</p>
-        </details>
-      ) : null}
       </div>
     </article>
+  );
+}
+
+function ReviewRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid min-w-0 sm:grid-cols-[150px_minmax(0,1fr)]">
+      <div className="bg-[#F8FAFC] px-3 py-2.5 sm:px-4 sm:py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      </div>
+      <div className="min-w-0 bg-white px-3 py-3 sm:px-4">{children}</div>
+    </div>
   );
 }
 

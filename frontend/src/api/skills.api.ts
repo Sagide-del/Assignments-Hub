@@ -9,6 +9,7 @@ import type {
   SkillEnrollment,
   SkillEnrollmentStatus,
   SkillLevel,
+  SkillLessonProgress,
   SkillPayment,
   SkillProvider,
 } from '../types';
@@ -59,6 +60,8 @@ export const skillsApi = {
 
   getCourses: (categoryId?: number) => api.get<SkillCourse[]>('/skills/courses', { params: { categoryId } }).then((response) => response.data),
   getCourse: (id: number) => api.get<SkillCourse>(`/skills/courses/${id}`).then((response) => response.data),
+  getCourseProgress: (id: number) => api.get<SkillLessonProgress[]>(`/skills/courses/${id}/progress`).then((response) => response.data),
+  completeLesson: (id: number, lessonKey: string) => api.post<SkillLessonProgress>(`/skills/courses/${id}/lessons/${encodeURIComponent(lessonKey)}/complete`).then((response) => response.data),
   createCourse: (dto: SkillCourseInput) => api.post<SkillCourse>('/skills/courses', dto).then((response) => response.data),
   updateCourse: (id: number, dto: Partial<SkillCourseInput>) => api.patch<SkillCourse>(`/skills/courses/${id}`, dto).then((response) => response.data),
   removeCourse: (id: number) => api.delete(`/skills/courses/${id}`).then((response) => response.data),

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { apiErrorMessage } from '../../api/axios';
 import { skillsApi } from '../../api/skills.api';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
-import { hasWorkspaceAccess, workspaceModeForCourse } from './skill-workspace/workspace-mode';
+import { courseLessons, hasWorkspaceAccess } from './skill-workspace/workspace-mode';
 
 function formatCurrency(value: number) {
   return value === 0 ? 'Free' : `KES ${value.toLocaleString()}`;
@@ -33,8 +33,8 @@ export function SkillDetailPage() {
 
   const course = courseQuery.data;
   const enrollment = course.enrollment;
-  const workspaceMode = workspaceModeForCourse(course);
-  const workspaceAvailable = workspaceMode && hasWorkspaceAccess(course);
+  const workspaceAvailable = hasWorkspaceAccess(course);
+  const lessons = courseLessons(course);
 
   return (
     <div className="space-y-5 pb-10">
@@ -43,55 +43,48 @@ export function SkillDetailPage() {
         <Link to="/student/learn-skills" className="text-sm font-semibold text-slate-500">Back to skills</Link>
       </div>
 
-      <section className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-        <div className="space-y-5">
-          <section className="rounded-[22px] border border-slate-200 bg-white p-6">
-            <p className="text-sm leading-6 text-slate-600">{course.shortDescription}</p>
-            <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-4">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="grid gap-5 border-b border-slate-200 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-end">
+          <div className="min-w-0">
+            <p className="max-w-3xl text-sm leading-6 text-slate-600">{course.shortDescription}</p>
+            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
+              <CourseFact label="Lessons" value={String(lessons.length)} />
               <CourseFact label="Duration" value={`${course.durationWeeks} weeks`} />
               <CourseFact label="Provider" value={course.provider.name} />
-              <CourseFact label="Certificate" value={course.certificateAvailable ? 'Available' : 'Not included'} />
-              <CourseFact label="Cost" value={formatCurrency(course.costKES)} />
+              <CourseFact label="Access" value={formatCurrency(course.costKES)} />
             </div>
-          </section>
-          <DetailSection title="What you will learn" items={course.learningOutcomes ?? []} fallback={course.fullDescription} />
-          <DetailSection title="Course structure" items={course.courseStructure ?? []} fallback="Course structure will be provided by the training provider." />
+          </div>
+          <div>
+            {workspaceAvailable ? (
+              <Link to={`/student/learn-skills/${course.id}/workspace`} className="flex min-h-12 w-full items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">Start learning</Link>
+            ) : enrollment ? (
+              <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm"><span className="font-semibold text-[#101820]">{label(enrollment.status)}</span><span className="ml-2 text-slate-500">Payment {label(enrollment.paymentStatus)}</span></div>
+            ) : (
+              <button type="button" onClick={() => enrollmentMutation.mutate()} disabled={enrollmentMutation.isPending} className="min-h-12 w-full rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] disabled:opacity-50">{enrollmentMutation.isPending ? 'Requesting...' : 'Request enrollment'}</button>
+            )}
+            {enrollmentMutation.isError ? <p className="mt-2 text-sm text-red-700">{apiErrorMessage(enrollmentMutation.error, 'Enrollment request failed')}</p> : null}
+          </div>
         </div>
 
-        <aside className="h-fit rounded-[22px] border border-slate-200 bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Course access</p>
-          {enrollment ? (
-            <div className="mt-4 rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-400">Enrollment</p><p className="mt-1 font-semibold text-[#101820]">{label(enrollment.status)}</p><p className="mt-1 text-sm text-slate-500">Payment: {label(enrollment.paymentStatus)}</p></div>
-          ) : (
-            <button type="button" onClick={() => enrollmentMutation.mutate()} disabled={enrollmentMutation.isPending} className="mt-5 w-full rounded-xl bg-[#B5E61D] px-5 py-3 text-sm font-semibold text-[#101820] disabled:opacity-50">{enrollmentMutation.isPending ? 'Requesting...' : 'Request enrollment'}</button>
-          )}
-          {enrollmentMutation.isError ? <p className="mt-3 text-sm text-red-700">{apiErrorMessage(enrollmentMutation.error, 'Enrollment request failed')}</p> : null}
-          {workspaceAvailable ? <Link to={`/student/learn-skills/${course.id}/workspace`} className="mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">Open workspace</Link> : null}
-          {workspaceMode && !workspaceAvailable ? <p className="mt-4 text-sm text-slate-500">The practical workspace opens when enrollment is active.</p> : null}
-        </aside>
+        <div className="p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-[#101820]">Lessons</h2>
+          <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
+            {lessons.map((lesson, index) => (
+              <div key={lesson.key} className="flex min-h-14 items-center gap-3 px-4 py-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600">{index + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-sm font-semibold text-[#101820]">{lesson.title}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">{label(lesson.type)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   );
 }
 
-function DetailSection({ title, items, fallback }: { title: string; items: unknown[]; fallback: string }) {
-  const displayItems = items
-    .map((item, index) => ({ key: index, text: courseItemText(item) }))
-    .filter((item) => item.text);
-
-  return <section className="rounded-[24px] border border-slate-200 bg-white p-6"><h2 className="text-lg font-semibold text-[#101820]">{title}</h2>{displayItems.length > 0 ? <ul className="mt-4 grid gap-3 sm:grid-cols-2">{displayItems.map((item) => <li key={item.key} className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{item.text}</li>)}</ul> : <p className="mt-4 text-sm leading-6 text-slate-600">{fallback}</p>}</section>;
-}
-
-function courseItemText(item: unknown) {
-  if (typeof item === 'string') return item.trim();
-  if (!item || typeof item !== 'object') return '';
-  const value = item as Record<string, unknown>;
-  if (typeof value.title === 'string') return value.title.trim();
-  if (typeof value.name === 'string') return value.name.trim();
-  if (typeof value.description === 'string') return value.description.trim();
-  return '';
-}
-
 function CourseFact({ label: factLabel, value }: { label: string; value: string }) {
-  return <div><p className="text-xs text-slate-400">{factLabel}</p><p className="mt-1 break-words text-sm font-semibold text-[#101820]">{value}</p></div>;
+  return <div><p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">{factLabel}</p><p className="mt-1 break-words text-sm font-semibold text-[#101820]">{value}</p></div>;
 }

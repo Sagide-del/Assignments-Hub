@@ -743,6 +743,15 @@ export interface SkillEnrollment {
   student?: { id: number; name: string; school?: Pick<School, 'id' | 'name' | 'code'> };
 }
 
+export interface SkillLessonProgress {
+  id: number;
+  enrollmentId: number;
+  lessonKey: string;
+  startedAt: string;
+  completedAt: string | null;
+  updatedAt: string;
+}
+
 export interface SkillPayment {
   id: number;
   studentId: number;
