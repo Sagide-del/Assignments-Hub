@@ -2055,10 +2055,29 @@ model QuestionBankSourceChunk {
   content    String                     @db.Text
   searchText String                     @map("search_text") @db.Text
   createdAt  DateTime                   @default(now()) @map("created_at")
+  embedding  QuestionBankChunkEmbedding?
 
   @@unique([documentId, ordinal])
   @@index([documentId])
   @@map("question_bank_source_chunks")
+}
+
+// Embeddings are deliberately stored beside source chunks instead of on the
+// curriculum content itself. This keeps the source immutable and lets the
+// vector provider/model be replaced without changing question-bank records.
+model QuestionBankChunkEmbedding {
+  id         Int                     @id @default(autoincrement())
+  chunkId    Int                     @unique @map("chunk_id")
+  chunk      QuestionBankSourceChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  provider   String
+  model      String
+  dimensions Int
+  vector     Json
+  createdAt  DateTime                @default(now()) @map("created_at")
+  updatedAt  DateTime                @updatedAt @map("updated_at")
+
+  @@index([model])
+  @@map("question_bank_chunk_embeddings")
 }
 
 // Records which curated questions each school has already used. Rotation

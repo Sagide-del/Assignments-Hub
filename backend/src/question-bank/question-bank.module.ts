@@ -7,6 +7,7 @@ import {
 } from "./question-bank.controller";
 import { QuestionBankService } from "./question-bank.service";
 import { QuestionBankRetrievalService } from './question-bank-retrieval.service';
+import { QuestionBankEmbeddingService } from './question-bank-embedding.service';
 
 // AuditService (used by QuestionBankService) comes from the globally
 // registered AuditModule (@Global()) — no explicit import needed here,
@@ -14,7 +15,11 @@ import { QuestionBankRetrievalService } from './question-bank-retrieval.service'
 @Module({
   imports: [AiModule, AssignmentsModule],
   controllers: [QuestionBankAdminController, QuestionBankBrowseController],
-  providers: [QuestionBankService, QuestionBankRetrievalService],
+  providers: [
+    QuestionBankService,
+    QuestionBankRetrievalService,
+    QuestionBankEmbeddingService,
+  ],
   exports: [QuestionBankService],
 })
 export class QuestionBankModule {}

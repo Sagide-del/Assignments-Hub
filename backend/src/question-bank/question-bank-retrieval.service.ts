@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuestionBankEmbeddingService } from './question-bank-embedding.service';
 
 const CHUNK_SIZE = 2_500;
 const MAX_RETRIEVED_CHUNKS = 12;
@@ -13,7 +14,10 @@ const STOP_WORDS = new Set([
 
 @Injectable()
 export class QuestionBankRetrievalService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly embeddings: QuestionBankEmbeddingService,
+  ) {}
 
   async storeSource(input: {
     title: string;
@@ -38,10 +42,13 @@ export class QuestionBankRetrievalService {
         },
       },
     });
-    if (existing) return existing;
+    if (existing) {
+      await this.embeddings.indexDocument(existing.id);
+      return existing;
+    }
 
     const chunks = this.chunk(normalized);
-    return this.prisma.questionBankSourceDocument.create({
+    const source = await this.prisma.questionBankSourceDocument.create({
       data: {
         title: input.title.trim(),
         subject: input.subject.trim(),
@@ -59,6 +66,8 @@ export class QuestionBankRetrievalService {
         },
       },
     });
+    await this.embeddings.indexDocument(source.id);
+    return source;
   }
 
   listSources() {
@@ -84,6 +93,7 @@ export class QuestionBankRetrievalService {
     });
     if (!source) throw new NotFoundException('Knowledge source not found');
 
+    const vectorScores = await this.embeddings.rankDocumentChunks(documentId, query);
     const terms = Array.from(new Set(this.tokenize(query)));
     const chunkTokens = source.chunks.map((chunk) => this.tokenize(chunk.searchText));
     const averageLength = chunkTokens.length
@@ -96,7 +106,7 @@ export class QuestionBankRetrievalService {
       }
     }
     const normalizedPhrase = terms.join(' ');
-    const ranked = source.chunks
+    const lexicalEntries = source.chunks
       .map((chunk, index) => {
         const tokens = chunkTokens[index];
         const frequencies = new Map<string, number>();
@@ -116,16 +126,39 @@ export class QuestionBankRetrievalService {
           && this.tokenize(chunk.searchText).join(' ').includes(normalizedPhrase)
           ? 2
           : 0;
-        return { chunk, score: score + phraseBonus };
+        return { chunk, lexicalScore: score + phraseBonus };
+      })
+    const maximumLexicalScore = Math.max(
+      ...lexicalEntries.map((entry) => entry.lexicalScore),
+      0,
+    );
+    const ranked = lexicalEntries
+      .map((entry) => {
+        const lexicalScore = maximumLexicalScore
+          ? entry.lexicalScore / maximumLexicalScore
+          : 0;
+        const vectorScore = Math.max(vectorScores.get(entry.chunk.id) ?? 0, 0);
+        return {
+          ...entry,
+          score: vectorScores.size
+            ? (vectorScore * 0.7) + (lexicalScore * 0.3)
+            : entry.lexicalScore,
+        };
       })
       .sort((a, b) => b.score - a.score || a.chunk.ordinal - b.chunk.ordinal);
+    const semanticCutoff = vectorScores.size && ranked[0]
+      ? ranked[0].score * 0.35
+      : 0;
     const relevant = ranked.some((entry) => entry.score > 0)
-      ? ranked.filter((entry) => entry.score > 0).slice(0, MAX_RETRIEVED_CHUNKS)
+      ? ranked
+          .filter((entry) => entry.score > 0 && entry.score >= semanticCutoff)
+          .slice(0, MAX_RETRIEVED_CHUNKS)
       : ranked.slice(0, MAX_RETRIEVED_CHUNKS);
 
     return {
       source,
       text: relevant.map((entry) => entry.chunk.content).join('\n\n'),
+      retrievalMode: vectorScores.size ? 'HYBRID_VECTOR_BM25' : 'BM25',
     };
   }
 

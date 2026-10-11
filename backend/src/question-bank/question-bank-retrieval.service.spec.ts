@@ -14,7 +14,11 @@ describe('QuestionBankRetrievalService', () => {
         }),
       },
     };
-    const service = new QuestionBankRetrievalService(prisma as any);
+    const embeddings = {
+      rankDocumentChunks: jest.fn().mockResolvedValue(new Map()),
+      indexDocument: jest.fn(),
+    };
+    const service = new QuestionBankRetrievalService(prisma as any, embeddings as any);
 
     const result = await service.retrieveText(1, 'Biology mitosis cell division');
 
@@ -35,11 +39,40 @@ describe('QuestionBankRetrievalService', () => {
         }),
       },
     };
-    const service = new QuestionBankRetrievalService(prisma as any);
+    const embeddings = {
+      rankDocumentChunks: jest.fn().mockResolvedValue(new Map()),
+      indexDocument: jest.fn(),
+    };
+    const service = new QuestionBankRetrievalService(prisma as any, embeddings as any);
 
     const result = await service.retrieveText(2, 'farming crop irrigation');
 
     expect(result.text).toContain('Farmers irrigated crops');
     expect(result.text).not.toContain('battery and lamp');
+  });
+
+  it('uses semantic scores when topic wording is not an exact lexical match', async () => {
+    const prisma = {
+      questionBankSourceDocument: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 3,
+          chunks: [
+            { id: 30, ordinal: 0, content: 'Green plants manufacture glucose using light energy.', searchText: 'green plants manufacture glucose using light energy.' },
+            { id: 31, ordinal: 1, content: 'Rocks are weathered by wind and rain.', searchText: 'rocks are weathered by wind and rain.' },
+          ],
+        }),
+      },
+    };
+    const embeddings = {
+      rankDocumentChunks: jest.fn().mockResolvedValue(new Map([[30, 0.91], [31, 0.12]])),
+      indexDocument: jest.fn(),
+    };
+    const service = new QuestionBankRetrievalService(prisma as any, embeddings as any);
+
+    const result = await service.retrieveText(3, 'How photosynthesis makes food');
+
+    expect(result.retrievalMode).toBe('HYBRID_VECTOR_BM25');
+    expect(result.text).toContain('manufacture glucose');
+    expect(result.text).not.toContain('Rocks are weathered');
   });
 });
