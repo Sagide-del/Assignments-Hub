@@ -52,6 +52,9 @@ const ExamPlayer = lazy(() =>
 const StemLabPlayerPage = lazy(() =>
   import('../../features/student/StemLabPlayer').then((module) => ({ default: module.StemLabPlayerPage })),
 );
+const SkillWorkspacePage = lazy(() =>
+  import('../../features/student/skill-workspace/SkillWorkspace').then((module) => ({ default: module.SkillWorkspacePage })),
+);
 const CreateAssignmentRich = lazy(() =>
   import('../../features/teacher/CreateAssignmentRich').then((module) => ({ default: module.CreateAssignmentRich })),
 );
@@ -309,6 +312,10 @@ export const router = createBrowserRouter([
           {
             path: '/student/learn-skills/:id',
             element: <SkillDetailPage />,
+          },
+          {
+            path: '/student/learn-skills/:id/workspace',
+            element: <SkillWorkspacePage />,
           },
           {
             // "My Future" was renamed to "My Pathway" — redirect old
