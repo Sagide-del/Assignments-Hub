@@ -293,6 +293,8 @@ export function ExamPlayer() {
   const [uploadingFor, setUploadingFor] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [focusInterrupted, setFocusInterrupted] = useState(false);
   const startTime = useMemo(() => Date.now(), []);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -316,6 +318,43 @@ export function ExamPlayer() {
     setCurrentIndex((prev) => Math.min(prev, questions.length - 1));
   }, [questions]);
 
+  useEffect(() => {
+    if (!focusMode) return;
+    const handleVisibilityChange = () => {
+      if (document.hidden) setFocusInterrupted(true);
+    };
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) setFocusInterrupted(true);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [focusMode]);
+
+  async function activateFocusMode() {
+    setFocusMode(true);
+    setFocusInterrupted(false);
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      try {
+        await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+      } catch {
+        // iOS and some managed browsers do not expose fullscreen. Visibility
+        // recovery still works, and the OS kiosk policy remains authoritative.
+      }
+    }
+  }
+
+  async function endFocusMode() {
+    setFocusMode(false);
+    setFocusInterrupted(false);
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => undefined);
+    }
+  }
+
   const saveMutation = useMutation({
     mutationFn: (isDraft: boolean) => {
       const answerList: AnswerInput[] = Object.entries(answers).map(([questionId, answer]) => ({
@@ -335,6 +374,7 @@ export function ExamPlayer() {
       );
       queryClient.setQueryData(['my-submission', assignmentId], [submission]);
       queryClient.invalidateQueries({ queryKey: ['student-submissions'] });
+      if (!isDraft) void endFocusMode();
     },
     onError: (err) => setStatus(apiErrorMessage(err, 'Could not save')),
   });
@@ -446,6 +486,19 @@ export function ExamPlayer() {
 
   return (
     <div className={workspaceClassName}>
+      {focusMode && focusInterrupted ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#101820]/95 p-5" role="dialog" aria-modal="true" aria-labelledby="focus-mode-title">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#EEF8D1] text-[#4D6310]">
+              <FocusIcon />
+            </div>
+            <h2 id="focus-mode-title" className="mt-4 text-xl font-semibold text-[#101820]">Assessment paused</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Return to the assessment to continue. Your answers remain saved on this device until you save the draft.</p>
+            <button type="button" onClick={() => void activateFocusMode()} className="mt-5 min-h-12 w-full rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820]">Return to assessment</button>
+            <button type="button" onClick={() => void endFocusMode()} className="mt-2 min-h-11 w-full rounded-xl text-sm font-semibold text-slate-500">Leave focus mode</button>
+          </div>
+        </div>
+      ) : null}
       <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -470,9 +523,19 @@ export function ExamPlayer() {
                 <span className="inline-flex items-center gap-1.5"><ClockIcon /> {formatElapsed(elapsedSeconds)}</span>
               </div>
             </div>
-            <span className="inline-flex min-h-9 shrink-0 items-center rounded-full bg-[#F1F5F9] px-3 text-xs font-semibold text-slate-600">
-              {reviewMode ? 'Review' : `Question ${currentIndex + 1} of ${totalQuestions}`}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void (focusMode ? endFocusMode() : activateFocusMode())}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs font-semibold ${focusMode ? 'border-[#D7E89A] bg-[#EEF8D1] text-[#4D6310]' : 'border-slate-200 bg-white text-slate-600'}`}
+              >
+                <FocusIcon />
+                {focusMode ? 'Focus active' : 'Focus mode'}
+              </button>
+              <span className="inline-flex min-h-9 shrink-0 items-center rounded-full bg-[#F1F5F9] px-3 text-xs font-semibold text-slate-600">
+                {reviewMode ? 'Review' : `Question ${currentIndex + 1} of ${totalQuestions}`}
+              </span>
+            </div>
           </div>
           <div className="mt-4 flex items-center gap-3">
             <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
@@ -678,6 +741,15 @@ export function ExamPlayer() {
         </section>
       </div>
     </div>
+  );
+}
+
+function FocusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M8 4H5a1 1 0 0 0-1 1v3M16 4h3a1 1 0 0 1 1 1v3M8 20H5a1 1 0 0 1-1-1v-3M16 20h3a1 1 0 0 0 1-1v-3" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
   );
 }
 
