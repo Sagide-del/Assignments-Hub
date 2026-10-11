@@ -74,8 +74,22 @@ export function SkillDetailPage() {
   );
 }
 
-function DetailSection({ title, items, fallback }: { title: string; items: string[]; fallback: string }) {
-  return <section className="rounded-[24px] border border-slate-200 bg-white p-6"><h2 className="text-lg font-semibold text-[#101820]">{title}</h2>{items.length > 0 ? <ul className="mt-4 grid gap-3 sm:grid-cols-2">{items.map((item) => <li key={item} className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{item}</li>)}</ul> : <p className="mt-4 text-sm leading-6 text-slate-600">{fallback}</p>}</section>;
+function DetailSection({ title, items, fallback }: { title: string; items: unknown[]; fallback: string }) {
+  const displayItems = items
+    .map((item, index) => ({ key: index, text: courseItemText(item) }))
+    .filter((item) => item.text);
+
+  return <section className="rounded-[24px] border border-slate-200 bg-white p-6"><h2 className="text-lg font-semibold text-[#101820]">{title}</h2>{displayItems.length > 0 ? <ul className="mt-4 grid gap-3 sm:grid-cols-2">{displayItems.map((item) => <li key={item.key} className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{item.text}</li>)}</ul> : <p className="mt-4 text-sm leading-6 text-slate-600">{fallback}</p>}</section>;
+}
+
+function courseItemText(item: unknown) {
+  if (typeof item === 'string') return item.trim();
+  if (!item || typeof item !== 'object') return '';
+  const value = item as Record<string, unknown>;
+  if (typeof value.title === 'string') return value.title.trim();
+  if (typeof value.name === 'string') return value.name.trim();
+  if (typeof value.description === 'string') return value.description.trim();
+  return '';
 }
 
 function CourseFact({ label: factLabel, value }: { label: string; value: string }) {
