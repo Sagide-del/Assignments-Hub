@@ -28,6 +28,7 @@ import { PublishQuestionBankDto } from "./dto/publish-question-bank.dto";
 import { SelectQuestionBankDto } from "./dto/select-question-bank.dto";
 import { RotateQuestionBankDto } from './dto/rotate-question-bank.dto';
 import { QuestionBankRetrievalService } from './question-bank-retrieval.service';
+import { DocumentOcrService } from '../document-processing/document-ocr.service';
 import {
   QUESTION_BANK_MIN_ACCEPTABLE_RATIO,
   QUESTION_BANK_SOURCE_MAX_BYTES,
@@ -67,6 +68,7 @@ export class QuestionBankService {
     private readonly assignments: AssignmentsService,
     private readonly audit: AuditService,
     private readonly retrieval: QuestionBankRetrievalService,
+    private readonly ocr: DocumentOcrService,
   ) {}
 
   // ==========================================================================
@@ -786,18 +788,17 @@ export class QuestionBankService {
 
   private async extractText(buffer: Buffer): Promise<string> {
     const parser = new PDFParse({ data: buffer });
+    let text = '';
     try {
       const parsed = await parser.getText();
-      const text = parsed.text.trim();
-      if (text.length < 50) {
-        throw new BadRequestException(
-          "The PDF contains too little selectable text. Scanned PDFs require OCR before upload.",
-        );
-      }
-      return text.slice(0, QUESTION_BANK_SOURCE_TEXT_MAX_CHARACTERS);
+      text = parsed.text.trim();
     } finally {
       await parser.destroy();
     }
+    if (text.length < 50) {
+      text = await this.ocr.extractPdf(buffer);
+    }
+    return text.slice(0, QUESTION_BANK_SOURCE_TEXT_MAX_CHARACTERS);
   }
 
   private buildGenerationPrompt(

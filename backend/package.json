@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.840.0",
+    "@aws-sdk/client-textract": "^3.840.0",
     "@nestjs/cli": "^10.4.9",
     "@nestjs/common": "^10.4.0",
     "@nestjs/config": "^3.2.3",

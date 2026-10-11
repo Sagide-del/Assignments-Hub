@@ -14,9 +14,10 @@ import { AiSourceStorageService } from "./ai-source-storage.service";
 import { AiTopicAssignmentService } from "./ai-topic-assignment.service";
 import { AiFeatureGuard } from "./guards/ai-feature.guard";
 import { AiQuotaGuard } from "./guards/ai-quota.guard";
+import { DocumentOcrModule } from "../document-processing/document-ocr.module";
 
 @Module({
-  imports: [AiModule, AssignmentsModule],
+  imports: [AiModule, AssignmentsModule, DocumentOcrModule],
   controllers: [AiContentController],
   providers: [
     AiFeatureConfigService,

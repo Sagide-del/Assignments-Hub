@@ -121,6 +121,7 @@ describe("AI content tenant security", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
 
     await expect(service.getContent(8, teacher)).rejects.toBeInstanceOf(

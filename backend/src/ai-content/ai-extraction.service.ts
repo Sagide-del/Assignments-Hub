@@ -16,6 +16,7 @@ import { AiProviderRouterService } from "../ai/ai-provider-router.service";
 import { CreateAiExtractionDto } from "./dto/create-ai-extraction.dto";
 import { AiFeatureConfigService } from "./ai-feature-config.service";
 import { AiSourceStorageService } from "./ai-source-storage.service";
+import { DocumentOcrService } from "../document-processing/document-ocr.service";
 import {
   AI_EXTRACTION_PROMPT_VERSION,
   AI_SOURCE_MAX_BYTES,
@@ -44,6 +45,7 @@ export class AiExtractionService {
     private readonly storage: AiSourceStorageService,
     private readonly providerRouter: AiProviderRouterService,
     private readonly audit: AuditService,
+    private readonly ocr: DocumentOcrService,
   ) {}
 
   async createExtraction(
@@ -183,12 +185,10 @@ export class AiExtractionService {
       const source = await this.storage.getPdf(extraction.storageKey);
       const parser = new PDFParse({ data: source });
       const parsed = await parser.getText().finally(() => parser.destroy());
-      const text = parsed.text.trim();
-      if (text.length < 50) {
-        throw new BadRequestException(
-          "The PDF contains too little selectable text. Scanned PDFs require OCR before upload.",
-        );
-      }
+      const selectableText = parsed.text.trim();
+      const text = selectableText.length >= 50
+        ? selectableText
+        : await this.ocr.extractPdf(source, extraction.storageKey);
 
       const prompt = this.buildExtractionPrompt(
         extraction.subject,
