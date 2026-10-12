@@ -39,38 +39,39 @@ export function StudentStudyPlan() {
 
   return (
     <section className="study-plan-print space-y-4">
-      <header className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="flex flex-col gap-5 bg-[#101820] p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <header className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="flex items-center justify-between gap-3 bg-[#101820] p-4 text-white sm:p-6">
           <div className="flex min-w-0 items-center gap-4">
-            <Logo src={school?.logoUrl} name={school?.name ?? 'Assignment Hub'} size="md" className="shadow-none ring-white/10" />
+            <Logo src={school?.logoUrl} name={school?.name ?? 'Assignment Hub'} size="sm" className="shadow-none ring-white/10 sm:h-14 sm:w-14" />
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold uppercase tracking-[0.14em] text-[#B5E61D]">{school?.name ?? 'Assignment Hub'}</p>
-              <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">{user?.name}</h2>
+              <h2 className="mt-1 truncate text-lg font-semibold sm:text-2xl">{user?.name}</h2>
               <p className="mt-1 text-sm text-slate-300">{[user?.grade, plan.periodKey.replace(/-/g, ' ')].filter(Boolean).join(' · ')}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => window.print()}
-            className="no-print inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/15"
+            className="print:hidden inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15 sm:w-auto sm:gap-2 sm:px-4"
+            aria-label="Print timetable"
           >
             <Printer className="h-4 w-4" strokeWidth={1.8} />
-            Print timetable
+            <span className="hidden sm:inline">Print timetable</span>
           </button>
         </div>
 
-        <div className="grid divide-y divide-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <div className="grid grid-cols-3 divide-x divide-slate-200">
           <PlanMetric label="Weekly sessions" value={String(timetable.length)} />
           <PlanMetric label="Focus subjects" value={String(plan.weakSubjects.length || 1)} />
           <PlanMetric label="Practice available" value={String(practiceAssignments.length)} />
         </div>
       </header>
 
-      <div className="rounded-2xl border border-slate-200 bg-white">
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-5">
           <div>
             <h3 className="font-semibold text-[#101820]">Weekly timetable</h3>
-            <p className="mt-0.5 text-xs text-slate-500">Select a session to see its learning method and practice.</p>
+            <p className="mt-0.5 text-xs text-slate-500">Tap a session for details.</p>
           </div>
           <Clock3 className="h-5 w-5 text-slate-400" strokeWidth={1.7} />
         </div>
@@ -83,7 +84,7 @@ export function StudentStudyPlan() {
                 <button
                   type="button"
                   onClick={() => setOpenSession(open ? null : index)}
-                  className="grid min-h-[72px] w-full grid-cols-[74px_1fr_auto] items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 sm:grid-cols-[110px_100px_1fr_auto] sm:px-5"
+                  className="grid min-h-[72px] w-full min-w-0 grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-2 px-3 py-3 text-left hover:bg-slate-50 sm:grid-cols-[110px_100px_minmax(0,1fr)_auto] sm:gap-3 sm:px-5"
                   aria-expanded={open}
                 >
                   <span className="text-sm font-semibold text-[#101820]">{session.day}</span>
@@ -132,7 +133,7 @@ function SessionDetails({ session, assignment }: { session: StudySession; assign
         <Detail icon={Coffee} label="Break" value={`${session.breakMinutes} minutes`} />
       </div>
       {assignment ? (
-        <Link to={`/student/assignments/${assignment.id}`} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white">
+        <Link to={`/student/assignments/${assignment.id}`} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-center text-sm font-semibold text-white sm:w-auto">
           <Target className="h-4 w-4" />
           Open {assignment.title}
           <ExternalLink className="h-3.5 w-3.5" />
@@ -156,5 +157,5 @@ function Detail({ icon: Icon, label, value, secondary }: { icon: typeof BookOpen
 }
 
 function PlanMetric({ label, value }: { label: string; value: string }) {
-  return <div className="px-5 py-4"><p className="text-xs font-medium text-slate-500">{label}</p><p className="mt-1 text-xl font-semibold text-[#101820]">{value}</p></div>;
+  return <div className="min-w-0 px-2 py-3 text-center sm:px-5 sm:py-4 sm:text-left"><p className="truncate text-[10px] font-medium text-slate-500 sm:text-xs">{label}</p><p className="mt-1 text-lg font-semibold text-[#101820] sm:text-xl">{value}</p></div>;
 }
