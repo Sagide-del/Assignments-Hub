@@ -76,7 +76,6 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
 
       {!fixedSchoolCode ? (
         <div className="mt-8">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">I am signing in as</p>
           <LoginTabs loginType={loginType} setLoginType={(type) => { setLoginType(type); setError(null); setShowSecret(false); }} />
         </div>
       ) : (

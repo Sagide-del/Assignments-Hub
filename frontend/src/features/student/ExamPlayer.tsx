@@ -164,12 +164,13 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
   const correct = expectedAnswer(question);
   const badge = resultBadge(answer, question?.points);
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(16,24,32,0.04)] sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-semibold text-[#101820]">Question {index + 1}</p>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}>{badge.label}</span>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#101820] text-xs font-bold text-white">
+            {index + 1}
+          </span>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}>{badge.label}</span>
         </div>
         <span className="text-sm font-medium text-slate-500">
           {answer.pointsAwarded != null && question
@@ -177,42 +178,61 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
             : 'Not scored'}
         </span>
       </div>
+
+      {question ? (
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          {question.contentHtml ? (
+            <RichContent html={question.contentHtml} className="assessment-question-copy" />
+          ) : (
+            <p className="break-words text-base font-semibold leading-7 text-[#101820]">{question.questionText}</p>
+          )}
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">
+        <ReviewPanel label="Your response">
+          <ResponseValue value={answer.studentAnswer} />
+        </ReviewPanel>
+        <ReviewPanel label="Correct answer" tone="success">
+          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{correct ?? 'Reviewed manually'}</p>
+        </ReviewPanel>
       </div>
-      <div className="px-4 py-4 sm:px-5">
-        {question ? (
-          <div>
-            {question.contentHtml ? (
-              <RichContent html={question.contentHtml} className="assessment-question-copy" />
-            ) : (
-              <p className="break-words text-sm font-medium leading-6 text-[#101820]">{question.questionText}</p>
-            )}
-          </div>
-        ) : null}
-        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 divide-y divide-slate-200">
-          <ReviewRow label="Your response"><ResponseValue value={answer.studentAnswer} /></ReviewRow>
-          <ReviewRow label="Correct answer">
-            <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{correct ?? 'Reviewed manually'}</p>
-          </ReviewRow>
+
+      {answer.feedback || question?.explanation ? (
+        <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
           {answer.feedback ? (
-            <ReviewRow label="Teacher feedback"><p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{answer.feedback}</p></ReviewRow>
+            <ReviewPanel label="Teacher feedback" tone="feedback">
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{answer.feedback}</p>
+            </ReviewPanel>
           ) : null}
           {question?.explanation ? (
-            <ReviewRow label="Explanation"><p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{question.explanation}</p></ReviewRow>
+            <ReviewPanel label="Explanation" tone="explanation">
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{question.explanation}</p>
+            </ReviewPanel>
           ) : null}
         </div>
-      </div>
+      ) : null}
     </article>
   );
 }
 
-function ReviewRow({ label, children }: { label: string; children: ReactNode }) {
+function ReviewPanel({ label, children, tone = 'neutral' }: {
+  label: string;
+  children: ReactNode;
+  tone?: 'neutral' | 'success' | 'feedback' | 'explanation';
+}) {
+  const toneClass = {
+    neutral: 'border-slate-200 bg-[#F8FAFC]',
+    success: 'border-[#D7E89A] bg-[#F8FCEB]',
+    feedback: 'border-sky-200 bg-sky-50/60',
+    explanation: 'border-slate-200 bg-white',
+  }[tone];
+
   return (
-    <div className="grid min-w-0 sm:grid-cols-[150px_minmax(0,1fr)]">
-      <div className="bg-[#F8FAFC] px-3 py-2.5 sm:px-4 sm:py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
-      </div>
-      <div className="min-w-0 bg-white px-3 py-3 sm:px-4">{children}</div>
-    </div>
+    <section className={`min-w-0 rounded-xl border p-3.5 ${toneClass}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <div className="mt-2 min-w-0">{children}</div>
+    </section>
   );
 }
 
@@ -432,32 +452,41 @@ export function ExamPlayer() {
               </span>
             </div>
           </div>
-          <div className="grid divide-y divide-slate-200 border-b border-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-            <StatTile label="Submitted" value={formatDateTime(existing.completedAt ?? existing.createdAt)} />
-            <StatTile label="Submission status" value={resultsReleased ? 'RESULTS RELEASED' : existing.status} />
-            <StatTile label="Score" value={displayedSubmission?.score != null ? `${displayedSubmission.score} / ${assignmentMaxPoints}` : 'Pending'} />
-            <StatTile label="Feedback" value={resultsReleased ? 'Available' : 'Awaiting review'} />
-          </div>
           <div className="p-4 sm:p-6">
             <div className="min-w-0">
-              {resultsReleased && displayedSubmission?.gradedAt ? (
-                <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4">
-                  <p className="text-sm font-semibold text-[#101820]">
-                    {displayedSubmission.gradedBy?.name
-                      ? `Graded by ${displayedSubmission.gradedBy.name}`
-                      : 'Reviewed result'} on {formatDateTime(displayedSubmission.gradedAt)}
+              <div className="rounded-2xl bg-[#101820] p-5 text-white sm:flex sm:items-center sm:justify-between sm:gap-6">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Score</p>
+                  <p className="mt-1 text-3xl font-bold tracking-tight">
+                    {displayedSubmission?.score != null ? `${displayedSubmission.score} / ${assignmentMaxPoints}` : 'Pending'}
                   </p>
-                  {displayedSubmission.feedback ? (
-                    <p className="mt-2 text-sm leading-7 text-slate-600">{displayedSubmission.feedback}</p>
+                </div>
+                <div className="mt-4 border-t border-white/15 pt-4 sm:mt-0 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Submitted</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{formatDateTime(existing.completedAt ?? existing.createdAt)}</p>
+                  {resultsReleased && displayedSubmission?.gradedAt ? (
+                    <p className="mt-1 text-xs text-slate-300">
+                      Reviewed {formatDateTime(displayedSubmission.gradedAt)}
+                      {displayedSubmission.gradedBy?.name ? ` by ${displayedSubmission.gradedBy.name}` : ''}
+                    </p>
                   ) : null}
+                </div>
+              </div>
+              {resultsReleased && displayedSubmission?.feedback ? (
+                <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-800">Overall feedback</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-700">{displayedSubmission.feedback}</p>
                 </div>
               ) : null}
               {resultsReleased && loadingReleasedResults ? (
                 <p className="mt-4 text-sm text-slate-500">Loading released results...</p>
               ) : null}
               {resultsReleased && releasedResults?.answers?.length ? (
-                <div className="mt-4 space-y-3">
-                  <p className="text-sm font-semibold text-[#101820]">Reviewed answers</p>
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-base font-semibold text-[#101820]">Question review</h2>
+                    <span className="text-xs font-medium text-slate-500">{releasedResults.answers.length} questions</span>
+                  </div>
                   {releasedResults.answers.map((answer, index) => (
                     <ReleasedAnswerCard key={answer.id} answer={answer} index={index} />
                   ))}
