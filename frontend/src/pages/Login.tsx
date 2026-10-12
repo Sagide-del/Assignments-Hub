@@ -34,11 +34,11 @@ export default function Login() {
 
             <div className="max-w-md pb-10">
               <div className="mb-5 h-1 w-12 rounded-full bg-[#B5E61D]" />
-              <p className="text-3xl font-semibold leading-tight text-white xl:text-4xl">
-                Your school learning workspace.
-              </p>
+              <h1 className="text-3xl font-semibold leading-tight text-white xl:text-4xl">
+                Assignments, resources and practical skills in one workspace.
+              </h1>
               <p className="mt-4 text-base text-slate-200">
-                Sign in to continue your assignments and practical work.
+                Complete school work on any device, receive feedback and continue learning without relying on hard-copy assignments.
               </p>
             </div>
           </div>
