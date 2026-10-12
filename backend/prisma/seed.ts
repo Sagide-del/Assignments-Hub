@@ -14,6 +14,7 @@ import { CSL_ACTIVITY_CATALOG } from './seed-csl-data';
 import { PATHWAY_CATALOG } from './seed-pathways-data';
 import { SUPPORT_INSTITUTION_CATALOG } from './seed-support-institutions-data';
 import { CBC_SKILL_CATALOG } from './seed-skills-data';
+import { seedMbaleAcademicResults } from './seed-mbale-results';
 
 // Senior School lab keys are formatted "ss-<subject>-10-<n>" — the source
 // curriculum table didn't distinguish which of Grades 10/11/12 each lab
@@ -303,6 +304,12 @@ async function main() {
         data: { createdById: mbaleMathTeacher.id },
       });
     }
+
+    await seedMbaleAcademicResults(prisma, {
+      schoolId: mbaleSchool.id,
+      studentId: mbaleStudent.id,
+      teacherId: mbaleMathTeacher.id,
+    });
   }
 
   // STEM category/subject taxonomy — platform-wide, upserted by key. These
