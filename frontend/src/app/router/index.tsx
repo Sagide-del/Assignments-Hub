@@ -29,6 +29,7 @@ import { PathwaysStats } from '../../features/teacher/PathwaysStats';
 import { MentorshipInboxPage } from '../../features/teacher/MentorshipInbox';
 import { TeacherMessagesPage } from '../../features/teacher/Messages';
 import { ResourceStudioPage } from '../../features/teacher/ResourceStudio';
+import { AcademicReports } from '../../features/teacher/AcademicReports';
 
 import { SchoolAdminDashboard } from '../../features/school-admin/Dashboard';
 import { BrandingSettings } from '../../features/school-admin/Branding';
@@ -36,6 +37,7 @@ import { SchoolAdminBilling } from '../../features/school-admin/Billing';
 import { SchoolAdminReports } from '../../features/school-admin/Reports';
 import { AiUsage } from '../../features/school-admin/AiUsage';
 import { MessagesOversight } from '../../features/school-admin/MessagesOversight';
+import { AcademicResults } from '../../features/school-admin/AcademicResults';
 
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
@@ -154,6 +156,10 @@ const teacherNav = [
     to: '/teacher/resources',
     label: 'Resource Studio',
   },
+  {
+    to: '/teacher/academic-reports',
+    label: 'Academic Reports',
+  },
 ];
 
 
@@ -173,6 +179,10 @@ const schoolAdminNav = [
   {
     to: '/school-admin/reports',
     label: 'Reports',
+  },
+  {
+    to: '/school-admin/academic-results',
+    label: 'Academic Results',
   },
   {
     to: '/school-admin/ai-usage',
@@ -433,6 +443,10 @@ export const router = createBrowserRouter([
             path: '/teacher/resources',
             element: <ResourceStudioPage />,
           },
+          {
+            path: '/teacher/academic-reports',
+            element: <AcademicReports />,
+          },
         ],
       },
     ],
@@ -464,6 +478,10 @@ export const router = createBrowserRouter([
           {
             path: '/school-admin/reports',
             element: <SchoolAdminReports />,
+          },
+          {
+            path: '/school-admin/academic-results',
+            element: <AcademicResults />,
           },
           {
             path: '/school-admin/ai-usage',

@@ -15,8 +15,9 @@ import { useState, useEffect } from 'react';
 //      it via onError and never let that render.
 //   3. No `src` at all -> fallback mark immediately, no failed request.
 //
-// School fallbacks use initials. Assignment Hub itself uses the official
-// mark from /logo.png, cropped to the symbol in compact dashboard contexts.
+// School fallbacks use initials. Assignment Hub itself uses an embedded
+// vector mark in compact contexts so navigation branding never depends on
+// an image request or a fragile crop of the horizontal wordmark.
 const SIZE_CLASSES = {
   sm: 'h-10 w-10 rounded-xl',
   md: 'h-14 w-14 rounded-2xl',
@@ -47,6 +48,22 @@ function getInitials(name?: string | null): string {
     .map((part) => part[0]?.toUpperCase())
     .join('');
   return initials || 'AH';
+}
+
+function AssignmentHubMark() {
+  return (
+    <svg viewBox="0 0 64 64" className="h-[72%] w-[72%]" role="img" aria-label="Assignment Hub logo">
+      <path
+        d="M10 19.5 27 9v46l-8-5V36H10v-16.5Zm9 9.5V21l-5 3v5h5Z"
+        fill="#B5E61D"
+      />
+      <path
+        d="M37 9 54 19.5V45L37 55V36h-6v-7h6V9Zm8 15-5-3v8h5v-5Zm0 12h-5v8l5-3v-5Z"
+        fill="#101820"
+      />
+      <circle cx="32" cy="32.5" r="5.5" fill="#B5E61D" stroke="#fff" strokeWidth="2" />
+    </svg>
+  );
 }
 
 export function Logo({
@@ -88,16 +105,7 @@ export function Logo({
           onError={() => setBroken(true)}
         />
       ) : showAssignmentHubMark ? (
-        <div
-          className="h-full w-full bg-white bg-no-repeat"
-          style={{
-            backgroundImage: "url('/logo.png')",
-            backgroundPosition: '7% 52%',
-            backgroundSize: '427% 320%',
-          }}
-          role="img"
-          aria-label="Assignment Hub logo"
-        />
+        <AssignmentHubMark />
       ) : (
         <div
           className={`flex h-full w-full items-center justify-center bg-gradient-to-br from-[#101820] to-[#1c2a38] ${TEXT_SIZE_CLASSES[size]} font-bold text-[#B5E61D]`}

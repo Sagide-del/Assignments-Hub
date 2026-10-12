@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpenCheck,
+  CalendarDays,
   Download,
   FileText,
   LibraryBig,
@@ -18,6 +19,7 @@ import {
   type ResourceListingType,
 } from '../../api/resources.api';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
+import { StudentStudyPlan } from './StudentStudyPlan';
 
 const TYPES: Array<{ value: ResourceListingType | 'ALL'; label: string }> = [
   { value: 'ALL', label: 'All' },
@@ -38,7 +40,7 @@ function priceLabel(value: number) {
 
 export function MyResourcesPage() {
   const queryClient = useQueryClient();
-  const [view, setView] = useState<'MARKETPLACE' | 'LIBRARY'>('MARKETPLACE');
+  const [view, setView] = useState<'MARKETPLACE' | 'LIBRARY' | 'STUDY_PLAN'>('MARKETPLACE');
   const [type, setType] = useState<ResourceListingType | 'ALL'>('ALL');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<ResourceListing | null>(null);
@@ -85,17 +87,18 @@ export function MyResourcesPage() {
 
   return (
     <div className="space-y-5 pb-12">
-      <PageHeader title="My Resources" meta={view === 'MARKETPLACE' ? `${listings.length} available` : `${ownedIds.size} in your library`} />
+      <PageHeader title="My Resources" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : 'Personal study plan'} />
 
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
           <ViewButton active={view === 'MARKETPLACE'} onClick={() => setView('MARKETPLACE')} icon={ShoppingBag} label="Marketplace" />
           <ViewButton active={view === 'LIBRARY'} onClick={() => setView('LIBRARY')} icon={LibraryBig} label="My library" />
+          <ViewButton active={view === 'STUDY_PLAN'} onClick={() => setView('STUDY_PLAN')} icon={CalendarDays} label="Study plan" />
         </div>
-        <label className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:w-72">
+        {view !== 'STUDY_PLAN' ? <label className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:w-72">
           <Search className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.8} />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search resources" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
-        </label>
+        </label> : null}
       </div>
 
       {view === 'MARKETPLACE' ? (
@@ -106,9 +109,9 @@ export function MyResourcesPage() {
         </div>
       ) : null}
 
-      {status ? <p role="status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{status}</p> : null}
+      {status && view !== 'STUDY_PLAN' ? <p role="status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{status}</p> : null}
 
-      {listingsQuery.isLoading || purchasesQuery.isLoading ? (
+      {view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
         <EmptyState title="Loading resources..." />
       ) : listingsQuery.isError || purchasesQuery.isError ? (
         <EmptyState title="Resources are temporarily unavailable." />
