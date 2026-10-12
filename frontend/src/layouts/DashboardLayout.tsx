@@ -1,6 +1,31 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import {
+  BarChart3,
+  BookMarked,
+  BookOpenCheck,
+  Bot,
+  Brain,
+  BriefcaseBusiness,
+  Building2,
+  Compass,
+  CreditCard,
+  FileChartColumn,
+  FileText,
+  FlaskConical,
+  GraduationCap,
+  LayoutDashboard,
+  LibraryBig,
+  MessageCircle,
+  Palette,
+  PenSquare,
+  School,
+  ShieldCheck,
+  UserRoundSearch,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { useAuthStore } from '../store/auth.store';
 import { schoolsApi } from '../api/schools.api';
@@ -48,6 +73,32 @@ function SidebarSectionLabel({ children }: { children: ReactNode }) {
       {children}
     </p>
   );
+}
+
+function iconForNavigation(path: string): LucideIcon {
+  if (path.includes('my-assignments') || path.includes('independent-assignments')) return PenSquare;
+  if (path.includes('kcse-papers')) return FileText;
+  if (path.includes('mnemonic-cards')) return Brain;
+  if (path.includes('stem')) return FlaskConical;
+  if (path.includes('learn-skills') || path.includes('skill-studio')) return GraduationCap;
+  if (path.includes('my-pathway') || path.includes('pathways')) return Compass;
+  if (path.includes('messages')) return MessageCircle;
+  if (path.includes('question-bank')) return BookMarked;
+  if (path.includes('marking') || path.includes('csl-review')) return BookOpenCheck;
+  if (path.includes('analytics') || path.includes('reports')) return BarChart3;
+  if (path.includes('mentorship') || path.includes('private-tutor')) return UserRoundSearch;
+  if (path.includes('branding')) return Palette;
+  if (path.includes('billing') || path.includes('subscription')) return CreditCard;
+  if (path.includes('ai-management') || path.includes('ai-usage')) return Bot;
+  if (path.includes('independent-students')) return Users;
+  if (path.includes('schools')) return School;
+  if (path.includes('resources')) return LibraryBig;
+  if (path.includes('users')) return Users;
+  if (path.includes('audit')) return ShieldCheck;
+  if (path.includes('financial')) return BriefcaseBusiness;
+  if (path.includes('platform')) return Building2;
+  if (path.includes('teacher')) return FileChartColumn;
+  return LayoutDashboard;
 }
 
 export function DashboardLayout({ nav }: { nav: NavItem[] }) {
@@ -170,7 +221,9 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <SidebarSectionLabel>Navigation</SidebarSectionLabel>
           <nav className="mt-4 space-y-2">
-            {nav.map((item) => (
+            {nav.map((item) => {
+              const Icon = iconForNavigation(item.to);
+              return (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -178,7 +231,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                 onClick={() => setMobileNavOpen(false)}
                 className={({ isActive }) =>
                   [
-                    'group flex items-center rounded-2xl px-4 py-3.5 text-sm font-medium transition-all duration-200',
+                    'group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
                     isActive ? 'text-[#101820] shadow-[0_12px_30px_rgba(16,24,32,0.16)]' : 'text-white/72 hover:bg-white/7 hover:text-white',
                   ].join(' ')
                 }
@@ -190,9 +243,11 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                     : undefined
                 }
               >
+                <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
                 <span className="truncate">{item.label}</span>
               </NavLink>
-            ))}
+              );
+            })}
           </nav>
         </div>
 

@@ -15,10 +15,8 @@ import { useState, useEffect } from 'react';
 //      it via onError and never let that render.
 //   3. No `src` at all -> fallback mark immediately, no failed request.
 //
-// The fallback mark itself never depends on a network asset (no /logo.png
-// fetch) so it can never itself be "the broken image" — it's pure CSS/SVG,
-// built from `name` (school initials) or a default "AH" wordmark when no
-// name is meaningful.
+// School fallbacks use initials. Assignment Hub itself uses the official
+// mark from /logo.png, cropped to the symbol in compact dashboard contexts.
 const SIZE_CLASSES = {
   sm: 'h-10 w-10 rounded-xl',
   md: 'h-14 w-14 rounded-2xl',
@@ -74,6 +72,7 @@ export function Logo({
 
   const showImage = !!src && !broken;
   const initials = getInitials(name);
+  const showAssignmentHubMark = !src && name?.trim().toLowerCase() === 'assignment hub' && !broken;
 
   return (
     <div
@@ -87,6 +86,17 @@ export function Logo({
           className="h-full w-full object-contain p-1.5"
           loading="lazy"
           onError={() => setBroken(true)}
+        />
+      ) : showAssignmentHubMark ? (
+        <div
+          className="h-full w-full bg-white bg-no-repeat"
+          style={{
+            backgroundImage: "url('/logo.png')",
+            backgroundPosition: '7% 52%',
+            backgroundSize: '427% 320%',
+          }}
+          role="img"
+          aria-label="Assignment Hub logo"
         />
       ) : (
         <div
