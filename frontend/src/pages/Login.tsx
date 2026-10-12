@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LoginCard } from '../components/auth/LoginCard';
 import type { LoginType } from '../components/auth/LoginTabs';
+import { Logo } from '../components/ui/Logo';
 
 export default function Login() {
   const { schoolCode } = useParams<{ schoolCode?: string }>();
@@ -18,27 +19,26 @@ export default function Login() {
             style={{ backgroundImage: "url('/classroom-environment.png')" }}
             aria-hidden="true"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#101820]/85 via-[#101820]/25 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#101820]/55 via-transparent to-[#101820]/15" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#101820]/78 via-[#101820]/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#101820]/62 via-transparent to-[#101820]/10" />
 
           <div className="relative z-10 flex w-full flex-col justify-between px-12 py-14 xl:px-16">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B5E61D] text-lg font-black text-[#101820]">
-                AH
-              </span>
+              <Logo name="Assignment Hub" size="sm" />
               <div>
                 <p className="font-semibold tracking-wide text-white">Assignment Hub</p>
                 <p className="text-sm text-slate-400">School learning workspace</p>
               </div>
             </div>
 
-            <div className="max-w-md pb-10">
+            <div className="max-w-lg pb-8">
               <div className="mb-5 h-1 w-12 rounded-full bg-[#B5E61D]" />
-              <h1 className="text-3xl font-semibold leading-tight text-white xl:text-4xl">
-                Assignments, resources and practical skills in one workspace.
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#B5E61D]">Learn. Practise. Improve.</p>
+              <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-white xl:text-5xl">
+                Your learning, all in one place.
               </h1>
-              <p className="mt-4 text-base text-slate-200">
-                Complete school work on any device, receive feedback and continue learning without relying on hard-copy assignments.
+              <p className="mt-5 max-w-md text-base leading-7 text-slate-200">
+                Access assignments, resources, practical activities and feedback in one connected workspace.
               </p>
             </div>
           </div>
@@ -47,9 +47,7 @@ export default function Login() {
         <section className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-8 lg:px-14">
           <div className="w-full max-w-[540px]">
             <div className="mb-5 flex items-center gap-3 px-2 lg:hidden">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#101820] text-sm font-black text-[#B5E61D]">
-                AH
-              </span>
+              <Logo name="Assignment Hub" size="sm" />
               <div>
                 <p className="font-semibold">Assignment Hub</p>
                 <p className="text-xs text-slate-500">School learning workspace</p>
