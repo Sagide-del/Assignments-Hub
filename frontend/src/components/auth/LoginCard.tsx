@@ -3,7 +3,6 @@ import { Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../api/axios';
 import { dashboardPathForRole, loginIndependent, loginStaff, loginStudent } from '../../services/authService';
-import { Logo } from '../ui/Logo';
 import { LoginTabs, type LoginType } from './LoginTabs';
 
 interface Props {
@@ -70,15 +69,7 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-3">
-        <Logo name="Assignment Hub" size="sm" />
-        <div>
-          <p className="text-sm font-bold text-[#101820]">Assignment Hub</p>
-          <p className="text-xs text-slate-500">School learning workspace</p>
-        </div>
-      </div>
-
-      <div className="mt-7">
+      <div>
         <h2 className="text-3xl font-bold tracking-tight text-[#101820] sm:text-[2rem]">
           {fixedSchoolCode ? 'Student sign in' : 'Welcome back'}
         </h2>

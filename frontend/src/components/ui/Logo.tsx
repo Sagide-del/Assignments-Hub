@@ -39,6 +39,17 @@ const TEXT_SIZE_CLASSES = {
 
 export type LogoSize = keyof typeof SIZE_CLASSES;
 
+const WORDMARK_SIZES = {
+  sm: {
+    frame: 'h-10 w-44',
+    image: 'w-[194px]',
+  },
+  md: {
+    frame: 'h-12 w-52',
+    image: 'w-[228px]',
+  },
+} as const;
+
 function getInitials(name?: string | null): string {
   const trimmed = (name ?? '').trim();
   if (!trimmed || trimmed.toLowerCase() === 'assignment hub') return 'AH';
@@ -63,6 +74,33 @@ function AssignmentHubMark() {
       />
       <circle cx="32" cy="32.5" r="5.5" fill="#B5E61D" stroke="#fff" strokeWidth="2" />
     </svg>
+  );
+}
+
+export function AssignmentHubWordmark({
+  size = 'sm',
+  className = '',
+}: {
+  size?: keyof typeof WORDMARK_SIZES;
+  className?: string;
+}) {
+  const dimensions = WORDMARK_SIZES[size];
+
+  return (
+    <div
+      className={`relative shrink-0 overflow-hidden bg-white ${dimensions.frame} ${className}`}
+      role="img"
+      aria-label="Assignment Hub"
+    >
+      <img
+        src="/logo.png"
+        alt=""
+        aria-hidden="true"
+        className={`absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 ${dimensions.image}`}
+        loading="eager"
+        decoding="async"
+      />
+    </div>
   );
 }
 
