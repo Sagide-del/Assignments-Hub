@@ -3,6 +3,7 @@ import { Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../api/axios';
 import { dashboardPathForRole, loginIndependent, loginStaff, loginStudent } from '../../services/authService';
+import { AssignmentHubWordmark } from '../ui/Logo';
 import { LoginTabs, type LoginType } from './LoginTabs';
 
 interface Props {
@@ -69,15 +70,12 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
 
   return (
     <div className="w-full">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-[#101820] sm:text-[2rem]">
-          {fixedSchoolCode ? 'Student sign in' : 'Welcome back'}
-        </h2>
-        <p className="mt-2 text-sm text-slate-500">Sign in to continue learning.</p>
+      <div className="flex justify-center">
+        <AssignmentHubWordmark size="md" />
       </div>
 
       {!fixedSchoolCode ? (
-        <div className="mt-6">
+        <div className="mt-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">I am signing in as</p>
           <LoginTabs loginType={loginType} setLoginType={(type) => { setLoginType(type); setError(null); setShowSecret(false); }} />
         </div>

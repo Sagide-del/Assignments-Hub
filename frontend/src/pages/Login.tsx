@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LoginCard } from '../components/auth/LoginCard';
 import type { LoginType } from '../components/auth/LoginTabs';
-import { AssignmentHubWordmark } from '../components/ui/Logo';
 
 export default function Login() {
   const { schoolCode } = useParams<{ schoolCode?: string }>();
@@ -22,12 +21,7 @@ export default function Login() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#101820]/78 via-[#101820]/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#101820]/62 via-transparent to-[#101820]/10" />
 
-          <div className="relative z-10 flex w-full flex-col justify-between px-12 py-14 xl:px-16">
-            <AssignmentHubWordmark
-              size="md"
-              className="rounded-xl shadow-[0_12px_35px_rgba(0,0,0,0.22)]"
-            />
-
+          <div className="relative z-10 flex w-full flex-col justify-end px-12 py-14 xl:px-16">
             <div className="max-w-lg pb-8">
               <div className="mb-5 h-1 w-12 rounded-full bg-[#B5E61D]" />
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#B5E61D]">Learn. Practise. Improve.</p>
@@ -43,10 +37,6 @@ export default function Login() {
 
         <section className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-8 lg:px-14">
           <div className="w-full max-w-[540px]">
-            <div className="mb-5 px-2 lg:hidden">
-              <AssignmentHubWordmark size="sm" />
-            </div>
-
             <div className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_24px_70px_rgba(16,24,32,0.10)] sm:p-10">
               <LoginCard
                 loginType={activeLoginType}
