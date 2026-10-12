@@ -40,6 +40,7 @@ import { QuestionBankModule } from './question-bank/question-bank.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SkillsModule } from './skills/skills.module';
 import { MnemonicCardsModule } from './mnemonic-cards/mnemonic-cards.module';
+import { ResourcesModule } from './resources/resources.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -115,6 +116,8 @@ import { TenantGuard } from './common/guards/tenant.guard';
     SkillsModule,
 
     MnemonicCardsModule,
+
+    ResourcesModule,
   ],
 
   providers: [

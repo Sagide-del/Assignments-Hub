@@ -104,6 +104,40 @@ enum SkillEnrollmentStatus {
   CANCELLED
 }
 
+enum ResourceListingType {
+  NOTES
+  ESSAY
+  REVISION_GUIDE
+  STUDY_GUIDE
+  TOOLKIT
+}
+
+enum ResourceFulfillment {
+  DIGITAL_DOWNLOAD
+  PHYSICAL_DELIVERY
+}
+
+enum ResourceListingStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ResourcePurchaseStatus {
+  PENDING_PAYMENT
+  AWAITING_VERIFICATION
+  PAID
+  REJECTED
+  CANCELLED
+  FULFILLED
+}
+
+enum AcademicResultBatchStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
@@ -316,6 +350,11 @@ model School {
   questionBankUsages        QuestionBankUsage[]
   assignmentDeliveryConfigs AssignmentDeliveryConfig[]
   studentAssignmentVariants StudentAssignmentVariant[]
+  resourceListings          ResourceListing[]
+  resourcePurchases         ResourcePurchase[]
+  academicResultBatches     AcademicResultBatch[]
+  academicResults           StudentAcademicResult[]
+  studentStudyPlans         StudentStudyPlan[]
 
   @@map("schools")
 }
@@ -408,6 +447,13 @@ model User {
   reviewedQuestionBankItems        QuestionBank[]               @relation("QuestionBankReviewedBy")
   activatedSchoolQuestionBanks     SchoolQuestionBankAccess[]   @relation("SchoolQuestionBankActivatedBy")
   assignmentVariants               StudentAssignmentVariant[]   @relation("StudentAssignmentVariantStudent")
+  resourceListings                 ResourceListing[]            @relation("ResourceSeller")
+  resourcePurchases                ResourcePurchase[]           @relation("ResourceBuyer")
+  reviewedResourcePurchases        ResourcePurchase[]           @relation("ResourcePurchaseReviewer")
+  uploadedAcademicResultBatches    AcademicResultBatch[]        @relation("AcademicResultBatchUploadedBy")
+  academicResults                  StudentAcademicResult[]      @relation("AcademicResultStudent")
+  studyPlans                       StudentStudyPlan[]           @relation("StudentStudyPlanStudent")
+  generatedStudyPlans              StudentStudyPlan[]           @relation("StudentStudyPlanGeneratedBy")
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -500,16 +546,16 @@ model SkillCourse {
 }
 
 model SkillEnrollment {
-  id            Int                   @id @default(autoincrement())
-  studentId     Int                   @map("student_id")
-  student       User                  @relation("SkillEnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  courseId      Int                   @map("course_id")
-  course        SkillCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  status        SkillEnrollmentStatus @default(REQUESTED)
-  paymentStatus PaymentStatus         @default(PENDING) @map("payment_status")
-  requestedAt   DateTime              @default(now()) @map("requested_at")
-  approvedAt    DateTime?             @map("approved_at")
-  completedAt   DateTime?             @map("completed_at")
+  id             Int                   @id @default(autoincrement())
+  studentId      Int                   @map("student_id")
+  student        User                  @relation("SkillEnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  courseId       Int                   @map("course_id")
+  course         SkillCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status         SkillEnrollmentStatus @default(REQUESTED)
+  paymentStatus  PaymentStatus         @default(PENDING) @map("payment_status")
+  requestedAt    DateTime              @default(now()) @map("requested_at")
+  approvedAt     DateTime?             @map("approved_at")
+  completedAt    DateTime?             @map("completed_at")
   lessonProgress SkillLessonProgress[]
 
   @@unique([studentId, courseId])
@@ -567,6 +613,141 @@ model MnemonicCard {
   @@index([isPublished, grade])
   @@index([subject, topic])
   @@map("mnemonic_cards")
+}
+
+model ResourceListing {
+  id       Int    @id @default(autoincrement())
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sellerId Int    @map("seller_id")
+  seller   User   @relation("ResourceSeller", fields: [sellerId], references: [id], onDelete: Restrict)
+
+  title          String
+  description    String?
+  type           ResourceListingType
+  fulfillment    ResourceFulfillment
+  status         ResourceListingStatus @default(DRAFT)
+  subject        String?
+  grade          String?
+  priceKES       Int                   @map("price_kes")
+  platformFeeBps Int                   @map("platform_fee_bps")
+  assetKey       String?               @map("asset_key")
+  fileName       String?               @map("file_name")
+  fileSize       Int?                  @map("file_size")
+  coverImageUrl  String?               @map("cover_image_url")
+  stockQuantity  Int?                  @map("stock_quantity")
+  publishedAt    DateTime?             @map("published_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  purchases ResourcePurchase[]
+
+  @@index([status, type, subject, grade])
+  @@index([schoolId, sellerId, status])
+  @@map("resource_listings")
+}
+
+model ResourcePurchase {
+  id         Int             @id @default(autoincrement())
+  schoolId   Int             @map("school_id")
+  school     School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  resourceId Int             @map("resource_id")
+  resource   ResourceListing @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  studentId  Int             @map("student_id")
+  student    User            @relation("ResourceBuyer", fields: [studentId], references: [id], onDelete: Restrict)
+
+  status           ResourcePurchaseStatus @default(PENDING_PAYMENT)
+  paymentMethod    PaymentMethod?         @map("payment_method")
+  paymentReference String?                @map("payment_reference")
+  payerPhone       String?                @map("payer_phone")
+  amountKES        Int                    @map("amount_kes")
+  platformFeeKES   Int                    @map("platform_fee_kes")
+  sellerShareKES   Int                    @map("seller_share_kes")
+  deliveryDetails  Json?                  @map("delivery_details")
+  reviewedById     Int?                   @map("reviewed_by_id")
+  reviewedBy       User?                  @relation("ResourcePurchaseReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime?              @map("reviewed_at")
+  rejectionReason  String?                @map("rejection_reason")
+  fulfilledAt      DateTime?              @map("fulfilled_at")
+  lastDownloadedAt DateTime?              @map("last_downloaded_at")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  @@index([studentId, status, createdAt])
+  @@index([resourceId, status])
+  @@index([schoolId, status])
+  @@index([paymentReference])
+  @@map("resource_purchases")
+}
+
+model AcademicResultBatch {
+  id           Int                       @id @default(autoincrement())
+  schoolId     Int                       @map("school_id")
+  school       School                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  uploadedById Int                       @map("uploaded_by_id")
+  uploadedBy   User                      @relation("AcademicResultBatchUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  name         String
+  academicYear Int                       @map("academic_year")
+  term         String
+  grade        String
+  className    String?                   @map("class_name")
+  stream       String?
+  fileName     String                    @map("file_name")
+  status       AcademicResultBatchStatus @default(PROCESSING)
+  rowCount     Int                       @default(0) @map("row_count")
+  errors       Json?
+  createdAt    DateTime                  @default(now()) @map("created_at")
+  completedAt  DateTime?                 @map("completed_at")
+
+  results    StudentAcademicResult[]
+  studyPlans StudentStudyPlan[]
+
+  @@index([schoolId, academicYear, term, grade, stream])
+  @@index([schoolId, status, createdAt])
+  @@map("academic_result_batches")
+}
+
+model StudentAcademicResult {
+  id         Int                 @id @default(autoincrement())
+  schoolId   Int                 @map("school_id")
+  school     School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  batchId    Int                 @map("batch_id")
+  batch      AcademicResultBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  studentId  Int                 @map("student_id")
+  student    User                @relation("AcademicResultStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  subject    String
+  score      Float
+  maxScore   Float               @map("max_score")
+  percentage Float
+  gradeLabel String?             @map("grade_label")
+  createdAt  DateTime            @default(now()) @map("created_at")
+
+  @@unique([batchId, studentId, subject])
+  @@index([schoolId, studentId, subject, createdAt])
+  @@index([schoolId, subject, percentage])
+  @@map("student_academic_results")
+}
+
+model StudentStudyPlan {
+  id                   Int                  @id @default(autoincrement())
+  schoolId             Int                  @map("school_id")
+  school               School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId            Int                  @map("student_id")
+  student              User                 @relation("StudentStudyPlanStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  generatedFromBatchId Int?                 @map("generated_from_batch_id")
+  generatedFromBatch   AcademicResultBatch? @relation(fields: [generatedFromBatchId], references: [id], onDelete: SetNull)
+  generatedById        Int?                 @map("generated_by_id")
+  generatedBy          User?                @relation("StudentStudyPlanGeneratedBy", fields: [generatedById], references: [id], onDelete: SetNull)
+  periodKey            String               @map("period_key")
+  weakSubjects         Json                 @map("weak_subjects")
+  timetable            Json
+  recommendations      Json
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+
+  @@unique([studentId, periodKey])
+  @@index([schoolId, periodKey])
+  @@map("student_study_plans")
 }
 
 // Opaque (non-JWT) refresh tokens, stored hashed so a DB leak alone can't be
@@ -2063,13 +2244,13 @@ model QuestionBankSourceDocument {
 }
 
 model QuestionBankSourceChunk {
-  id         Int                        @id @default(autoincrement())
-  documentId Int                        @map("document_id")
-  document   QuestionBankSourceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  id         Int                         @id @default(autoincrement())
+  documentId Int                         @map("document_id")
+  document   QuestionBankSourceDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
   ordinal    Int
-  content    String                     @db.Text
-  searchText String                     @map("search_text") @db.Text
-  createdAt  DateTime                   @default(now()) @map("created_at")
+  content    String                      @db.Text
+  searchText String                      @map("search_text") @db.Text
+  createdAt  DateTime                    @default(now()) @map("created_at")
   embedding  QuestionBankChunkEmbedding?
 
   @@unique([documentId, ordinal])

@@ -18,6 +18,7 @@ import { MessagesPage } from '../../features/student/Messages';
 import { MnemonicCardsPage } from '../../features/student/MnemonicCards';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
+import { MyResourcesPage } from '../../features/student/MyResources';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
@@ -27,6 +28,7 @@ import { CslReview } from '../../features/teacher/CslReview';
 import { PathwaysStats } from '../../features/teacher/PathwaysStats';
 import { MentorshipInboxPage } from '../../features/teacher/MentorshipInbox';
 import { TeacherMessagesPage } from '../../features/teacher/Messages';
+import { ResourceStudioPage } from '../../features/teacher/ResourceStudio';
 
 import { SchoolAdminDashboard } from '../../features/school-admin/Dashboard';
 import { BrandingSettings } from '../../features/school-admin/Branding';
@@ -43,6 +45,7 @@ import { IndependentStudentsPage } from '../../features/platform-admin/Independe
 import { IndependentAssignmentsPage } from '../../features/platform-admin/IndependentAssignments';
 import { PrivateTutorPage } from '../../features/platform-admin/PrivateTutor';
 import { TutorMessagesPage } from '../../features/platform-admin/TutorMessages';
+import { ResourceMarketplaceAdminPage } from '../../features/platform-admin/ResourceMarketplace';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -104,8 +107,8 @@ const studentNav = [
     label: 'My Pathway',
   },
   {
-    to: '/student/messages',
-    label: 'News/Messages',
+    to: '/student/resources',
+    label: 'My Resources',
   },
 ];
 
@@ -146,6 +149,10 @@ const teacherNav = [
   {
     to: '/teacher/messages',
     label: 'Messages',
+  },
+  {
+    to: '/teacher/resources',
+    label: 'Resource Studio',
   },
 ];
 
@@ -214,6 +221,10 @@ const platformAdminNav = [
   {
     to: '/platform/mnemonic-cards',
     label: 'Mnemonic Cards',
+  },
+  {
+    to: '/platform/resources',
+    label: 'Resource Marketplace',
   },
   {
     to: '/platform/billing',
@@ -328,10 +339,15 @@ export const router = createBrowserRouter([
             element: <MyPathwayPage />,
           },
           {
-            // "My Activity" was retired in favor of News/Messages —
+            // Keep the retired activity URL working while the learner's
+            // primary library now lives under My Resources.
             // redirect old bookmarks/links rather than break them.
             path: '/student/my-activities',
-            element: <Navigate to="/student/messages" replace />,
+            element: <Navigate to="/student/resources" replace />,
+          },
+          {
+            path: '/student/resources',
+            element: <MyResourcesPage />,
           },
           {
             path: '/student/messages',
@@ -412,6 +428,10 @@ export const router = createBrowserRouter([
           {
             path: '/teacher/messages',
             element: <TeacherMessagesPage />,
+          },
+          {
+            path: '/teacher/resources',
+            element: <ResourceStudioPage />,
           },
         ],
       },
@@ -522,6 +542,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/mnemonic-cards',
             element: <MnemonicCardsStudio />,
+          },
+          {
+            path: '/platform/resources',
+            element: <ResourceMarketplaceAdminPage />,
           },
           {
             path: '/platform/billing',

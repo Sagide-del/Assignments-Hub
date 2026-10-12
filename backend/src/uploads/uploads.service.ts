@@ -5,7 +5,8 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomBytes } from 'crypto';
 import { extname } from 'path';
 
@@ -41,7 +42,53 @@ export class UploadsService {
     });
   }
 
+  async uploadPrivate(file: Express.Multer.File, folder = 'marketplace-private') {
+    const stored = await this.storeBuffer({
+      body: file.buffer,
+      filename: file.originalname,
+      contentType: file.mimetype,
+      folder,
+    });
+    return {
+      assetKey: stored.key,
+      filename: file.originalname,
+      size: file.buffer.length,
+    };
+  }
+
+  async createPrivateDownloadUrl(assetKey: string, fileName: string, expiresInSeconds = 300) {
+    if (!this.bucket || !this.s3Client) {
+      throw new ServiceUnavailableException('File storage is not configured.');
+    }
+    if (!assetKey.startsWith('marketplace-private/')) {
+      throw new InternalServerErrorException('Invalid private resource key');
+    }
+    return getSignedUrl(
+      this.s3Client,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: assetKey,
+        ResponseContentDisposition: `attachment; filename="${fileName.replace(/["\r\n]/g, '')}"`,
+      }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
   async uploadBuffer({
+    body,
+    filename,
+    contentType,
+    folder = 'uploads',
+  }: UploadBufferInput) {
+    const stored = await this.storeBuffer({ body, filename, contentType, folder });
+    return {
+      url: this.buildPublicUrl(stored.key),
+      filename,
+      size: body.length,
+    };
+  }
+
+  private async storeBuffer({
     body,
     filename,
     contentType,
@@ -83,11 +130,7 @@ export class UploadsService {
       throw new InternalServerErrorException('File upload failed');
     }
 
-    return {
-      url: this.buildPublicUrl(key),
-      filename,
-      size: body.length,
-    };
+    return { key };
   }
 
   private buildPublicUrl(key: string) {
