@@ -1,6 +1,25 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import {
+  ArrowRight,
+  BookOpenCheck,
+  Bot,
+  BrainCircuit,
+  Clapperboard,
+  Code2,
+  Flame,
+  HeartPulse,
+  Laptop,
+  LibraryBig,
+  Mic2,
+  Microscope,
+  Palette,
+  Play,
+  ShieldCheck,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react';
 import { skillsApi } from '../../api/skills.api';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
 import type { SkillCategory, SkillCourse, SkillEnrollment } from '../../types';
@@ -69,10 +88,10 @@ function ContinueLearning({ enrollment }: { enrollment: SkillEnrollment }) {
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-center gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#101820] text-[#B5E61D]"><PlayIcon /></div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#101820] text-[#B5E61D]"><Play className="h-5 w-5" strokeWidth={1.8} /></div>
         <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-400">Continue</p><h2 className="mt-1 truncate text-lg font-semibold text-[#101820]">{course.title}</h2></div>
       </div>
-      <Link to={destination} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">Resume</Link>
+      <Link to={destination} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">Resume <ArrowRight className="h-4 w-4" strokeWidth={1.8} /></Link>
     </section>
   );
 }
@@ -92,7 +111,7 @@ function CategoryButton({
 }) {
   return (
     <button type="button" onClick={onClick} className={`flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition ${active ? 'bg-[#101820] text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
-      <SkillIcon name={category?.name ?? 'all'} />
+      <SkillIcon name={category?.name ?? 'all'} size="small" />
       {buttonLabel}
       <span className={`rounded-md px-1.5 py-0.5 text-[11px] ${active ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-400'}`}>{count}</span>
     </button>
@@ -106,35 +125,36 @@ function CourseRow({ course, enrollment }: { course: SkillCourse; enrollment?: S
   const destination = canOpenWorkspace ? `/student/learn-skills/${course.id}/workspace` : `/student/learn-skills/${course.id}`;
   return (
     <article className="flex min-w-0 items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#101820]"><SkillIcon name={`${course.category.name} ${course.title}`} large /></div>
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-[#F8FAFC] text-[#101820]"><SkillIcon name={`${course.category.name} ${course.title}`} size="large" /></div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400"><span>{course.category.name}</span><span aria-hidden="true">·</span><span>{course.durationWeeks} weeks</span></div>
         <h2 className="mt-1 truncate font-semibold text-[#101820]">{course.title}</h2>
         <p className="mt-1 text-xs text-slate-500">{enrollment ? label(enrollment.status) : course.costKES === 0 ? 'Included' : `KES ${course.costKES.toLocaleString()}`}</p>
       </div>
-      <Link to={destination} className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50">{canOpenWorkspace ? 'Open' : 'View'}</Link>
+      <Link to={destination} aria-label={`${canOpenWorkspace ? 'Open' : 'View'} ${course.title}`} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-[#101820] hover:border-slate-300 hover:bg-slate-50">{canOpenWorkspace ? 'Open' : 'View'} <ArrowRight className="h-4 w-4" strokeWidth={1.8} /></Link>
     </article>
   );
 }
 
-function SkillIcon({ name, large = false }: { name: string; large?: boolean }) {
+function iconForSkill(name: string): LucideIcon {
   const value = name.toLowerCase();
-  const className = large ? 'h-6 w-6' : 'h-4 w-4';
-  if (/robot|arduino|ai|machine/.test(value)) {
-    return <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3" /><path d="M12 8V5M9 14h.01M15 14h.01M9 17h6M3 12h2M19 12h2" strokeLinecap="round" /></svg>;
-  }
-  if (/first aid|health|medical/.test(value)) {
-    return <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M9 4h6l1 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1-3Z" /><path d="M12 10v6M9 13h6" strokeLinecap="round" /></svg>;
-  }
-  if (/research|science/.test(value)) {
-    return <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3" /><path d="M8 15h8" /></svg>;
-  }
-  if (/code|python|program|comput/.test(value)) {
-    return <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-  }
-  return <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 5h6a3 3 0 0 1 3 3v11a3 3 0 0 0-3-3H4V5ZM20 5h-6a3 3 0 0 0-3 3" strokeLinejoin="round" /></svg>;
+  if (value === 'all') return LibraryBig;
+  if (/machine learning|artificial intelligence|\bai\b|\bml\b|data science/.test(value)) return BrainCircuit;
+  if (/robot|arduino|mechatronic/.test(value)) return Bot;
+  if (/first aid|health|medical/.test(value)) return HeartPulse;
+  if (/research|laboratory|science/.test(value)) return Microscope;
+  if (/python|code|program|software/.test(value)) return Code2;
+  if (/computer|digital|ict/.test(value)) return Laptop;
+  if (/video|film|editing|media/.test(value)) return Clapperboard;
+  if (/fire/.test(value)) return Flame;
+  if (/speak|communication|presentation/.test(value)) return Mic2;
+  if (/quill|craft|creative|design|art/.test(value)) return Palette;
+  if (/safety|security/.test(value)) return ShieldCheck;
+  if (/technical|mechanic|electrical|build/.test(value)) return Wrench;
+  return BookOpenCheck;
 }
 
-function PlayIcon() {
-  return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m9 7 8 5-8 5V7Z" strokeLinejoin="round" /></svg>;
+function SkillIcon({ name, size }: { name: string; size: 'small' | 'large' }) {
+  const Icon = iconForSkill(name);
+  return <Icon className={size === 'large' ? 'h-6 w-6' : 'h-4 w-4'} strokeWidth={1.75} aria-hidden="true" />;
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
+import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { apiErrorMessage } from '../../api/axios';
 import { skillsApi } from '../../api/skills.api';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
@@ -56,7 +57,7 @@ export function SkillDetailPage() {
           </div>
           <div>
             {workspaceAvailable ? (
-              <Link to={`/student/learn-skills/${course.id}/workspace`} className="flex min-h-12 w-full items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">Start learning</Link>
+              <Link to={`/student/learn-skills/${course.id}/workspace`} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">Start learning <ArrowRight className="h-4 w-4" strokeWidth={1.8} /></Link>
             ) : enrollment ? (
               <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm"><span className="font-semibold text-[#101820]">{label(enrollment.status)}</span><span className="ml-2 text-slate-500">Payment {label(enrollment.paymentStatus)}</span></div>
             ) : (
@@ -71,9 +72,9 @@ export function SkillDetailPage() {
           <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
             {lessons.map((lesson, index) => (
               <div key={lesson.key} className="flex min-h-14 items-center gap-3 px-4 py-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600">{index + 1}</span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#101820]"><BookOpenCheck className="h-4 w-4" strokeWidth={1.75} /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-semibold text-[#101820]">{lesson.title}</p>
+                  <p className="break-words text-sm font-semibold text-[#101820]">{index + 1}. {lesson.title}</p>
                   <p className="mt-0.5 text-xs text-slate-400">{label(lesson.type)}</p>
                 </div>
               </div>

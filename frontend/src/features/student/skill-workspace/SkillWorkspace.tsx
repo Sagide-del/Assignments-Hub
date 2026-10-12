@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
+import { Check, Headphones } from 'lucide-react';
 import { skillsApi } from '../../../api/skills.api';
 import { EmptyState, PageHeader } from '../../../components/ui/Saas';
 import type { SkillCourse } from '../../../types';
@@ -211,7 +212,7 @@ function Workspace({ course, mode, completedKeys }: { course: SkillCourse; mode:
               const complete = completedKeys.has(lesson.key);
               return (
                 <button key={lesson.key} type="button" onClick={() => selectLesson(index)} className={`flex min-h-12 min-w-[210px] items-center gap-3 rounded-xl px-3 text-left text-sm transition xl:min-w-0 xl:w-full ${active ? 'bg-[#101820] text-white' : 'text-slate-600 hover:bg-white'}`}>
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${active ? 'bg-[#B5E61D] text-[#101820]' : complete ? 'bg-[#E7F6B5] text-[#4D6310]' : 'border border-slate-200 bg-white text-slate-500'}`}>{complete ? <CheckIcon /> : index + 1}</span>
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${active ? 'bg-[#B5E61D] text-[#101820]' : complete ? 'bg-[#E7F6B5] text-[#4D6310]' : 'border border-slate-200 bg-white text-slate-500'}`}>{complete ? <Check className="h-4 w-4" strokeWidth={2} /> : index + 1}</span>
                   <span className="line-clamp-2 font-medium">{lesson.title}</span>
                 </button>
               );
@@ -227,7 +228,7 @@ function Workspace({ course, mode, completedKeys }: { course: SkillCourse; mode:
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{activeLesson.description || course.shortDescription}</p>
             </div>
             <button type="button" onClick={() => speaking ? stopVoice() : speakLesson(activeLesson)} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-[#101820]">
-              <AudioIcon /> {speaking ? 'Stop voice' : 'Listen'}
+              <Headphones className="h-4 w-4" strokeWidth={1.8} /> {speaking ? 'Stop voice' : 'Listen'}
             </button>
           </div>
 
@@ -236,7 +237,7 @@ function Workspace({ course, mode, completedKeys }: { course: SkillCourse; mode:
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Lesson activity</p>
               <p className="mt-3 max-w-3xl text-base leading-7 text-slate-700">{activeLesson.description || course.shortDescription}</p>
               <button type="button" onClick={() => speaking ? stopVoice() : speakLesson(activeLesson)} className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#101820] ring-1 ring-slate-200">
-                <AudioIcon /> {speaking ? 'Stop guidance' : 'Play guidance'}
+                <Headphones className="h-4 w-4" strokeWidth={1.8} /> {speaking ? 'Stop guidance' : 'Play guidance'}
               </button>
             </div>
           ) : (
@@ -271,14 +272,6 @@ function Workspace({ course, mode, completedKeys }: { course: SkillCourse; mode:
 
 function lessonStarter(mode: WorkspaceMode, lesson: SkillLesson) {
   return `# ${lesson.title}\n${STARTERS[mode]}`;
-}
-
-function CheckIcon() {
-  return <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m4 10 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
-function AudioIcon() {
-  return <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z" strokeLinejoin="round" /><path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a8 8 0 0 1 0 11" strokeLinecap="round" /></svg>;
 }
 
 function RobotGrid({ state }: { state: RobotState }) {
