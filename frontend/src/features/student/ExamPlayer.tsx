@@ -163,14 +163,16 @@ function ReleasedAnswerCard({ answer, index, total }: { answer: Answer; index: n
   const question = answer.question;
   const correct = expectedAnswer(question);
   const badge = resultBadge(answer, question?.points);
+  const responseTone = badge.label === 'Correct' ? 'success' : badge.label === 'Incorrect' ? 'incorrect' : badge.label === 'Partial' ? 'partial' : 'neutral';
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(16,24,32,0.04)] sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <p className="text-sm font-semibold text-[#101820]">Question {index + 1} of {total}</p>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}>{badge.label}</span>
-        </div>
-        <span className="text-sm font-medium text-slate-500">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+      <p className="text-sm font-semibold text-slate-700">Question {index + 1} of {total}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ${badge.className}`}>
+          <ResultStatusIcon status={badge.label} />
+          {badge.label}
+        </span>
+        <span className="text-sm font-semibold text-[#101820]">
           {answer.pointsAwarded != null && question
             ? `${answer.pointsAwarded} / ${question.points} pts`
             : 'Not scored'}
@@ -178,35 +180,35 @@ function ReleasedAnswerCard({ answer, index, total }: { answer: Answer; index: n
       </div>
 
       {question ? (
-        <div className="mt-4 border-t border-slate-100 pt-4">
+        <div className="mt-4">
           {question.contentHtml ? (
             <RichContent html={question.contentHtml} className="assessment-question-copy" />
           ) : (
-            <p className="break-words text-base font-semibold leading-7 text-[#101820]">{question.questionText}</p>
+            <p className="break-words text-lg font-semibold leading-8 text-[#101820]">{question.questionText}</p>
           )}
         </div>
       ) : null}
 
-      <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">
-        <ReviewPanel label="Your response">
+      <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2">
+        <ReviewPanel label="Your answer" tone={responseTone} mark={badge.label}>
           <ResponseValue value={answer.studentAnswer} />
         </ReviewPanel>
-        <ReviewPanel label="Correct answer" tone="success">
+        <ReviewPanel label="Correct answer" tone="success" mark="Correct">
           <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{correct ?? 'Reviewed manually'}</p>
         </ReviewPanel>
       </div>
 
       {answer.feedback || question?.explanation ? (
-        <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
+        <div className="mt-4 space-y-3">
           {answer.feedback ? (
-            <ReviewPanel label="Teacher feedback" tone="feedback">
+            <ReviewDisclosure label="Teacher feedback">
               <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{answer.feedback}</p>
-            </ReviewPanel>
+            </ReviewDisclosure>
           ) : null}
           {question?.explanation ? (
-            <ReviewPanel label="Explanation" tone="explanation">
+            <ReviewDisclosure label="Explanation">
               <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{question.explanation}</p>
-            </ReviewPanel>
+            </ReviewDisclosure>
           ) : null}
         </div>
       ) : null}
@@ -214,23 +216,54 @@ function ReleasedAnswerCard({ answer, index, total }: { answer: Answer; index: n
   );
 }
 
-function ReviewPanel({ label, children, tone = 'neutral' }: {
+function ReviewPanel({ label, children, tone = 'neutral', mark }: {
   label: string;
   children: ReactNode;
-  tone?: 'neutral' | 'success' | 'feedback' | 'explanation';
+  tone?: 'neutral' | 'success' | 'incorrect' | 'partial';
+  mark?: string;
 }) {
   const toneClass = {
     neutral: 'border-slate-200 bg-[#F8FAFC]',
     success: 'border-[#D7E89A] bg-[#F8FCEB]',
-    feedback: 'border-sky-200 bg-sky-50/60',
-    explanation: 'border-slate-200 bg-white',
+    incorrect: 'border-red-200 bg-red-50/60',
+    partial: 'border-amber-200 bg-amber-50/60',
   }[tone];
 
   return (
-    <section className={`min-w-0 rounded-xl border p-3.5 ${toneClass}`}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+    <section className={`min-w-0 rounded-xl border p-4 ${toneClass}`}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">{label}</p>
+        {mark ? <ResultStatusIcon status={mark} /> : null}
+      </div>
       <div className="mt-2 min-w-0">{children}</div>
     </section>
+  );
+}
+
+function ReviewDisclosure({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <details open className="group rounded-xl border border-sky-200 bg-sky-50/55">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-[#101820] [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-3">
+          <ArrowIcon direction="right" />
+          {label}
+        </span>
+        <span className="transition group-open:rotate-180" aria-hidden="true">⌄</span>
+      </summary>
+      <div className="px-4 pb-4 pl-11">{children}</div>
+    </details>
+  );
+}
+
+function ResultStatusIcon({ status }: { status: string }) {
+  const correct = status === 'Correct';
+  const partial = status === 'Partial';
+  return (
+    <span className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
+      correct ? 'bg-emerald-500' : partial ? 'bg-amber-500' : status === 'Incorrect' ? 'bg-red-500' : 'bg-slate-400'
+    }`} aria-hidden="true">
+      {correct ? '✓' : partial ? '–' : status === 'Incorrect' ? '×' : '·'}
+    </span>
   );
 }
 
@@ -253,13 +286,14 @@ function ReviewNumberButton({ answer, index, active, onClick }: {
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold transition ${
+      className={`flex h-10 min-w-12 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2 text-sm font-semibold transition ${
         active ? 'border-[#101820] bg-[#101820] text-white shadow-sm' : stateClass
       }`}
       aria-label={`Review question ${index + 1}: ${badge.label}`}
       aria-current={active ? 'step' : undefined}
     >
       {index + 1}
+      <ResultStatusIcon status={badge.label} />
     </button>
   );
 }
@@ -278,15 +312,28 @@ function ReviewNavigatorRow({ answer, index, active, onClick }: {
       : badge.label === 'Partial'
         ? 'bg-amber-500'
         : 'bg-slate-300';
+  const activeClass = badge.label === 'Incorrect'
+    ? 'border-red-100 bg-red-50'
+    : badge.label === 'Correct'
+      ? 'border-emerald-100 bg-emerald-50'
+      : badge.label === 'Partial'
+        ? 'border-amber-100 bg-amber-50'
+        : 'border-slate-200 bg-slate-50';
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${active ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${active ? activeClass : 'border-transparent hover:bg-slate-50'}`}
       aria-current={active ? 'step' : undefined}
     >
-      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${active ? 'bg-[#101820] text-white' : 'bg-slate-100 text-slate-600'}`}>
+      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+        badge.label === 'Incorrect'
+          ? 'bg-red-100 text-red-700'
+          : badge.label === 'Correct'
+            ? 'bg-lime-100 text-[#526A00]'
+            : 'bg-slate-100 text-slate-600'
+      }`}>
         {index + 1}
       </span>
       <span className="min-w-0 flex-1">
@@ -498,62 +545,48 @@ export function ExamPlayer() {
     const scorePercent = score != null && assignmentMaxPoints > 0
       ? Math.min(100, Math.max(0, Math.round((score / assignmentMaxPoints) * 100)))
       : null;
-
-    return (
-      <div className={workspaceClassName}>
-        <header className="flex min-w-0 items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(assignmentListPath)}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#101820]"
-            aria-label="Back to assignments"
-          >
-            <ArrowIcon direction="left" />
-          </button>
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">{assignment?.subject}</p>
-            <h1 className="mt-1 truncate text-lg font-semibold text-[#101820] sm:text-xl">{assignment?.title}</h1>
-          </div>
-        </header>
-
-        <section className="rounded-2xl bg-[#101820] p-5 text-white shadow-[0_16px_38px_rgba(16,24,32,0.14)] sm:p-6">
-          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Assessment result</p>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${resultsReleased ? 'bg-[#B5E61D] text-[#101820]' : 'bg-white/10 text-white'}`}>
-                  {resultsReleased ? 'Results released' : 'Awaiting review'}
-                </span>
-              </div>
-              <div className="mt-3 flex items-end gap-4">
-                <p className="text-4xl font-bold tracking-tight sm:text-5xl">
-                  {score != null ? `${score}/${assignmentMaxPoints}` : 'Pending'}
-                </p>
-                {scorePercent != null ? <span className="pb-1 text-sm font-medium text-slate-300">{scorePercent}%</span> : null}
-              </div>
-              {scorePercent != null ? (
-                <div className="mt-4 h-2 max-w-md overflow-hidden rounded-full bg-white/15">
+    const resultSummary = (
+      <section className="rounded-xl bg-[#101820] px-5 py-5 text-white shadow-[0_12px_30px_rgba(16,24,32,0.14)] sm:px-6">
+        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div className="grid min-w-0 gap-4 sm:grid-cols-[auto_minmax(180px,1fr)] sm:items-end">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quiz result</p>
+              <p className="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">
+                {score != null ? `${score}/${assignmentMaxPoints}` : 'Pending'}
+              </p>
+            </div>
+            {scorePercent != null ? (
+              <div className="pb-1">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-700">
                   <div className="h-full rounded-full bg-[#B5E61D]" style={{ width: `${scorePercent}%` }} />
                 </div>
-              ) : null}
-            </div>
-            <div className="border-t border-white/15 pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+                <p className="mt-2 text-xs text-slate-400">{scorePercent}% correct</p>
+              </div>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-4 border-t border-white/15 pt-4 md:flex-row md:items-center md:border-l md:border-t-0 md:pl-6 md:pt-0">
+            <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Submitted</p>
               <p className="mt-1 text-sm font-semibold">{formatDateTime(existing.completedAt ?? existing.createdAt)}</p>
               {resultsReleased && displayedSubmission?.gradedAt ? (
                 <p className="mt-1 text-xs text-slate-400">Reviewed {formatDateTime(displayedSubmission.gradedAt)}</p>
               ) : null}
             </div>
+            <button
+              type="button"
+              onClick={() => navigate(assignmentListPath)}
+              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#B5E61D] px-4 text-xs font-bold text-[#101820]"
+            >
+              <ArrowIcon direction="left" />
+              Assignments
+            </button>
           </div>
-        </section>
+        </div>
+      </section>
+    );
 
-        {resultsReleased && displayedSubmission?.feedback ? (
-          <section className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-800">Overall feedback</p>
-            <p className="mt-1.5 text-sm leading-6 text-slate-700">{displayedSubmission.feedback}</p>
-          </section>
-        ) : null}
-
+    return (
+      <div className={workspaceClassName}>
         {resultsReleased && loadingReleasedResults ? (
           <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">Loading released results...</p>
         ) : null}
@@ -561,6 +594,15 @@ export function ExamPlayer() {
         {resultsReleased && activeReviewAnswer ? (
           <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
             <main className="min-w-0 space-y-4">
+              {resultSummary}
+
+              {displayedSubmission?.feedback ? (
+                <section className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-800">Overall feedback</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-700">{displayedSubmission.feedback}</p>
+                </section>
+              ) : null}
+
               <nav className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2" aria-label="Review question navigation">
                 <button
                   type="button"
@@ -597,7 +639,7 @@ export function ExamPlayer() {
             </main>
 
             <aside className="hidden xl:block">
-              <div className="sticky top-6 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="sticky top-6 rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <h2 className="text-sm font-semibold text-[#101820]">Question navigator</h2>
                   <span className="text-xs text-slate-500">{reviewAnswers.length}</span>
@@ -619,10 +661,13 @@ export function ExamPlayer() {
         ) : null}
 
         {!resultsReleased ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="font-semibold text-[#101820]">Submission received</p>
-            <p className="mt-1 text-sm text-slate-500">Your answers will appear here after the results are released.</p>
-          </section>
+          <>
+            {resultSummary}
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <p className="font-semibold text-[#101820]">Submission received</p>
+              <p className="mt-1 text-sm text-slate-500">Your answers will appear here after the results are released.</p>
+            </section>
+          </>
         ) : null}
       </div>
     );
