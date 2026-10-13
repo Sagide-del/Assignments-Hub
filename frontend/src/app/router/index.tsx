@@ -5,6 +5,7 @@ import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 
 import Login from '../../pages/Login';
+import Home from '../../pages/Home';
 import IndependentRegister from '../../pages/IndependentRegister';
 import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 
@@ -598,7 +599,7 @@ export const router = createBrowserRouter([
 
   {
     path: '/',
-    element: <Navigate to="/login" replace />,
+    element: <Home />,
   },
 
   {
