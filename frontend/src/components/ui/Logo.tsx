@@ -98,7 +98,7 @@ export function AssignmentHubWordmark({
         aria-hidden="true"
         className={`absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 ${dimensions.image}`}
         loading="eager"
-        decoding="async"
+        fetchPriority="high"
       />
     </div>
   );

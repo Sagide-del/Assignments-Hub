@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Logo } from '../components/ui/Logo';
+import { AssignmentHubWordmark } from '../components/ui/Logo';
+
+const WHATSAPP_NUMBER = '254748519923';
+const WHATSAPP_DEMO_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hello, I would like to book a free Assignment Hub school demo.')}`;
 
 const problems = [
   'Printing costs for every assignment and revision pack',
@@ -85,9 +88,8 @@ export default function Home() {
     <div className="min-h-screen bg-[#F8FAFC] text-[#101820]">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
         <nav className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8" aria-label="Primary navigation">
-          <Link to="/" aria-label="Assignment Hub home" className="flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#101820] focus-visible:ring-offset-2">
-            <Logo name="Assignment Hub" size="sm" className="!rounded-lg shadow-none ring-0" />
-            <span className="hidden text-sm font-extrabold tracking-tight text-[#101820] sm:inline">Assignment Hub</span>
+          <Link to="/" aria-label="Assignment Hub home" className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#101820] focus-visible:ring-offset-2">
+            <AssignmentHubWordmark size="sm" />
           </Link>
           <div className="hidden items-center gap-7 text-sm font-semibold text-slate-600 md:flex">
             <a href="#for-parents" className="transition hover:text-[#101820]">For parents</a>
@@ -113,9 +115,9 @@ export default function Home() {
                 Move schoolwork from paper to one clear digital workspace. Teachers publish, learners submit from any device, and schools use results to guide the next step.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link to="/login" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#101820] px-6 text-sm font-bold text-white transition hover:bg-[#1c2a38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D] focus-visible:ring-offset-2">
+                <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#101820] px-6 text-sm font-bold text-white transition hover:bg-[#1c2a38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D] focus-visible:ring-offset-2">
                   Request a school demo
-                </Link>
+                </a>
                 <a href="#for-parents" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-bold text-[#101820] transition hover:border-slate-400 hover:bg-slate-50">
                   Information for parents
                 </a>
@@ -236,7 +238,7 @@ export default function Home() {
                 <p className="text-sm font-bold text-[#B5E61D]">Schools</p>
                 <h3 className="mt-3 text-2xl font-bold">Managed school workspace</h3>
                 <p className="mt-4 leading-7 text-slate-300">Class and stream access, teacher workflows, academic reporting, school branding and onboarding support.</p>
-                <Link to="/login" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820]">Request a demo</Link>
+                <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820]">Request a demo</a>
               </article>
             </div>
           </div>
@@ -278,9 +280,10 @@ export default function Home() {
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B5E61D]">Start a conversation</p>
               <h2 id="cta-heading" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Ready to move schoolwork online?</h2>
               <p className="mt-4 leading-7 text-slate-300">See how assignments, feedback, resources and learner support work together in one school workspace.</p>
+              <p className="mt-3 text-sm font-semibold text-white">WhatsApp: 0748 519 923</p>
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:mt-0">
-              <Link to="/login" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#B5E61D] px-6 text-sm font-bold text-[#101820]">Request a school demo</Link>
+              <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#B5E61D] px-6 text-sm font-bold text-[#101820]">Book a demo on WhatsApp</a>
               <Link to="/register" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/20 px-6 text-sm font-bold text-white">Create student account</Link>
             </div>
           </div>
@@ -292,6 +295,7 @@ export default function Home() {
           <div>
             <p className="font-bold text-white">Assignment Hub</p>
             <p className="mt-2 text-sm">A product of Andolih EdTech Studios · Nairobi, Kenya · BN-P7SEYQQL</p>
+            <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-[#B5E61D] hover:text-white">WhatsApp 0748 519 923</a>
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-3 text-sm" aria-label="Footer navigation">
             <a href="/about/" className="hover:text-white">About</a>
