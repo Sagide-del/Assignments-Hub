@@ -15,6 +15,7 @@ interface UploadBufferInput {
   filename: string;
   contentType: string;
   folder?: string;
+  privateObject?: boolean;
 }
 
 @Injectable()
@@ -48,6 +49,7 @@ export class UploadsService {
       filename: file.originalname,
       contentType: file.mimetype,
       folder,
+      privateObject: true,
     });
     return {
       assetKey: stored.key,
@@ -93,6 +95,7 @@ export class UploadsService {
     filename,
     contentType,
     folder = 'uploads',
+    privateObject = false,
   }: UploadBufferInput) {
     if (!this.bucket || !this.region || !this.s3Client) {
       throw new ServiceUnavailableException(
@@ -119,14 +122,22 @@ export class UploadsService {
           Body: body,
           ContentLength: body.length,
           ContentType: contentType,
-          ContentDisposition: 'inline',
-          CacheControl: 'public, max-age=31536000, immutable',
+          ContentDisposition: privateObject ? 'attachment' : 'inline',
+          CacheControl: privateObject
+            ? 'private, no-store'
+            : 'public, max-age=31536000, immutable',
           ServerSideEncryption: 'AES256',
         }),
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown S3 error';
-      this.logger.error(`S3 upload failed: ${message}`);
+      const errorName = error instanceof Error ? error.name : 'UnknownError';
+      this.logger.error(`S3 upload failed for ${key}: ${errorName}: ${message}`);
+      if (errorName === 'AccessDenied' || errorName === 'Forbidden') {
+        throw new ServiceUnavailableException(
+          'File storage permission is not configured for marketplace uploads.',
+        );
+      }
       throw new InternalServerErrorException('File upload failed');
     }
 

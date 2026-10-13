@@ -99,9 +99,8 @@ export const resourcesApi = {
   upload: (file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return api.post<{ assetKey: string; filename: string; size: number }>('/resources/upload', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then((response) => response.data);
+    return api.post<{ assetKey: string; filename: string; size: number }>('/resources/upload', form)
+      .then((response) => response.data);
   },
 
   create: (input: CreateResourceInput) =>

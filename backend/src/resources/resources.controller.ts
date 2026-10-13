@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { extname } from 'path';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditAction } from '../common/decorators/audit.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -25,6 +26,13 @@ import { PurchaseResourceDto } from './dto/purchase-resource.dto';
 import { ReviewResourcePurchaseDto } from './dto/review-resource-purchase.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
 import { ResourcesService } from './resources.service';
+
+const MAX_RESOURCE_FILE_SIZE = 25 * 1024 * 1024;
+const PDF_MIME_TYPES = new Set(['application/pdf', 'application/octet-stream']);
+
+function hasPdfSignature(buffer: Buffer) {
+  return buffer.subarray(0, 1024).includes(Buffer.from('%PDF-'));
+}
 
 @Controller('resources')
 export class ResourcesController {
@@ -79,9 +87,11 @@ export class ResourcesController {
   @AuditAction('resource.file_upload')
   @UseInterceptors(FileInterceptor('file', {
     storage: memoryStorage(),
-    limits: { fileSize: 25 * 1024 * 1024 },
+    limits: { fileSize: MAX_RESOURCE_FILE_SIZE },
     fileFilter: (_request, file, callback) => {
-      if (file.mimetype !== 'application/pdf') {
+      const isPdf = extname(file.originalname).toLowerCase() === '.pdf'
+        && PDF_MIME_TYPES.has(file.mimetype);
+      if (!isPdf) {
         callback(new BadRequestException('Marketplace learning files must be PDF documents'), false);
         return;
       }
@@ -90,6 +100,9 @@ export class ResourcesController {
   }))
   upload(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('Select a PDF file');
+    if (!hasPdfSignature(file.buffer)) {
+      throw new BadRequestException('The selected file is not a valid PDF document');
+    }
     return this.uploads.uploadPrivate(file);
   }
 

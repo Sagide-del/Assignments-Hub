@@ -20,6 +20,14 @@ const initialForm: CreateResourceInput = {
   priceKES: 0,
 };
 
+const MAX_RESOURCE_FILE_SIZE = 25 * 1024 * 1024;
+
+function validateResourceFile(file: File) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) return 'Select a PDF document.';
+  if (file.size > MAX_RESOURCE_FILE_SIZE) return 'The PDF must be 25 MB or smaller.';
+  return null;
+}
+
 function label(value: string) {
   return value.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
@@ -39,6 +47,8 @@ export function ResourceStudioPage() {
       let fileFields: Partial<CreateResourceInput> = {};
       if (form.fulfillment === 'DIGITAL_DOWNLOAD') {
         if (!file) throw new Error('Select a PDF file');
+        const fileError = validateResourceFile(file);
+        if (fileError) throw new Error(fileError);
         const uploaded = await resourcesApi.upload(file);
         fileFields = { assetKey: uploaded.assetKey, fileName: uploaded.filename, fileSize: uploaded.size };
       }
@@ -86,7 +96,7 @@ export function ResourceStudioPage() {
             <Input label="Subject" value={form.subject ?? ''} onChange={(value) => setForm({ ...form, subject: value })} />
             <Input label="Grade / Form" value={form.grade ?? ''} onChange={(value) => setForm({ ...form, grade: value })} />
             {form.fulfillment === 'PHYSICAL_DELIVERY' ? <Input label="Stock quantity" type="number" value={String(form.stockQuantity ?? 0)} onChange={(value) => setForm({ ...form, stockQuantity: Math.max(0, Number(value) || 0) })} /> : (
-              <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-500">PDF file</span><span className="flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 text-sm text-slate-600"><FileUp className="h-4 w-4" /><input type="file" accept="application/pdf,.pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="min-w-0 flex-1 text-sm" /></span></label>
+              <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-500">PDF file</span><span className="flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 text-sm text-slate-600"><FileUp className="h-4 w-4" /><input type="file" accept="application/pdf,.pdf" onChange={(event) => { const selected = event.target.files?.[0] ?? null; setFile(selected); setStatus(selected ? validateResourceFile(selected) : null); }} className="min-w-0 flex-1 text-sm" /></span>{file ? <span className="mt-1.5 block text-xs text-slate-500">{file.name} · {(file.size / (1024 * 1024)).toFixed(1)} MB</span> : null}</label>
             )}
           </div>
           <label className="mt-4 block"><span className="mb-1.5 block text-xs font-semibold text-slate-500">Description</span><textarea value={form.description ?? ''} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} className="w-full rounded-xl border border-slate-200 p-3 text-base outline-none focus:border-[#101820]" /></label>
