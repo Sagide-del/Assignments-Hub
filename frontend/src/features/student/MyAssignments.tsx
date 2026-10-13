@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { assignmentsApi } from '../../api/assignments.api';
 import { submissionsApi } from '../../api/submissions.api';
-import { EmptyState, PageHeader } from '../../components/ui/Saas';
+import { EmptyState } from '../../components/ui/Saas';
 import { useAuthStore } from '../../store/auth.store';
 import type { Submission } from '../../types';
 
@@ -131,15 +131,6 @@ export function MyAssignmentsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <PageHeader
-        title="Assignments"
-        actions={user?.grade ? (
-          <span className="inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600">
-            {user.grade}
-          </span>
-        ) : undefined}
-      />
-
       <section className="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         {[
           ['Not started', availableCount],

@@ -12,12 +12,12 @@ import { TalentsTab } from './TalentsTab';
 import type { MyPathwayTab } from './types';
 
 const TABS: { key: MyPathwayTab; label: string; icon: React.ReactNode }[] = [
-  { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
-  { key: 'explore', label: 'Explore Pathways', icon: <ExploreIcon /> },
-  { key: 'career-journey', label: 'My Career Journey', icon: <JourneyIcon /> },
-  { key: 'talents', label: 'My Talents & Strengths', icon: <TalentIcon /> },
+  { key: 'dashboard', label: 'Overview', icon: <DashboardIcon /> },
+  { key: 'explore', label: 'Explore', icon: <ExploreIcon /> },
+  { key: 'career-journey', label: 'Career plan', icon: <JourneyIcon /> },
+  { key: 'talents', label: 'Talents', icon: <TalentIcon /> },
   { key: 'mentorship', label: 'Mentorship', icon: <MentorIcon /> },
-  { key: 'parent-corner', label: 'Parent Corner', icon: <ParentIcon /> },
+  { key: 'parent-corner', label: 'Parent report', icon: <ParentIcon /> },
 ];
 
 export function MyPathwayPage() {
@@ -28,26 +28,16 @@ export function MyPathwayPage() {
   return (
     <div className="space-y-6">
       <div className="print:hidden">
-        <PageHeader
-          eyebrow={tier === 'junior' ? 'Junior Explorer' : tier === 'senior' ? 'Senior Specialist' : undefined}
-          title="My Pathway"
-          meta={
-            tier === 'junior'
-              ? 'Explore who you could become — Grade 7-9 is for discovering, not deciding.'
-              : tier === 'senior'
-                ? 'Specialize, connect with mentors, and plan your next step.'
-                : 'Career guidance, pathway selection, and talent nurturing.'
-          }
-        />
+        <PageHeader title="My Pathway" />
 
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5">
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                tab === t.key ? 'border-[#101820] bg-[#101820] text-[#B5E61D]' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+              className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                tab === t.key ? 'bg-[#101820] text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-[#101820]'
               }`}
             >
               {t.icon}

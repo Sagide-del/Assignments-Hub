@@ -157,14 +157,8 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   return (
     <div className="min-h-screen md:flex" style={{ backgroundColor: 'var(--school-background, #F8FAFC)' }}>
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden">
-        <div className="flex min-w-0 items-center gap-3">
-          <Logo src={logoSrc} name={brandTitle} size="sm" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-[#101820]">{brandTitle}</p>
-            <p className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-              {subtitle}
-            </p>
-          </div>
+        <div className="flex items-center" title={brandTitle} aria-label={brandTitle}>
+          <Logo src={logoSrc} name={brandTitle} size="sm" className="shadow-none" />
         </div>
 
         <button
