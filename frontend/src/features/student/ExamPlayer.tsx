@@ -159,7 +159,7 @@ function resultBadge(answer: Answer, maxPoints: number | undefined) {
   return { label: 'Partial', className: 'bg-amber-50 text-amber-700' };
 }
 
-function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }) {
+function ReleasedAnswerCard({ answer, index, total }: { answer: Answer; index: number; total: number }) {
   const question = answer.question;
   const correct = expectedAnswer(question);
   const badge = resultBadge(answer, question?.points);
@@ -167,9 +167,7 @@ function ReleasedAnswerCard({ answer, index }: { answer: Answer; index: number }
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(16,24,32,0.04)] sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#101820] text-xs font-bold text-white">
-            {index + 1}
-          </span>
+          <p className="text-sm font-semibold text-[#101820]">Question {index + 1} of {total}</p>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}>{badge.label}</span>
         </div>
         <span className="text-sm font-medium text-slate-500">
@@ -233,6 +231,74 @@ function ReviewPanel({ label, children, tone = 'neutral' }: {
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
       <div className="mt-2 min-w-0">{children}</div>
     </section>
+  );
+}
+
+function ReviewNumberButton({ answer, index, active, onClick }: {
+  answer: Answer;
+  index: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const badge = resultBadge(answer, answer.question?.points);
+  const stateClass = badge.label === 'Correct'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    : badge.label === 'Incorrect'
+      ? 'border-red-200 bg-red-50 text-red-700'
+      : badge.label === 'Partial'
+        ? 'border-amber-200 bg-amber-50 text-amber-700'
+        : 'border-slate-200 bg-slate-50 text-slate-600';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold transition ${
+        active ? 'border-[#101820] bg-[#101820] text-white shadow-sm' : stateClass
+      }`}
+      aria-label={`Review question ${index + 1}: ${badge.label}`}
+      aria-current={active ? 'step' : undefined}
+    >
+      {index + 1}
+    </button>
+  );
+}
+
+function ReviewNavigatorRow({ answer, index, active, onClick }: {
+  answer: Answer;
+  index: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const badge = resultBadge(answer, answer.question?.points);
+  const dotClass = badge.label === 'Correct'
+    ? 'bg-emerald-500'
+    : badge.label === 'Incorrect'
+      ? 'bg-red-500'
+      : badge.label === 'Partial'
+        ? 'bg-amber-500'
+        : 'bg-slate-300';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${active ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+      aria-current={active ? 'step' : undefined}
+    >
+      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${active ? 'bg-[#101820] text-white' : 'bg-slate-100 text-slate-600'}`}>
+        {index + 1}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+          <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+          {badge.label}
+        </span>
+      </span>
+      <span className="shrink-0 text-xs text-slate-400">
+        {answer.pointsAwarded ?? 0}/{answer.question?.points ?? 0}
+      </span>
+    </button>
   );
 }
 
@@ -425,83 +491,139 @@ export function ExamPlayer() {
   if (alreadyFinal) {
     const displayedSubmission = releasedResults ?? existing;
     const resultsReleased = Boolean(existing.resultsReleasedAt);
+    const reviewAnswers = resultsReleased ? (releasedResults?.answers ?? []) : [];
+    const reviewIndex = Math.min(currentIndex, Math.max(reviewAnswers.length - 1, 0));
+    const activeReviewAnswer = reviewAnswers[reviewIndex];
+    const score = displayedSubmission?.score;
+    const scorePercent = score != null && assignmentMaxPoints > 0
+      ? Math.min(100, Math.max(0, Math.round((score / assignmentMaxPoints) * 100)))
+      : null;
+
     return (
       <div className={workspaceClassName}>
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-4 py-5 sm:px-6">
-            <button
-              type="button"
-              onClick={() => navigate(assignmentListPath)}
-              className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#101820]"
-            >
-              <ArrowIcon direction="left" />
-              Back
-            </button>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Submitted</p>
-                <h1 className="mt-2 break-words text-xl font-semibold tracking-tight text-[#101820] [overflow-wrap:anywhere] sm:text-2xl">
-                  {assignment?.title}
-                </h1>
-                <p className="mt-2 break-words text-sm text-slate-500">
-                  {assignment?.subject} · {assignmentMaxPoints} marks
-                </p>
-              </div>
-              <span className="inline-flex min-h-9 shrink-0 items-center rounded-full bg-[#EEF8D1] px-3 text-xs font-semibold text-[#4D6310]">
-                {resultsReleased ? 'Results released' : 'Awaiting review'}
-              </span>
-            </div>
+        <header className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(assignmentListPath)}
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#101820]"
+            aria-label="Back to assignments"
+          >
+            <ArrowIcon direction="left" />
+          </button>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">{assignment?.subject}</p>
+            <h1 className="mt-1 truncate text-lg font-semibold text-[#101820] sm:text-xl">{assignment?.title}</h1>
           </div>
-          <div className="p-4 sm:p-6">
+        </header>
+
+        <section className="rounded-2xl bg-[#101820] p-5 text-white shadow-[0_16px_38px_rgba(16,24,32,0.14)] sm:p-6">
+          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
             <div className="min-w-0">
-              <div className="rounded-2xl bg-[#101820] p-5 text-white sm:flex sm:items-center sm:justify-between sm:gap-6">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Score</p>
-                  <p className="mt-1 text-3xl font-bold tracking-tight">
-                    {displayedSubmission?.score != null ? `${displayedSubmission.score} / ${assignmentMaxPoints}` : 'Pending'}
-                  </p>
-                </div>
-                <div className="mt-4 border-t border-white/15 pt-4 sm:mt-0 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Submitted</p>
-                  <p className="mt-1 text-sm font-semibold text-white">{formatDateTime(existing.completedAt ?? existing.createdAt)}</p>
-                  {resultsReleased && displayedSubmission?.gradedAt ? (
-                    <p className="mt-1 text-xs text-slate-300">
-                      Reviewed {formatDateTime(displayedSubmission.gradedAt)}
-                      {displayedSubmission.gradedBy?.name ? ` by ${displayedSubmission.gradedBy.name}` : ''}
-                    </p>
-                  ) : null}
-                </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Assessment result</p>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${resultsReleased ? 'bg-[#B5E61D] text-[#101820]' : 'bg-white/10 text-white'}`}>
+                  {resultsReleased ? 'Results released' : 'Awaiting review'}
+                </span>
               </div>
-              {resultsReleased && displayedSubmission?.feedback ? (
-                <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-800">Overall feedback</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-700">{displayedSubmission.feedback}</p>
+              <div className="mt-3 flex items-end gap-4">
+                <p className="text-4xl font-bold tracking-tight sm:text-5xl">
+                  {score != null ? `${score}/${assignmentMaxPoints}` : 'Pending'}
+                </p>
+                {scorePercent != null ? <span className="pb-1 text-sm font-medium text-slate-300">{scorePercent}%</span> : null}
+              </div>
+              {scorePercent != null ? (
+                <div className="mt-4 h-2 max-w-md overflow-hidden rounded-full bg-white/15">
+                  <div className="h-full rounded-full bg-[#B5E61D]" style={{ width: `${scorePercent}%` }} />
                 </div>
               ) : null}
-              {resultsReleased && loadingReleasedResults ? (
-                <p className="mt-4 text-sm text-slate-500">Loading released results...</p>
+            </div>
+            <div className="border-t border-white/15 pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Submitted</p>
+              <p className="mt-1 text-sm font-semibold">{formatDateTime(existing.completedAt ?? existing.createdAt)}</p>
+              {resultsReleased && displayedSubmission?.gradedAt ? (
+                <p className="mt-1 text-xs text-slate-400">Reviewed {formatDateTime(displayedSubmission.gradedAt)}</p>
               ) : null}
-              {resultsReleased && releasedResults?.answers?.length ? (
-                <div className="mt-6 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-base font-semibold text-[#101820]">Question review</h2>
-                    <span className="text-xs font-medium text-slate-500">{releasedResults.answers.length} questions</span>
-                  </div>
-                  {releasedResults.answers.map((answer, index) => (
-                    <ReleasedAnswerCard key={answer.id} answer={answer} index={index} />
-                  ))}
-                </div>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => navigate(assignmentListPath)}
-                className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white sm:w-auto"
-              >
-                Back to list
-              </button>
             </div>
           </div>
         </section>
+
+        {resultsReleased && displayedSubmission?.feedback ? (
+          <section className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-800">Overall feedback</p>
+            <p className="mt-1.5 text-sm leading-6 text-slate-700">{displayedSubmission.feedback}</p>
+          </section>
+        ) : null}
+
+        {resultsReleased && loadingReleasedResults ? (
+          <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">Loading released results...</p>
+        ) : null}
+
+        {resultsReleased && activeReviewAnswer ? (
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+            <main className="min-w-0 space-y-4">
+              <nav className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2" aria-label="Review question navigation">
+                <button
+                  type="button"
+                  onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))}
+                  disabled={reviewIndex === 0}
+                  className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 disabled:opacity-40"
+                >
+                  <ArrowIcon direction="left" />
+                  <span className="hidden sm:inline">Previous</span>
+                </button>
+                <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto px-1">
+                  {reviewAnswers.map((answer, index) => (
+                    <ReviewNumberButton
+                      key={answer.id}
+                      answer={answer}
+                      index={index}
+                      active={index === reviewIndex}
+                      onClick={() => setCurrentIndex(index)}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentIndex((value) => Math.min(reviewAnswers.length - 1, value + 1))}
+                  disabled={reviewIndex === reviewAnswers.length - 1}
+                  className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 disabled:opacity-40"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ArrowIcon direction="right" />
+                </button>
+              </nav>
+
+              <ReleasedAnswerCard answer={activeReviewAnswer} index={reviewIndex} total={reviewAnswers.length} />
+            </main>
+
+            <aside className="hidden xl:block">
+              <div className="sticky top-6 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <h2 className="text-sm font-semibold text-[#101820]">Question navigator</h2>
+                  <span className="text-xs text-slate-500">{reviewAnswers.length}</span>
+                </div>
+                <div className="mt-3 space-y-1.5">
+                  {reviewAnswers.map((answer, index) => (
+                    <ReviewNavigatorRow
+                      key={answer.id}
+                      answer={answer}
+                      index={index}
+                      active={index === reviewIndex}
+                      onClick={() => setCurrentIndex(index)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        ) : null}
+
+        {!resultsReleased ? (
+          <section className="rounded-2xl border border-slate-200 bg-white p-5">
+            <p className="font-semibold text-[#101820]">Submission received</p>
+            <p className="mt-1 text-sm text-slate-500">Your answers will appear here after the results are released.</p>
+          </section>
+        ) : null}
       </div>
     );
   }
