@@ -49,6 +49,7 @@ import { IndependentAssignmentsPage } from '../../features/platform-admin/Indepe
 import { PrivateTutorPage } from '../../features/platform-admin/PrivateTutor';
 import { TutorMessagesPage } from '../../features/platform-admin/TutorMessages';
 import { ResourceMarketplaceAdminPage } from '../../features/platform-admin/ResourceMarketplace';
+import { LiveActivity } from '../../features/platform-admin/LiveActivity';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -200,6 +201,10 @@ const platformAdminNav = [
   {
     to: '/platform',
     label: 'Dashboard',
+  },
+  {
+    to: '/platform/activity',
+    label: 'Live Activity',
   },
   {
     to: '/platform/schools',
@@ -511,6 +516,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform',
             element: <PlatformOverview />,
+          },
+          {
+            path: '/platform/activity',
+            element: <LiveActivity />,
           },
           {
             path: '/platform/schools',

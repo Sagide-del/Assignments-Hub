@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
+  Activity,
   BookMarked,
   BookOpenCheck,
   Bot,
@@ -33,6 +34,7 @@ import { authApi } from '../api/auth.api';
 import { applySchoolTheme } from '../themes/schoolTheme';
 import { Logo } from '../components/ui/Logo';
 import { Footer } from '../components/ui/Footer';
+import { endCurrentPresenceSession, usePresenceHeartbeat } from '../hooks/usePresenceHeartbeat';
 
 interface NavItem {
   to: string;
@@ -76,6 +78,7 @@ function SidebarSectionLabel({ children }: { children: ReactNode }) {
 }
 
 function iconForNavigation(path: string): LucideIcon {
+  if (path.includes('/activity')) return Activity;
   if (path.includes('my-assignments') || path.includes('independent-assignments')) return PenSquare;
   if (path.includes('kcse-papers')) return FileText;
   if (path.includes('mnemonic-cards')) return Brain;
@@ -107,7 +110,10 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const clearSession = useAuthStore((s) => s.clearSession);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  usePresenceHeartbeat(location.pathname);
 
   const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN';
   const isStudent = user?.role === 'STUDENT';
@@ -137,6 +143,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   }, [mobileNavOpen]);
 
   async function handleLogout() {
+    await endCurrentPresenceSession();
     if (refreshToken) {
       try {
         await authApi.logout(refreshToken);

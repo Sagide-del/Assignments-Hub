@@ -18,6 +18,13 @@ enum Role {
   STUDENT
 }
 
+enum PresenceDeviceType {
+  MOBILE
+  TABLET
+  DESKTOP
+  UNKNOWN
+}
+
 enum SubscriptionStatus {
   TRIAL
   ACTIVE
@@ -355,6 +362,7 @@ model School {
   academicResultBatches     AcademicResultBatch[]
   academicResults           StudentAcademicResult[]
   studentStudyPlans         StudentStudyPlan[]
+  presenceSessions          UserPresenceSession[]
 
   @@map("schools")
 }
@@ -454,6 +462,7 @@ model User {
   academicResults                  StudentAcademicResult[]      @relation("AcademicResultStudent")
   studyPlans                       StudentStudyPlan[]           @relation("StudentStudyPlanStudent")
   generatedStudyPlans              StudentStudyPlan[]           @relation("StudentStudyPlanGeneratedBy")
+  presenceSessions                 UserPresenceSession[]
 
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
@@ -1517,6 +1526,35 @@ model AuditLog {
   @@index([schoolId])
   @@index([userId])
   @@map("audit_logs")
+}
+
+// Privacy-safe authenticated presence. A session records only the current
+// route and broad device category; it never stores page content or answers.
+model UserPresenceSession {
+  id        Int    @id @default(autoincrement())
+  sessionId String @unique @map("session_id")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  schoolId Int    @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  role        Role
+  deviceType  PresenceDeviceType @default(UNKNOWN) @map("device_type")
+  currentPath String             @map("current_path")
+
+  startedAt  DateTime  @default(now()) @map("started_at")
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at")
+  endedAt    DateTime? @map("ended_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([lastSeenAt])
+  @@index([schoolId, lastSeenAt])
+  @@index([role, lastSeenAt])
+  @@index([userId, lastSeenAt])
+  @@map("user_presence_sessions")
 }
 
 // SMS notifications: automatic (assignment completed / new assignment
