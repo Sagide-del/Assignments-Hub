@@ -165,9 +165,9 @@ function ReleasedAnswerCard({ answer, index, total }: { answer: Answer; index: n
   const badge = resultBadge(answer, question?.points);
   const responseTone = badge.label === 'Correct' ? 'success' : badge.label === 'Incorrect' ? 'incorrect' : badge.label === 'Partial' ? 'partial' : 'neutral';
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+    <article className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-6">
       <p className="text-sm font-semibold text-slate-700">Question {index + 1} of {total}</p>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 sm:mt-3">
         <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ${badge.className}`}>
           <ResultStatusIcon status={badge.label} />
           {badge.label}
@@ -184,12 +184,12 @@ function ReleasedAnswerCard({ answer, index, total }: { answer: Answer; index: n
           {question.contentHtml ? (
             <RichContent html={question.contentHtml} className="assessment-question-copy" />
           ) : (
-            <p className="break-words text-lg font-semibold leading-8 text-[#101820]">{question.questionText}</p>
+            <p className="break-words text-base font-semibold leading-7 text-[#101820] sm:text-lg sm:leading-8">{question.questionText}</p>
           )}
         </div>
       ) : null}
 
-      <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid min-w-0 gap-3 sm:mt-5 sm:grid-cols-2">
         <ReviewPanel label="Your answer" tone={responseTone} mark={badge.label}>
           <ResponseValue value={answer.studentAnswer} />
         </ReviewPanel>
@@ -230,7 +230,7 @@ function ReviewPanel({ label, children, tone = 'neutral', mark }: {
   }[tone];
 
   return (
-    <section className={`min-w-0 rounded-xl border p-4 ${toneClass}`}>
+    <section className={`min-w-0 rounded-xl border p-3.5 sm:p-4 ${toneClass}`}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">{label}</p>
         {mark ? <ResultStatusIcon status={mark} /> : null}
@@ -546,12 +546,12 @@ export function ExamPlayer() {
       ? Math.min(100, Math.max(0, Math.round((score / assignmentMaxPoints) * 100)))
       : null;
     const resultSummary = (
-      <section className="rounded-xl bg-[#101820] px-5 py-5 text-white shadow-[0_12px_30px_rgba(16,24,32,0.14)] sm:px-6">
-        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-          <div className="grid min-w-0 gap-4 sm:grid-cols-[auto_minmax(180px,1fr)] sm:items-end">
+      <section className="rounded-xl bg-[#101820] p-4 text-white shadow-[0_12px_30px_rgba(16,24,32,0.14)] sm:px-6 sm:py-5">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-5">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-[auto_minmax(180px,1fr)] sm:items-end sm:gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quiz result</p>
-              <p className="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">
+              <p className="mt-1 text-3xl font-bold tracking-tight sm:text-5xl">
                 {score != null ? `${score}/${assignmentMaxPoints}` : 'Pending'}
               </p>
             </div>
@@ -564,21 +564,22 @@ export function ExamPlayer() {
               </div>
             ) : null}
           </div>
-          <div className="flex flex-col gap-4 border-t border-white/15 pt-4 md:flex-row md:items-center md:border-l md:border-t-0 md:pl-6 md:pt-0">
+          <div className="flex items-end justify-between gap-3 border-t border-white/15 pt-3 md:items-center md:border-l md:border-t-0 md:pl-6 md:pt-0">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Submitted</p>
               <p className="mt-1 text-sm font-semibold">{formatDateTime(existing.completedAt ?? existing.createdAt)}</p>
               {resultsReleased && displayedSubmission?.gradedAt ? (
-                <p className="mt-1 text-xs text-slate-400">Reviewed {formatDateTime(displayedSubmission.gradedAt)}</p>
+                <p className="mt-1 hidden text-xs text-slate-400 sm:block">Reviewed {formatDateTime(displayedSubmission.gradedAt)}</p>
               ) : null}
             </div>
             <button
               type="button"
               onClick={() => navigate(assignmentListPath)}
-              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#B5E61D] px-4 text-xs font-bold text-[#101820]"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#B5E61D] px-3 text-xs font-bold text-[#101820] sm:px-4"
             >
               <ArrowIcon direction="left" />
-              Assignments
+              <span className="sm:hidden">Back</span>
+              <span className="hidden sm:inline">Assignments</span>
             </button>
           </div>
         </div>
@@ -603,17 +604,20 @@ export function ExamPlayer() {
                 </section>
               ) : null}
 
-              <nav className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2" aria-label="Review question navigation">
+              <nav className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 sm:rounded-2xl sm:p-2" aria-label="Review question navigation">
                 <button
                   type="button"
                   onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))}
                   disabled={reviewIndex === 0}
-                  className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 disabled:opacity-40"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 disabled:opacity-40 sm:w-auto sm:px-3"
                 >
                   <ArrowIcon direction="left" />
                   <span className="hidden sm:inline">Previous</span>
                 </button>
-                <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto px-1">
+                <span className="min-w-0 flex-1 text-center text-xs font-semibold text-slate-600 sm:hidden">
+                  Question {reviewIndex + 1} of {reviewAnswers.length}
+                </span>
+                <div className="hidden min-w-0 flex-1 gap-2 overflow-x-auto px-1 sm:flex">
                   {reviewAnswers.map((answer, index) => (
                     <ReviewNumberButton
                       key={answer.id}
@@ -628,7 +632,7 @@ export function ExamPlayer() {
                   type="button"
                   onClick={() => setCurrentIndex((value) => Math.min(reviewAnswers.length - 1, value + 1))}
                   disabled={reviewIndex === reviewAnswers.length - 1}
-                  className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 disabled:opacity-40"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 disabled:opacity-40 sm:w-auto sm:px-3"
                 >
                   <span className="hidden sm:inline">Next</span>
                   <ArrowIcon direction="right" />

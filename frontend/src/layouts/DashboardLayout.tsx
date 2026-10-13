@@ -156,15 +156,15 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
 
   return (
     <div className="min-h-screen md:flex" style={{ backgroundColor: 'var(--school-background, #F8FAFC)' }}>
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur md:hidden">
         <div className="flex items-center" title={brandTitle} aria-label={brandTitle}>
-          <Logo src={logoSrc} name={brandTitle} size="sm" className="shadow-none" />
+          <Logo src={logoSrc} name={brandTitle} size="sm" className="h-9 w-9 rounded-lg shadow-none" />
         </div>
 
         <button
           type="button"
           onClick={() => setMobileNavOpen((open) => !open)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#101820] transition hover:text-[#101820]"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#101820] transition hover:text-[#101820]"
           style={{ borderColor: mobileNavOpen ? 'var(--school-accent, #B5E61D)' : '#e2e8f0' }}
           aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
           aria-expanded={mobileNavOpen}
