@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, LockKeyhole, Sparkles } from 'lucide-react';
 import { authApi } from '../api/auth.api';
 import { apiErrorMessage } from '../api/axios';
 import { independentStudentsApi } from '../api/independent-students.api';
-import { Logo } from '../components/ui/Logo';
+import { AssignmentHubWordmark } from '../components/ui/Logo';
 import type { IndependentRegistrationResult } from '../types';
 
 type Interval = 'MONTHLY' | 'ANNUAL';
@@ -24,6 +25,7 @@ export default function IndependentRegister() {
   const [payerPhone, setPayerPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [claimSubmitted, setClaimSubmitted] = useState(false);
+  const [activationStarted, setActivationStarted] = useState(false);
 
   const { data: paymentInfo, isLoading: paymentInfoLoading } = useQuery({
     queryKey: ['independent-public-payment-info'],
@@ -84,29 +86,39 @@ export default function IndependentRegister() {
       : paymentInfo?.monthlyAmountKES ?? 0;
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6">
-      <div className="mx-auto w-full max-w-2xl">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <Logo src="/logo.png" name="Assignment Hub" size="lg" />
+    <main className="min-h-screen bg-[#f6f8f4] px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-xl">
+        <div className="mb-7 flex items-center justify-between gap-4">
+          <AssignmentHubWordmark size="sm" />
           <Link to="/login" className="text-sm font-semibold text-[#101820] hover:underline">
-            Sign in
+            Already have an account? Sign in
           </Link>
         </div>
 
         <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(16,24,32,0.08)]">
           <div className="border-b border-slate-100 bg-[#101820] px-6 py-7 text-white sm:px-9">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5E61D]">
-              Individual learner
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5E61D]">Individual learner</p>
+                <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
+                  {account ? 'Your account is ready' : 'Create your learning account'}
+                </h1>
+              </div>
+              <Sparkles className="h-7 w-7 shrink-0 text-[#B5E61D]" aria-hidden="true" />
+            </div>
+            <p className="mt-3 max-w-md text-sm leading-6 text-slate-300">
+              {account ? 'Request activation whenever you are ready to begin.' : 'One account for assignments, feedback, revision resources and practical skills.'}
             </p>
-            <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
-              {account ? 'Activate your account' : 'Create your student account'}
-            </h1>
           </div>
 
           {!account ? (
             <form onSubmit={submitRegistration} className="space-y-4 p-6 sm:p-9">
+              <div className="flex items-center gap-3 rounded-2xl bg-[#f6f8f4] px-4 py-3 text-sm text-slate-600">
+                <LockKeyhole className="h-4 w-4 shrink-0 text-[#607b00]" />
+                Your account is created first. Activation is requested separately, so there is no payment pressure on this step.
+              </div>
               <Field
-                label="Student name"
+                label="Learner's full name"
                 value={form.name}
                 onChange={(value) => setForm((current) => ({ ...current, name: value }))}
                 autoComplete="name"
@@ -120,7 +132,7 @@ export default function IndependentRegister() {
                 required={false}
               />
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Grade</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Current grade</label>
                 <select
                   value={form.grade}
                   onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value }))}
@@ -132,12 +144,12 @@ export default function IndependentRegister() {
                 </select>
               </div>
               <Field
-                label="Parent or guardian phone (optional)"
+                label="Parent or guardian phone"
                 type="tel"
                 value={form.parentPhone}
                 onChange={(value) => setForm((current) => ({ ...current, parentPhone: value }))}
                 autoComplete="tel"
-                required={false}
+                required
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
@@ -166,6 +178,7 @@ export default function IndependentRegister() {
               >
                 {registerMutation.isPending ? 'Creating account...' : 'Create account'}
               </button>
+              <p className="text-center text-xs leading-5 text-slate-500">By continuing, you confirm that the learner or parent has permission to create this account.</p>
             </form>
           ) : claimSubmitted ? (
             <div className="p-6 sm:p-9">
@@ -181,6 +194,34 @@ export default function IndependentRegister() {
               >
                 Return to sign in
               </Link>
+            </div>
+          ) : !activationStarted ? (
+            <div className="p-6 sm:p-9">
+              <div className="rounded-2xl border border-[#D9ED9A] bg-[#F8FCEB] p-5">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#607b00]" />
+                  <div>
+                    <p className="font-semibold text-[#101820]">Account created for {account.name}</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">Keep this Student ID. It will be used to sign in after activation.</p>
+                  </div>
+                </div>
+                <p className="mt-4 rounded-xl bg-white px-4 py-3 font-mono text-lg font-semibold tracking-wide text-[#101820]">{account.admissionNumber}</p>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">What happens next</p>
+                {['Choose a plan and make your M-Pesa payment.', 'Enter the confirmation code to request activation.', 'We verify your payment, then your learning workspace opens.'].map((step, index) => (
+                  <div key={step} className="flex items-start gap-3 text-sm leading-6 text-slate-600">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#101820] text-xs font-bold text-[#B5E61D]">{index + 1}</span>
+                    {step}
+                  </div>
+                ))}
+              </div>
+
+              <button type="button" onClick={() => setActivationStarted(true)} className="mt-7 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417]">
+                Request activation <ArrowRight className="ml-2 h-4 w-4" />
+              </button>
+              <Link to="/login" className="mt-4 flex min-h-11 items-center justify-center text-sm font-semibold text-[#536D00] hover:underline">I will activate later</Link>
             </div>
           ) : (
             <form onSubmit={submitClaim} className="space-y-5 p-6 sm:p-9">
@@ -273,12 +314,12 @@ export default function IndependentRegister() {
                     disabled={claimMutation.isPending || mpesaCode.trim().length < 5}
                     className="w-full rounded-xl bg-[#B5E61D] px-5 py-3.5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60"
                   >
-                    {claimMutation.isPending ? 'Submitting...' : 'Submit payment for verification'}
+                    {claimMutation.isPending ? 'Submitting...' : 'Request activation'}
                   </button>
                 </>
               ) : (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-                  Online registration is available, but individual payment details have not been configured yet.
+                  Your account is created. Activation payment details are being updated; please return shortly or contact the Assignment Hub team.
                 </div>
               )}
             </form>

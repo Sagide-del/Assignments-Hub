@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight, BarChart3, BookOpenCheck, CheckCircle2, Clock3, GraduationCap, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { AssignmentHubWordmark } from '../components/ui/Logo';
 
 const WHATSAPP_NUMBER = '254748519923';
@@ -47,18 +48,22 @@ const audiences = [
 
 const features = [
   {
+    icon: BookOpenCheck,
     title: 'Personalized study plans',
     text: 'Academic results help shape a practical weekly timetable around each learner’s weaker topics.',
   },
   {
+    icon: Sparkles,
     title: 'STEM and practical skills',
     text: 'Guided labs, coding activities and skills workspaces connect coursework to practical learning.',
   },
   {
+    icon: BarChart3,
     title: 'Actionable learner reports',
     text: 'Teachers and schools can see performance patterns instead of waiting for paper records to be compiled.',
   },
   {
+    icon: ShieldCheck,
     title: 'Designed for everyday devices',
     text: 'Responsive workspaces support entry-level Android phones, tablets and shared school computers.',
   },
@@ -107,22 +112,26 @@ export default function Home() {
           <div className="absolute -right-28 top-16 h-80 w-80 rounded-full bg-[#B5E61D]/15 blur-3xl" aria-hidden="true" />
           <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:px-8 lg:py-28">
             <div className="relative max-w-3xl">
-              <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#526b00]">Built for Kenyan schools</p>
+              <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#526b00]">Digital learning for Kenyan schools and families</p>
               <h1 className="max-w-3xl text-4xl font-bold leading-[1.04] tracking-[-0.045em] text-[#101820] sm:text-5xl lg:text-[4.4rem]">
-                Digital assignments for Kenyan high schools
+                Better schoolwork starts with one clear workspace.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-                Move schoolwork from paper to one clear digital workspace. Teachers publish, learners submit from any device, and schools use results to guide the next step.
+                Assignment Hub helps Kenyan students complete online assignments, receive feedback, practise weak topics and build practical skills from any phone, tablet or computer.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#101820] px-6 text-sm font-bold text-white transition hover:bg-[#1c2a38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D] focus-visible:ring-offset-2">
-                  Request a school demo
+                  Talk to us on WhatsApp
                 </a>
                 <a href="#for-parents" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-bold text-[#101820] transition hover:border-slate-400 hover:bg-slate-50">
-                  Information for parents
+                  See how it helps families
                 </a>
               </div>
-              <p className="mt-5 text-sm font-medium text-slate-500">Works in the browser. No new hardware or app installation required.</p>
+              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-slate-600">
+                <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> No app to install</span>
+                <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> Works on everyday phones</span>
+                <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> Built for school routines</span>
+              </div>
             </div>
 
             <div className="relative mx-auto w-full max-w-xl lg:mx-0">
@@ -130,7 +139,7 @@ export default function Home() {
                 <div className="flex items-center justify-between border-b border-white/10 pb-5">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B5E61D]">Learner workspace</p>
-                    <p className="mt-2 text-xl font-semibold text-white">This week</p>
+                    <p className="mt-2 text-xl font-semibold text-white">Today&apos;s learning</p>
                   </div>
                   <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200">Grade 10</span>
                 </div>
@@ -138,7 +147,7 @@ export default function Home() {
                   <div className="rounded-2xl bg-white p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Mathematics</p><p className="mt-1 font-semibold">Linear equations</p></div>
-                      <span className="rounded-lg bg-[#B5E61D]/25 px-2.5 py-1 text-xs font-bold text-[#405400]">Due today</span>
+                      <span className="rounded-lg bg-[#B5E61D] px-2.5 py-1 text-xs font-bold text-[#101820]">Due today</span>
                     </div>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-white">
@@ -160,7 +169,7 @@ export default function Home() {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B5E61D]">The problem</p>
               <h2 id="problem-heading" className="mt-4 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Hardcopy homework creates work around the work.</h2>
-              <p className="mt-5 max-w-lg leading-7 text-slate-300">Printing, distributing and recovering paper assignments adds cost without improving the learning record.</p>
+              <p className="mt-5 max-w-lg leading-7 text-slate-300">Printing, distributing and recovering paper assignments costs time and money, while students still need timely feedback and a clear learning plan.</p>
             </div>
             <ul className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-2">
               {problems.map((problem, index) => (
@@ -191,11 +200,12 @@ export default function Home() {
 
         <section className="border-y border-slate-200 bg-white" aria-labelledby="audience-heading">
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-            <h2 id="audience-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">Built around the school community</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">One shared view of learning</p>
+            <h2 id="audience-heading" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Useful for every person supporting a learner</h2>
             <div className="mt-10 grid gap-4 lg:grid-cols-3">
               {audiences.map((audience, index) => (
-                <article id={audience.id} key={audience.title} className="scroll-mt-28 rounded-2xl border border-slate-200 p-6 sm:p-7">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#101820] text-sm font-extrabold text-[#B5E61D]">{index + 1}</div>
+                <article id={audience.id} key={audience.title} className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_rgba(16,24,32,0.04)] sm:p-7">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#101820] text-sm font-extrabold text-[#B5E61D]">0{index + 1}</div>
                   <h3 className="mt-6 text-xl font-bold">{audience.title}</h3>
                   <p className="mt-3 leading-7 text-slate-600">{audience.text}</p>
                 </article>
@@ -211,12 +221,16 @@ export default function Home() {
               <h2 id="difference-heading" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">A connected learning workspace</h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {features.map((feature) => (
+              {features.map((feature) => {
+                const Icon = feature.icon;
+                return (
                 <article key={feature.title} className="rounded-2xl bg-white p-6 ring-1 ring-slate-200">
+                  <Icon className="h-5 w-5 text-[#607b00]" strokeWidth={1.9} />
                   <h3 className="text-lg font-bold">{feature.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-slate-600">{feature.text}</p>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -230,15 +244,15 @@ export default function Home() {
             <div className="mt-10 grid gap-4 md:grid-cols-2">
               <article className="rounded-2xl bg-white p-6 sm:p-8">
                 <p className="text-sm font-bold text-slate-500">Individual learners</p>
-                <h3 className="mt-3 text-2xl font-bold">Personal learning account</h3>
-                <p className="mt-4 leading-7 text-slate-600">Assignments, feedback, study planning and practical learning resources through an independent account.</p>
-                <Link to="/register" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-bold text-white">Create an account</Link>
+                <h3 className="mt-3 text-2xl font-bold">A personal learning account</h3>
+                <p className="mt-4 leading-7 text-slate-600">Create an account in minutes, then request activation when you are ready. Study plans, practice, feedback and skills work are kept together.</p>
+                <Link to="/register" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-bold text-white">Create learner account <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </article>
               <article className="rounded-2xl bg-[#101820] p-6 text-white sm:p-8">
                 <p className="text-sm font-bold text-[#B5E61D]">Schools</p>
                 <h3 className="mt-3 text-2xl font-bold">Managed school workspace</h3>
                 <p className="mt-4 leading-7 text-slate-300">Class and stream access, teacher workflows, academic reporting, school branding and onboarding support.</p>
-                <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820]">Request a demo</a>
+                <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820]">Request a school demo <MessageCircle className="ml-2 h-4 w-4" /></a>
               </article>
             </div>
           </div>
@@ -247,13 +261,13 @@ export default function Home() {
         <section className="border-b border-slate-200 bg-white" aria-labelledby="trust-heading">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_0.8fr] lg:px-8 lg:py-20">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">Local and accountable</p>
-              <h2 id="trust-heading" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Built in Kenya, for Kenyan schools</h2>
-              <p className="mt-5 max-w-2xl leading-7 text-slate-600">Assignment Hub is a product of Andolih EdTech Studios, a registered Kenyan business building practical digital learning infrastructure for schools and families.</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">Simple by design</p>
+              <h2 id="trust-heading" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Learning support that fits real family routines</h2>
+              <p className="mt-5 max-w-2xl leading-7 text-slate-600">Students do not need a new app or expensive device. They sign in through a browser, complete the work at their pace and return to one familiar workspace.</p>
             </div>
             <dl className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-[#F8FAFC] p-5"><dt className="text-xs font-bold uppercase tracking-wider text-slate-400">Business</dt><dd className="mt-2 font-bold">BN-P7SEYQQL</dd></div>
-              <div className="rounded-2xl bg-[#F8FAFC] p-5"><dt className="text-xs font-bold uppercase tracking-wider text-slate-400">Location</dt><dd className="mt-2 font-bold">Nairobi, Kenya</dd></div>
+              <div className="rounded-2xl bg-[#F8FAFC] p-5"><dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400"><Clock3 className="h-4 w-4" /> Flexible</dt><dd className="mt-2 font-bold">Learn anywhere</dd></div>
+              <div className="rounded-2xl bg-[#F8FAFC] p-5"><dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400"><GraduationCap className="h-4 w-4" /> Focused</dt><dd className="mt-2 font-bold">Grade-aware work</dd></div>
             </dl>
             {/* Add a verified school testimonial here once one is available. */}
           </div>
@@ -294,7 +308,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] lg:px-8">
           <div>
             <p className="font-bold text-white">Assignment Hub</p>
-            <p className="mt-2 text-sm">A product of Andolih EdTech Studios · Nairobi, Kenya · BN-P7SEYQQL</p>
+            <p className="mt-2 text-sm">Digital assignments, study support and practical skills for Kenyan learners.</p>
             <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-[#B5E61D] hover:text-white">WhatsApp 0748 519 923</a>
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-3 text-sm" aria-label="Footer navigation">
