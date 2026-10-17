@@ -21,6 +21,7 @@ import { StudentReports } from '../../features/student/Reports';
 import { MyResourcesPage } from '../../features/student/MyResources';
 import { TrialActivationPage } from '../../features/student/TrialActivation';
 import { LearningCoachPage } from '../../features/student/LearningCoach';
+import { StudentDashboard } from '../../features/student/Dashboard';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
@@ -87,6 +88,10 @@ const MnemonicCardsStudio = lazy(() =>
 
 
 const studentNav = [
+  {
+    to: '/student',
+    label: 'Dashboard',
+  },
   {
     to: '/student/my-assignments',
     label: 'My Assignments',
@@ -307,7 +312,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/student',
-            element: <Navigate to="/student/my-assignments" replace />,
+            element: <StudentDashboard />,
           },
           {
             path: '/student/my-assignments',
