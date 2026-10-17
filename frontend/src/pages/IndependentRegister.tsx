@@ -111,6 +111,17 @@ export default function IndependentRegister() {
             </p>
           </div>
 
+          <div className="grid grid-cols-2 border-b border-slate-100 bg-white text-sm">
+            <div className={`flex items-center gap-3 px-6 py-4 sm:px-9 ${account ? 'text-slate-400' : 'font-semibold text-[#101820]'}`}>
+              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${account ? 'bg-[#eaf7bb] text-[#526b00]' : 'bg-[#101820] text-[#B5E61D]'}`}>{account ? '✓' : '1'}</span>
+              Account details
+            </div>
+            <div className={`flex items-center gap-3 border-l border-slate-100 px-6 py-4 sm:px-9 ${account ? 'font-semibold text-[#101820]' : 'text-slate-400'}`}>
+              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${account ? 'bg-[#101820] text-[#B5E61D]' : 'bg-slate-100 text-slate-400'}`}>2</span>
+              Activate
+            </div>
+          </div>
+
           {!account ? (
             <form onSubmit={submitRegistration} className="space-y-4 p-6 sm:p-9">
               <div className="flex items-center gap-3 rounded-2xl bg-[#f6f8f4] px-4 py-3 text-sm text-slate-600">
@@ -122,14 +133,6 @@ export default function IndependentRegister() {
                 value={form.name}
                 onChange={(value) => setForm((current) => ({ ...current, name: value }))}
                 autoComplete="name"
-              />
-              <Field
-                label="Email address (optional)"
-                type="email"
-                value={form.email}
-                onChange={(value) => setForm((current) => ({ ...current, email: value }))}
-                autoComplete="email"
-                required={false}
               />
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Current grade</label>
@@ -169,6 +172,22 @@ export default function IndependentRegister() {
                   minLength={8}
                 />
               </div>
+
+              <details className="group rounded-xl border border-slate-200 px-4 py-3">
+                <summary className="cursor-pointer list-none text-sm font-medium text-slate-600 marker:hidden">
+                  Add an email address <span className="ml-1 text-xs text-slate-400">Optional</span>
+                </summary>
+                <div className="pt-4">
+                  <Field
+                    label="Email address"
+                    type="email"
+                    value={form.email}
+                    onChange={(value) => setForm((current) => ({ ...current, email: value }))}
+                    autoComplete="email"
+                    required={false}
+                  />
+                </div>
+              </details>
 
               {error ? <ErrorMessage message={error} /> : null}
               <button

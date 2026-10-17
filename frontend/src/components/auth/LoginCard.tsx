@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
-import { Eye, EyeOff, HelpCircle } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, HelpCircle, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../api/axios';
 import { dashboardPathForRole, loginIndependent, loginStaff, loginStudent } from '../../services/authService';
@@ -70,12 +70,18 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
 
   return (
     <div className="w-full">
-      <div className="flex justify-center">
+      <div className="flex justify-center lg:hidden">
         <AssignmentHubWordmark size="md" />
       </div>
 
+      <header className="mt-7 text-center lg:mt-0 lg:text-left">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#657d12]">Secure learning access</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-[#101820] sm:text-4xl">Sign in to continue</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-500">Choose your account type, then enter the details provided by your school or account setup.</p>
+      </header>
+
       {!fixedSchoolCode ? (
-        <div className="mt-8">
+        <div className="mt-7">
           <LoginTabs loginType={loginType} setLoginType={(type) => { setLoginType(type); setError(null); setShowSecret(false); }} />
         </div>
       ) : (
@@ -85,7 +91,7 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
         </div>
       )}
 
-      <form onSubmit={submitLogin} className="mt-6 space-y-4">
+      <form onSubmit={submitLogin} className="mt-7 space-y-4">
         {loginType !== 'independent' && !fixedSchoolCode ? (
           <Field label="School code" hint="The code provided by your school.">
             <input
@@ -163,7 +169,7 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
           </>
         )}
 
-        <div className="flex items-start gap-2 text-xs leading-5 text-slate-500">
+        <div className="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-500">
           <HelpCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
           <span>{helpText}</span>
         </div>
@@ -173,13 +179,14 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="min-h-12 w-full rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820] transition hover:bg-[#A5D414] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#B5E61D]/35 disabled:cursor-wait disabled:bg-slate-200 disabled:text-slate-500"
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820] transition hover:bg-[#A5D414] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#B5E61D]/35 disabled:cursor-wait disabled:bg-slate-200 disabled:text-slate-500"
         >
-          {loading ? 'Signing in...' : 'Sign in'}
+          <span>{loading ? 'Signing in...' : 'Sign in'}</span>
+          {!loading ? <ArrowRight className="ml-2 h-4 w-4" /> : null}
         </button>
       </form>
 
-      <div className="mt-6 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
+      <div className="mt-7 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
         {fixedSchoolCode ? (
           <Link to="/login" className="font-semibold text-[#536D00] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D]">Use another school or account type</Link>
         ) : loginType === 'independent' ? (
@@ -187,6 +194,11 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
         ) : (
           <>Need individual access?<Link to="/register" className="ml-1 font-semibold text-[#536D00] hover:underline">Create an account</Link></>
         )}
+      </div>
+
+      <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400 lg:justify-start">
+        <ShieldCheck className="h-4 w-4 text-[#6c8615]" />
+        Your account details are protected.
       </div>
     </div>
   );

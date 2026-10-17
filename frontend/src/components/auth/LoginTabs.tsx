@@ -9,16 +9,15 @@ export function LoginTabs({ loginType, setLoginType }: Props) {
   const options: Array<{
     type: LoginType;
     title: string;
-    description: string;
   }> = [
-    { type: 'student', title: 'Student', description: 'School account' },
-    { type: 'independent', title: 'Individual', description: 'Personal account' },
-    { type: 'staff', title: 'Staff', description: 'Teacher or admin' },
+    { type: 'student', title: 'School student' },
+    { type: 'independent', title: 'Individual' },
+    { type: 'staff', title: 'Staff' },
   ];
 
   return (
     <div
-      className="grid grid-cols-3 gap-2"
+      className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1.5"
       role="tablist"
       aria-label="Account type"
     >
@@ -31,14 +30,14 @@ export function LoginTabs({ loginType, setLoginType }: Props) {
             role="tab"
             aria-selected={selected}
             onClick={() => setLoginType(option.type)}
-            className={`group relative min-w-0 rounded-xl border px-2.5 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#B5E61D]/30 sm:px-3 ${
+            className={`group relative flex min-h-[72px] min-w-0 flex-col items-center justify-center rounded-xl px-2 py-2.5 text-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#B5E61D]/30 sm:px-3 ${
               selected
-                ? 'border-[#101820] bg-[#101820] shadow-[0_8px_20px_rgba(16,24,32,0.14)]'
-                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                ? 'bg-[#101820] shadow-[0_8px_20px_rgba(16,24,32,0.14)]'
+                : 'bg-transparent hover:bg-white'
             }`}
           >
             <div
-              className={`mb-2.5 flex h-8 w-8 items-center justify-center rounded-lg ${
+              className={`mb-1.5 flex h-8 w-8 items-center justify-center rounded-lg ${
                 selected
                   ? 'bg-[#B5E61D] text-[#101820]'
                   : 'bg-slate-100 text-slate-600 group-hover:bg-[#F2F9D8] group-hover:text-[#536D00]'
@@ -46,14 +45,11 @@ export function LoginTabs({ loginType, setLoginType }: Props) {
             >
               <RoleIcon type={option.type} />
             </div>
-            <span className={`block truncate text-xs font-semibold sm:text-sm ${selected ? 'text-white' : 'text-[#101820]'}`}>
+            <span className={`block max-w-full truncate text-[11px] font-semibold sm:text-xs ${selected ? 'text-white' : 'text-[#101820]'}`}>
               {option.title}
             </span>
-            <span className={`mt-0.5 hidden truncate text-[11px] sm:block ${selected ? 'text-slate-300' : 'text-slate-500'}`}>
-              {option.description}
-            </span>
             {selected ? (
-              <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[#B5E61D]" aria-hidden="true" />
+              <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#B5E61D]" aria-hidden="true" />
             ) : null}
           </button>
         );
