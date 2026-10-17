@@ -362,6 +362,9 @@ model School {
   academicResultBatches     AcademicResultBatch[]
   academicResults           StudentAcademicResult[]
   studentStudyPlans         StudentStudyPlan[]
+  learningCoachPlans        LearningCoachPlan[]
+  learningCoachSessions     LearningCoachSession[]
+  learningCoachResponses    LearningCoachResponse[]
   presenceSessions          UserPresenceSession[]
 
   @@map("schools")
@@ -467,6 +470,9 @@ model User {
   academicResults                  StudentAcademicResult[]      @relation("AcademicResultStudent")
   studyPlans                       StudentStudyPlan[]           @relation("StudentStudyPlanStudent")
   generatedStudyPlans              StudentStudyPlan[]           @relation("StudentStudyPlanGeneratedBy")
+  learningCoachPlans               LearningCoachPlan[]          @relation("LearningCoachPlanStudent")
+  learningCoachSessions            LearningCoachSession[]       @relation("LearningCoachSessionStudent")
+  learningCoachResponses           LearningCoachResponse[]      @relation("LearningCoachResponseStudent")
   presenceSessions                 UserPresenceSession[]
 
   @@unique([schoolId, email])
@@ -762,6 +768,82 @@ model StudentStudyPlan {
   @@unique([studentId, periodKey])
   @@index([schoolId, periodKey])
   @@map("student_study_plans")
+}
+
+// Learning Coach is intentionally separate from formal assignments and
+// teacher-marked submissions. It stores low-stakes diagnostic/practice
+// activity so the platform can adapt a learner's private study path without
+// changing assessment records or releasing assignment answers early.
+model LearningCoachPlan {
+  id        Int    @id @default(autoincrement())
+  schoolId  Int    @map("school_id")
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId Int    @map("student_id")
+  student   User   @relation("LearningCoachPlanStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  subject String
+  grade   String
+  topic   String
+
+  masteryScore        Int    @default(0) @map("mastery_score")
+  lastDiagnosticScore Int?   @map("last_diagnostic_score")
+  recommendedTechnique String @map("recommended_technique")
+  focusAreas          Json   @map("focus_areas")
+  plan                Json
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  sessions LearningCoachSession[]
+
+  @@unique([studentId, subject, grade, topic])
+  @@index([schoolId, subject, grade])
+  @@index([studentId, updatedAt])
+  @@map("learning_coach_plans")
+}
+
+model LearningCoachSession {
+  id        Int    @id @default(autoincrement())
+  schoolId  Int    @map("school_id")
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId Int    @map("student_id")
+  student   User   @relation("LearningCoachSessionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  planId    Int    @map("plan_id")
+  plan      LearningCoachPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  mode        String   @default("PRACTICE")
+  questionIds Int[]    @map("question_ids")
+  score       Int      @default(0)
+  total       Int      @default(0)
+  startedAt   DateTime @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  responses LearningCoachResponse[]
+
+  @@index([schoolId, studentId, completedAt])
+  @@index([planId, startedAt])
+  @@map("learning_coach_sessions")
+}
+
+model LearningCoachResponse {
+  id          Int    @id @default(autoincrement())
+  schoolId    Int    @map("school_id")
+  school      School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sessionId   Int    @map("session_id")
+  session     LearningCoachSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId   Int    @map("student_id")
+  student     User   @relation("LearningCoachResponseStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  questionBankId Int @map("question_bank_id")
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+
+  answer     String
+  isCorrect  Boolean @map("is_correct")
+  feedback   String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([sessionId, questionBankId])
+  @@index([studentId, questionBankId, createdAt])
+  @@index([schoolId, studentId, createdAt])
+  @@map("learning_coach_responses")
 }
 
 // Opaque (non-JWT) refresh tokens, stored hashed so a DB leak alone can't be
@@ -2254,6 +2336,7 @@ model QuestionBank {
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
   usages    QuestionBankUsage[]
+  learningCoachResponses LearningCoachResponse[]
 
   @@index([isGlobal, status, subject, grade])
   @@index([schoolId, status])

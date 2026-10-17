@@ -8,6 +8,7 @@ import {
   BookOpenCheck,
   Bot,
   Brain,
+  BrainCircuit,
   BriefcaseBusiness,
   Building2,
   Compass,
@@ -82,6 +83,7 @@ function iconForNavigation(path: string): LucideIcon {
   if (path.includes('my-assignments') || path.includes('independent-assignments')) return PenSquare;
   if (path.includes('kcse-papers')) return FileText;
   if (path.includes('mnemonic-cards')) return Brain;
+  if (path.includes('learning-coach')) return BrainCircuit;
   if (path.includes('stem')) return FlaskConical;
   if (path.includes('learn-skills') || path.includes('skill-studio')) return GraduationCap;
   if (path.includes('my-pathway') || path.includes('pathways')) return Compass;

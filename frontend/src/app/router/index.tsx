@@ -20,6 +20,7 @@ import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 import { MyResourcesPage } from '../../features/student/MyResources';
 import { TrialActivationPage } from '../../features/student/TrialActivation';
+import { LearningCoachPage } from '../../features/student/LearningCoach';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
@@ -97,6 +98,10 @@ const studentNav = [
   {
     to: '/student/mnemonic-cards',
     label: 'Mnemonic Cards',
+  },
+  {
+    to: '/student/learning-coach',
+    label: 'Learning Coach',
   },
   {
     to: '/student/stem-labs',
@@ -315,6 +320,10 @@ export const router = createBrowserRouter([
           {
             path: '/student/mnemonic-cards',
             element: <MnemonicCardsPage />,
+          },
+          {
+            path: '/student/learning-coach',
+            element: <LearningCoachPage />,
           },
           {
             path: '/student/assignments/:id',
