@@ -161,6 +161,7 @@ export class AiTopicAssignmentService {
       email: job.requestedBy.email,
       admissionNumber: job.requestedBy.admissionNumber,
       grade: job.requestedBy.grade,
+      isIndependentTrial: job.requestedBy.isIndependentTrial,
     };
 
     try {

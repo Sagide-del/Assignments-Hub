@@ -92,6 +92,7 @@ function iconForNavigation(path: string): LucideIcon {
   if (path.includes('mentorship') || path.includes('private-tutor')) return UserRoundSearch;
   if (path.includes('branding')) return Palette;
   if (path.includes('billing') || path.includes('subscription')) return CreditCard;
+  if (path.includes('activate')) return CreditCard;
   if (path.includes('ai-management') || path.includes('ai-usage')) return Bot;
   if (path.includes('independent-students')) return Users;
   if (path.includes('schools')) return School;
@@ -160,6 +161,12 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const logoSrc = isPlatformAdmin ? null : school?.logoUrl;
   const footerMeta = isStudent ? user?.grade ?? 'Grade not set' : user?.role.replace('_', ' ');
   const isStudentPortal = nav.some((item) => item.to.startsWith('/student'));
+  const visibleNav = isStudent && user?.isIndependentTrial
+    ? [
+        ...nav.filter((item) => item.to === '/student/my-assignments'),
+        { to: '/student/activate', label: 'Activate full access' },
+      ]
+    : nav;
 
   return (
     <div className="min-h-screen md:flex" style={{ backgroundColor: 'var(--school-background, #F8FAFC)' }}>
@@ -222,7 +229,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <SidebarSectionLabel>Navigation</SidebarSectionLabel>
           <nav className="mt-4 space-y-2">
-            {nav.map((item) => {
+            {visibleNav.map((item) => {
               const Icon = iconForNavigation(item.to);
               return (
               <NavLink

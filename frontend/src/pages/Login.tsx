@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { LoginCard } from '../components/auth/LoginCard';
 import type { LoginType } from '../components/auth/LoginTabs';
 import { AssignmentHubWordmark } from '../components/ui/Logo';
 
 export default function Login() {
   const { schoolCode } = useParams<{ schoolCode?: string }>();
+  const [searchParams] = useSearchParams();
   const fixedSchoolCode = schoolCode?.trim().toUpperCase();
-  const [loginType, setLoginType] = useState<LoginType>('student');
+  const requestedAccountType = searchParams.get('account') === 'staff' ? 'staff' : 'student';
+  const [loginType, setLoginType] = useState<LoginType>(requestedAccountType);
   const activeLoginType = fixedSchoolCode ? 'student' : loginType;
 
   return (

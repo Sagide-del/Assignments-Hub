@@ -178,6 +178,7 @@ export class AiExtractionService {
           email: extraction.uploadedBy.email,
           admissionNumber: extraction.uploadedBy.admissionNumber,
           grade: extraction.uploadedBy.grade,
+          isIndependentTrial: extraction.uploadedBy.isIndependentTrial,
         },
         AiFeature.ASSIGNMENT_DRAFT,
         extraction.schoolId,

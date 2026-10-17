@@ -21,6 +21,7 @@ import { AuditAction } from '../common/decorators/audit.decorator';
 import { SubmissionsService } from '../submissions/submissions.service';
 import { CreateSubmissionDto } from '../submissions/dto/create-submission.dto';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
+import { AllowIndependentTrial } from '../common/decorators/allow-independent-trial.decorator';
 
 @Controller('assignments')
 export class AssignmentsController {
@@ -79,6 +80,7 @@ export class AssignmentsController {
   }
 
   @Get()
+  @AllowIndependentTrial()
   findAll(
     @CurrentUser() actor: AuthenticatedUser,
     @Query('schoolId', new OptionalParseIntPipe()) schoolId?: number,
@@ -93,11 +95,13 @@ export class AssignmentsController {
   }
 
   @Get(':id')
+  @AllowIndependentTrial()
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
     return this.assignmentsService.findOne(id, actor);
   }
 
   @Get(':id/questions')
+  @AllowIndependentTrial()
   findQuestions(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
     return this.assignmentsService.findQuestions(id, actor);
   }
@@ -123,6 +127,7 @@ export class AssignmentsController {
   // Nested under /assignments so a student's submission is always created
   // in the context of the assignment it belongs to.
   @Post(':id/submissions')
+  @AllowIndependentTrial()
   @Roles(Role.STUDENT)
   @AuditAction('submission.create')
   submit(
@@ -139,6 +144,7 @@ export class AssignmentsController {
   // assignment" (a list of at most one, since a student can't submit an
   // assignment twice) for the exam-taking UI to check on page load.
   @Get(':id/submissions')
+  @AllowIndependentTrial()
   @Roles(Role.TEACHER, Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN, Role.STUDENT)
   listSubmissions(
     @Param('id', ParseIntPipe) assignmentId: number,

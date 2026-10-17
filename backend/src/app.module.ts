@@ -47,6 +47,7 @@ import { PresenceModule } from './presence/presence.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TenantGuard } from './common/guards/tenant.guard';
+import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
 
 
 @Module({
@@ -140,6 +141,11 @@ import { TenantGuard } from './common/guards/tenant.guard';
     {
       provide: APP_GUARD,
       useClass: TenantGuard,
+    },
+
+    {
+      provide: APP_GUARD,
+      useClass: IndependentTrialGuard,
     },
   ],
 })

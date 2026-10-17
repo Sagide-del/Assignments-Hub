@@ -11,7 +11,7 @@ import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
-import { AssignmentType, QuestionType, SubmissionStatus } from '@prisma/client';
+import { AssignmentKind, AssignmentType, QuestionType, SubmissionStatus } from '@prisma/client';
 import { SmsService } from '../sms/sms.service';
 import { AssignmentDeliveryService } from '../assignment-delivery/assignment-delivery.service';
 
@@ -83,6 +83,7 @@ export class SubmissionsService {
         (assignment.targetClass && assignment.targetClass !== profile?.className) ||
         (assignment.targetStream && assignment.targetStream !== profile?.stream);
       if (outsideScope) throw new NotFoundException('Assignment not found');
+      await this.assertIndependentTrialCanAccess(assignment.id, actor);
       const delivered = await this.delivery.questionsForStudent(assignment, actor.id);
       assignment.questions = delivered.questions;
       assignment.maxPoints = delivered.totalPoints;
@@ -195,6 +196,26 @@ export class SubmissionsService {
 
     if (isFinal) this.notifyParent(actor, assignment.title, assignmentId, completedAt!);
     return this.sanitizeStudentSubmission(submission);
+  }
+
+  private async assertIndependentTrialCanAccess(assignmentId: number, actor: AuthenticatedUser) {
+    if (!actor.isIndependentTrial) return;
+
+    const starterAssignment = await this.prisma.assignment.findFirst({
+      where: {
+        schoolId: actor.schoolId,
+        grade: actor.grade ?? undefined,
+        kind: AssignmentKind.STANDARD,
+        isPublished: true,
+        OR: [{ publishDate: null }, { publishDate: { lte: new Date() } }],
+      },
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!starterAssignment || starterAssignment.id !== assignmentId) {
+      throw new ForbiddenException('This assignment is not included in your starter trial');
+    }
   }
 
   // Fire-and-forget: looks up the student's parentPhone fresh (rather than

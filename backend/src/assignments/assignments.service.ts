@@ -271,7 +271,8 @@ export class AssignmentsService {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return assignments.map((assignment) => ({
+    const visibleAssignments = actor.isIndependentTrial ? assignments.slice(0, 1) : assignments;
+    return visibleAssignments.map((assignment) => ({
       ...assignment,
       _count: {
         ...assignment._count,
@@ -320,6 +321,7 @@ export class AssignmentsService {
         (actor.grade && assignment.grade !== actor.grade) ||
         !this.matchesStudentScope(assignment, studentProfile);
       if (unavailable) throw new NotFoundException('Assignment not found');
+      await this.assertIndependentTrialCanAccess(assignment.id, actor);
       const delivered = await this.delivery.questionsForStudent(assignment, actor.id);
       return this.stripAnswersForStudent({
         ...assignment,
@@ -330,6 +332,26 @@ export class AssignmentsService {
     }
 
     return assignment;
+  }
+
+  private async assertIndependentTrialCanAccess(assignmentId: number, actor: AuthenticatedUser) {
+    if (!actor.isIndependentTrial) return;
+
+    const starterAssignment = await this.prisma.assignment.findFirst({
+      where: {
+        schoolId: actor.schoolId,
+        grade: actor.grade ?? undefined,
+        kind: AssignmentKind.STANDARD,
+        isPublished: true,
+        OR: [{ publishDate: null }, { publishDate: { lte: new Date() } }],
+      },
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!starterAssignment || starterAssignment.id !== assignmentId) {
+      throw new NotFoundException('This assignment is not included in your starter trial');
+    }
   }
 
   async findQuestions(id: number, actor: AuthenticatedUser) {

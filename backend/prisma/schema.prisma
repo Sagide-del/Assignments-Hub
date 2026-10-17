@@ -399,6 +399,11 @@ model User {
   // once this is in the past.
   subscriptionExpiresAt DateTime? @map("subscription_expires_at")
 
+  // A self-registered independent learner can try exactly one eligible
+  // starter assignment before activation. This is server-enforced by
+  // IndependentTrialGuard; paid access always resets it to false.
+  isIndependentTrial Boolean @default(false) @map("is_independent_trial")
+
   // Teacher-only metadata (credential allocation): subject specialty and
   // the class they're assigned to. Not applicable to other roles.
   subject       String?

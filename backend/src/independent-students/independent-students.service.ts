@@ -658,7 +658,7 @@ export class IndependentStudentsService {
 
       await tx.user.update({
         where: { id: claim.student.id },
-        data: { subscriptionExpiresAt: periodEnd, isActive: true },
+        data: { subscriptionExpiresAt: periodEnd, isActive: true, isIndependentTrial: false },
       });
 
       return {
@@ -728,7 +728,7 @@ export class IndependentStudentsService {
       }),
       this.prisma.user.update({
         where: { id: student.id },
-        data: { subscriptionExpiresAt: periodEnd, isActive: true },
+        data: { subscriptionExpiresAt: periodEnd, isActive: true, isIndependentTrial: false },
       }),
     ]);
 

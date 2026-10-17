@@ -44,6 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       admissionNumber: user.admissionNumber,
       grade: user.grade,
+      isIndependentTrial: user.isIndependentTrial,
     };
   }
 }

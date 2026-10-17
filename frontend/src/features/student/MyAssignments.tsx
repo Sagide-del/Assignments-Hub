@@ -177,7 +177,14 @@ export function MyAssignmentsPage() {
           {[0, 1, 2].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl bg-slate-200" />)}
         </div>
       ) : !visibleAssignments.length ? (
-        <EmptyState title={selectedSubject ? `No ${selectedSubject} assignments available` : 'No assignments available'} />
+        <div className="space-y-3">
+          <EmptyState title={selectedSubject ? `No ${selectedSubject} assignments available` : 'No assignments available'} />
+          {user?.isIndependentTrial ? (
+            <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#466000]">
+              Your starter assignment will appear here when it is published for your grade. Activate full access to unlock every assignment and learning tool.
+            </p>
+          ) : null}
+        </div>
       ) : (
         <section className="space-y-3" aria-label="Assignment list">
           {visibleAssignments.map((assignment) => {

@@ -7,6 +7,7 @@ import { Role } from '../common/enums/role.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditAction } from '../common/decorators/audit.decorator';
+import { AllowIndependentTrial } from '../common/decorators/allow-independent-trial.decorator';
 
 @Controller('schools')
 export class SchoolsController {
@@ -26,6 +27,7 @@ export class SchoolsController {
   }
 
   @Get(':id')
+  @AllowIndependentTrial()
   @Roles(Role.PLATFORM_ADMIN, Role.SCHOOL_ADMIN, Role.TEACHER, Role.STUDENT)
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthenticatedUser) {
     return this.schoolsService.findOne(id, user);

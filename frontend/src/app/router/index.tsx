@@ -7,7 +7,6 @@ import { ProtectedRoute } from './ProtectedRoute';
 import Login from '../../pages/Login';
 import Home from '../../pages/Home';
 import IndependentRegister from '../../pages/IndependentRegister';
-import { PlatformLogin } from '../../features/authentication/PlatformLogin';
 
 import { StemLabsPage } from '../../features/student/StemLabs';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
@@ -20,6 +19,7 @@ import { MnemonicCardsPage } from '../../features/student/MnemonicCards';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 import { MyResourcesPage } from '../../features/student/MyResources';
+import { TrialActivationPage } from '../../features/student/TrialActivation';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
@@ -285,7 +285,7 @@ export const router = createBrowserRouter([
 
   {
     path: '/platform-console',
-    element: <PlatformLogin />,
+    element: <Navigate to="/login?account=staff" replace />,
   },
 
   {
@@ -364,6 +364,10 @@ export const router = createBrowserRouter([
           {
             path: '/student/resources',
             element: <MyResourcesPage />,
+          },
+          {
+            path: '/student/activate',
+            element: <TrialActivationPage />,
           },
           {
             path: '/student/messages',

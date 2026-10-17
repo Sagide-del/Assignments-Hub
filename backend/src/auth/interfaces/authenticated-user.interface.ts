@@ -9,4 +9,5 @@ export interface AuthenticatedUser {
   email: string | null;
   admissionNumber: string | null;
   grade: string | null;
+  isIndependentTrial: boolean;
 }

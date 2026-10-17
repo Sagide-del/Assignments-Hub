@@ -75,6 +75,7 @@ export class AuthService {
         email: user.email,
         admissionNumber: user.admissionNumber,
         grade: user.grade,
+        isIndependentTrial: user.isIndependentTrial,
       },
       ipAddress,
     );
@@ -150,6 +151,7 @@ export class AuthService {
         email: user.email,
         admissionNumber: user.admissionNumber,
         grade: user.grade,
+        isIndependentTrial: user.isIndependentTrial,
       },
       ipAddress,
     );
@@ -190,9 +192,10 @@ export class AuthService {
         grade,
         parentPhone: dto.parentPhone?.trim() || undefined,
         role: Role.STUDENT,
-        // Payment approval activates the account and establishes its first
-        // paid-through date. An unverified claim must never grant access.
-        isActive: false,
+        // A new learner can enter the restricted starter-assignment trial.
+        // Activation payment unlocks the wider workspace and turns this off.
+        isActive: true,
+        isIndependentTrial: true,
         studentProfile: {
           create: {
             admissionNumber,
@@ -242,10 +245,10 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) throw invalidCredentials();
 
-    if (!user.isActive || !user.subscriptionExpiresAt) {
+    if (!user.isActive || (!user.isIndependentTrial && !user.subscriptionExpiresAt)) {
       throw new UnauthorizedException('Your payment is awaiting verification');
     }
-    if (user.subscriptionExpiresAt < new Date()) {
+    if (user.subscriptionExpiresAt && user.subscriptionExpiresAt < new Date()) {
       throw new UnauthorizedException('Your subscription has expired. Please renew your access.');
     }
 
@@ -265,6 +268,7 @@ export class AuthService {
         email: user.email,
         admissionNumber: user.admissionNumber,
         grade: user.grade,
+        isIndependentTrial: user.isIndependentTrial,
       },
       ipAddress,
     );
@@ -317,6 +321,7 @@ export class AuthService {
       email: stored.user.email,
       admissionNumber: stored.user.admissionNumber,
       grade: stored.user.grade,
+      isIndependentTrial: stored.user.isIndependentTrial,
     };
 
     const pair = await this.issueTokenPair(user, ipAddress);

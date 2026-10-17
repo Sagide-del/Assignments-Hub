@@ -50,15 +50,17 @@ export async function endCurrentPresenceSession() {
 }
 
 export function usePresenceHeartbeat(pathname: string) {
-  const userId = useAuthStore((state) => state.user?.id);
+  const user = useAuthStore((state) => state.user);
+  const userId = user?.id;
+  const canReportPresence = Boolean(userId && !user?.isIndependentTrial);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!canReportPresence) return;
     sendHeartbeat(pathname);
-  }, [pathname, userId]);
+  }, [canReportPresence, pathname]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!canReportPresence) return;
 
     const heartbeat = () => sendHeartbeat(window.location.pathname);
     const interval = window.setInterval(heartbeat, HEARTBEAT_INTERVAL_MS);
@@ -71,5 +73,5 @@ export function usePresenceHeartbeat(pathname: string) {
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [userId]);
+  }, [canReportPresence]);
 }
