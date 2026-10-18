@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BrainCircuit, ChevronLeft, Clock3, Lightbulb, RotateCcw, Target } from 'lucide-react';
+import { AlarmClock, ArrowRight, BrainCircuit, CheckCircle2, ChevronLeft, CircleAlert, Clock3, Lightbulb, RotateCcw, Target } from 'lucide-react';
 import { apiErrorMessage } from '../../api/axios';
 import { learningCoachApi, type LearningPlan, type LearningSession, type LearningTopic } from '../../api/learning-coach.api';
 
@@ -9,7 +9,19 @@ function MasteryBadge({ score }: { score: number }) {
   return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{score}% mastery</span>;
 }
 
+function formatReview(date: string | null) {
+  if (!date) return 'after your first check-in';
+  const review = new Date(date);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  if (review.toDateString() === today.toDateString()) return 'today';
+  if (review.toDateString() === tomorrow.toDateString()) return 'tomorrow';
+  return review.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 function PlanCard({ plan, onPractice }: { plan: LearningPlan; onPractice: () => void }) {
+  const totalMinutes = plan.plan.reduce((total, step) => total + step.minutes, 0);
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -19,8 +31,10 @@ function PlanCard({ plan, onPractice }: { plan: LearningPlan; onPractice: () => 
         </div>
         <MasteryBadge score={plan.masteryScore} />
       </div>
+      {plan.requiresHumanSupport ? <div className="mt-4 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-900"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />This topic still needs support. Ask a teacher or tutor to review it with you.</div> : null}
       <p className="mt-4 text-sm leading-6 text-slate-600">{plan.recommendedTechnique}</p>
-      <button type="button" onClick={onPractice} className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white hover:bg-[#1d2c38] sm:w-auto">
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-medium text-slate-500"><span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4" /> About {totalMinutes} min</span><span className="inline-flex items-center gap-1.5"><AlarmClock className="h-4 w-4" /> Review {formatReview(plan.nextReviewAt)}</span></div>
+      <button type="button" onClick={onPractice} className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white hover:bg-[#1d2c38]">
         <RotateCcw className="h-4 w-4" /> Continue practice
       </button>
     </article>
@@ -32,17 +46,20 @@ function TopicPicker({ topics, plans, onStart, loading }: { topics: LearningTopi
   const subjects = useMemo(() => Array.from(new Set(topics.map((topic) => topic.subject))), [topics]);
   const visible = topics.filter((topic) => !subject || topic.subject === subject);
   const planByTopic = new Map(plans.map((plan) => [`${plan.subject}::${plan.topic}`, plan]));
+  const duePlan = plans.find((plan) => !plan.nextReviewAt || new Date(plan.nextReviewAt) <= new Date()) ?? plans[0];
+  const dueTopic = duePlan ? topics.find((topic) => `${topic.subject}::${topic.topic}` === `${duePlan.subject}::${duePlan.topic}`) : undefined;
   return (
     <section className="space-y-5">
-      <div className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <div className="flex items-start gap-4">
           <div className="rounded-xl bg-[#B5E61D] p-3 text-[#101820]"><BrainCircuit className="h-6 w-6" /></div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5E61D]">Learning Coach</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Master one difficult topic at a time.</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Choose a topic, take a short check-in, then practise with immediate feedback and a plan that adjusts to your results.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#607D00]">Learning Coach</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">Build confidence, one skill at a time.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Short guided sessions help you understand, practise, remember, and return to difficult topics at the right time.</p>
           </div>
         </div>
+        {duePlan && dueTopic ? <div className="mt-6 rounded-2xl bg-[#101820] p-5 text-white"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#B5E61D]">Your next best step</p><h2 className="mt-1 text-xl font-semibold">{duePlan.subject}: {duePlan.topic}</h2><p className="mt-1 text-sm text-slate-300">{duePlan.masteryScore}% mastery · Review {formatReview(duePlan.nextReviewAt)} · about 20 minutes</p></div><button type="button" disabled={loading} onClick={() => onStart(dueTopic, 'PRACTICE')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820] disabled:opacity-60">Continue coaching <ArrowRight className="h-4 w-4" /></button></div></div> : null}
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
         <button type="button" onClick={() => setSubject('')} className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold ${!subject ? 'bg-[#101820] text-white' : 'border border-slate-200 bg-white text-slate-600'}`}>All subjects</button>
@@ -54,8 +71,8 @@ function TopicPicker({ topics, plans, onStart, loading }: { topics: LearningTopi
             const plan = planByTopic.get(`${topic.subject}::${topic.topic}`);
             return <article key={`${topic.subject}-${topic.topic}`} className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">{topic.subject}</p><h2 className="mt-1 text-lg font-semibold text-[#101820]">{topic.topic}</h2></div>{plan ? <MasteryBadge score={plan.masteryScore} /> : null}</div>
-              <p className="mt-3 text-sm text-slate-500">{topic.questionCount} rotated practice questions available.</p>
-              <button type="button" disabled={loading} onClick={() => onStart(topic, plan ? 'PRACTICE' : 'DIAGNOSTIC')} className="mt-5 min-h-11 w-full rounded-xl bg-[#B5E61D] px-4 text-sm font-semibold text-[#101820] disabled:cursor-wait disabled:opacity-60">{plan ? 'Continue practice' : 'Start quick check-in'}</button>
+              <p className="mt-3 text-sm text-slate-500">A guided check-in followed by targeted practice and spaced recall.</p>
+              <button type="button" disabled={loading} onClick={() => onStart(topic, plan ? 'PRACTICE' : 'DIAGNOSTIC')} className="mt-5 min-h-11 w-full rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-[#101820] hover:text-white disabled:cursor-wait disabled:opacity-60">{plan ? 'Resume mastery path' : 'Begin diagnostic'}</button>
             </article>;
           })}
         </div>
@@ -78,11 +95,11 @@ function SessionPlayer({ data, onClose }: { data: LearningSession; onClose: () =
   const options = Array.isArray(question.options) ? question.options : [];
   return <section className="mx-auto max-w-3xl space-y-4">
     <button type="button" onClick={onClose} className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#101820]"><ChevronLeft className="h-4 w-4" /> Back to topics</button>
-    <header className="rounded-2xl bg-[#101820] p-5 text-white"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B5E61D]">{data.plan.subject} · {data.session.mode === 'DIAGNOSTIC' ? 'Quick check-in' : 'Practice'}</p><h1 className="mt-2 text-2xl font-semibold">{data.plan.topic}</h1></div><span className="rounded-full bg-white/10 px-3 py-1 text-sm font-medium">{index + 1} of {data.session.total}</span></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#B5E61D]" style={{ width: `${((index + (feedback ? 1 : 0)) / data.session.total) * 100}%` }} /></div></header>
+    <header className="rounded-2xl bg-[#101820] p-5 text-white"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B5E61D]">{data.plan.subject} · {data.session.mode === 'DIAGNOSTIC' ? 'Diagnostic check-in' : 'Independent recall practice'}</p><h1 className="mt-2 text-2xl font-semibold">{data.plan.topic}</h1><p className="mt-1 text-sm text-slate-300">Answer from memory. Feedback will help you correct the next attempt.</p></div><span className="rounded-full bg-white/10 px-3 py-1 text-sm font-medium">{index + 1} of {data.session.total}</span></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#B5E61D]" style={{ width: `${((index + (feedback ? 1 : 0)) / data.session.total) * 100}%` }} /></div></header>
     <article className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7"><p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Question {index + 1}</p><h2 className="mt-3 text-lg font-semibold leading-8 text-[#101820] sm:text-xl">{question.questionText}</h2>{question.diagramUrl ? <img src={question.diagramUrl} alt={question.diagramAlt ?? ''} className="mt-5 max-h-80 w-full rounded-xl object-contain" /> : null}
       {options.length ? <div className="mt-6 grid gap-3">{options.map((option) => <button key={option} type="button" disabled={Boolean(feedback)} onClick={() => setAnswer(option)} className={`min-h-12 rounded-xl border px-4 text-left text-sm font-medium transition ${answer === option ? 'border-[#B5E61D] bg-lime-50 text-[#101820]' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'}`}>{option}</button>)}</div> : <textarea value={answer} disabled={Boolean(feedback)} onChange={(event) => setAnswer(event.target.value)} className="mt-6 min-h-28 w-full rounded-xl border border-slate-300 p-4 text-base text-[#101820] outline-none focus:border-[#8DBB00] focus:ring-2 focus:ring-lime-100" placeholder="Write your answer here" />}
       {question.hint && !feedback ? <p className="mt-4 flex gap-2 text-sm leading-6 text-slate-500"><Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[#739400]" /> {question.hint}</p> : null}
-      {feedback ? <div className={`mt-6 rounded-xl border p-4 ${feedback.isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}><p className="font-semibold text-[#101820]">{feedback.isCorrect ? 'Correct' : 'Keep going'}</p><p className="mt-2 text-sm leading-6 text-slate-700">{feedback.feedback}</p>{feedback.completed && feedback.score !== undefined ? <p className="mt-3 font-semibold text-[#101820]">Session score: {feedback.score}%</p> : null}</div> : null}
+      {feedback ? <div className={`mt-6 rounded-xl border p-4 ${feedback.isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}><p className="inline-flex items-center gap-2 font-semibold text-[#101820]">{feedback.isCorrect ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <Lightbulb className="h-5 w-5 text-amber-600" />}{feedback.isCorrect ? 'Correct. Strengthen the explanation.' : 'A useful correction.'}</p><p className="mt-2 text-sm leading-6 text-slate-700">{feedback.feedback}</p>{feedback.completed && feedback.score !== undefined ? <p className="mt-3 font-semibold text-[#101820]">Today’s check-in: {feedback.score}%. Your personalised next step is ready.</p> : null}</div> : null}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row"><button type="button" disabled={!answer.trim() || submit.isPending || Boolean(feedback)} onClick={() => submit.mutate()} className="min-h-12 rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] disabled:cursor-not-allowed disabled:opacity-50">{submit.isPending ? 'Checking...' : 'Check my answer'}</button>{feedback ? <button type="button" onClick={next} className="min-h-12 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">{feedback.completed ? 'View my plan' : 'Next question'}</button> : null}</div>
       {submit.isError ? <p className="mt-3 text-sm text-red-700">{apiErrorMessage(submit.error, 'Your answer could not be checked.')}</p> : null}
     </article>

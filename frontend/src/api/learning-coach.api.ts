@@ -22,6 +22,9 @@ export interface LearningPlan {
   topic: string;
   masteryScore: number;
   lastDiagnosticScore: number | null;
+  lowPerformanceStreak: number;
+  nextReviewAt: string | null;
+  requiresHumanSupport: boolean;
   recommendedTechnique: string;
   focusAreas: string[];
   plan: LearningPlanStep[];

@@ -49,7 +49,7 @@ export class LearningCoachService {
     this.assertStudent(actor);
     return this.prisma.learningCoachPlan.findMany({
       where: { schoolId: actor.schoolId, studentId: actor.id },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: [{ nextReviewAt: 'asc' }, { updatedAt: 'desc' }],
     });
   }
 
@@ -104,7 +104,7 @@ export class LearningCoachService {
         subject,
         grade,
         topic,
-        recommendedTechnique: 'Start with retrieval practice: attempt first, then explain the answer in your own words.',
+        recommendedTechnique: 'Start with a short diagnosis, then use worked examples and explain each step in your own words.',
         focusAreas: [topic],
         plan: this.buildPlan(subject, topic, 0),
       },
@@ -175,14 +175,17 @@ export class LearningCoachService {
   }
 
   private async completeSession(
-    session: { id: number; planId: number; mode: string; schoolId: number; studentId: number; plan: { masteryScore: number; subject: string; topic: string } },
+    session: { id: number; planId: number; mode: string; schoolId: number; studentId: number; plan: { masteryScore: number; lowPerformanceStreak: number; subject: string; topic: string } },
     score: number,
     questionIds: number[],
   ) {
     const masteryScore = session.plan.masteryScore
       ? Math.round((session.plan.masteryScore * 0.65) + (score * 0.35))
       : score;
+    const lowPerformanceStreak = score < 50 ? session.plan.lowPerformanceStreak + 1 : 0;
+    const requiresHumanSupport = lowPerformanceStreak >= 3;
     const technique = this.techniqueFor(masteryScore);
+    const nextReviewAt = this.nextReviewAt(score, session.mode);
     await this.prisma.$transaction([
       this.prisma.learningCoachSession.update({ where: { id: session.id }, data: { score, completedAt: new Date() } }),
       this.prisma.learningCoachPlan.update({
@@ -190,8 +193,15 @@ export class LearningCoachService {
         data: {
           masteryScore,
           lastDiagnosticScore: session.mode === 'DIAGNOSTIC' ? score : undefined,
+          lowPerformanceStreak,
+          requiresHumanSupport,
+          nextReviewAt,
           recommendedTechnique: technique,
-          focusAreas: score < 70 ? [session.plan.topic, 'Recall the key definitions', 'Practise one step at a time'] : [session.plan.topic, 'Timed mixed practice'],
+          focusAreas: score < 50
+            ? [session.plan.topic, 'Learn one step at a time', 'Explain each answer aloud', 'Retry after feedback']
+            : score < 75
+              ? [session.plan.topic, 'Recall without notes', 'Correct and retry', 'Return for a spaced review']
+              : [session.plan.topic, 'Mixed exam-style practice', 'Explain why each answer works'],
           plan: this.buildPlan(session.plan.subject, session.plan.topic, masteryScore),
         },
       }),
@@ -238,11 +248,18 @@ export class LearningCoachService {
 
   private buildPlan(subject: string, topic: string, masteryScore: number) {
     return [
-      { order: 1, title: `Reconnect with ${topic}`, minutes: 12, technique: masteryScore < 40 ? 'Worked example and self-explanation' : 'Active recall' },
-      { order: 2, title: 'Short recall break', minutes: 5, technique: 'Write three key facts without looking at notes' },
-      { order: 3, title: `${subject} practice`, minutes: 15, technique: 'Answer a mixed set and read the feedback' },
-      { order: 4, title: 'Next-day check-in', minutes: 8, technique: 'Retry a rotated practice set from memory' },
+      { order: 1, title: `Learn one idea: ${topic}`, minutes: 8, technique: masteryScore < 50 ? 'Use a worked example. Say why each step is needed.' : 'Recall the core idea before opening notes.' },
+      { order: 2, title: 'Guided practice', minutes: 8, technique: 'Attempt one question, read the feedback, then correct it in your own words.' },
+      { order: 3, title: `${subject} independent check`, minutes: 10, technique: 'Answer without notes. Focus on accuracy rather than speed.' },
+      { order: 4, title: 'Spaced recall', minutes: 5, technique: 'Return on your review date and retrieve the idea from memory.' },
     ];
+  }
+
+  private nextReviewAt(score: number, mode: string) {
+    const days = mode === 'DIAGNOSTIC' || score < 50 ? 1 : score < 75 ? 3 : 7;
+    const review = new Date();
+    review.setDate(review.getDate() + days);
+    return review;
   }
 
   private assertStudent(actor: AuthenticatedUser) {

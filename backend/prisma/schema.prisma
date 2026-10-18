@@ -785,8 +785,11 @@ model LearningCoachPlan {
   grade   String
   topic   String
 
-  masteryScore        Int    @default(0) @map("mastery_score")
-  lastDiagnosticScore Int?   @map("last_diagnostic_score")
+  masteryScore          Int       @default(0) @map("mastery_score")
+  lastDiagnosticScore   Int?      @map("last_diagnostic_score")
+  lowPerformanceStreak  Int       @default(0) @map("low_performance_streak")
+  nextReviewAt          DateTime? @map("next_review_at")
+  requiresHumanSupport  Boolean   @default(false) @map("requires_human_support")
   recommendedTechnique String @map("recommended_technique")
   focusAreas          Json   @map("focus_areas")
   plan                Json
@@ -798,6 +801,7 @@ model LearningCoachPlan {
   @@unique([studentId, subject, grade, topic])
   @@index([schoolId, subject, grade])
   @@index([studentId, updatedAt])
+  @@index([studentId, nextReviewAt])
   @@map("learning_coach_plans")
 }
 
