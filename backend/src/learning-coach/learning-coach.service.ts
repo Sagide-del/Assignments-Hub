@@ -125,7 +125,15 @@ export class LearningCoachService {
       action: 'learning_coach.session_started', schoolId: actor.schoolId, userId: actor.id,
       resource: `LearningCoachSession:${session.id}`, metadata: { subject, grade, topic, mode },
     });
-    return { session: { id: session.id, mode, total: session.total }, plan, questions: selected.map((question) => this.forStudent(question)) };
+    return {
+      session: { id: session.id, mode, total: session.total },
+      plan,
+      // The lesson is derived only from an approved bank item and its
+      // reviewed explanation. This gives learners a worked example before
+      // independent retrieval without asking an AI model to improvise facts.
+      lesson: this.lessonForStudent(selected[0]),
+      questions: selected.map((question) => this.forStudent(question)),
+    };
   }
 
   async answer(sessionId: number, dto: SubmitLearningAnswerDto, actor: AuthenticatedUser) {
@@ -217,6 +225,27 @@ export class LearningCoachService {
       id: question.id, questionText: question.questionText, contentHtml: question.contentHtml,
       questionType: question.questionType, options: question.options, hint: question.hint,
       points: question.points, diagramUrl: question.diagramUrl, diagramAlt: question.diagramAlt,
+      sourceTitle: question.sourceDocument?.title ?? null,
+    };
+  }
+
+  private lessonForStudent(question: {
+    questionText: string;
+    correctAnswer: string | null;
+    explanation: string | null;
+    hint: string | null;
+    diagramUrl: string | null;
+    diagramAlt: string | null;
+    sourceDocument: { title: string } | null;
+  }) {
+    return {
+      objective: 'Study one worked example, explain the key idea, then practise it without notes.',
+      workedExample: question.questionText,
+      modelAnswer: question.correctAnswer ?? '',
+      explanation: question.explanation?.trim() || question.hint?.trim() || 'Use the worked example to identify the rule or process before you begin practice.',
+      reflectionPrompt: 'Before you continue, explain in your own words why this answer works. You do not need to write it perfectly; the goal is to make the idea clear in your mind.',
+      diagramUrl: question.diagramUrl,
+      diagramAlt: question.diagramAlt,
       sourceTitle: question.sourceDocument?.title ?? null,
     };
   }

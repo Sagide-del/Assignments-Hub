@@ -47,6 +47,16 @@ export interface LearningQuestion {
 export interface LearningSession {
   session: { id: number; mode: LearningCoachMode; total: number };
   plan: LearningPlan;
+  lesson: {
+    objective: string;
+    workedExample: string;
+    modelAnswer: string;
+    explanation: string;
+    reflectionPrompt: string;
+    diagramUrl: string | null;
+    diagramAlt: string | null;
+    sourceTitle: string | null;
+  };
   questions: LearningQuestion[];
 }
 
