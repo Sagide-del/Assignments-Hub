@@ -1,8 +1,10 @@
 import { lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Link, Navigate, useLocation } from 'react-router-dom';
 
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { ProtectedRoute } from './ProtectedRoute';
+import { useAuthStore } from '../../store/auth.store';
+import { dashboardPathForRole } from '../../services/authService';
 
 import Login from '../../pages/Login';
 import Home from '../../pages/Home';
@@ -638,27 +640,19 @@ export const router = createBrowserRouter([
 
 
 function UnauthorizedPage() {
-
+  const location = useLocation();
+  const user = useAuthStore((state) => state.user);
+  const requestedPath = (location.state as { from?: string } | null)?.from;
+  const home = user ? dashboardPathForRole(user.role) : '/login';
   return (
-
-    <div className="min-h-screen flex items-center justify-center">
-
-      <div className="text-center">
-
-        <h1 className="text-xl font-semibold">
-          Not authorized
-        </h1>
-
-
-        <p className="text-sm text-gray-500 mt-1">
-          Your account doesn't have access to this page.
-        </p>
-
-
+    <div className="grid min-h-screen place-items-center bg-slate-50 p-6">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#607D00]">Assignments Hub</p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-[#101820]">This page belongs to another workspace.</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-600">{requestedPath ? `“${requestedPath}”` : 'The page'} is not available for your current account. Your account is still active.</p>
+        <Link to={home} className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-4 text-sm font-bold text-[#101820]">Go to my workspace</Link>
+        <Link to="/login" className="mt-3 inline-flex min-h-10 items-center justify-center text-sm font-semibold text-slate-600 hover:text-[#101820]">Use a different account</Link>
       </div>
-
     </div>
-
   );
-
 }
