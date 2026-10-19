@@ -1,8 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, CreditCard, MessageCircle, Smartphone } from 'lucide-react';
 import { apiErrorMessage } from '../../api/axios';
 import { independentStudentsApi } from '../../api/independent-students.api';
+import { authApi } from '../../api/auth.api';
 import { useAuthStore } from '../../store/auth.store';
 
 type PaymentPath = 'PAYSTACK' | 'LIPA';
@@ -10,6 +12,9 @@ type Interval = 'MONTHLY' | 'ANNUAL';
 
 export function TrialActivationPage() {
   const user = useAuthStore((state) => state.user);
+  const refreshToken = useAuthStore((state) => state.refreshToken);
+  const setSession = useAuthStore((state) => state.setSession);
+  const navigate = useNavigate();
   const [method, setMethod] = useState<PaymentPath>('PAYSTACK');
   const [interval, setInterval] = useState<Interval>('MONTHLY');
   const [mpesaCode, setMpesaCode] = useState('');
@@ -43,6 +48,30 @@ export function TrialActivationPage() {
   });
 
   const amount = interval === 'ANNUAL' ? paymentInfo?.annualAmountKES : paymentInfo?.monthlyAmountKES;
+
+  useEffect(() => {
+    const reference = new URLSearchParams(window.location.search).get('reference');
+    if (!reference || !refreshToken) return;
+
+    let attempts = 0;
+    const refreshAccess = async () => {
+      try {
+        const pair = await authApi.refresh(refreshToken);
+        setSession(pair);
+        if (!pair.user.isIndependentTrial) {
+          navigate('/student', { replace: true });
+          return;
+        }
+      } catch {
+        // Keep the learner on the activation page; a later retry or sign-in
+        // will receive the updated access once the payment is confirmed.
+      }
+      attempts += 1;
+      if (attempts < 15) window.setTimeout(() => void refreshAccess(), 2000);
+    };
+
+    void refreshAccess();
+  }, [navigate, refreshToken, setSession]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
