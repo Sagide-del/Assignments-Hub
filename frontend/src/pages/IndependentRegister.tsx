@@ -215,13 +215,14 @@ export default function IndependentRegister() {
               </div>
 
               <Field
-                label="Email address"
+                label="Email address for receipts (optional)"
                 type="email"
                 value={form.email}
                 onChange={(value) => setForm((current) => ({ ...current, email: value }))}
                 autoComplete="email"
+                required={false}
               />
-              <p className="-mt-2 text-xs leading-5 text-slate-500">Used by Paystack for secure payment and your receipt.</p>
+              <p className="-mt-2 text-xs leading-5 text-slate-500">A parent or guardian email can receive payment receipts. Learners without email can still pay and activate normally.</p>
 
               {error ? <ErrorMessage message={error} /> : null}
               <button

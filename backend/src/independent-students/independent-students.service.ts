@@ -604,9 +604,6 @@ export class IndependentStudentsService {
     if (!student || student.schoolId !== school.id || student.role !== Role.STUDENT) {
       throw new ForbiddenException('Only independent learner accounts can start this checkout');
     }
-    if (!student.email) {
-      throw new BadRequestException('Add an email address to your individual learner account before paying online');
-    }
     if (!this.paystackProvider.isConfigured()) {
       throw new ServiceUnavailableException('Online payments are not configured yet');
     }
@@ -633,13 +630,17 @@ export class IndependentStudentsService {
     }
 
     const reference = `AH-IND-${student.id}-${randomUUID().replace(/-/g, '').slice(0, 16)}`;
+    // Paystack requires an email during checkout, but many learners and
+    // guardians do not use email. A per-learner platform alias keeps the
+    // gateway requirement separate from sign-in and payment entitlement.
+    const paymentEmail = student.email?.trim() || `payments+learner-${student.id}@assignmenthub.co.ke`;
     const payment = await this.prisma.independentPaystackPayment.create({
-      data: { studentId: student.id, reference, amountKES, interval, email: student.email },
+      data: { studentId: student.id, reference, amountKES, interval, email: paymentEmail },
     });
 
     try {
       const checkout = await this.paystackProvider.createCheckout({
-        email: student.email,
+        email: paymentEmail,
         amountKES,
         currency: 'KES',
         apiRef: reference,
