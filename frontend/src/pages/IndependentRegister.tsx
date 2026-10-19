@@ -1,16 +1,19 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, LockKeyhole, Sparkles } from 'lucide-react';
 import { authApi } from '../api/auth.api';
 import { apiErrorMessage } from '../api/axios';
 import { independentStudentsApi } from '../api/independent-students.api';
 import { AssignmentHubWordmark } from '../components/ui/Logo';
 import type { IndependentRegistrationResult } from '../types';
+import { loginIndependent } from '../services/authService';
 
 type Interval = 'MONTHLY' | 'ANNUAL';
 
 export default function IndependentRegister() {
+  const navigate = useNavigate();
   const [account, setAccount] = useState<IndependentRegistrationResult | null>(null);
   const [form, setForm] = useState({
     name: '',
@@ -64,6 +67,15 @@ export default function IndependentRegister() {
     onError: (err) => setError(apiErrorMessage(err, 'Could not submit payment details')),
   });
 
+  const continueMutation = useMutation({
+    mutationFn: async () => {
+      if (!account) throw new Error('Create an account before continuing');
+      await loginIndependent(account.admissionNumber, form.password);
+    },
+    onSuccess: () => navigate('/student/activate'),
+    onError: (err) => setError(apiErrorMessage(err, 'Your account was created, but we could not sign you in automatically. Please sign in to continue.')),
+  });
+
   function submitRegistration(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -84,6 +96,35 @@ export default function IndependentRegister() {
     interval === 'ANNUAL'
       ? paymentInfo?.annualAmountKES ?? 0
       : paymentInfo?.monthlyAmountKES ?? 0;
+
+  if (account) {
+    return (
+      <main className="min-h-screen bg-[#f6f8f4] px-4 py-5 sm:px-6 sm:py-8">
+        <div className="mx-auto w-full max-w-xl">
+          <div className="mb-7 flex items-center justify-between gap-4"><AssignmentHubWordmark size="sm" /></div>
+          <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(16,24,32,0.08)]">
+            <div className="bg-[#101820] px-6 py-7 text-white sm:px-9">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5E61D]">Account created</p>
+              <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Continue to secure payment</h1>
+              <p className="mt-3 text-sm leading-6 text-slate-300">Your starter account is ready. Sign in securely and choose a Paystack payment plan to unlock the full workspace.</p>
+            </div>
+            <div className="space-y-6 p-6 sm:p-9">
+              <div className="rounded-2xl border border-[#D9ED9A] bg-[#F8FCEB] p-5">
+                <p className="font-semibold text-[#101820]">Keep this Student ID</p>
+                <p className="mt-3 rounded-xl bg-white px-4 py-3 font-mono text-lg font-semibold tracking-wide text-[#101820]">{account.admissionNumber}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600">Your account activates automatically after Paystack confirms payment. No Platform Admin approval is needed.</p>
+              </div>
+              {error ? <ErrorMessage message={error} /> : null}
+              <button type="button" onClick={() => continueMutation.mutate()} disabled={continueMutation.isPending} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60">
+                {continueMutation.isPending ? 'Signing you in...' : 'Continue to payment'} <ArrowRight className="ml-2 h-4 w-4" />
+              </button>
+              <Link to="/login" className="flex min-h-11 items-center justify-center text-sm font-semibold text-[#536D00] hover:underline">Sign in later</Link>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#f6f8f4] px-4 py-5 sm:px-6 sm:py-8">
@@ -173,21 +214,14 @@ export default function IndependentRegister() {
                 />
               </div>
 
-              <details className="group rounded-xl border border-slate-200 px-4 py-3">
-                <summary className="cursor-pointer list-none text-sm font-medium text-slate-600 marker:hidden">
-                  Add an email address <span className="ml-1 text-xs text-slate-400">Optional</span>
-                </summary>
-                <div className="pt-4">
-                  <Field
-                    label="Email address"
-                    type="email"
-                    value={form.email}
-                    onChange={(value) => setForm((current) => ({ ...current, email: value }))}
-                    autoComplete="email"
-                    required={false}
-                  />
-                </div>
-              </details>
+              <Field
+                label="Email address"
+                type="email"
+                value={form.email}
+                onChange={(value) => setForm((current) => ({ ...current, email: value }))}
+                autoComplete="email"
+              />
+              <p className="-mt-2 text-xs leading-5 text-slate-500">Used by Paystack for secure payment and your receipt.</p>
 
               {error ? <ErrorMessage message={error} /> : null}
               <button
