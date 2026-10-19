@@ -3,10 +3,11 @@ import { IndependentStudentsController } from './independent-students.controller
 import { IndependentStudentsService } from './independent-students.service';
 import { UsersModule } from '../users/users.module';
 import { SmsModule } from '../sms/sms.module';
+import { PaystackPaymentProvider } from '../payment/providers/paystack-payment.provider';
 
 @Module({
   imports: [UsersModule, SmsModule],
   controllers: [IndependentStudentsController],
-  providers: [IndependentStudentsService],
+  providers: [IndependentStudentsService, PaystackPaymentProvider],
 })
 export class IndependentStudentsModule {}

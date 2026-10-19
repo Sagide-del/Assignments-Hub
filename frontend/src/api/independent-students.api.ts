@@ -29,6 +29,12 @@ export const independentStudentsApi = {
       dto,
     ).then((r) => r.data),
 
+  startPaystackCheckout: (interval: 'MONTHLY' | 'ANNUAL') =>
+    api.post<{ checkoutUrl: string; reference: string; amountKES: number; interval: string }>(
+      '/independent-students/paystack/checkout',
+      { interval },
+    ).then((r) => r.data),
+
   findStudents: () => api.get<IndependentStudent[]>('/independent-students/students').then((r) => r.data),
 
   getSummary: () =>

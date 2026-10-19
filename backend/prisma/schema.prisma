@@ -453,6 +453,7 @@ model User {
   recordedIndependentInvoices      IndependentStudentInvoice[]  @relation("IndependentInvoiceRecordedBy")
   independentPaymentClaims         IndependentPaymentClaim[]    @relation("IndependentPaymentClaimStudent")
   reviewedIndependentPaymentClaims IndependentPaymentClaim[]    @relation("IndependentPaymentClaimReviewedBy")
+  independentPaystackPayments     IndependentPaystackPayment[] @relation("IndependentPaystackPaymentStudent")
   updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
   requestedAiGenerationJobs        AiGenerationJob[]            @relation("AiGenerationRequestedBy")
   uploadedAiExtractedContents      AiExtractedContent[]         @relation("AiExtractedContentUploadedBy")
@@ -2256,6 +2257,28 @@ model IndependentPaymentClaim {
   @@index([studentId, status])
   @@index([status, createdAt])
   @@map("independent_payment_claims")
+}
+
+// Hosted Paystack payments for learners who subscribe independently. This is
+// deliberately separate from school PaymentTransaction records: a school is
+// onboarded offline, while an individual renews only their own access.
+model IndependentPaystackPayment {
+  id        Int  @id @default(autoincrement())
+  studentId Int  @map("student_id")
+  student   User @relation("IndependentPaystackPaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  reference String               @unique
+  amountKES Int                  @map("amount_kes")
+  interval  SubscriptionInterval @default(MONTHLY)
+  status    PaymentStatus        @default(PENDING)
+  email     String
+  paidAt    DateTime?            @map("paid_at")
+  rawPayload Json?
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  @@index([studentId, status])
+  @@map("independent_paystack_payments")
 }
 
 // ============================================================================

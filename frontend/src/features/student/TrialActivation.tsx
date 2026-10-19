@@ -5,12 +5,12 @@ import { apiErrorMessage } from '../../api/axios';
 import { independentStudentsApi } from '../../api/independent-students.api';
 import { useAuthStore } from '../../store/auth.store';
 
-type PaymentPath = 'STK' | 'LIPA';
+type PaymentPath = 'PAYSTACK' | 'LIPA';
 type Interval = 'MONTHLY' | 'ANNUAL';
 
 export function TrialActivationPage() {
   const user = useAuthStore((state) => state.user);
-  const [method, setMethod] = useState<PaymentPath>('STK');
+  const [method, setMethod] = useState<PaymentPath>('PAYSTACK');
   const [interval, setInterval] = useState<Interval>('MONTHLY');
   const [mpesaCode, setMpesaCode] = useState('');
   const [payerPhone, setPayerPhone] = useState('');
@@ -34,6 +34,12 @@ export function TrialActivationPage() {
       setError(null);
     },
     onError: (requestError) => setError(apiErrorMessage(requestError, 'We could not submit your activation request.')),
+  });
+
+  const paystackMutation = useMutation({
+    mutationFn: () => independentStudentsApi.startPaystackCheckout(interval),
+    onSuccess: ({ checkoutUrl }) => window.location.assign(checkoutUrl),
+    onError: (requestError) => setError(apiErrorMessage(requestError, 'We could not start secure checkout. Please try again.')),
   });
 
   const amount = interval === 'ANNUAL' ? paymentInfo?.annualAmountKES : paymentInfo?.monthlyAmountKES;
@@ -70,11 +76,11 @@ export function TrialActivationPage() {
           <h2 className="font-semibold text-[#101820]">Choose how to activate</h2>
         </div>
         <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-7">
-          <button type="button" onClick={() => setMethod('STK')} className={`rounded-2xl border p-5 text-left transition ${method === 'STK' ? 'border-[#8cb500] bg-[#faffeb] ring-1 ring-[#b5e61d]' : 'border-slate-200 hover:border-slate-300'}`}>
+          <button type="button" onClick={() => setMethod('PAYSTACK')} className={`rounded-2xl border p-5 text-left transition ${method === 'PAYSTACK' ? 'border-[#8cb500] bg-[#faffeb] ring-1 ring-[#b5e61d]' : 'border-slate-200 hover:border-slate-300'}`}>
             <Smartphone className="h-5 w-5 text-[#607b00]" />
-            <p className="mt-4 font-semibold text-[#101820]">M-Pesa STK Push</p>
-            <p className="mt-1 text-sm leading-6 text-slate-500">Pay from a prompt sent directly to your phone.</p>
-            <span className="mt-3 inline-flex rounded-full bg-[#eaf7bb] px-2.5 py-1 text-xs font-semibold text-[#526b00]">Coming soon</span>
+            <p className="mt-4 font-semibold text-[#101820]">Pay online</p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">Use secure Paystack checkout with available M-Pesa or card options.</p>
+            <span className="mt-3 inline-flex rounded-full bg-[#101820] px-2.5 py-1 text-xs font-semibold text-white">Recommended</span>
           </button>
           <button type="button" onClick={() => setMethod('LIPA')} className={`rounded-2xl border p-5 text-left transition ${method === 'LIPA' ? 'border-[#8cb500] bg-[#faffeb] ring-1 ring-[#b5e61d]' : 'border-slate-200 hover:border-slate-300'}`}>
             <CreditCard className="h-5 w-5 text-[#607b00]" />
@@ -84,11 +90,19 @@ export function TrialActivationPage() {
           </button>
         </div>
 
-        {method === 'STK' ? (
-          <div className="border-t border-slate-100 bg-slate-50 px-6 py-6 sm:px-8">
-            <p className="font-semibold text-[#101820]">STK Push is being connected.</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">For now, select Lipa na M-Pesa to activate your account. This page will use STK Push automatically as soon as it is enabled.</p>
-            <button type="button" onClick={() => setMethod('LIPA')} className="mt-4 text-sm font-semibold text-[#536d00] hover:underline">Use Lipa na M-Pesa instead</button>
+        {method === 'PAYSTACK' ? (
+          <div className="space-y-5 border-t border-slate-100 px-6 py-6 sm:px-8">
+            <div className="grid grid-cols-2 gap-3">
+              {(['MONTHLY', 'ANNUAL'] as const).map((option) => (
+                <button key={option} type="button" onClick={() => setInterval(option)} className={`rounded-xl border p-4 text-left ${interval === option ? 'border-[#8cb500] bg-[#faffeb]' : 'border-slate-200'}`}>
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{option === 'ANNUAL' ? 'Annual' : 'Monthly'}</span>
+                  <span className="mt-1 block font-semibold text-[#101820]">KES {(option === 'ANNUAL' ? paymentInfo?.annualAmountKES : paymentInfo?.monthlyAmountKES)?.toLocaleString() ?? '...'}</span>
+                </button>
+              ))}
+            </div>
+            <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-slate-600">You will complete payment on Paystack. Your full workspace opens automatically after Paystack confirms the payment.</div>
+            {error ? <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
+            <button type="button" onClick={() => { setError(null); paystackMutation.mutate(); }} disabled={paystackMutation.isPending} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50">{paystackMutation.isPending ? 'Opening secure checkout...' : 'Continue to secure payment'}</button>
           </div>
         ) : isLoading ? (
           <div className="border-t border-slate-100 px-6 py-6 text-sm text-slate-500 sm:px-8">Loading activation details...</div>

@@ -24,6 +24,7 @@ import { UploadsService } from '../uploads/uploads.service';
 import { IntaSendPaymentProvider } from './providers/intasend-payment.provider';
 import { MpesaPaymentProvider } from './providers/mpesa-payment.provider';
 import { PaystackPaymentProvider } from './providers/paystack-payment.provider';
+import { IndependentStudentsService } from '../independent-students/independent-students.service';
 
 interface SubscriptionActivationData {
   planName: string;
@@ -59,6 +60,7 @@ export class PaymentService {
     private readonly intaSendProvider: IntaSendPaymentProvider,
     private readonly mpesaProvider: MpesaPaymentProvider,
     private readonly paystackProvider: PaystackPaymentProvider,
+    private readonly independentStudentsService: IndependentStudentsService,
     private readonly uploadsService: UploadsService,
   ) {
     this.webhookSecret = this.configService.get('INTASEND_WEBHOOK_SECRET') || '';
@@ -763,9 +765,15 @@ export class PaymentService {
       throw new ForbiddenException('Invalid Paystack webhook signature');
     }
 
-    const event = this.readStringField(payload, 'event') || 'UNKNOWN';
     const data = this.readObjectField(payload, 'data');
     const reference = this.readStringField(data, 'reference');
+    // Paystack supports a single webhook URL. Learner checkout references are
+    // routed here to their own activation service after the signature check.
+    if (reference?.startsWith('AH-IND-')) {
+      return this.independentStudentsService.handlePaystackWebhook(payload, signature, rawBody);
+    }
+
+    const event = this.readStringField(payload, 'event') || 'UNKNOWN';
     const transaction = reference
       ? await this.prisma.paymentTransaction.findFirst({
           where: { method: PaymentMethod.PAYSTACK, providerReference: reference },

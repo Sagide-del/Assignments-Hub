@@ -8,9 +8,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import {
   IndependentPaymentClaimStatus,
+  PaymentStatus,
   SmsType,
   SubmissionStatus,
   SubscriptionInterval,
@@ -27,6 +28,7 @@ import { Role } from '../common/enums/role.enum';
 import { generateIndependentStudentId } from '../common/utils/independent-student-id.util';
 import { SmsService } from '../sms/sms.service';
 import { SendIndependentWelcomeDto } from './dto/send-independent-welcome.dto';
+import { PaystackPaymentProvider } from '../payment/providers/paystack-payment.provider';
 
 // The one system-wide School row every independent student belongs to —
 // lazily upserted by code so the rest of the app's schoolId-scoped
@@ -43,6 +45,7 @@ export class IndependentStudentsService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly smsService: SmsService,
+    private readonly paystackProvider: PaystackPaymentProvider,
   ) {}
 
   private async getOrCreateSchool() {
@@ -595,6 +598,134 @@ export class IndependentStudentsService {
     };
   }
 
+  async startPaystackCheckout(actor: AuthenticatedUser, intervalValue?: string) {
+    const school = await this.getOrCreateSchool();
+    const student = await this.prisma.user.findUnique({ where: { id: actor.id } });
+    if (!student || student.schoolId !== school.id || student.role !== Role.STUDENT) {
+      throw new ForbiddenException('Only independent learner accounts can start this checkout');
+    }
+    if (!student.email) {
+      throw new BadRequestException('Add an email address to your individual learner account before paying online');
+    }
+    if (!this.paystackProvider.isConfigured()) {
+      throw new ServiceUnavailableException('Online payments are not configured yet');
+    }
+
+    const interval = this.normalizeInterval(intervalValue);
+    const paymentInfo = this.getPaymentInfo();
+    const amountKES = interval === SubscriptionInterval.ANNUAL
+      ? paymentInfo.annualAmountKES
+      : paymentInfo.monthlyAmountKES;
+    if (!amountKES) {
+      throw new ServiceUnavailableException('The selected learner subscription price is not configured');
+    }
+
+    const outstanding = await this.prisma.independentPaystackPayment.findFirst({
+      where: {
+        studentId: student.id,
+        interval,
+        status: { in: [PaymentStatus.PENDING, PaymentStatus.PROCESSING] },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (outstanding) {
+      throw new ConflictException('A Paystack checkout is already in progress. Complete it or wait for it to expire.');
+    }
+
+    const reference = `AH-IND-${student.id}-${randomUUID().replace(/-/g, '').slice(0, 16)}`;
+    const payment = await this.prisma.independentPaystackPayment.create({
+      data: { studentId: student.id, reference, amountKES, interval, email: student.email },
+    });
+
+    try {
+      const checkout = await this.paystackProvider.createCheckout({
+        email: student.email,
+        amountKES,
+        currency: 'KES',
+        apiRef: reference,
+        redirectUrl: 'https://assignmenthub.co.ke/student/activate',
+      });
+      if (!checkout.checkoutUrl) throw new BadRequestException('Paystack did not return a checkout URL');
+
+      await this.prisma.independentPaystackPayment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.PROCESSING, rawPayload: this.toJson(checkout.rawResponse) },
+      });
+      return { checkoutUrl: checkout.checkoutUrl, reference, amountKES, interval };
+    } catch (error: any) {
+      await this.prisma.independentPaystackPayment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.FAILED, rawPayload: this.toJson(error.response?.data || error.message) },
+      });
+      throw error;
+    }
+  }
+
+  async handlePaystackWebhook(payload: unknown, signature: string | undefined, rawBody: Buffer | undefined) {
+    if (!this.paystackProvider.verifyWebhookSignature(rawBody, signature)) {
+      throw new ForbiddenException('Invalid Paystack webhook signature');
+    }
+    const event = this.readString(payload, 'event');
+    if (event !== 'charge.success') return { status: 'received', event: event ?? 'unknown' };
+
+    const eventData = this.readObject(payload, 'data');
+    const reference = this.readString(eventData, 'reference');
+    if (!reference) throw new BadRequestException('Paystack payment reference is missing');
+
+    const payment = await this.prisma.independentPaystackPayment.findUnique({
+      where: { reference },
+      include: { student: true },
+    });
+    if (!payment) throw new NotFoundException('Independent Paystack payment not found');
+    if (payment.status === PaymentStatus.CONFIRMED) return { status: 'success', message: 'Already activated' };
+
+    const verification = await this.paystackProvider.verifyPayment(reference);
+    const verificationData = this.readObject(verification, 'data');
+    if (
+      this.readString(verificationData, 'status') !== 'success' ||
+      this.readString(verificationData, 'reference') !== reference ||
+      this.readNumber(verificationData, 'amount') !== payment.amountKES * 100 ||
+      this.readString(verificationData, 'currency') !== 'KES'
+    ) {
+      throw new BadRequestException('Paystack verification did not match the expected learner payment');
+    }
+
+    const now = new Date();
+    const periodStart = payment.student.subscriptionExpiresAt && payment.student.subscriptionExpiresAt > now
+      ? payment.student.subscriptionExpiresAt
+      : now;
+    const periodEnd = this.calculatePeriodEnd(periodStart, payment.interval);
+
+    await this.prisma.$transaction(async (tx) => {
+      const locked = await tx.independentPaystackPayment.updateMany({
+        where: { id: payment.id, status: { not: PaymentStatus.CONFIRMED } },
+        data: { status: PaymentStatus.CONFIRMED, paidAt: now, rawPayload: this.toJson({ webhook: payload, verification }) },
+      });
+      if (locked.count !== 1) return;
+
+      await tx.independentStudentInvoice.create({
+        data: {
+          studentId: payment.studentId,
+          invoiceNumber: this.createInvoiceNumber(payment.studentId),
+          studentName: payment.student.name,
+          amountKES: payment.amountKES,
+          interval: payment.interval,
+          periodStart,
+          periodEnd,
+          // This legacy column is the existing payment-proof field. Prefixing
+          // the verified hosted-payment reference preserves invoice history.
+          mpesaCode: `PAYSTACK:${payment.reference}`,
+        },
+      });
+      await tx.user.update({
+        where: { id: payment.studentId },
+        data: { subscriptionExpiresAt: periodEnd, isActive: true, isIndependentTrial: false },
+      });
+    });
+
+    return { status: 'success', message: 'Individual learner access activated' };
+  }
+
   async findPaymentClaims() {
     const school = await this.getOrCreateSchool();
     return this.prisma.independentPaymentClaim.findMany({
@@ -737,6 +868,29 @@ export class IndependentStudentsService {
 
   private normalizeInterval(interval?: string): SubscriptionInterval {
     return interval?.toLowerCase() === 'annual' ? SubscriptionInterval.ANNUAL : SubscriptionInterval.MONTHLY;
+  }
+
+  private toJson(value: unknown) {
+    return JSON.parse(JSON.stringify(value ?? null));
+  }
+
+  private readObject(value: unknown, key: string): Record<string, unknown> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const field = (value as Record<string, unknown>)[key];
+    return field && typeof field === 'object' && !Array.isArray(field)
+      ? (field as Record<string, unknown>)
+      : undefined;
+  }
+
+  private readString(value: unknown, key: string): string | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const field = (value as Record<string, unknown>)[key];
+    return typeof field === 'string' ? field : undefined;
+  }
+
+  private readNumber(value: Record<string, unknown> | undefined, key: string): number | undefined {
+    const field = value?.[key];
+    return typeof field === 'number' && Number.isFinite(field) ? field : undefined;
   }
 
   private calculatePeriodEnd(periodStart: Date, interval: SubscriptionInterval): Date {

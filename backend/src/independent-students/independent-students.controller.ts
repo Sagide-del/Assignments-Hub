@@ -14,6 +14,8 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { AuditAction } from '../common/decorators/audit.decorator';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 import { Public } from '../common/decorators/public.decorator';
+import { AllowIndependentTrial } from '../common/decorators/allow-independent-trial.decorator';
+import { CreateIndependentPaystackCheckoutDto } from './dto/create-independent-paystack-checkout.dto';
 
 // Students enrolled without a school — PLATFORM_ADMIN only throughout, see
 // independent-students.service.ts for the full design rationale.
@@ -32,6 +34,17 @@ export class IndependentStudentsController {
   @Post('public/payment-claims')
   submitPaymentClaim(@Body() dto: SubmitIndependentPaymentClaimDto) {
     return this.independentStudentsService.submitPaymentClaim(dto);
+  }
+
+  @Post('paystack/checkout')
+  @Roles(Role.STUDENT)
+  @AllowIndependentTrial()
+  @AuditAction('independent_student.paystack_checkout')
+  startPaystackCheckout(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body() dto: CreateIndependentPaystackCheckoutDto,
+  ) {
+    return this.independentStudentsService.startPaystackCheckout(actor, dto.interval);
   }
 
   @Get('payment-info')
