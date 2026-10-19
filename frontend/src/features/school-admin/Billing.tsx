@@ -93,6 +93,19 @@ export function SchoolAdminBilling() {
     onError: (error) => setStatus(apiErrorMessage(error, 'Unable to start IntaSend checkout')),
   });
 
+  const paystackMutation = useMutation({
+    mutationFn: () => paymentApi.createPaystackSubscriptionCheckout(billingEmail, user!.schoolId, interval),
+    onSuccess: (response: unknown) => {
+      const url = (response as { checkoutUrl?: string }).checkoutUrl;
+      if (url) {
+        window.location.assign(url);
+        return;
+      }
+      setStatus('Checkout has started. Complete the Paystack payment to activate the subscription.');
+    },
+    onError: (error) => setStatus(apiErrorMessage(error, 'Unable to start Paystack checkout')),
+  });
+
   const equityMutation = useMutation({
     mutationFn: () =>
       paymentApi.createEquityPaybillPayment({
@@ -140,7 +153,7 @@ export function SchoolAdminBilling() {
   }, [providersQuery.data]);
 
   const orderedProviders = useMemo(() => {
-    const order = ['INTASEND', 'EQUITY_PAYBILL', 'MPESA'];
+    const order = ['PAYSTACK', 'INTASEND', 'EQUITY_PAYBILL', 'MPESA'];
     return [...(providersQuery.data ?? [])].sort(
       (left, right) => order.indexOf(left.method) - order.indexOf(right.method),
     );
@@ -256,9 +269,11 @@ export function SchoolAdminBilling() {
                 paymentReference={paymentReference}
                 setPaymentReference={setPaymentReference}
                 onIntaSend={() => intasendMutation.mutate()}
+                onPaystack={() => paystackMutation.mutate()}
                 onEquity={() => equityMutation.mutate()}
                 onMpesa={() => mpesaMutation.mutate()}
                 intasendPending={intasendMutation.isPending}
+                paystackPending={paystackMutation.isPending}
                 equityPending={equityMutation.isPending}
                 mpesaPending={mpesaMutation.isPending}
               />
@@ -404,9 +419,11 @@ function ProviderCard(props: {
   paymentReference: string;
   setPaymentReference: (value: string) => void;
   onIntaSend: () => void;
+  onPaystack: () => void;
   onEquity: () => void;
   onMpesa: () => void;
   intasendPending: boolean;
+  paystackPending: boolean;
   equityPending: boolean;
   mpesaPending: boolean;
 }) {
@@ -464,6 +481,31 @@ function ProviderCard(props: {
               className="w-full rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
             >
               {props.intasendPending ? 'Starting checkout...' : 'Pay online'}
+            </button>
+          </>
+        ) : null}
+
+        {provider.method === 'PAYSTACK' ? (
+          <>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Billing email</label>
+              <input
+                value={props.billingEmail}
+                onChange={(event) => props.setBillingEmail(event.target.value)}
+                className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-[#101820]"
+                placeholder="finance@school.com"
+              />
+            </div>
+            <p className="rounded-2xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs leading-5 text-slate-600">
+              Paystack opens a secure checkout where you can select available options such as M-Pesa or card. Each confirmed payment renews this subscription period.
+            </p>
+            <button
+              type="button"
+              onClick={props.onPaystack}
+              disabled={props.paystackPending || !provider.isActive || !props.billingEmail}
+              className="w-full rounded-2xl bg-[#101820] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {props.paystackPending ? 'Starting checkout...' : 'Pay securely with Paystack'}
             </button>
           </>
         ) : null}

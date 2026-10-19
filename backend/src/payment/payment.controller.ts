@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -10,9 +11,11 @@ import {
   Patch,
   Post,
   Query,
+  RawBodyRequest,
+  Req,
   Res,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { PaymentService } from './payment.service';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -123,6 +126,13 @@ export class PaymentController {
     return this.paymentService.createSubscription(dto.email, dto.schoolId, dto.interval || 'monthly');
   }
 
+  @Post('paystack/subscription')
+  @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
+  @AuditAction('payment.paystack_subscription_create')
+  async createPaystackSubscription(@Body() dto: CreateSubscriptionPaymentDto) {
+    return this.paymentService.createPaystackSubscription(dto.email, dto.schoolId, dto.interval || 'monthly');
+  }
+
   @Post('equity-paybill')
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   @AuditAction('payment.equity_paybill_submit')
@@ -202,5 +212,16 @@ export class PaymentController {
     // IntaSend verifies via a `challenge` field inside the JSON body itself
     // (see payment.service.ts verifyWebhookChallenge), not a header.
     return this.paymentService.handleWebhook(payload);
+  }
+
+  @Post('paystack/webhook')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async paystackWebhook(
+    @Body() payload: Record<string, unknown>,
+    @Req() request: RawBodyRequest<Request>,
+    @Headers('x-paystack-signature') signature?: string,
+  ) {
+    return this.paymentService.handlePaystackWebhook(payload, signature, request.rawBody);
   }
 }

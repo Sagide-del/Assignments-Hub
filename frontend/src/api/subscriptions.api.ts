@@ -57,6 +57,9 @@ export const paymentApi = {
   createSubscriptionCheckout: (email: string, schoolId: number, interval: 'monthly' | 'annual' = 'monthly') =>
     api.post('/payment/subscription', { email, schoolId, interval }).then((r) => r.data),
 
+  createPaystackSubscriptionCheckout: (email: string, schoolId: number, interval: 'monthly' | 'annual' = 'monthly') =>
+    api.post('/payment/paystack/subscription', { email, schoolId, interval }).then((r) => r.data),
+
   createEquityPaybillPayment: (dto: {
     schoolId?: number;
     paymentReference: string;

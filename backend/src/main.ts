@@ -8,7 +8,9 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Retain the original bytes for signed payment webhooks. JSON parsing still
+  // works normally, while providers can be verified against the exact body.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // CORS configuration
   const corsOrigin = process.env.CORS_ORIGIN

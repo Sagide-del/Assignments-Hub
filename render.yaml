@@ -39,6 +39,15 @@ services:
         value: https://api.assignmenthub.co.ke
       - key: PAYMENT_REDIRECT_URL
         value: https://app.assignmenthub.co.ke/school-admin/subscription
+      # Paystack hosted checkout. Keep secret values in Render, never in Git.
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        value: https://assignmenthub.co.ke/school-admin/billing
+      - key: PAYSTACK_MODE
+        value: test
       # Africa's Talking SMS — read by SmsService via ConfigService. Omit
       # AFRICASTALKING_API_KEY to leave SMS silently disabled rather than
       # erroring (SmsService defaults apiKey to '').

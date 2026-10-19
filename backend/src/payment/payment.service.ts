@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 import {
   InvoiceStatus,
   PaymentMethod,
@@ -22,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UploadsService } from '../uploads/uploads.service';
 import { IntaSendPaymentProvider } from './providers/intasend-payment.provider';
 import { MpesaPaymentProvider } from './providers/mpesa-payment.provider';
+import { PaystackPaymentProvider } from './providers/paystack-payment.provider';
 
 interface SubscriptionActivationData {
   planName: string;
@@ -56,6 +58,7 @@ export class PaymentService {
     private readonly prisma: PrismaService,
     private readonly intaSendProvider: IntaSendPaymentProvider,
     private readonly mpesaProvider: MpesaPaymentProvider,
+    private readonly paystackProvider: PaystackPaymentProvider,
     private readonly uploadsService: UploadsService,
   ) {
     this.webhookSecret = this.configService.get('INTASEND_WEBHOOK_SECRET') || '';
@@ -117,6 +120,18 @@ export class PaymentService {
         },
       },
       {
+        method: PaymentMethod.PAYSTACK,
+        displayName: 'Paystack',
+        logoUrl: this.logoDataUrl('Paystack', '#0BA4DB', '#FFFFFF'),
+        instructions: 'Pay securely by M-Pesa, Airtel Money, or card. Your subscription activates automatically after Paystack verifies payment.',
+        isActive: this.paystackProvider.isConfigured(),
+        configuration: {
+          channel: 'hosted_checkout',
+          currency: 'KES',
+          settlement: 'verified_webhook_confirmation',
+        },
+      },
+      {
         method: PaymentMethod.MPESA,
         displayName: 'M-Pesa',
         logoUrl: this.logoDataUrl('M-Pesa', '#1B5E20', '#FFFFFF'),
@@ -146,7 +161,18 @@ export class PaymentService {
       defaults.map((config) =>
         this.prisma.paymentProviderConfig.upsert({
           where: { method: config.method },
-          update: {},
+          // Paystack availability reflects the deployed secret. The other
+          // providers retain an administrator's existing enabled/disabled choice.
+          update:
+            config.method === PaymentMethod.PAYSTACK
+              ? {
+                  displayName: config.displayName,
+                  logoUrl: config.logoUrl,
+                  instructions: config.instructions,
+                  isActive: config.isActive,
+                  configuration: this.toJsonValue(config.configuration),
+                }
+              : {},
           create: {
             method: config.method,
             displayName: config.displayName,
@@ -346,6 +372,7 @@ export class PaymentService {
     interval: SubscriptionInterval,
     invoiceId: number,
     paymentTransactionId: number,
+    paymentMethod: PaymentMethod = PaymentMethod.INTASEND,
   ) {
     if (pricing.amountKES > 0) return null;
 
@@ -355,11 +382,11 @@ export class PaymentService {
       studentCount: pricing.studentCount,
       schoolType: pricing.schoolType,
       interval,
-      paymentMethod: PaymentMethod.INTASEND,
+      paymentMethod,
       invoiceId,
       paymentTransactionId,
       rawPayload: {
-        provider: 'INTASEND',
+        provider: paymentMethod,
         freeTier: true,
       },
     });
@@ -472,6 +499,81 @@ export class PaymentService {
 
   async createSubscription(email: string, schoolId: number, interval: string = 'monthly') {
     return this.startIntaSendCheckout('SUB', email, schoolId, this.normalizeInterval(interval));
+  }
+
+  private buildPaystackReference(paymentTransactionId: number) {
+    return `AH-PS-${paymentTransactionId}-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
+  }
+
+  async createPaystackSubscription(email: string, schoolId: number, interval: string = 'monthly') {
+    const provider = await this.getProviderConfig(PaymentMethod.PAYSTACK);
+    if (!provider.isActive || !this.paystackProvider.isConfigured()) {
+      throw new BadRequestException('Paystack payments are currently unavailable');
+    }
+
+    const subscriptionInterval = this.normalizeInterval(interval);
+    const pricing = await this.computePricingForSchool(schoolId);
+    const { invoice, paymentTransaction } = await this.createBillingRecords(
+      schoolId,
+      pricing,
+      PaymentMethod.PAYSTACK,
+      subscriptionInterval,
+    );
+
+    const freeTierResponse = await this.completeFreeTierActivation(
+      schoolId,
+      pricing,
+      subscriptionInterval,
+      invoice.id,
+      paymentTransaction.id,
+      PaymentMethod.PAYSTACK,
+    );
+    if (freeTierResponse) return freeTierResponse;
+
+    const reference = this.buildPaystackReference(paymentTransaction.id);
+    try {
+      const checkout = await this.paystackProvider.createCheckout({
+        email,
+        amountKES: pricing.amountKES,
+        currency: 'KES',
+        apiRef: reference,
+        redirectUrl:
+          this.configService.get<string>('PAYSTACK_CALLBACK_URL')?.trim() ||
+          this.configService.get<string>('PAYMENT_REDIRECT_URL')?.trim() ||
+          'https://assignmenthub.co.ke/school-admin/billing',
+      });
+
+      if (!checkout.checkoutUrl) {
+        throw new BadRequestException('Paystack did not return a checkout URL');
+      }
+
+      await this.prisma.paymentTransaction.update({
+        where: { id: paymentTransaction.id },
+        data: {
+          status: PaymentStatus.PROCESSING,
+          providerReference: checkout.providerReference ?? reference,
+          paymentReference: checkout.providerReference ?? reference,
+          metadata: this.toJsonValue({
+            pricingSnapshot: pricing,
+            interval: subscriptionInterval,
+            checkoutResponse: checkout.rawResponse,
+          }),
+        },
+      });
+
+      return this.buildPaymentResponse(
+        { checkoutUrl: checkout.checkoutUrl, providerReference: checkout.providerReference ?? reference },
+        invoice.id,
+        paymentTransaction.id,
+      );
+    } catch (error: any) {
+      await this.finalizeCheckoutFailure(
+        invoice.id,
+        paymentTransaction.id,
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
   }
 
   async verifyPayment(invoiceId: string) {
@@ -655,6 +757,85 @@ export class PaymentService {
     }
   }
 
+  async handlePaystackWebhook(payload: unknown, signature: string | undefined, rawBody: Buffer | undefined) {
+    if (!this.paystackProvider.verifyWebhookSignature(rawBody, signature)) {
+      this.logger.warn('Rejected Paystack webhook with an invalid signature');
+      throw new ForbiddenException('Invalid Paystack webhook signature');
+    }
+
+    const event = this.readStringField(payload, 'event') || 'UNKNOWN';
+    const data = this.readObjectField(payload, 'data');
+    const reference = this.readStringField(data, 'reference');
+    const transaction = reference
+      ? await this.prisma.paymentTransaction.findFirst({
+          where: { method: PaymentMethod.PAYSTACK, providerReference: reference },
+          include: { invoice: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      : null;
+
+    await this.recordWebhookEvent(payload, event, reference, transaction?.id, PaymentMethod.PAYSTACK);
+
+    // Only a signature-checked and API-verified success may change access.
+    if (event !== 'charge.success') return { status: 'received', event };
+    if (!reference || !transaction || !transaction.invoice) {
+      this.logger.error(`Paystack success webhook could not be matched to a transaction (${reference ?? 'no reference'})`);
+      throw new BadRequestException('Unknown Paystack payment reference');
+    }
+    if (transaction.subscriptionId) return { status: 'success', message: 'Payment was already activated' };
+
+    const verification = await this.paystackProvider.verifyPayment(reference);
+    const verificationData = this.readObjectField(verification, 'data');
+    const verificationStatus = this.readStringField(verificationData, 'status');
+    const verificationReference = this.readStringField(verificationData, 'reference');
+    const amountInSubunits = this.readNumberField(verificationData, 'amount');
+    const currency = this.readStringField(verificationData, 'currency');
+
+    if (
+      verificationStatus !== 'success' ||
+      verificationReference !== reference ||
+      amountInSubunits !== transaction.amountKES * 100 ||
+      currency !== transaction.currency
+    ) {
+      this.logger.error(`Paystack verification did not match transaction ${transaction.id}`);
+      throw new BadRequestException('Paystack verification did not match the expected payment');
+    }
+
+    await this.activateSubscription(transaction.schoolId, {
+      planName: transaction.invoice.planSnapshot || 'Subscription',
+      amountKES: transaction.amountKES,
+      studentCount: transaction.invoice.studentCountSnapshot ?? 0,
+      schoolType: (transaction.invoice.schoolTypeSnapshot as SchoolType | null) || 'DAY',
+      interval: transaction.invoice.interval,
+      paymentMethod: PaymentMethod.PAYSTACK,
+      invoiceId: transaction.invoiceId ?? undefined,
+      paymentTransactionId: transaction.id,
+      providerReference: reference,
+      rawPayload: { webhook: payload, verification },
+    });
+
+    return { status: 'success', message: 'Subscription activated' };
+  }
+
+  private readObjectField(value: unknown, key: string): Record<string, unknown> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const field = (value as Record<string, unknown>)[key];
+    return field && typeof field === 'object' && !Array.isArray(field)
+      ? (field as Record<string, unknown>)
+      : undefined;
+  }
+
+  private readStringField(value: unknown, key: string): string | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const field = (value as Record<string, unknown>)[key];
+    return typeof field === 'string' ? field : undefined;
+  }
+
+  private readNumberField(value: Record<string, unknown> | undefined, key: string): number | undefined {
+    const field = value?.[key];
+    return typeof field === 'number' && Number.isFinite(field) ? field : undefined;
+  }
+
   private async activateSubscription(schoolId: number, data: SubscriptionActivationData) {
     const school = await this.prisma.school.findUnique({ where: { id: schoolId } });
     if (!school) {
@@ -804,8 +985,10 @@ export class PaymentService {
   private mapWebhookStateToPaymentStatus(state: string | undefined): PaymentStatus | null {
     switch (state) {
       case 'COMPLETE':
+      case 'charge.success':
         return PaymentStatus.CONFIRMED;
       case 'FAILED':
+      case 'charge.failed':
         return PaymentStatus.FAILED;
       case 'PROCESSING':
         return PaymentStatus.PROCESSING;
