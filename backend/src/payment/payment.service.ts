@@ -125,8 +125,8 @@ export class PaymentService {
         method: PaymentMethod.PAYSTACK,
         displayName: 'Paystack',
         logoUrl: this.logoDataUrl('Paystack', '#0BA4DB', '#FFFFFF'),
-        instructions: 'Pay securely by M-Pesa, Airtel Money, or card. Your subscription activates automatically after Paystack verifies payment.',
-        isActive: this.paystackProvider.isConfigured(),
+        instructions: 'Reserved for individual learner account activation. School onboarding is completed through the bank-payment process.',
+        isActive: false,
         configuration: {
           channel: 'hosted_checkout',
           currency: 'KES',
@@ -295,7 +295,12 @@ export class PaymentService {
 
   async getPaymentProviders() {
     await this.ensureProviderConfigs();
-    const configs = await this.prisma.paymentProviderConfig.findMany({ orderBy: { displayName: 'asc' } });
+    const configs = await this.prisma.paymentProviderConfig.findMany({
+      // Paystack belongs to the individual learner activation journey, not
+      // the school-admin billing interface.
+      where: { method: { not: PaymentMethod.PAYSTACK } },
+      orderBy: { displayName: 'asc' },
+    });
     return configs.map((config) => this.mapProviderConfig(config));
   }
 
@@ -508,74 +513,12 @@ export class PaymentService {
   }
 
   async createPaystackSubscription(email: string, schoolId: number, interval: string = 'monthly') {
-    const provider = await this.getProviderConfig(PaymentMethod.PAYSTACK);
-    if (!provider.isActive || !this.paystackProvider.isConfigured()) {
-      throw new BadRequestException('Paystack payments are currently unavailable');
-    }
-
-    const subscriptionInterval = this.normalizeInterval(interval);
-    const pricing = await this.computePricingForSchool(schoolId);
-    const { invoice, paymentTransaction } = await this.createBillingRecords(
-      schoolId,
-      pricing,
-      PaymentMethod.PAYSTACK,
-      subscriptionInterval,
+    void email;
+    void schoolId;
+    void interval;
+    throw new BadRequestException(
+      'School subscriptions are activated during bank-payment onboarding. Paystack is available for individual learner accounts only.',
     );
-
-    const freeTierResponse = await this.completeFreeTierActivation(
-      schoolId,
-      pricing,
-      subscriptionInterval,
-      invoice.id,
-      paymentTransaction.id,
-      PaymentMethod.PAYSTACK,
-    );
-    if (freeTierResponse) return freeTierResponse;
-
-    const reference = this.buildPaystackReference(paymentTransaction.id);
-    try {
-      const checkout = await this.paystackProvider.createCheckout({
-        email,
-        amountKES: pricing.amountKES,
-        currency: 'KES',
-        apiRef: reference,
-        redirectUrl:
-          this.configService.get<string>('PAYSTACK_CALLBACK_URL')?.trim() ||
-          this.configService.get<string>('PAYMENT_REDIRECT_URL')?.trim() ||
-          'https://assignmenthub.co.ke/school-admin/billing',
-      });
-
-      if (!checkout.checkoutUrl) {
-        throw new BadRequestException('Paystack did not return a checkout URL');
-      }
-
-      await this.prisma.paymentTransaction.update({
-        where: { id: paymentTransaction.id },
-        data: {
-          status: PaymentStatus.PROCESSING,
-          providerReference: checkout.providerReference ?? reference,
-          paymentReference: checkout.providerReference ?? reference,
-          metadata: this.toJsonValue({
-            pricingSnapshot: pricing,
-            interval: subscriptionInterval,
-            checkoutResponse: checkout.rawResponse,
-          }),
-        },
-      });
-
-      return this.buildPaymentResponse(
-        { checkoutUrl: checkout.checkoutUrl, providerReference: checkout.providerReference ?? reference },
-        invoice.id,
-        paymentTransaction.id,
-      );
-    } catch (error: any) {
-      await this.finalizeCheckoutFailure(
-        invoice.id,
-        paymentTransaction.id,
-        error.response?.data || error.message,
-      );
-      throw error;
-    }
   }
 
   async verifyPayment(invoiceId: string) {
