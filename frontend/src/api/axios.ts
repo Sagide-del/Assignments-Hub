@@ -2,8 +2,12 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/auth.store';
 import type { TokenPair } from '../types';
 
-// See .env.example — unset in local dev, the Vite proxy handles /api/v1/*.
-const baseURL = import.meta.env.VITE_API_URL || '/api/v1';
+// CloudFront hosts the production SPA separately from the Render API. Keep the
+// production default explicit so API calls never fall through to the S3 origin.
+// Local development still uses Vite's same-origin proxy unless overridden.
+const baseURL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://assignments-hub-api.onrender.com/api/v1' : '/api/v1');
 
 export const api = axios.create({ baseURL });
 
