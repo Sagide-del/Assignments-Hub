@@ -9,5 +9,7 @@ import { PaystackPaymentProvider } from '../payment/providers/paystack-payment.p
   imports: [UsersModule, SmsModule],
   controllers: [IndependentStudentsController],
   providers: [IndependentStudentsService, PaystackPaymentProvider],
+  // PaymentService verifies Paystack learner payments through this service.
+  exports: [IndependentStudentsService],
 })
 export class IndependentStudentsModule {}
