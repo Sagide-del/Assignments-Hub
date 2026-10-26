@@ -1,85 +1,27 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { ArrowRight, CalendarDays, Search, SlidersHorizontal } from 'lucide-react';
 import { assignmentsApi } from '../../api/assignments.api';
 import { submissionsApi } from '../../api/submissions.api';
 import { EmptyState } from '../../components/ui/Saas';
 import { useAuthStore } from '../../store/auth.store';
 import type { Submission } from '../../types';
+import {
+  STATE_META, assignmentDeadline, assignmentState, assignmentSubject, selectAssignments,
+  type AssignmentSort, type AssignmentState,
+} from './assignment-list';
 
-function ArrowIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-      <path d="M5 12h13M14 7l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const STATUS_OPTIONS = ['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'SUBMITTED', 'RESULTS_AVAILABLE'] as const;
 
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-      <rect x="4" y="5.5" width="16" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M8 3.5v4M16 3.5v4M4 9.5h16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value));
-}
-
-type AssignmentState = 'AVAILABLE' | 'IN_PROGRESS' | 'AWAITING_REVIEW' | 'RESULTS_READY';
-
-const STATE_META: Record<AssignmentState, { label: string; action: string; className: string; priority: number }> = {
-  IN_PROGRESS: {
-    label: 'In progress',
-    action: 'Continue',
-    className: 'border-amber-200 bg-amber-50 text-amber-800',
-    priority: 0,
-  },
-  RESULTS_READY: {
-    label: 'Results ready',
-    action: 'View results',
-    className: 'border-lime-300 bg-lime-50 text-[#466000]',
-    priority: 1,
-  },
-  AVAILABLE: {
-    label: 'Not started',
-    action: 'Start',
-    className: 'border-slate-200 bg-slate-50 text-slate-700',
-    priority: 2,
-  },
-  AWAITING_REVIEW: {
-    label: 'Submitted',
-    action: 'View',
-    className: 'border-sky-200 bg-sky-50 text-sky-800',
-    priority: 3,
-  },
-};
-
-function assignmentState(submission?: Submission): AssignmentState {
-  if (!submission) return 'AVAILABLE';
-  if (submission.status === 'DRAFT') return 'IN_PROGRESS';
-  if (submission.resultsReleasedAt) return 'RESULTS_READY';
-  return 'AWAITING_REVIEW';
-}
-
-function StatusBadge({ state }: { state: AssignmentState }) {
-  const meta = STATE_META[state];
-  return (
-    <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${meta.className}`}>
-      {meta.label}
-    </span>
-  );
-}
+const CONTROL_CLASS = 'min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-[#101820] focus:outline-none focus:ring-2 focus:ring-[#607D00] focus:ring-offset-2';
 
 export function MyAssignmentsPage() {
   const user = useAuthStore((state) => state.user);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [subject, setSubject] = useState('');
+  const [status, setStatus] = useState<AssignmentState | 'ALL'>('ALL');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<AssignmentSort>('priority');
 
   const assignmentsQuery = useQuery({
     queryKey: ['assignments', user?.schoolId, user?.grade],
@@ -90,7 +32,6 @@ export function MyAssignmentsPage() {
     queryFn: () => submissionsApi.findAll(),
     enabled: Boolean(user?.id),
   });
-
   const assignments = useMemo(
     () => (assignmentsQuery.data ?? []).filter((assignment) => assignment.isPublished),
     [assignmentsQuery.data],
@@ -102,87 +43,98 @@ export function MyAssignmentsPage() {
     }
     return map;
   }, [submissionsQuery.data]);
-
   const subjects = useMemo(
-    () => Array.from(new Set(assignments.map((assignment) => assignment.subject.trim() || 'General'))).sort(),
+    () => Array.from(new Set(assignments.map(assignmentSubject))).sort(),
     [assignments],
   );
   const visibleAssignments = useMemo(
-    () => assignments
-      .filter((assignment) => !selectedSubject || assignment.subject.trim() === selectedSubject)
-      .sort((a, b) => {
-        const stateDifference = STATE_META[assignmentState(submissionByAssignment.get(a.id))].priority
-          - STATE_META[assignmentState(submissionByAssignment.get(b.id))].priority;
-        if (stateDifference !== 0) return stateDifference;
-        if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        if (a.dueDate) return -1;
-        if (b.dueDate) return 1;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }),
-    [assignments, selectedSubject, submissionByAssignment],
+    () => selectAssignments(assignments, submissionByAssignment, { subject, state: status, search, sort }),
+    [assignments, submissionByAssignment, subject, status, search, sort],
   );
-
-  const states = assignments.map((assignment) => assignmentState(submissionByAssignment.get(assignment.id)));
-  const availableCount = states.filter((state) => state === 'AVAILABLE').length;
-  const inProgressCount = states.filter((state) => state === 'IN_PROGRESS').length;
-  const completedCount = states.filter((state) => state === 'AWAITING_REVIEW' || state === 'RESULTS_READY').length;
+  const counts = useMemo(() => {
+    const values = { ALL: assignments.length, NOT_STARTED: 0, IN_PROGRESS: 0, SUBMITTED: 0, RESULTS_AVAILABLE: 0 };
+    for (const assignment of assignments) values[assignmentState(submissionByAssignment.get(assignment.id))]++;
+    return values;
+  }, [assignments, submissionByAssignment]);
   const isLoading = assignmentsQuery.isLoading || submissionsQuery.isLoading;
   const hasError = assignmentsQuery.isError || submissionsQuery.isError;
+  const hasFilters = Boolean(subject || status !== 'ALL' || search);
+  const now = new Date();
+
+  function clearFilters() {
+    setSubject('');
+    setStatus('ALL');
+    setSearch('');
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        {[
-          ['Not started', availableCount],
-          ['In progress', inProgressCount],
-          ['Submitted', completedCount],
-        ].map(([label, value], index) => (
-          <div key={label} className={`px-3 py-4 sm:px-5 ${index ? 'border-l border-slate-200' : ''}`}>
-            <p className="text-xl font-semibold tracking-tight text-[#101820] sm:text-2xl">{isLoading ? '-' : value}</p>
-            <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 sm:text-xs">{label}</p>
-          </div>
-        ))}
-      </section>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">My Assignments</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Find your next task, continue your work or review your answers.</p>
+      </header>
 
-      {subjects.length ? (
-        <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filter assignments by subject">
-          <button
-            type="button"
-            onClick={() => setSelectedSubject(null)}
-            className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold ${
-              selectedSubject === null ? 'bg-[#101820] text-white' : 'border border-slate-200 bg-white text-slate-600'
-            }`}
-          >
-            All
-          </button>
-          {subjects.map((subject) => (
-            <button
-              key={subject}
-              type="button"
-              onClick={() => setSelectedSubject(subject)}
-              className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold ${
-                selectedSubject === subject ? 'bg-[#101820] text-white' : 'border border-slate-200 bg-white text-slate-600'
-              }`}
-            >
-              {subject}
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5" aria-label="Assignment filters">
+        <div className="hidden flex-wrap gap-2 sm:flex" role="group" aria-label="Filter assignments by status">
+          {STATUS_OPTIONS.map((value) => (
+            <button key={value} type="button" aria-pressed={status === value} onClick={() => setStatus(value)}
+              className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#607D00] focus-visible:ring-offset-2 ${status === value ? 'border-[#101820] bg-[#101820] text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+              {value === 'ALL' ? 'All' : STATE_META[value].label}
+              <span className={`rounded-md px-1.5 py-0.5 text-xs ${status === value ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-600'}`}>{isLoading || hasError ? '–' : counts[value]}</span>
             </button>
           ))}
         </div>
-      ) : null}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="sm:hidden">
+            <label htmlFor="assignment-status" className="mb-1.5 block text-xs font-semibold text-slate-600">Status</label>
+            <select id="assignment-status" value={status} onChange={(event) => setStatus(event.target.value as AssignmentState | 'ALL')} className={CONTROL_CLASS}>
+              {STATUS_OPTIONS.map((value) => <option key={value} value={value}>{value === 'ALL' ? 'All assignments' : STATE_META[value].label} ({isLoading || hasError ? '–' : counts[value]})</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="assignment-search" className="mb-1.5 block text-xs font-semibold text-slate-600">Search assignments</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-slate-400" aria-hidden="true" />
+              <input id="assignment-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search title or subject" className={`${CONTROL_CLASS} pl-10`} />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="assignment-subject" className="mb-1.5 block text-xs font-semibold text-slate-600">Subject</label>
+            <select id="assignment-subject" value={subject} onChange={(event) => setSubject(event.target.value)} className={CONTROL_CLASS}>
+              <option value="">All subjects</option>
+              {subjects.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="assignment-sort" className="mb-1.5 block text-xs font-semibold text-slate-600">Sort by</label>
+            <select id="assignment-sort" value={sort} onChange={(event) => setSort(event.target.value as AssignmentSort)} className={CONTROL_CLASS}>
+              <option value="priority">Unfinished first</option>
+              <option value="deadline">Soonest deadline</option>
+              <option value="newest">Newest first</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <p role="status" className="text-slate-600">{hasError ? 'Assignment list unavailable' : isLoading ? 'Loading assignments…' : `${visibleAssignments.length} of ${assignments.length} assignments`}</p>
+          {hasFilters ? <button type="button" onClick={clearFilters} className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 font-semibold text-[#466000] underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />Clear filters</button> : null}
+        </div>
+      </section>
 
       {hasError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">Assignments could not be loaded.</div>
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+          <p>Assignments could not be loaded. Try again to get your latest work and submission status.</p>
+          <button type="button" onClick={() => { void assignmentsQuery.refetch(); void submissionsQuery.refetch(); }} disabled={assignmentsQuery.isFetching || submissionsQuery.isFetching} className="mt-3 min-h-11 rounded-xl border border-red-300 bg-white px-4 font-semibold disabled:opacity-50">{assignmentsQuery.isFetching || submissionsQuery.isFetching ? 'Retrying…' : 'Try again'}</button>
+        </div>
       ) : isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3" role="status" aria-label="Loading assignment list">
           {[0, 1, 2].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl bg-slate-200" />)}
         </div>
       ) : !visibleAssignments.length ? (
         <div className="space-y-3">
-          <EmptyState title={selectedSubject ? `No ${selectedSubject} assignments available` : 'No assignments available'} />
-          {user?.isIndependentTrial ? (
-            <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#466000]">
-              Your starter assignment will appear here when it is published for your grade. Activate full access to unlock every assignment and learning tool.
-            </p>
+          <EmptyState title={assignments.length ? 'No assignments match your filters' : 'No assignments available yet'}
+            action={assignments.length ? <button type="button" onClick={clearFilters} className="min-h-11 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white">Clear filters</button> : undefined} />
+          {!assignments.length && user?.isIndependentTrial ? (
+            <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#466000]">Your starter assignment will appear here when it is published for your grade. Activate full access to unlock every assignment and learning tool.</p>
           ) : null}
         </div>
       ) : (
@@ -191,35 +143,34 @@ export function MyAssignmentsPage() {
             const submission = submissionByAssignment.get(assignment.id);
             const state = assignmentState(submission);
             const meta = STATE_META[state];
-            const marks = assignment.maxPoints ?? assignment.totalMarks ?? 0;
+            const marks = assignment.maxPoints ?? assignment.totalMarks;
+            const questionCount = assignment._count?.questions ?? assignment.questions?.length;
+            const deadline = assignmentDeadline(assignment.dueDate, now);
+            const unfinished = state === 'NOT_STARTED' || state === 'IN_PROGRESS';
+            const urgent = unfinished && (deadline.isPast || deadline.isSoon);
 
             return (
-              <article key={assignment.id} className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 sm:p-5">
+              <article key={assignment.id} aria-labelledby={`assignment-title-${assignment.id}`} className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 sm:p-5">
                 <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#607D00]">{assignment.subject}</p>
-                      <StatusBadge state={state} />
+                      <p className="break-words text-xs font-semibold uppercase tracking-[0.1em] text-[#526B00]">{assignmentSubject(assignment)}</p>
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${meta.className}`}>{meta.label}</span>
                     </div>
-                    <h2 className="mt-2 break-words text-lg font-semibold leading-snug text-[#101820] sm:text-xl">{assignment.title}</h2>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
-                      <span>{assignment._count?.questions ?? 0} questions</span>
-                      <span>{marks} marks</span>
+                    <h2 id={`assignment-title-${assignment.id}`} className="mt-2 break-words text-lg font-semibold leading-snug text-[#101820]">{assignment.title}</h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600">
+                      {questionCount != null ? <span>{questionCount} {questionCount === 1 ? 'question' : 'questions'}</span> : null}
+                      {marks != null ? <span>{marks} {marks === 1 ? 'mark' : 'marks'}</span> : null}
                       {assignment.timeAllowedMinutes ? <span>{assignment.timeAllowedMinutes} min</span> : null}
-                      {assignment.dueDate ? (
-                        <span className="inline-flex items-center gap-1.5"><CalendarIcon /> Due {formatDate(assignment.dueDate)}</span>
-                      ) : null}
+                      <span title={deadline.detail} className={`inline-flex items-center gap-1.5 ${urgent ? 'font-semibold text-amber-800' : ''}`}><CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />{deadline.label}</span>
                     </div>
-                    {state === 'RESULTS_READY' && submission?.score != null ? (
-                      <p className="mt-3 text-sm font-semibold text-[#466000]">Score {submission.score} / {marks}</p>
-                    ) : null}
+                    {assignment.dueDate && deadline.detail.startsWith('Due ') ? <p className="mt-2 text-xs text-slate-500">{deadline.detail}</p> : null}
+                    {state === 'SUBMITTED' ? <p className="mt-2 text-sm text-sky-800">Your work is submitted. Results have not been released yet.</p> : null}
+                    {state === 'RESULTS_AVAILABLE' && submission?.score != null ? <p className="mt-2 text-sm font-semibold text-[#466000]">Score: {submission.score}{marks != null && marks > 0 ? ` / ${marks}` : ''}</p> : null}
                   </div>
-                  <Link
-                    to={`/student/assignments/${assignment.id}`}
-                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white transition hover:bg-[#1D2C38] sm:w-auto"
-                  >
-                    {meta.action}
-                    <ArrowIcon />
+                  <Link to={`/student/assignments/${assignment.id}`} aria-label={`${meta.action}: ${assignment.title}`}
+                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white transition hover:bg-[#1D2C38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#607D00] focus-visible:ring-offset-2 sm:w-auto">
+                    {meta.action}<ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </div>
               </article>

@@ -10,7 +10,8 @@
     "preview": "vite preview --config vite.config.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "prebuild": "node scripts/generate-revision.mjs",
-    "test:revision": "node --test scripts/revision.test.mjs"
+    "test:revision": "node --test scripts/revision.test.mjs",
+    "test:assignments": "node --test scripts/assignment-list.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
