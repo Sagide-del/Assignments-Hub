@@ -59,3 +59,21 @@ test('draft keys are learner/course/lesson scoped and errors explain common begi
  assert.match(explainPythonError('NameError: name missing is not defined'),/spelling/);
  assert.match(explainPythonError('EOFError'),/input/);
 });
+
+test('first aid has six illustrated response guides with two explained scenarios each', () => {
+ const pack=learningPacks.find(pack=>pack.title==='First Aid Foundations');
+ assert.equal(pack.version,'firstaid-v2');
+ for(const lesson of pack.lessons){
+  assert.match(lesson.key,/^firstaid-v2-/);
+  assert.ok(lesson.firstAid.actions.length>=4);
+  assert.ok(lesson.firstAid.actions.every(step=>step.text.length>80&&step.why.length>50));
+  assert.ok(lesson.firstAid.recognise.length>=3&&lesson.firstAid.avoid.length>=3&&lesson.firstAid.urgent.length>=2);
+  assert.equal(lesson.firstAid.scenarios.length,2);
+  assert.match(lesson.image.src,/\.webp$/);
+  for(const image of [lesson.image,...lesson.images])assert.ok(existsSync(new URL('../public'+image.src,import.meta.url)));
+  for(const scenario of lesson.firstAid.scenarios){assert.ok(scenario.answer>=0&&scenario.answer<scenario.options.length);assert.ok(scenario.situation.length>60&&scenario.explanation.length>60);}
+  assert.ok(lesson.sources.every(source=>source.url.startsWith('https://')));
+ }
+ const firstAidCourse={title:pack.title,category:{name:'First Aid'},costKES:0};
+ assert.equal(summarizeSkillProgress(firstAidCourse,[{lessonKey:'firstaid-v1-fainting',completedAt:'2026-10-01',updatedAt:'2026-10-01'}]).completed,0);
+});

@@ -93,3 +93,51 @@ incorrect output, failed saves, completion gating, illustration rendering,
 private draft restoration and mobile layouts. Backend authentication, live
 content availability and real production progress persistence are not established
 by those mocked API checks.
+
+
+## Illustrated first-aid revision (v2)
+
+First Aid Foundations now includes six locally hosted, generated scenario
+illustrations, paired with the original simplified diagrams. The WebP images
+are approximately 88–205 KB each. They depict fictional learning scenarios, not
+real patients or diagnoses. Images were visually inspected; the burn illustration
+was corrected so running water visibly reaches the affected forearm. This is
+visual QA, not professional medical review.
+
+Each of the six lessons contains recognition cues, an ordered response guide
+with reasons, actions to avoid, urgent warning signs, a recap and two explained
+scenario exercises. The original activity checklist and understanding check
+remain. Both scenario decisions must be correct before completion can be saved;
+changing a passed answer revokes readiness. Versioned `firstaid-v2-*` keys prevent
+v1 completion records from being counted as completion of these expanded lessons.
+Existing v1 records and browser drafts are not deleted.
+
+The course overview shows an illustrated introduction and lesson previews.
+Individual lessons can be opened directly with `?lesson=<versioned-key>` on the
+workspace URL. An invalid lesson key falls back to the normal resume selection.
+The gallery supports illustration/diagram switching, a native enlarged-image
+dialog with keyboard focus restoration, and visible error/retry handling when a
+missing image returns homepage HTML.
+
+The curriculum and visuals still require qualified first-aid instructor review
+before formal training use. No professional review or accreditation is claimed.
+The current NHS and British Red Cross source pages could not be fetched from this
+environment (network HTTP 403 / tunnel denial), including a normal browser attempt.
+References are topic-specific reading links, not evidence of completed live-source
+or clinical verification.
+
+Publish the **entire** frontend `dist/` directory, including
+`skill-illustrations/`, rather than just the JavaScript `assets/` directory. The
+live site was still serving its October 20 bundle during implementation, and a
+new illustration URL returned the SPA homepage with HTTP 200 and text/html. A Git
+push alone did not establish publication.
+
+Verify an actual deployment with:
+
+```sh
+npm run check:firstaid-assets -- https://assignmenthub.co.ke
+```
+
+This checks all six image URLs for an image content type and a WebP signature,
+so an HTTP 200 homepage fallback cannot pass. Then sign in, open First Aid
+Foundations and test the actual lessons and completion persistence.

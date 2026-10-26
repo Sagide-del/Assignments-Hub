@@ -20,6 +20,8 @@ import {
   Square,
   Terminal,
 } from 'lucide-react';
+import { FirstAidGuide, FirstAidScenarios } from './FirstAidGuide';
+import { LessonMedia } from './LessonMedia';
 import { skillsApi } from '../../../api/skills.api';
 import { apiErrorMessage } from '../../../api/axios';
 import type { SkillCourse } from '../../../types';
@@ -100,6 +102,7 @@ export function LessonWorkspace({
     () => learning?.activity.steps.map(() => false) ?? [],
   );
   const [speaking, setSpeaking] = useState(false);
+  const [scenarioResults, setScenarioResults] = useState<Record<string, boolean>>({});
   const workerRef = useRef<Worker | null>(null);
   const timerRef = useRef<number | null>(null);
   const requestRef = useRef(0);
@@ -110,7 +113,11 @@ export function LessonWorkspace({
   const queryClient = useQueryClient();
   const busy = runState === 'running' || runState === 'loading';
   const correct = Boolean(learning && checked && answer === learning.check.answer);
-  const ready = Boolean(learning && correct && (coding ? runState === 'pass' : activities.every(Boolean)));
+  const scenariosReady =
+    !learning?.firstAid || learning.firstAid.scenarios.every((scenario) => scenarioResults[scenario.id]);
+  const ready = Boolean(
+    learning && correct && scenariosReady && (coding ? runState === 'pass' : activities.every(Boolean)),
+  );
   const completion = useMutation({
     mutationFn: () => skillsApi.completeLesson(course.id, lesson.key),
     onSuccess: async () => {
@@ -238,7 +245,16 @@ export function LessonWorkspace({
       lesson.title,
       learning?.objective ?? lesson.description,
       learning?.safety,
-      ...(learning?.sections.map((section) => `${section.title}. ${section.text}`) ?? []),
+      ...(learning?.firstAid
+        ? [
+            learning.firstAid.summary,
+            ...learning.firstAid.recognise,
+            ...learning.firstAid.actions.map((step) => `${step.title}. ${step.text}. Why: ${step.why}`),
+            ...learning.firstAid.avoid,
+            ...learning.firstAid.urgent,
+            learning.firstAid.remember,
+          ]
+        : (learning?.sections.map((section) => `${section.title}. ${section.text}`) ?? [])),
     ].join('. ');
     const speech = new SpeechSynthesisUtterance(text);
     speech.lang = 'en-KE';
@@ -328,65 +344,42 @@ export function LessonWorkspace({
               className={`min-w-0 space-y-4 ${panel === 'lesson' ? 'block' : 'hidden xl:block'}`}
             >
               {learning.image ? (
-                <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  <a
-                    href={learning.image.src}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Open illustration: ${lesson.title}`}
-                  >
-                    <img
-                      src={learning.image.src}
-                      alt={learning.image.alt}
-                      width={800}
-                      height={320}
-                      className="w-full"
-                    />
-                  </a>
-                  <figcaption className="p-4 text-xs leading-6 text-slate-500">
-                    {learning.image.caption}
-                    <a
-                      href={learning.image.src}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ml-2 inline-flex min-h-9 items-center gap-1 font-semibold text-[#466000]"
-                    >
-                      Open illustration
-                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                    </a>
-                  </figcaption>
-                </figure>
+                <LessonMedia image={learning.image} images={learning.images} title={lesson.title} />
               ) : null}
-              {learning.sections.map((section, sectionIndex) => (
-                <section key={section.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lime-50 text-xs font-semibold text-[#526B00]">
-                      {sectionIndex + 1}
-                    </span>
-                    <h3 className="font-semibold leading-7 text-[#101820]">{section.title}</h3>
-                  </div>
-                  <p className="mt-3 text-sm leading-7 text-slate-700">{section.text}</p>
-                  {section.example ? (
-                    <div className="mt-4 overflow-hidden rounded-xl bg-[#101820]">
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
-                        <span className="text-xs font-semibold text-slate-300">Worked example</span>
-                        {coding ? (
-                          <button
-                            type="button"
-                            onClick={() => replaceCode(section.example!)}
-                            className="min-h-9 rounded-lg px-2 text-xs font-semibold text-[#B5E61D]"
-                          >
-                            Load example
-                          </button>
-                        ) : null}
-                      </div>
-                      <pre className="overflow-x-auto p-4 text-xs leading-7 text-slate-100">
-                        {section.example}
-                      </pre>
+              {learning.firstAid ? (
+                <FirstAidGuide guide={learning.firstAid} />
+              ) : (
+                learning.sections.map((section, sectionIndex) => (
+                  <section key={section.title} className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lime-50 text-xs font-semibold text-[#526B00]">
+                        {sectionIndex + 1}
+                      </span>
+                      <h3 className="font-semibold leading-7 text-[#101820]">{section.title}</h3>
                     </div>
-                  ) : null}
-                </section>
-              ))}
+                    <p className="mt-3 text-sm leading-7 text-slate-700">{section.text}</p>
+                    {section.example ? (
+                      <div className="mt-4 overflow-hidden rounded-xl bg-[#101820]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
+                          <span className="text-xs font-semibold text-slate-300">Worked example</span>
+                          {coding ? (
+                            <button
+                              type="button"
+                              onClick={() => replaceCode(section.example!)}
+                              className="min-h-9 rounded-lg px-2 text-xs font-semibold text-[#B5E61D]"
+                            >
+                              Load example
+                            </button>
+                          ) : null}
+                        </div>
+                        <pre className="overflow-x-auto p-4 text-xs leading-7 text-slate-100">
+                          {section.example}
+                        </pre>
+                      </div>
+                    ) : null}
+                  </section>
+                ))
+              )}
               {learning.sources ? (
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
                   <h3 className="font-semibold text-[#101820]">Further reading</h3>
@@ -708,6 +701,12 @@ export function LessonWorkspace({
                   ) : null}
                 </section>
               )}
+              {learning.firstAid ? (
+                <FirstAidScenarios
+                  scenarios={learning.firstAid.scenarios}
+                  onResult={(id, passed) => setScenarioResults((current) => ({ ...current, [id]: passed }))}
+                />
+              ) : null}
               <section className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h3 className="flex items-center gap-2 font-semibold text-[#101820]">
                   <CircleHelp className="h-5 w-5 text-[#607D00]" aria-hidden="true" />
@@ -777,7 +776,9 @@ export function LessonWorkspace({
                   ? 'Practice and understanding checks complete. Save your progress.'
                   : coding
                     ? 'Pass the practice task and quick check before saving completion.'
-                    : 'Complete the activity checklist and quick check before saving completion.'}
+                    : learning.firstAid
+                      ? 'Complete the activity, both scenarios and the quick check before saving completion.'
+                      : 'Complete the activity checklist and quick check before saving completion.'}
           </p>
           <button
             type="button"

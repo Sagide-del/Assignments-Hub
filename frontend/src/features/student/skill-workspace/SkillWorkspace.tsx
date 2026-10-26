@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Check, CheckCheck } from 'lucide-react';
 import { useAuthStore } from '../../../store/auth.store';
 import { skillsApi } from '../../../api/skills.api';
@@ -11,6 +11,8 @@ import { LessonWorkspace } from './LessonWorkspace';
 
 export function SkillWorkspacePage() {
   const courseId = Number(useParams<{ id: string }>().id);
+  const [params] = useSearchParams();
+  const initialLessonKey = params.get('lesson');
   const userId = useAuthStore((state) => state.user?.id);
   const queryClient = useQueryClient();
   const courseQuery = useQuery({
@@ -69,10 +71,11 @@ export function SkillWorkspacePage() {
   );
   return (
     <Workspace
-      key={`${userId}-${course.id}`}
+      key={`${userId}-${course.id}-${initialLessonKey ?? 'resume'}`}
       userId={userId!}
       course={course}
       completedKeys={completedKeys}
+      initialLessonKey={initialLessonKey}
     />
   );
 }
@@ -80,14 +83,19 @@ function Workspace({
   course,
   userId,
   completedKeys,
+  initialLessonKey,
 }: {
   course: SkillCourse;
   userId: number;
   completedKeys: Set<string>;
+  initialLessonKey: string | null;
 }) {
   const lessons = courseLessons(course);
   const firstIncomplete = lessons.findIndex((lesson) => !completedKeys.has(lesson.key));
-  const [activeIndex, setActiveIndex] = useState(firstIncomplete >= 0 ? firstIncomplete : 0);
+  const requestedIndex = lessons.findIndex((lesson) => lesson.key === initialLessonKey);
+  const [activeIndex, setActiveIndex] = useState(
+    requestedIndex >= 0 ? requestedIndex : firstIncomplete >= 0 ? firstIncomplete : 0,
+  );
   const activeLesson = lessons[activeIndex];
   const percent = Math.round((completedKeys.size / lessons.length) * 100);
   function advance(savedKey: string) {

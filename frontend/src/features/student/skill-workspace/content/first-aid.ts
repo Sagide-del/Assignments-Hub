@@ -1,4 +1,5 @@
 import type { CourseLearningPack, RichSkillLesson } from './types';
+import { firstAidGuides } from './first-aid-guides';
 const sources = [
   { title: 'NHS: Fainting', url: 'https://www.nhs.uk/conditions/fainting/' },
   {
@@ -21,7 +22,7 @@ const lesson = (
   image: string,
   alt: string,
 ): RichSkillLesson => ({
-  key: `firstaid-v1-${key}`,
+  key: `firstaid-v2-${key}`,
   title,
   type: 'GUIDED',
   description: objective,
@@ -40,7 +41,7 @@ const lesson = (
 });
 export const firstAidPack: CourseLearningPack = {
   title: 'First Aid Foundations',
-  version: 'firstaid-v1',
+  version: 'firstaid-v2',
   mode: 'GUIDED',
   lessons: [
     lesson(
@@ -243,3 +244,48 @@ export const firstAidPack: CourseLearningPack = {
     ),
   ],
 };
+
+// Rich illustrated material replaces v1 without deleting its saved records.
+const supportingSources: Record<string, { title: string; url: string }[]> = {
+  scene: [{ title: 'NHS: First aid', url: 'https://www.nhs.uk/conditions/first-aid/' }],
+  fainting: [{ title: 'NHS: Fainting', url: 'https://www.nhs.uk/conditions/fainting/' }],
+  bleeding: [{ title: 'NHS: Cuts and grazes', url: 'https://www.nhs.uk/conditions/cuts-and-grazes/' }],
+  burns: [{ title: 'NHS: Burns and scalds', url: 'https://www.nhs.uk/conditions/burns-and-scalds/' }],
+  choking: [
+    {
+      title: 'British Red Cross: Choking',
+      url: 'https://www.redcross.org.uk/first-aid/learn-first-aid/choking',
+    },
+  ],
+  response: [{ title: 'NHS: First aid', url: 'https://www.nhs.uk/conditions/first-aid/' }],
+};
+const imageDescriptions: Record<string, string> = {
+  scene:
+    'An illustrated Kenyan school scene: learners stay back from a damaged cable and water while an adult calls for help. Do not use the picture to judge a safe electrical exclusion distance.',
+  fainting:
+    'An awake learner rests flat on a mat with legs supported, while an adult stays nearby and another learner calls for help. This example assumes no suspected injury.',
+  bleeding:
+    'A gloved adult applies a clean dressing with steady direct pressure to a small superficial cut on a learner’s supported forearm.',
+  burns:
+    'An adult supports a learner’s arm while running water directly cools the affected forearm. The picture cannot establish burn severity or water temperature.',
+  choking:
+    'An adult summons help for a distressed learner with a hand near the throat. The gesture alone does not establish severity: assess speech, effective cough and breathing.',
+  response:
+    'An illustrated school team: one adult calls, another stays with the learner, and a third guides a responder to the room.',
+};
+for (const lesson of firstAidPack.lessons) {
+  const topic = lesson.key.replace('firstaid-v2-', '');
+  const diagram = lesson.image!;
+  lesson.minutes = topic === 'fainting' ? 18 : 15;
+  lesson.firstAid = firstAidGuides[topic];
+  lesson.image = {
+    src: `/skill-illustrations/firstaid-v2-${topic}.webp`,
+    label: 'Illustrated scenario',
+    alt: imageDescriptions[topic],
+    caption: imageDescriptions[topic],
+    width: 1536,
+    height: 1024,
+  };
+  lesson.images = [{ ...diagram, label: 'Simplified diagram', width: 800, height: 320 }];
+  lesson.sources = supportingSources[topic];
+}
