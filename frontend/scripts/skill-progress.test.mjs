@@ -1,11 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import ts from 'typescript';
-
-const source = readFileSync(new URL('../src/features/student/skill-workspace/workspace-mode.ts', import.meta.url), 'utf8');
-const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } });
-const { summarizeSkillProgress, hasWorkspaceAccess } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+import { loadTypeScript } from './load-typescript.mjs';
+const { summarizeSkillProgress, hasWorkspaceAccess } = await loadTypeScript(new URL('../src/features/student/skill-workspace/workspace-mode.ts', import.meta.url));
 const course = { title: 'Python practice', category: { name: 'Coding' }, costKES: 0, courseStructure: ['Variables', 'Loops', 'Functions'], learningOutcomes: [], shortDescription: 'Practise Python.' };
 const record = (lessonKey, completed = true, updatedAt = '2026-10-26T09:00:00Z') => ({ lessonKey, completedAt: completed ? updatedAt : null, updatedAt });
 
