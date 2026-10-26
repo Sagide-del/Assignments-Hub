@@ -81,6 +81,22 @@ services:
       - key: VITE_API_URL
         value: https://api.assignmenthub.co.ke/api/v1
     routes:
+      # Public revision pages contain their own HTML for search and no-JS use.
+      - type: redirect
+        source: /revision
+        destination: /revision/
+      - type: rewrite
+        source: /revision/
+        destination: /revision/index.html
+      - type: rewrite
+        source: /revision/grade-7-mathematics-fractions/
+        destination: /revision/grade-7-mathematics-fractions/index.html
+      - type: rewrite
+        source: /revision/grade-7-mathematics-algebra/
+        destination: /revision/grade-7-mathematics-algebra/index.html
+      - type: rewrite
+        source: /revision/grade-7-integrated-science-laboratory-safety/
+        destination: /revision/grade-7-integrated-science-laboratory-safety/index.html
       # SPA fallback — react-router handles client-side routing.
       - type: rewrite
         source: /*

@@ -5,10 +5,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "lint": "eslint \"src/**/*.{ts,tsx}\""
+    "dev": "vite --config vite.config.ts",
+    "build": "tsc -b && vite build --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "prebuild": "node scripts/generate-revision.mjs",
+    "test:revision": "node --test scripts/revision.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -28,6 +30,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.5.0",

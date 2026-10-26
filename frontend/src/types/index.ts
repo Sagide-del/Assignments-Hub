@@ -540,7 +540,7 @@ export interface ComputedPricing {
   amountKES: number;
 }
 
-export type PaymentMethod = 'INTASEND' | 'MPESA' | 'EQUITY_PAYBILL';
+export type PaymentMethod = 'PAYSTACK' | 'INTASEND' | 'MPESA' | 'EQUITY_PAYBILL';
 export type PaymentStatus =
   | 'PENDING'
   | 'PROCESSING'

@@ -97,6 +97,7 @@ export default function Home() {
             <AssignmentHubWordmark size="sm" />
           </Link>
           <div className="hidden items-center gap-7 text-sm font-semibold text-slate-600 md:flex">
+            <a href="/revision/" className="transition hover:text-[#101820]">Free revision</a>
             <a href="#for-parents" className="transition hover:text-[#101820]">For parents</a>
             <a href="#for-schools" className="transition hover:text-[#101820]">For schools</a>
             <a href="#pricing" className="transition hover:text-[#101820]">Pricing</a>
@@ -123,8 +124,8 @@ export default function Home() {
                 <a href={WHATSAPP_DEMO_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#101820] px-6 text-sm font-bold text-white transition hover:bg-[#1c2a38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D] focus-visible:ring-offset-2">
                   Talk to us on WhatsApp
                 </a>
-                <a href="#for-parents" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-bold text-[#101820] transition hover:border-slate-400 hover:bg-slate-50">
-                  See how it helps families
+                <a href="/revision/" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-bold text-[#101820] transition hover:border-slate-400 hover:bg-slate-50">
+                  Try free Grade 7 revision
                 </a>
               </div>
               <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-slate-600">
@@ -235,6 +236,20 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" aria-labelledby="revision-heading">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">Free CBC / CBE practice · Grade 7</p>
+          <h2 id="revision-heading" className="mt-4 text-3xl font-bold tracking-tight">Try a topic before creating an account</h2>
+          <p className="mt-4 max-w-2xl leading-7 text-slate-600">Five questions, worked answers and a fresh start whenever you need one. No registration or payment needed for these public practice quizzes.</p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              ['grade-7-mathematics-fractions', 'Mathematics: Fractions'],
+              ['grade-7-mathematics-algebra', 'Mathematics: Algebra'],
+              ['grade-7-integrated-science-laboratory-safety', 'Integrated Science: Laboratory safety'],
+            ].map(([slug, title]) => <a key={slug} href={`/revision/${slug}/`} className="rounded-2xl border border-slate-200 bg-white p-6 font-bold text-[#101820] hover:border-[#607b00]">{title}<span className="mt-3 block text-sm font-semibold text-[#526b00]">Try 5 free questions →</span></a>)}
+          </div>
+          <p className="mt-4 text-sm text-slate-600">Supplementary practice to use alongside class notes and teacher guidance.</p>
+        </section>
+
         <section id="pricing" className="scroll-mt-24 bg-[#eaf7bb]" aria-labelledby="pricing-heading">
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
             <div className="max-w-2xl">
@@ -313,6 +328,7 @@ export default function Home() {
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-3 text-sm" aria-label="Footer navigation">
             <a href="/about/" className="hover:text-white">About</a>
+            <a href="/revision/" className="hover:text-white">Free revision</a>
             <a href="#for-parents" className="hover:text-white">For parents</a>
             <a href="#for-schools" className="hover:text-white">For schools</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
