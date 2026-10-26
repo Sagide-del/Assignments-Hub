@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { Check, Headphones } from 'lucide-react';
+import { useAuthStore } from '../../../store/auth.store';
 import { skillsApi } from '../../../api/skills.api';
 import { EmptyState, PageHeader } from '../../../components/ui/Saas';
 import type { SkillCourse } from '../../../types';
@@ -42,8 +43,10 @@ interface RobotState {
 
 export function SkillWorkspacePage() {
   const courseId = Number(useParams<{ id: string }>().id);
+  const userId = useAuthStore((state) => state.user?.id);
+  const queryClient = useQueryClient();
   const courseQuery = useQuery({
-    queryKey: ['skill-course', courseId],
+    queryKey: ['skill-course', courseId, userId],
     queryFn: () => skillsApi.getCourse(courseId),
     enabled: Number.isInteger(courseId),
   });
@@ -51,15 +54,26 @@ export function SkillWorkspacePage() {
   const mode = course ? workspaceModeForCourse(course) : null;
   const canAccess = Boolean(course && hasWorkspaceAccess(course));
   const progressQuery = useQuery({
-    queryKey: ['skill-course-progress', courseId],
+    queryKey: ['skill-course-progress', courseId, userId],
     queryFn: () => skillsApi.getCourseProgress(courseId),
     enabled: canAccess,
   });
+
+  // Opening a free workspace can create its enrollment. Refresh the learning
+  // list on return, including when the learner has not completed a lesson yet.
+  useEffect(() => {
+    if (progressQuery.isSuccess) {
+      void queryClient.invalidateQueries({ queryKey: ['skill-enrollments'] });
+    }
+  }, [progressQuery.isSuccess, progressQuery.dataUpdatedAt, queryClient]);
 
   if (courseQuery.isLoading) return <EmptyState title="Loading workspace..." />;
   if (courseQuery.isError || !course) return <EmptyState title="Course not available." />;
   if (!mode) return <EmptyState title="Workspace not available." action={<BackToCourse id={course.id} />} />;
   if (!canAccess) return <EmptyState title="Activate your enrollment to open this workspace." action={<BackToCourse id={course.id} />} />;
+
+  if (progressQuery.isPending) return <EmptyState title="Loading saved progress..." />;
+  if (progressQuery.isError) return <EmptyState title="Your saved progress could not be loaded." action={<button type="button" onClick={() => { void progressQuery.refetch(); }} className="min-h-11 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white">Retry progress</button>} />;
 
   return (
     <Workspace

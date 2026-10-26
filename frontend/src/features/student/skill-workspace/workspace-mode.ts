@@ -1,4 +1,4 @@
-import type { SkillCourse } from '../../../types';
+import type { SkillCourse, SkillLessonProgress } from '../../../types';
 
 export type WorkspaceMode = 'GUIDED' | 'PYTHON' | 'MACHINE_LEARNING' | 'ROBOTICS';
 
@@ -59,4 +59,21 @@ function normalizeLesson(item: unknown, index: number): SkillLesson | null {
 
 function text(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+// Ignore duplicate or removed lesson records when presenting saved progress.
+export function summarizeSkillProgress(course: SkillCourse, records: SkillLessonProgress[]) {
+  const lessons = courseLessons(course);
+  const keys = new Set(lessons.map((lesson) => lesson.key));
+  const relevant = records.filter((record) => keys.has(record.lessonKey));
+  const completedKeys = new Set(relevant.filter((record) => record.completedAt).map((record) => record.lessonKey));
+  const completed = completedKeys.size;
+  return {
+    completed,
+    total: lessons.length,
+    percent: Math.round(completed / lessons.length * 100),
+    nextLesson: lessons.find((lesson) => !completedKeys.has(lesson.key)) ?? null,
+    hasActivity: relevant.length > 0,
+    latestActivity: Math.max(0, ...relevant.map((record) => Date.parse(record.updatedAt) || 0)),
+  };
 }
