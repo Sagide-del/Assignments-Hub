@@ -6,6 +6,8 @@ import { assignmentsApi } from '../../api/assignments.api';
 import { submissionsApi } from '../../api/submissions.api';
 import { uploadsApi } from '../../api/uploads.api';
 import { apiErrorMessage } from '../../api/axios';
+import { LearningDesignPanel } from './curriculum/LearningDesignPanel';
+import { assignmentDesign } from './curriculum/activity-designs';
 import { RichContent } from '../../components/ui/RichContent';
 import { AnswerInputWithSymbols } from './answer-input/AnswerInputWithSymbols';
 import type { Answer, AnswerInput, Question } from '../../types';
@@ -640,6 +642,7 @@ export function ExamPlayer() {
               </nav>
 
               <ReleasedAnswerCard answer={activeReviewAnswer} index={reviewIndex} total={reviewAnswers.length} />
+              {assignment && <LearningDesignPanel design={assignmentDesign(assignment)}/>}
             </main>
 
             <aside className="hidden xl:block">
@@ -742,6 +745,8 @@ export function ExamPlayer() {
           </div>
         </div>
       </section>
+
+      {assignment?.description && <details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Teacher instructions & learning brief</summary><p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">{assignment.description}</p></details>}
 
       <div className="grid min-w-0 gap-4 sm:gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="order-1 min-w-0 xl:order-1">

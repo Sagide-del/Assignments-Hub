@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarDays, Search, SlidersHorizontal } from 'lucide-react';
+import { LearningDesignPanel, LearningGuideLink } from './curriculum/LearningDesignPanel';
+import { assignmentDesign } from './curriculum/activity-designs';
 import { assignmentsApi } from '../../api/assignments.api';
 import { submissionsApi } from '../../api/submissions.api';
 import { EmptyState } from '../../components/ui/Saas';
@@ -72,6 +74,7 @@ export function MyAssignmentsPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">My Assignments</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">Find your next task, continue your work or review your answers.</p>
+        <LearningGuideLink/>
       </header>
 
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5" aria-label="Assignment filters">
@@ -173,6 +176,7 @@ export function MyAssignmentsPage() {
                     {meta.action}<ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </div>
+                <div className="mt-4"><LearningDesignPanel design={assignmentDesign(assignment)} review={state==='RESULTS_AVAILABLE'}/></div>
               </article>
             );
           })}

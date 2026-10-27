@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuthStore } from '../../store/auth.store';
+import { CurriculumLearningGuide } from './curriculum/CurriculumLearningGuide';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpenCheck,
@@ -21,6 +24,8 @@ import {
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
 import { StudentStudyPlan } from './StudentStudyPlan';
 
+const RESOURCE_PURPOSE: Record<ResourceListingType,string> = { NOTES:'Understand key ideas, then explain them in your own words.', ESSAY:'Study an argument and practise expressing your own reasoning.', REVISION_GUIDE:'Identify a gap, try a focused task and check your correction.', STUDY_GUIDE:'Plan an outcome, practise it and review your evidence.', TOOLKIT:'Apply an idea through a practical task using appropriate supervision.' };
+
 const TYPES: Array<{ value: ResourceListingType | 'ALL'; label: string }> = [
   { value: 'ALL', label: 'All' },
   { value: 'NOTES', label: 'Notes' },
@@ -40,19 +45,25 @@ function priceLabel(value: number) {
 
 export function MyResourcesPage() {
   const queryClient = useQueryClient();
-  const [view, setView] = useState<'MARKETPLACE' | 'LIBRARY' | 'STUDY_PLAN'>('MARKETPLACE');
+  const [params,setParams]=useSearchParams();
+  const section=params.get('section');
+  const view=['MARKETPLACE','LIBRARY','STUDY_PLAN'].includes(section??'') ? section as 'MARKETPLACE'|'LIBRARY'|'STUDY_PLAN' : 'GUIDE';
+  const setView=(value:string)=>setParams({section:value});
+  const userId=useAuthStore(s=>s.user?.id);
   const [type, setType] = useState<ResourceListingType | 'ALL'>('ALL');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<ResourceListing | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   const listingsQuery = useQuery({
-    queryKey: ['resources'],
+    queryKey: ['resources',userId],
     queryFn: () => resourcesApi.findAll(),
+    enabled: view==='MARKETPLACE'||view==='LIBRARY',
   });
   const purchasesQuery = useQuery({
-    queryKey: ['resource-purchases'],
+    queryKey: ['resource-purchases',userId],
     queryFn: resourcesApi.myPurchases,
+    enabled: view==='MARKETPLACE'||view==='LIBRARY',
   });
 
   const listings = listingsQuery.data ?? [];
@@ -66,7 +77,7 @@ export function MyResourcesPage() {
     return query
       ? source.filter((listing) => `${listing.title} ${listing.subject ?? ''} ${listing.seller.name}`.toLowerCase().includes(query))
       : source;
-  }, [listings, ownedIds, search, view]);
+  }, [listings, ownedIds, search, view, type]);
 
   async function download(resource: ResourceListing) {
     try {
@@ -88,15 +99,16 @@ export function MyResourcesPage() {
 
   return (
     <div className="min-w-0 space-y-4 pb-12 sm:space-y-5">
-      <PageHeader title="My Resources" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : 'Personal study plan'} />
+      <PageHeader title="My Resources" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : view==='GUIDE' ? 'Outcomes, evidence and official resources' : 'Personal study plan'} />
 
-      <nav aria-label="Resource sections" className="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)]">
+      <nav aria-label="Resource sections" className="grid grid-cols-2 gap-1 rounded-2xl sm:grid-cols-4 border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)]">
+          <ViewButton active={view === 'GUIDE'} onClick={() => setView('GUIDE')} icon={BookOpenCheck} label="Learning guide" />
           <ViewButton active={view === 'MARKETPLACE'} onClick={() => setView('MARKETPLACE')} icon={ShoppingBag} label="Marketplace" />
           <ViewButton active={view === 'LIBRARY'} onClick={() => setView('LIBRARY')} icon={LibraryBig} label="My library" />
           <ViewButton active={view === 'STUDY_PLAN'} onClick={() => setView('STUDY_PLAN')} icon={CalendarDays} label="Study plan" />
       </nav>
 
-      {view !== 'STUDY_PLAN' ? <label className="flex min-h-12 min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-[0_8px_24px_rgba(16,24,32,0.03)] sm:ml-auto sm:w-80">
+      {(view === 'MARKETPLACE'||view === 'LIBRARY') ? <label className="flex min-h-12 min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-[0_8px_24px_rgba(16,24,32,0.03)] sm:ml-auto sm:w-80">
           <Search className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.8} />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={view === 'LIBRARY' ? 'Search my library' : 'Search resources'} className="min-w-0 flex-1 bg-transparent text-base outline-none sm:text-sm" />
         </label> : null}
@@ -109,9 +121,9 @@ export function MyResourcesPage() {
         </div>
       ) : null}
 
-      {status && view !== 'STUDY_PLAN' ? <p role="status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{status}</p> : null}
+      {status && (view==='MARKETPLACE'||view==='LIBRARY') ? <p role="status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{status}</p> : null}
 
-      {view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
+      {view==='GUIDE' ? <CurriculumLearningGuide/> : view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
         <EmptyState title="Loading resources..." />
       ) : listingsQuery.isError || purchasesQuery.isError ? (
         <EmptyState title="Resources are temporarily unavailable." />
@@ -152,6 +164,7 @@ function ResourceCard({ resource, owned, onSelect, onDownload }: { resource: Res
       <h2 className="mt-3 break-words text-base font-semibold leading-6 text-[#101820] sm:mt-4">{resource.title}</h2>
       <p className="mt-1 break-words text-xs leading-5 text-slate-500">{[resource.subject, resource.grade, resource.seller.name].filter(Boolean).join(' · ')}</p>
       {resource.description ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">{resource.description}</p> : null}
+      <p className="mt-3 rounded-xl bg-teal-50 p-3 text-xs leading-6 text-teal-950"><strong>Use it to learn:</strong> {RESOURCE_PURPOSE[resource.type]}</p>
       <div className="mt-auto flex flex-col gap-3 pt-4 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
         <span className="text-sm font-semibold text-[#101820]">{priceLabel(resource.priceKES)}</span>
         {owned && resource.fulfillment === 'DIGITAL_DOWNLOAD' ? (

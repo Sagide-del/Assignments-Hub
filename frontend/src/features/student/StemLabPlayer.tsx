@@ -24,6 +24,8 @@ import {
   notebookReady,
   type LabDraft,
 } from './stem-workspace/investigations';
+import { LearningDesignPanel } from './curriculum/LearningDesignPanel';
+import { stemDesign } from './curriculum/activity-designs';
 import { ExperimentBench } from './stem-workspace/ExperimentBench';
 
 export function StemLabPlayerPage() {
@@ -243,7 +245,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
         <div className="mt-5 flex flex-wrap gap-2 text-xs">
           {(lab.coreCompetencies?.length
             ? lab.coreCompetencies
-            : ['Critical thinking', 'Problem solving', 'Learning to learn']
+            : ['Critical thinking and problem solving', 'Learning to learn']
           ).map((c) => (
             <span
               key={c}
@@ -254,6 +256,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
           ))}
         </div>
       </header>
+      <LearningDesignPanel design={stemDesign(lab)}/>
       <nav aria-label="Investigation stages" className="grid grid-cols-3 gap-2">
         {stages.map(({ title, icon: Icon, detail }, i) => (
           <button

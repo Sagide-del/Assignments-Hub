@@ -6,6 +6,7 @@ import { apiErrorMessage } from '../../api/axios';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
 import { RichContent, sanitizeRichHtml } from '../../components/ui/RichContent';
 import type { Assignment, Question, QuestionType } from '../../types';
+import { AssignmentLearningBriefBuilder } from './AssignmentLearningBriefBuilder';
 import { DiagramLabeler } from './rich-editor/DiagramLabeler';
 import { RichTextEditor } from './rich-editor/RichTextEditor';
 import { buildDiagramHtml, type DiagramValue } from './rich-editor/diagramHtml';
@@ -931,8 +932,10 @@ function SetupStep({
             </Field>
           </>
         ) : null}
-        <Field label="Description" className="sm:col-span-2">
+        <div className="sm:col-span-2"><AssignmentLearningBriefBuilder description={description} onDescription={onDescription}/></div>
+        <Field label="Description / learning brief" className="sm:col-span-2">
           <textarea
+            aria-label="Description / learning brief"
             value={description}
             onChange={(event) => onDescription(event.target.value)}
             rows={3}
