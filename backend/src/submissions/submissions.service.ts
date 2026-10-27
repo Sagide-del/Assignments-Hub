@@ -91,6 +91,7 @@ export class SubmissionsService {
 
     const existing = await this.prisma.submission.findFirst({
       where: { assignmentId, studentId: actor.id },
+      include: { answers: true },
     });
     if (existing && existing.status !== SubmissionStatus.DRAFT) {
       throw new ConflictException('You have already submitted this assignment');
@@ -99,7 +100,12 @@ export class SubmissionsService {
     const isFinal = !dto.isDraft;
     const isLate = !!assignment.dueDate && new Date() > assignment.dueDate;
     const startedAt = existing?.startedAt ?? new Date();
-    const timeSpentSeconds = dto.timeSpentSeconds ?? existing?.timeSpentSeconds ?? null;
+    const limitSeconds = assignment.timeAllowedMinutes && assignment.timeAllowedMinutes > 0 ? assignment.timeAllowedMinutes * 60 : null;
+    const timedOut = !!(limitSeconds && existing?.startedAt && Date.now() >= existing.startedAt.getTime() + limitSeconds * 1000);
+    if (limitSeconds && isFinal && !existing?.startedAt) throw new BadRequestException('Start the timed assessment before submitting.');
+    if (timedOut && !isFinal) throw new BadRequestException('Time has ended. Submit to grade the answers saved before the deadline.');
+    const timeSpentSeconds = limitSeconds ? Math.min(limitSeconds, Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000))) : dto.timeSpentSeconds ?? existing?.timeSpentSeconds ?? null;
+
 
     // Legacy path: assignments created before the question builder existed
     // have no question bank — fall back to the old client-trusted score for
@@ -120,13 +126,14 @@ export class SubmissionsService {
         timeSpentSeconds,
       };
       const submission = existing
-        ? await this.prisma.submission.update({ where: { id: existing.id }, data })
+        ? await this.prisma.submission.update({ where: { id: existing.id, status: SubmissionStatus.DRAFT }, data })
         : await this.prisma.submission.create({ data: { assignmentId, studentId: actor.id, ...data } });
       if (isFinal) this.notifyParent(actor, assignment.title, assignmentId, completedAt!);
       return this.sanitizeStudentSubmission(submission);
     }
 
-    const answerByQuestionId = new Map((dto.answers ?? []).map((a) => [a.questionId, a.answer]));
+    const submittedAnswers = timedOut ? (existing?.answers ?? []).map(a => ({questionId:a.questionId,answer:a.studentAnswer})) : dto.answers ?? [];
+    const answerByQuestionId = new Map(submittedAnswers.map((a) => [a.questionId, a.answer]));
 
     let allAutoGraded = true;
     let totalScore = 0;
@@ -181,10 +188,9 @@ export class SubmissionsService {
       // A draft was never graded, so there's no per-row grading history on
       // the old rows worth preserving; deleting and recreating is simpler
       // and just as correct as diffing.
-      await this.prisma.answer.deleteMany({ where: { submissionId: existing.id } });
       submission = await this.prisma.submission.update({
-        where: { id: existing.id },
-        data: { ...submissionData, answers: { create: answerRows } },
+        where: { id: existing.id, status: SubmissionStatus.DRAFT },
+        data: { ...submissionData, answers: { deleteMany: {}, create: answerRows } },
         include: { answers: true },
       });
     } else {
@@ -424,6 +430,7 @@ export class SubmissionsService {
     const released = Boolean(source.resultsReleasedAt);
     return {
       ...source,
+      serverNow: new Date().toISOString(),
       ...(released
         ? {}
         : {

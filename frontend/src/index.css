@@ -450,3 +450,17 @@ body {
     font-size: 16px;
   }
 }
+
+/* The examination surface can use the full workspace without the platform navigation. */
+body.exam-focus-active .platform-workspace > aside,
+body.exam-focus-active .workspace-topbar,
+body.exam-focus-active .platform-workspace > div:first-child:not(main) { display: none; }
+body.exam-focus-active .platform-workspace > div:last-child { display: flex; }
+body.exam-focus-active .platform-workspace > div:last-child > main { padding: 16px; }
+.exam-player-v2 { overflow: visible; }
+.exam-player-v2 .smart-answer-textarea { border-radius: 8px; line-height: 1.85; }
+.exam-player-v2 .assessment-question-copy { font-size: 1.125rem; line-height: 1.85; }
+.exam-player-v2 .inline-symbol-button { min-height: 38px; }
+@media (max-width: 767px) { .exam-player-v2 .exam-header { top: 53px; } body.exam-focus-active .exam-player-v2 .exam-header { top: 0; } .exam-player-v2 .exam-actions { padding-bottom: max(12px, env(safe-area-inset-bottom)); } }
+
+@media (max-width: 767px) { .exam-player-v2 .inline-symbol-more { position: sticky; right: 0; box-shadow: -6px 0 8px #f8fafc; } }

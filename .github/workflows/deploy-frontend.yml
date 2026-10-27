@@ -5,6 +5,7 @@ on:
     paths:
       - 'frontend/**'
       - 'backend/src/kjsea/**'
+      - 'backend/src/submissions/**'
       - 'backend/prisma/schema.prisma'
       - 'backend/prisma/migrations/**'
       - 'scripts/deployment/**'
@@ -36,12 +37,12 @@ jobs:
         working-directory: frontend
         env:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
-      - name: Verify mock-test backend
+      - name: Verify assessment backend
         working-directory: backend
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea && npm run build
-      - name: Wait for KJSEA API and database migration
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions && npm run build
+      - name: Wait for assessment API capabilities
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
       - name: Connect to AWS without stored access keys

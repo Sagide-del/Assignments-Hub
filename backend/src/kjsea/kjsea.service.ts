@@ -33,7 +33,7 @@ export class KjseaService {
         "The mock-test database is not ready yet. Please retry shortly.",
       );
     }
-    return { ...MOCK_BLUEPRINT, gradeSelection: true, seniorMocks: true };
+    return { ...MOCK_BLUEPRINT, gradeSelection: true, seniorMocks: true, assessmentWorkspaceVersion: 2 };
   }
   private grade(value?: string | null) {
     if (!value) return "Grade 9";

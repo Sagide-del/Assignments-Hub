@@ -6,6 +6,7 @@ import { SubmissionsService } from './submissions.service';
 describe('SubmissionsService instant results', () => {
   const actor = {
     id: 41,
+    isIndependentTrial: false,
     schoolId: 7,
     role: Role.STUDENT,
     name: 'Mbale Test Student',

@@ -72,6 +72,7 @@ export interface Assignment {
 // `submittedAt` field — `createdAt` is when the row was first created,
 // `completedAt` is when it stopped being a draft).
 export interface Submission {
+  serverNow?: string;
   id: number;
   assignmentId: number;
   studentId: number;
