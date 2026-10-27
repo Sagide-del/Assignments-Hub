@@ -7,6 +7,7 @@ describe('KJSEA request validation', () => {
     expect(
       await validate(
         plainToInstance(CreateMockDto, {
+          grade: 'Grade 7',
           source: 'BANK',
           subject: 'English',
           timeLimitMinutes: 60,
@@ -17,6 +18,7 @@ describe('KJSEA request validation', () => {
       (
         await validate(
           plainToInstance(CreateMockDto, {
+            grade: 'Grade 12',
             source: 'unreviewed',
             timeLimitMinutes: 1,
           }),

@@ -34,3 +34,15 @@ The additive Prisma migration creates the private attempt table and foreign keys
 Backend tests cover 200 generated papers, item uniqueness, all 32 topics/five areas/20 visuals, numeric correctness for diagram/table data, source/subject eligibility, topic balancing, recent-use rotation, honest short sets, option-key preservation, answer hiding, ownership, deadline enforcement, idempotent marking and request validation. Existing assignment scoping tests still pass.
 
 Browser checks with API fixtures cover the old-route redirect and navigation replacement, multi-subject selection, English bank generation, all maths diagrams/tables, autosave failure and browser-backup recovery, refresh, server marking, submission retry, reviewed answers, history, export, discard confirmation, timer expiry and 320/390px layouts. They do not create or alter a real student’s production attempts. Production schema readiness and published assets are verified separately after deployment; authenticated live learner persistence still requires a real learner session.
+
+
+## Grade selection and workspace refresh (27 October 2026)
+
+Mock creation and subject discovery accept one canonical `grade` (Grade 7, 8 or 9).
+The UI defaults to the student's junior-school profile grade (Grade 9 for profiles outside junior school), and students can change it. The API defaults to the actor's grade when omitted; unsupported explicit grades are rejected. Both the database query and a second eligibility filter exclude other grades. Coverage stores the selected grade in the immutable paper snapshot, so changing the selector never rewrites an earlier attempt.
+
+Mathematics includes 40 original questions for all three junior grades. The Grade 7 foundation set has 20 practice topics; Grade 8 adds nine extension topics; Grade 9 keeps the previous 32-topic/20-visual blueprint. These are platform-authored progressions awaiting verification against current subject designs, not a claim of full grade syllabus coverage. Lower-grade visual counts are calculated from the actual paper, not advertised as 50%.
+
+Every reviewed bank subject is supported per grade. The selector also names standard junior subjects without an eligible pool as unavailable, instead of inventing questions or borrowing a different grade. A bank pool below 40 produces a clearly labelled short practice set. Existing attempts and answer privacy rules are retained. The public readiness probe now advertises `gradeSelection: true`; deployment waits for that capability before uploading the frontend.
+
+The shared signed-in workspace uses compact navigation, a persistent desktop sidebar, contextual top bar, restrained surfaces and consistent focus indicators. Dashboard, assignments, mocks, skills, STEM, Learning Coach, mnemonic cards and resource-guide presentation were adjusted. Supporting curriculum reference material remains available in expandable sections; learning and assessment flows retain their existing access controls and storage behaviour.

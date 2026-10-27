@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayUnique,
@@ -12,9 +12,10 @@ import {
   Max,
   Min,
   ValidateNested,
-} from 'class-validator';
+} from "class-validator";
 export class CreateMockDto {
-  @IsOptional() @IsIn(['GENERATED', 'BANK']) source?: 'GENERATED' | 'BANK';
+  @IsOptional() @IsIn(["Grade 7", "Grade 8", "Grade 9"]) grade?: string;
+  @IsOptional() @IsIn(["GENERATED", "BANK"]) source?: "GENERATED" | "BANK";
   @IsOptional() @IsString() @MaxLength(120) subject?: string;
   @IsOptional() @IsIn([30, 60, 90]) timeLimitMinutes?: number;
 }

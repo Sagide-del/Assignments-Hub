@@ -150,19 +150,15 @@ export function LearnSkillsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-10">
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <header className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">Learn a Skill</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Pick up where you left off. Learn, practise and build something of your own.
+            Your courses, practical lessons and saved work.
           </p>
         </div>
-        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
-          <Compass className="h-4 w-4 text-[#607D00]" aria-hidden="true" />
-          Your learning workspace
-        </span>
+        <LearningGuideLink/>
       </header>
-      <LearningGuideLink/>
 
       {!loading && !error ? (
         <>
@@ -405,32 +401,32 @@ function ResumeLearning({ item }: { item: LearningCourse }) {
   return (
     <section
       aria-label="Continue learning"
-      className="relative overflow-hidden rounded-2xl bg-[#101820] p-5 text-white sm:p-6"
+      className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 text-slate-900 sm:p-6"
     >
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#B5E61D]/15 text-[#B5E61D]">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
             <Icon className="h-6 w-6" strokeWidth={1.7} aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#B5E61D]">
+            <p className="text-xs font-medium text-slate-500">
               {progress.hasActivity ? 'Continue learning' : 'Ready for your first lesson'}
             </p>
             <h2 className="mt-2 break-words text-xl font-semibold">{course.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">Next: {progress.nextLesson?.title}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Next: {progress.nextLesson?.title}</p>
           </div>
         </div>
         <Link
           to={`/student/learn-skills/${course.id}/workspace`}
-          className={`inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] ${FOCUS}`}
+          className={`inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white ${FOCUS}`}
         >
           {progress.hasActivity ? 'Continue learning' : 'Start learning'}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <ProgressBar progress={progress} title={course.title} dark />
-        <p className="text-xs text-slate-300">
+        <ProgressBar progress={progress} title={course.title} />
+        <p className="text-xs text-slate-500">
           {progress.completed} of {progress.total} lessons completed
         </p>
       </div>
@@ -604,7 +600,7 @@ function ProgressBar({
       className={`h-1.5 min-w-[100px] flex-1 overflow-hidden rounded-full ${dark ? 'bg-white/15' : 'bg-slate-100'}`}
     >
       <div
-        className="h-full rounded-full bg-[#B5E61D] transition-[width]"
+        className="h-full rounded-full bg-slate-700 transition-[width]"
         style={{ width: `${progress.percent}%` }}
       />
     </div>

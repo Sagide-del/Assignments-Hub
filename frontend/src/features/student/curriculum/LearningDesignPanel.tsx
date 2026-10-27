@@ -28,7 +28,7 @@ export function LearningGuideLink() {
   return (
     <Link
       to="/student/resources?section=GUIDE"
-      className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-teal-800 underline underline-offset-4"
+      className="inline-flex min-h-10 items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-900"
     >
       <Target className="h-4 w-4" aria-hidden="true" />
       Learning outcomes & resources

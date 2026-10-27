@@ -39,7 +39,7 @@ export function MnemonicCardsPage() {
     <div className="space-y-6">
       <PageHeader title="Mnemonic Cards" />
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_12px_34px_rgba(16,24,32,0.05)] sm:p-5">
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_240px]">
           <label className="relative block">
             <span className="sr-only">Search mnemonic cards</span>
@@ -73,14 +73,13 @@ export function MnemonicCardsPage() {
           {visibleCards.map((card) => (
             <article
               key={card.id}
-              className="group flex min-h-[250px] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_34px_rgba(16,24,32,0.05)]"
+              className="group flex min-h-[250px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="relative flex h-24 items-center justify-between overflow-hidden bg-[#101820] px-5 text-white">
-                <span className="absolute -right-5 -top-10 h-28 w-28 rounded-full border-[20px] border-[#B5E61D]/20" />
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#B5E61D] text-[#101820]">
+              <div className="relative flex h-20 items-center justify-between overflow-hidden border-b border-slate-100 bg-slate-50 px-5 text-slate-600">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
                   <PdfIcon />
                 </span>
-                <span className="relative rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold">
+                <span className="relative rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold">
                   {card.grade ?? 'All grades'}
                 </span>
               </div>

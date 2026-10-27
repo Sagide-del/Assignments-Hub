@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   ArrowRight,
   BookOpen,
@@ -8,12 +8,12 @@ import {
   Download,
   ExternalLink,
   Target,
-} from 'lucide-react';
-import { useAuthStore } from '../../../store/auth.store';
-import { assignmentsApi } from '../../../api/assignments.api';
-import { labsApi } from '../../../api/labs.api';
-import { skillsApi } from '../../../api/skills.api';
-import { courseLessons } from '../skill-workspace/workspace-mode';
+} from "lucide-react";
+import { useAuthStore } from "../../../store/auth.store";
+import { assignmentsApi } from "../../../api/assignments.api";
+import { labsApi } from "../../../api/labs.api";
+import { skillsApi } from "../../../api/skills.api";
+import { courseLessons } from "../skill-workspace/workspace-mode";
 import {
   COMPETENCIES,
   CONTEXT_THEMES,
@@ -24,58 +24,59 @@ import {
   levelContext,
   type CompetencyId,
   type LearningArea,
-} from './framework';
-import { assignmentDesign, skillDesign, stemDesign } from './activity-designs';
-import { readReviews, type LearningReview } from './learning-journal';
-import { downloadReview } from './LearningDesignPanel';
+} from "./framework";
+import { assignmentDesign, skillDesign, stemDesign } from "./activity-designs";
+import { readReviews, type LearningReview } from "./learning-journal";
+import { downloadReview } from "./LearningDesignPanel";
 const AREAS: Record<LearningArea, string> = {
-  assignments: 'Assignments',
-  stem: 'STEM Labs',
-  skills: 'Learn a Skill',
+  assignments: "Assignments",
+  stem: "STEM Labs",
+  skills: "Learn a Skill",
 };
 export function CurriculumLearningGuide() {
   const user = useAuthStore((s) => s.user);
   return (
     <div className="space-y-5">
-      <header className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
-          Outcomes → practice → evidence → improvement
-        </p>
-        <h2 className="mt-3 text-2xl font-semibold">
-          Know what you are learning and how to show it
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200">
-          Use an assignment to apply an idea, a lab to investigate it, and a
-          skill activity to create something. Keep evidence, use feedback and
-          decide what to try next.
+      <header className="border-b border-slate-200 pb-5">
+        <h2 className="text-xl font-semibold">Learning guide</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Find activity outcomes and keep a record of your work.
         </p>
       </header>
-      <section
-        aria-label="Learning cycle"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        {LEARNING_CYCLE.map((step, i) => (
-          <article key={step.title} className="rounded-2xl border bg-white p-4">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-xs font-semibold text-teal-800">
-              {i + 1}
-            </span>
-            <h3 className="mt-3 font-semibold">{step.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {step.instruction}
-            </p>
-          </article>
-        ))}
-      </section>
       <LearningActivities key={user?.id} />
       <SavedEvidence key={`reviews-${user?.id}`} />
-      <section
+      <details className="rounded-xl border border-slate-200 bg-white p-5">
+        <summary className="cursor-pointer text-sm font-medium">
+          How to use your learning evidence
+        </summary>
+        <section
+          aria-label="Learning cycle"
+          className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          {LEARNING_CYCLE.map((step, i) => (
+            <article
+              key={step.title}
+              className="rounded-2xl border bg-white p-4"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-xs font-semibold text-teal-800">
+                {i + 1}
+              </span>
+              <h3 className="mt-3 font-semibold">{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {step.instruction}
+              </p>
+            </article>
+          ))}
+        </section>
+      </details>
+      <details
         className="rounded-2xl border bg-white p-5 sm:p-6"
         aria-label="Seven core competencies"
       >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
           <Target className="h-5 w-5 text-teal-800" />
           The seven core competencies
-        </h2>
+        </summary>
         <p className="mt-2 text-xs leading-6 text-slate-500">
           KICD framework, p. 21. The practice suggestions below are Assignment
           Hub adaptations.
@@ -90,7 +91,7 @@ export function CurriculumLearningGuide() {
             </div>
           ))}
         </div>
-      </section>
+      </details>
       <details className="rounded-2xl border bg-white p-5">
         <summary className="cursor-pointer text-sm font-semibold text-teal-900">
           Connect learning to life and community
@@ -117,22 +118,22 @@ export function CurriculumLearningGuide() {
 }
 function LearningActivities() {
   const user = useAuthStore((s) => s.user);
-  const [area, setArea] = useState('all');
-  const [competency, setCompetency] = useState('');
-  const [search, setSearch] = useState('');
+  const [area, setArea] = useState("all");
+  const [competency, setCompetency] = useState("");
+  const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(6);
   const assignments = useQuery({
-    queryKey: ['assignments', user?.schoolId, user?.grade],
+    queryKey: ["assignments", user?.schoolId, user?.grade],
     queryFn: () => assignmentsApi.findAll(),
     enabled: !!user?.id,
   });
   const labs = useQuery({
-    queryKey: ['labs', 'student-catalogue', user?.id, user?.grade],
+    queryKey: ["labs", "student-catalogue", user?.id, user?.grade],
     queryFn: () => labsApi.findAll(),
     enabled: !!user?.id,
   });
   const courses = useQuery({
-    queryKey: ['skill-courses', user?.id],
+    queryKey: ["skill-courses", user?.id],
     queryFn: () => skillsApi.getCourses(),
     enabled: !!user?.id,
   });
@@ -157,12 +158,12 @@ function LearningActivities() {
   );
   const visible = designs.filter(
     (d) =>
-      (area === 'all' || d.area === area) &&
+      (area === "all" || d.area === area) &&
       (!competency ||
         d.outcomes.some((o) =>
           o.competencies.includes(competency as CompetencyId),
         )) &&
-      `${d.title} ${d.outcomes.map((o) => o.statement).join(' ')}`
+      `${d.title} ${d.outcomes.map((o) => o.statement).join(" ")}`
         .toLowerCase()
         .includes(search.trim().toLowerCase()),
   );
@@ -312,11 +313,11 @@ function SavedEvidence() {
       }
     }
     load();
-    window.addEventListener('storage', load);
-    window.addEventListener('learning-review-saved', load);
+    window.addEventListener("storage", load);
+    window.addEventListener("learning-review-saved", load);
     return () => {
-      window.removeEventListener('storage', load);
-      window.removeEventListener('learning-review-saved', load);
+      window.removeEventListener("storage", load);
+      window.removeEventListener("learning-review-saved", load);
     };
   }, [userId]);
   return (
@@ -402,7 +403,7 @@ function OfficialSources({ grade }: { grade?: string | null }) {
         assessment pp. 113–121.
       </p>
       <p className="mt-3 rounded-xl bg-teal-50 p-4 text-sm leading-7 text-teal-950">
-        {context.text}{' '}
+        {context.text}{" "}
         <span className="text-xs">(Framework p. {context.page}.)</span>
       </p>
       <p className="mt-3 text-xs leading-6 text-slate-500">

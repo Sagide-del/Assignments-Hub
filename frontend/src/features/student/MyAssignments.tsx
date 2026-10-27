@@ -71,7 +71,7 @@ export function MyAssignmentsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <header>
+      <header className="border-b border-slate-200 pb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">My Assignments</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">Find your next task, continue your work or review your answers.</p>
         <LearningGuideLink/>

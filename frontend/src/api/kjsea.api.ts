@@ -29,7 +29,7 @@ export interface MockSubject {
   availableCount: number | null;
   questionCount: number;
   topicCount: number;
-  visualCount: number;
+  visualCount: number | null;
   grades: string[];
 }
 export interface MockSummary {
@@ -78,11 +78,12 @@ export const kjseaApi = {
   blueprint: () =>
     api.get<MockBlueprint>('/kjsea/blueprint').then((r) => r.data),
   list: () => api.get<MockSummary[]>('/kjsea/attempts').then((r) => r.data),
-  subjects: () => api.get<MockSubject[]>('/kjsea/subjects').then((r) => r.data),
+  subjects: (grade?: string) => api.get<MockSubject[]>('/kjsea/subjects', { params: { grade } }).then((r) => r.data),
   create: (
     timeLimitMinutes?: number,
     subject = 'Mathematics',
     source: 'GENERATED' | 'BANK' = 'GENERATED',
+    grade?: string,
   ) =>
     api
       .post<MockAttempt>(
@@ -91,6 +92,7 @@ export const kjseaApi = {
           timeLimitMinutes,
           subject,
           source,
+          grade,
         },
         { timeout: 30000 },
       )

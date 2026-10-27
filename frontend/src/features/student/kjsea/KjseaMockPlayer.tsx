@@ -242,9 +242,7 @@ function PaperWorkspace({
       <header className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
           {result.subject} ·{' '}
-          {result.source === 'GENERATED'
-            ? 'Grade 9 preparation'
-            : 'Junior-school revision'}
+          {result.coverage?.grades?.join(', ') || 'Junior-school revision'}
         </p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
           <div>

@@ -1,13 +1,13 @@
 /** Original, parameterised revision questions. Topic groups are a practice blueprint,
  * not a verified transcription of the current KICD Grade 9 subject design. */
 export type Visual =
-  | { kind: 'table'; caption: string; headings: string[]; rows: string[][] }
-  | { kind: 'rectangle'; width: number; height: number }
-  | { kind: 'triangle'; base: number; height: number }
-  | { kind: 'circle'; radius: number }
-  | { kind: 'angles'; known: number }
-  | { kind: 'point'; x: number; y: number }
-  | { kind: 'bars'; labels: string[]; values: number[] };
+  | { kind: "table"; caption: string; headings: string[]; rows: string[][] }
+  | { kind: "rectangle"; width: number; height: number }
+  | { kind: "triangle"; base: number; height: number }
+  | { kind: "circle"; radius: number }
+  | { kind: "angles"; known: number }
+  | { kind: "point"; x: number; y: number }
+  | { kind: "bars"; labels: string[]; values: number[] };
 export interface MockQuestion {
   contentHtml?: string;
   diagramUrl?: string;
@@ -29,7 +29,7 @@ export interface Topic {
   name: string;
   area: string;
   visual: boolean;
-  make: (r: Random) => Omit<MockQuestion, 'id' | 'topicId' | 'topic' | 'area'>;
+  make: (r: Random) => Omit<MockQuestion, "id" | "topicId" | "topic" | "area">;
 }
 export type Random = () => number;
 export function seededRandom(seed: number): Random {
@@ -62,7 +62,7 @@ function question(
   correct: number,
   explanation: string,
   visual?: Visual,
-  unit = '',
+  unit = "",
 ) {
   const rounded = Number(correct.toFixed(3));
   const choices = new Set([rounded]);
@@ -85,20 +85,20 @@ const table = (
   headings: string[],
   rows: (string | number)[][],
 ): Visual => ({
-  kind: 'table',
+  kind: "table",
   caption,
   headings,
   rows: rows.map((row) => row.map(String)),
 });
-const N = 'Number',
-  A = 'Algebra',
-  G = 'Geometry',
-  M = 'Measurement',
-  D = 'Data and probability';
+const N = "Number",
+  A = "Algebra",
+  G = "Geometry",
+  M = "Measurement",
+  D = "Data and probability";
 export const TOPICS: Topic[] = [
   {
-    id: 'integers',
-    name: 'Integer operations',
+    id: "integers",
+    name: "Integer operations",
     area: N,
     visual: false,
     make: (r) => {
@@ -113,8 +113,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'fractions',
-    name: 'Fractions of quantities',
+    id: "fractions",
+    name: "Fractions of quantities",
     area: N,
     visual: false,
     make: (r) => {
@@ -130,8 +130,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'decimals',
-    name: 'Decimal calculations',
+    id: "decimals",
+    name: "Decimal calculations",
     area: N,
     visual: false,
     make: (r) => {
@@ -146,8 +146,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'percentage',
-    name: 'Percentage change',
+    id: "percentage",
+    name: "Percentage change",
     area: N,
     visual: false,
     make: (r) => {
@@ -159,13 +159,13 @@ export const TOPICS: Topic[] = [
         (cost * (100 + percent)) / 100,
         `Increase = ${percent}/100 × ${cost} = ${(cost * percent) / 100}. Add this to ${cost} to get KES ${(cost * (100 + percent)) / 100}.`,
         undefined,
-        ' KES',
+        " KES",
       );
     },
   },
   {
-    id: 'ratio',
-    name: 'Sharing in a ratio',
+    id: "ratio",
+    name: "Sharing in a ratio",
     area: N,
     visual: true,
     make: (r) => {
@@ -174,20 +174,20 @@ export const TOPICS: Topic[] = [
         k = int(r, 5, 20);
       return question(
         r,
-        'A club shares the total shown in the ratio A:B. How much does group A receive?',
+        "A club shares the total shown in the ratio A:B. How much does group A receive?",
         a * k,
         `There are ${a + b} parts. Each part is ${k}; group A receives ${a} × ${k} = ${a * k}.`,
         table(
-          'Club sharing plan',
-          ['Total tokens', 'A:B'],
+          "Club sharing plan",
+          ["Total tokens", "A:B"],
           [[(a + b) * k, `${a}:${b}`]],
         ),
       );
     },
   },
   {
-    id: 'interest',
-    name: 'Simple interest',
+    id: "interest",
+    name: "Simple interest",
     area: N,
     visual: true,
     make: (r) => {
@@ -196,21 +196,21 @@ export const TOPICS: Topic[] = [
         years = int(r, 2, 5);
       return question(
         r,
-        'Calculate the simple interest for the savings shown.',
+        "Calculate the simple interest for the savings shown.",
         (p * rate * years) / 100,
         `Simple interest = P × R × T / 100 = ${p} × ${rate} × ${years}/100 = KES ${(p * rate * years) / 100}.`,
         table(
-          'Savings terms (simple interest)',
-          ['Principal (KES)', 'Annual rate (%)', 'Years'],
+          "Savings terms (simple interest)",
+          ["Principal (KES)", "Annual rate (%)", "Years"],
           [[p, rate, years]],
         ),
-        ' KES',
+        " KES",
       );
     },
   },
   {
-    id: 'exchange',
-    name: 'Currency conversion',
+    id: "exchange",
+    name: "Currency conversion",
     area: N,
     visual: true,
     make: (r) => {
@@ -222,17 +222,17 @@ export const TOPICS: Topic[] = [
         rate * dollars,
         `Multiply ${dollars} by ${rate} KES per USD: KES ${rate * dollars}. No fees are included.`,
         table(
-          'Illustrative rate, not a current market quote',
-          ['Currency', 'Value in KES'],
-          [['1 USD', rate]],
+          "Illustrative rate, not a current market quote",
+          ["Currency", "Value in KES"],
+          [["1 USD", rate]],
         ),
-        ' KES',
+        " KES",
       );
     },
   },
   {
-    id: 'unit-price',
-    name: 'Unit price',
+    id: "unit-price",
+    name: "Unit price",
     area: N,
     visual: true,
     make: (r) => {
@@ -240,21 +240,21 @@ export const TOPICS: Topic[] = [
         price = int(r, 5, 25) * 5;
       return question(
         r,
-        'What is the cost of one notebook in this purchase?',
+        "What is the cost of one notebook in this purchase?",
         price,
         `Unit price = total cost ÷ number of notebooks = ${count * price} ÷ ${count} = KES ${price}.`,
         table(
-          'Stationery purchase',
-          ['Notebooks', 'Total cost (KES)'],
+          "Stationery purchase",
+          ["Notebooks", "Total cost (KES)"],
           [[count, count * price]],
         ),
-        ' KES',
+        " KES",
       );
     },
   },
   {
-    id: 'substitution',
-    name: 'Substitution',
+    id: "substitution",
+    name: "Substitution",
     area: A,
     visual: false,
     make: (r) => {
@@ -270,8 +270,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'linear-equation',
-    name: 'Linear equations',
+    id: "linear-equation",
+    name: "Linear equations",
     area: A,
     visual: false,
     make: (r) => {
@@ -287,8 +287,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'expand',
-    name: 'Expanding expressions',
+    id: "expand",
+    name: "Expanding expressions",
     area: A,
     visual: false,
     make: (r) => {
@@ -303,8 +303,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'sequence',
-    name: 'Number patterns',
+    id: "sequence",
+    name: "Number patterns",
     area: A,
     visual: false,
     make: (r) => {
@@ -319,8 +319,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'linear-table',
-    name: 'Linear relationships',
+    id: "linear-table",
+    name: "Linear relationships",
     area: A,
     visual: true,
     make: (r) => {
@@ -328,12 +328,12 @@ export const TOPICS: Topic[] = [
         b = int(r, 1, 9);
       return question(
         r,
-        'The table follows y = mx + c. Find m.',
+        "The table follows y = mx + c. Find m.",
         m,
         `When x increases by 1, y increases by ${m}; therefore the coefficient m is ${m}.`,
         table(
-          'Values of a linear relationship',
-          ['x', 'y'],
+          "Values of a linear relationship",
+          ["x", "y"],
           [
             [0, b],
             [1, m + b],
@@ -344,8 +344,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'direct-proportion',
-    name: 'Direct proportion',
+    id: "direct-proportion",
+    name: "Direct proportion",
     area: A,
     visual: true,
     make: (r) => {
@@ -358,34 +358,34 @@ export const TOPICS: Topic[] = [
         b * k,
         `Cost per litre is ${a * k} ÷ ${a} = ${k}. For ${b} litres: ${b} × ${k} = KES ${b * k}.`,
         table(
-          'Paint cost (no fixed fee)',
-          ['Litres', 'Cost (KES)'],
+          "Paint cost (no fixed fee)",
+          ["Litres", "Cost (KES)"],
           [[a, a * k]],
         ),
-        ' KES',
+        " KES",
       );
     },
   },
   {
-    id: 'straight-angle',
-    name: 'Angles on a straight line',
+    id: "straight-angle",
+    name: "Angles on a straight line",
     area: G,
     visual: true,
     make: (r) => {
       const angle = int(r, 3, 15) * 10;
       return question(
         r,
-        'The two adjacent angles form a straight line. Find x.',
+        "The two adjacent angles form a straight line. Find x.",
         180 - angle,
         `Angles on a straight line add to 180°. Therefore x = 180° − ${angle}° = ${180 - angle}°.`,
-        { kind: 'angles', known: angle },
-        '°',
+        { kind: "angles", known: angle },
+        "°",
       );
     },
   },
   {
-    id: 'triangle-angles',
-    name: 'Angles in a triangle',
+    id: "triangle-angles",
+    name: "Angles in a triangle",
     area: G,
     visual: false,
     make: (r) => {
@@ -397,13 +397,13 @@ export const TOPICS: Topic[] = [
         180 - a - b,
         `Interior angles total 180°: 180 − ${a} − ${b} = ${180 - a - b}°.`,
         undefined,
-        '°',
+        "°",
       );
     },
   },
   {
-    id: 'polygon-angles',
-    name: 'Interior angle sums',
+    id: "polygon-angles",
+    name: "Interior angle sums",
     area: G,
     visual: false,
     make: (r) => {
@@ -414,13 +414,13 @@ export const TOPICS: Topic[] = [
         (n - 2) * 180,
         `The angle sum is (n − 2) × 180° = (${n} − 2) × 180° = ${(n - 2) * 180}°.`,
         undefined,
-        '°',
+        "°",
       );
     },
   },
   {
-    id: 'coordinates',
-    name: 'Cartesian coordinates',
+    id: "coordinates",
+    name: "Cartesian coordinates",
     area: G,
     visual: true,
     make: (r) => {
@@ -428,16 +428,16 @@ export const TOPICS: Topic[] = [
         y = int(r, 1, 5);
       return question(
         r,
-        'Point P is shown on the coordinate grid. What is its x-coordinate?',
+        "Point P is shown on the coordinate grid. What is its x-coordinate?",
         x,
         `The x-coordinate is the horizontal position: ${x}. P = (${x}, ${y}).`,
-        { kind: 'point', x, y },
+        { kind: "point", x, y },
       );
     },
   },
   {
-    id: 'pythagoras',
-    name: 'Right-angled triangles',
+    id: "pythagoras",
+    name: "Right-angled triangles",
     area: G,
     visual: false,
     make: (r) => {
@@ -448,13 +448,13 @@ export const TOPICS: Topic[] = [
         5 * k,
         `c² = (${3 * k})² + (${4 * k})² = ${25 * k * k}; c = ${5 * k} cm.`,
         undefined,
-        ' cm',
+        " cm",
       );
     },
   },
   {
-    id: 'reflection',
-    name: 'Reflection in an axis',
+    id: "reflection",
+    name: "Reflection in an axis",
     area: G,
     visual: true,
     make: (r) => {
@@ -462,16 +462,16 @@ export const TOPICS: Topic[] = [
         y = int(r, 1, 5);
       return question(
         r,
-        'Point P is reflected in the y-axis. What is the x-coordinate of its image?',
+        "Point P is reflected in the y-axis. What is the x-coordinate of its image?",
         -x,
         `Reflection in the y-axis maps (x, y) to (−x, y). The image is (−${x}, ${y}).`,
-        { kind: 'point', x, y },
+        { kind: "point", x, y },
       );
     },
   },
   {
-    id: 'rectangle-area',
-    name: 'Area of a rectangle',
+    id: "rectangle-area",
+    name: "Area of a rectangle",
     area: M,
     visual: true,
     make: (r) => {
@@ -479,17 +479,17 @@ export const TOPICS: Topic[] = [
         h = int(r, 2, 9);
       return question(
         r,
-        'Calculate the area of the rectangle. The diagram is not drawn to scale.',
+        "Calculate the area of the rectangle. The diagram is not drawn to scale.",
         w * h,
         `Area = length × width = ${w} × ${h} = ${w * h} cm².`,
-        { kind: 'rectangle', width: w, height: h },
-        ' cm²',
+        { kind: "rectangle", width: w, height: h },
+        " cm²",
       );
     },
   },
   {
-    id: 'triangle-area',
-    name: 'Area of a triangle',
+    id: "triangle-area",
+    name: "Area of a triangle",
     area: M,
     visual: true,
     make: (r) => {
@@ -497,34 +497,34 @@ export const TOPICS: Topic[] = [
         h = int(r, 3, 12);
       return question(
         r,
-        'Find the area of the triangle using the perpendicular height shown. Diagram not to scale.',
+        "Find the area of the triangle using the perpendicular height shown. Diagram not to scale.",
         (b * h) / 2,
         `Area = ½ × base × perpendicular height = ½ × ${b} × ${h} = ${(b * h) / 2} cm².`,
-        { kind: 'triangle', base: b, height: h },
-        ' cm²',
+        { kind: "triangle", base: b, height: h },
+        " cm²",
       );
     },
   },
   {
-    id: 'circumference',
-    name: 'Circumference of a circle',
+    id: "circumference",
+    name: "Circumference of a circle",
     area: M,
     visual: true,
     make: (r) => {
       const radius = int(r, 1, 6) * 7;
       return question(
         r,
-        'Find the circumference of this circle. Use π = 22/7; diagram not to scale.',
+        "Find the circumference of this circle. Use π = 22/7; diagram not to scale.",
         (44 * radius) / 7,
         `Circumference = 2πr = 2 × 22/7 × ${radius} = ${(44 * radius) / 7} cm.`,
-        { kind: 'circle', radius },
-        ' cm',
+        { kind: "circle", radius },
+        " cm",
       );
     },
   },
   {
-    id: 'cuboid-volume',
-    name: 'Volume of a cuboid',
+    id: "cuboid-volume",
+    name: "Volume of a cuboid",
     area: M,
     visual: true,
     make: (r) => {
@@ -533,21 +533,21 @@ export const TOPICS: Topic[] = [
         h = int(r, 2, 7);
       return question(
         r,
-        'Find the volume of the cuboid described in the table.',
+        "Find the volume of the cuboid described in the table.",
         l * w * h,
         `Volume = length × width × height = ${l} × ${w} × ${h} = ${l * w * h} cm³.`,
         table(
-          'Cuboid dimensions',
-          ['Length (cm)', 'Width (cm)', 'Height (cm)'],
+          "Cuboid dimensions",
+          ["Length (cm)", "Width (cm)", "Height (cm)"],
           [[l, w, h]],
         ),
-        ' cm³',
+        " cm³",
       );
     },
   },
   {
-    id: 'capacity',
-    name: 'Capacity conversions',
+    id: "capacity",
+    name: "Capacity conversions",
     area: M,
     visual: false,
     make: (r) => {
@@ -558,13 +558,13 @@ export const TOPICS: Topic[] = [
         ml / 1000,
         `1 litre = 1000 millilitres. ${ml} ÷ 1000 = ${show(ml / 1000)} litres.`,
         undefined,
-        ' L',
+        " L",
       );
     },
   },
   {
-    id: 'speed',
-    name: 'Speed, distance and time',
+    id: "speed",
+    name: "Speed, distance and time",
     area: M,
     visual: false,
     make: (r) => {
@@ -576,13 +576,13 @@ export const TOPICS: Topic[] = [
         speed,
         `Speed = distance ÷ time = ${speed * t} ÷ ${t} = ${speed} km/h.`,
         undefined,
-        ' km/h',
+        " km/h",
       );
     },
   },
   {
-    id: 'mean',
-    name: 'Arithmetic mean',
+    id: "mean",
+    name: "Arithmetic mean",
     area: D,
     visual: false,
     make: (r) => {
@@ -597,8 +597,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'median',
-    name: 'Median',
+    id: "median",
+    name: "Median",
     area: D,
     visual: false,
     make: (r) => {
@@ -612,20 +612,20 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'mode',
-    name: 'Mode',
+    id: "mode",
+    name: "Mode",
     area: D,
     visual: true,
     make: (r) => {
       const n = int(r, 3, 25);
       return question(
         r,
-        'Find the mode of the data in this frequency table.',
+        "Find the mode of the data in this frequency table.",
         n,
         `${n} appears three times, more often than any other value, so it is the mode.`,
         table(
-          'Observed values',
-          ['Value', 'Frequency'],
+          "Observed values",
+          ["Value", "Frequency"],
           [
             [n, 3],
             [n + 2, 2],
@@ -636,8 +636,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'probability',
-    name: 'Simple probability',
+    id: "probability",
+    name: "Simple probability",
     area: D,
     visual: false,
     make: (r) => {
@@ -648,13 +648,13 @@ export const TOPICS: Topic[] = [
         red * 10,
         `There are 10 equally likely beads. P(red) = ${red}/10 = ${red * 10}%.`,
         undefined,
-        '%',
+        "%",
       );
     },
   },
   {
-    id: 'frequency',
-    name: 'Frequency tables',
+    id: "frequency",
+    name: "Frequency tables",
     area: D,
     visual: true,
     make: (r) => {
@@ -663,12 +663,12 @@ export const TOPICS: Topic[] = [
         c = int(r, 3, 12);
       return question(
         r,
-        'How many learners are represented in the frequency table?',
+        "How many learners are represented in the frequency table?",
         a + b + c,
         `Add the frequencies: ${a} + ${b} + ${c} = ${a + b + c} learners.`,
         table(
-          'Books read last month',
-          ['Books', 'Number of learners'],
+          "Books read last month",
+          ["Books", "Number of learners"],
           [
             [0, a],
             [1, b],
@@ -679,8 +679,8 @@ export const TOPICS: Topic[] = [
     },
   },
   {
-    id: 'bar-chart',
-    name: 'Reading bar charts',
+    id: "bar-chart",
+    name: "Reading bar charts",
     area: D,
     visual: true,
     make: (r) => {
@@ -689,10 +689,10 @@ export const TOPICS: Topic[] = [
         c = int(r, 2, 9);
       return question(
         r,
-        'How many seedlings were planted by group B?',
+        "How many seedlings were planted by group B?",
         b,
         `Read the height of the bar labelled B: ${b} seedlings.`,
-        { kind: 'bars', labels: ['A', 'B', 'C'], values: [a, b, c] },
+        { kind: "bars", labels: ["A", "B", "C"], values: [a, b, c] },
       );
     },
   },
@@ -704,7 +704,7 @@ export function generatePaper(seed: number): MockQuestion[] {
   const visual = TOPICS.filter((t) => t.visual),
     plain = TOPICS.filter((t) => !t.visual);
   if (visual.length !== 16 || plain.length !== 16)
-    throw new Error('Invalid mathematics blueprint');
+    throw new Error("Invalid mathematics blueprint");
   const selected = shuffle(
     [
       ...TOPICS,
@@ -724,7 +724,7 @@ export function generatePaper(seed: number): MockQuestion[] {
       item = topic.make(r);
     const signature = item.prompt + JSON.stringify(item.visual ?? null);
     if (seen.has(signature))
-      throw new Error('Could not generate distinct questions');
+      throw new Error("Could not generate distinct questions");
     seen.add(signature);
     return {
       id: `q-${i + 1}`,
@@ -736,9 +736,9 @@ export function generatePaper(seed: number): MockQuestion[] {
   });
 }
 export const MOCK_BLUEPRINT = {
-  version: 'kjsea-maths-v1',
-  subject: 'Mathematics',
-  level: 'Grade 9 preparation',
+  version: "kjsea-maths-v1",
+  subject: "Mathematics",
+  level: "Grade 9 preparation",
   questionCount: 40,
   topicCount: 32,
   areaCount: 5,
@@ -751,5 +751,81 @@ export const MOCK_BLUEPRINT = {
     visual,
   })),
   sourceNote:
-    'Original Assignment Hub junior-school revision questions. Coverage has not been verified against the current KICD Grade 9 Mathematics subject design. This is not an official KNEC paper. Values and order vary between papers; topic templates can recur.',
+    "Original Assignment Hub junior-school revision questions. Coverage has not been verified against the current KICD Grade 9 Mathematics subject design. This is not an official KNEC paper. Values and order vary between papers; topic templates can recur.",
 };
+
+// Platform practice progression, pending subject-teacher verification against current designs.
+const FOUNDATION_TOPICS = new Set([
+  "integers",
+  "fractions",
+  "decimals",
+  "ratio",
+  "unit-price",
+  "substitution",
+  "linear-equation",
+  "sequence",
+  "straight-angle",
+  "triangle-angles",
+  "coordinates",
+  "rectangle-area",
+  "triangle-area",
+  "cuboid-volume",
+  "capacity",
+  "mean",
+  "median",
+  "mode",
+  "frequency",
+  "bar-chart",
+]);
+const EXTENSION_TOPICS = new Set([
+  ...FOUNDATION_TOPICS,
+  "percentage",
+  "interest",
+  "exchange",
+  "expand",
+  "linear-table",
+  "direct-proportion",
+  "circumference",
+  "speed",
+  "probability",
+]);
+export function gradeTopics(grade: string) {
+  return TOPICS.filter(
+    (t) =>
+      grade === "Grade 9" ||
+      (grade === "Grade 7" ? FOUNDATION_TOPICS : EXTENSION_TOPICS).has(t.id),
+  );
+}
+export function generateGradePaper(
+  seed: number,
+  grade: string,
+): MockQuestion[] {
+  const r = seededRandom(seed);
+  const topics = gradeTopics(grade);
+  const selected = shuffle(
+    Array.from({ length: 40 }, (_, i) => topics[i % topics.length]),
+    r,
+  );
+  const seen = new Set<string>();
+  return selected.map((topic, i) => {
+    let item = topic.make(r);
+    let tries = 0;
+    while (
+      seen.has(item.prompt + JSON.stringify(item.visual ?? null)) &&
+      tries++ < 100
+    )
+      item = topic.make(r);
+    const signature = item.prompt + JSON.stringify(item.visual ?? null);
+    if (seen.has(signature))
+      throw new Error("Could not generate distinct questions");
+    seen.add(signature);
+    return {
+      ...item,
+      id: `q-${i + 1}`,
+      topicId: topic.id,
+      topic: topic.name,
+      area: topic.area,
+      sourceGrade: grade,
+    };
+  });
+}

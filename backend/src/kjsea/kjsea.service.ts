@@ -3,18 +3,20 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import { randomInt } from 'crypto';
-import type { KjseaMockAttempt, Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+} from "@nestjs/common";
+import { randomInt } from "crypto";
+import type { KjseaMockAttempt, Prisma } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
+import type { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import {
   generatePaper,
+  generateGradePaper,
+  gradeTopics,
   MOCK_BLUEPRINT,
   type MockQuestion,
-} from './mathematics';
-import { approvedChoices, bankPaper, type BankItem } from './question-pool';
-import { CreateMockDto, SaveMockDto } from './kjsea.dto';
+} from "./mathematics";
+import { approvedChoices, bankPaper, type BankItem } from "./question-pool";
+import { CreateMockDto, SaveMockDto } from "./kjsea.dto";
 
 @Injectable()
 export class KjseaService {
@@ -22,38 +24,49 @@ export class KjseaService {
   async configuration() {
     try {
       await this.prisma.kjseaMockAttempt.findFirst({
-        where: { id: '__kjsea_schema_probe__' },
+        where: { id: "__kjsea_schema_probe__" },
         select: { id: true },
       });
     } catch {
       throw new ServiceUnavailableException(
-        'The mock-test database is not ready yet. Please retry shortly.',
+        "The mock-test database is not ready yet. Please retry shortly.",
       );
     }
-    return MOCK_BLUEPRINT;
+    return { ...MOCK_BLUEPRINT, gradeSelection: true };
   }
-  private async approvedBank() {
+  private grade(value?: string | null) {
+    if (!value) return "Grade 9";
+    const match = value.trim().match(/^(?:grade\s*)?([789])$/i);
+    if (!match)
+      throw new BadRequestException(
+        "Mock tests are available for Grades 7, 8 and 9. Choose a junior-school grade.",
+      );
+    return `Grade ${match[1]}`;
+  }
+  private async approvedBank(grade?: string) {
     const rows = await this.prisma.questionBank.findMany({
       where: {
         isGlobal: true,
-        source: 'PLATFORM',
+        source: "PLATFORM",
         schoolId: null,
-        status: 'APPROVED',
+        status: "APPROVED",
         grade: {
-          in: [
-            'Grade 7',
-            'Grade 8',
-            'Grade 9',
-            'Grade7',
-            'Grade8',
-            'Grade9',
-            '7',
-            '8',
-            '9',
-          ],
-          mode: 'insensitive',
+          in: grade
+            ? [grade, grade.replace(" ", ""), grade.slice(-1)]
+            : [
+                "Grade 7",
+                "Grade 8",
+                "Grade 9",
+                "Grade7",
+                "Grade8",
+                "Grade9",
+                "7",
+                "8",
+                "9",
+              ],
+          mode: "insensitive",
         },
-        questionType: 'MULTIPLE_CHOICE',
+        questionType: "MULTIPLE_CHOICE",
         correctAnswer: { not: null },
         explanation: { not: null },
       },
@@ -71,12 +84,20 @@ export class KjseaService {
         diagramUrl: true,
         diagramAlt: true,
       },
-      orderBy: { id: 'asc' },
+      orderBy: { id: "asc" },
     });
-    return approvedChoices(rows as BankItem[]);
+    return approvedChoices(
+      (rows as BankItem[]).filter(
+        (row) =>
+          !grade ||
+          row.grade.replace(/\s/g, "").replace(/^grade/i, "") ===
+            grade.slice(-1),
+      ),
+    );
   }
-  async subjects(_actor: AuthenticatedUser) {
-    const rows = await this.approvedBank();
+  async subjects(actor: AuthenticatedUser, requestedGrade?: string) {
+    const grade = this.grade(requestedGrade ?? actor.grade);
+    const rows = await this.approvedBank(grade);
     const groups = new Map<string, typeof rows>();
     for (const row of rows) {
       const key = row.subject.trim().toLowerCase();
@@ -84,73 +105,74 @@ export class KjseaService {
     }
     return [
       {
-        id: 'generated-mathematics',
-        subject: 'Mathematics',
-        source: 'GENERATED',
+        id: "generated-mathematics",
+        subject: "Mathematics",
+        source: "GENERATED",
         availableCount: null,
         questionCount: 40,
-        topicCount: 32,
-        visualCount: 20,
+        topicCount: gradeTopics(grade).length,
+        visualCount: grade === "Grade 9" ? 20 : null,
         areaCount: 5,
-        grades: ['Grade 7', 'Grade 8', 'Grade 9'],
+        grades: [grade],
       },
       ...[...groups.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, items]) => ({
           id: `bank:${key}`,
           subject: items[0].subject.trim(),
-          source: 'BANK',
+          source: "BANK",
           availableCount: items.length,
           questionCount: Math.min(40, items.length),
           topicCount: new Set(items.map((i) => i.topic)).size,
           visualCount: items.filter(
             (i) =>
-              i.diagramUrl || /<(?:img|svg|table)\b/i.test(i.contentHtml ?? ''),
+              i.diagramUrl || /<(?:img|svg|table)\b/i.test(i.contentHtml ?? ""),
           ).length,
           grades: [...new Set(items.map((i) => i.grade))].sort(),
         })),
     ];
   }
   async create(dto: CreateMockDto, actor: AuthenticatedUser) {
-    // Upper-primary / junior-school revision stays separate from legacy KCSE papers.
+    const grade = this.grade(dto.grade ?? actor.grade);
+    // Each paper uses a single grade; historical papers keep their original snapshot.
     const active = await this.prisma.kjseaMockAttempt.count({
-      where: { schoolId: actor.schoolId, studentId: actor.id, status: 'DRAFT' },
+      where: { schoolId: actor.schoolId, studentId: actor.id, status: "DRAFT" },
     });
     if (active >= 5)
       throw new BadRequestException(
-        'You have five unfinished mocks. Resume or discard one before generating another.',
+        "You have five unfinished mocks. Resume or discard one before generating another.",
       );
     const seed = randomInt(1, 2147483647);
-    const source = dto.source ?? 'GENERATED';
+    const source = dto.source ?? "GENERATED";
     const subject =
-      source === 'GENERATED' ? 'Mathematics' : dto.subject?.trim();
+      source === "GENERATED" ? "Mathematics" : dto.subject?.trim();
     if (!subject)
-      throw new BadRequestException('Choose a subject for your mock.');
+      throw new BadRequestException("Choose a subject for your mock.");
     if (
-      source === 'GENERATED' &&
+      source === "GENERATED" &&
       dto.subject &&
-      dto.subject.trim().toLowerCase() !== 'mathematics'
+      dto.subject.trim().toLowerCase() !== "mathematics"
     )
       throw new BadRequestException(
-        'The parameterised generator is for Mathematics. Choose the approved-bank option for other subjects.',
+        "The parameterised generator is for Mathematics. Choose the approved-bank option for other subjects.",
       );
     let questions: MockQuestion[];
-    if (source === 'BANK') {
-      const pool = (await this.approvedBank()).filter(
+    if (source === "BANK") {
+      const pool = (await this.approvedBank(grade)).filter(
         (i) => i.subject.trim().toLowerCase() === subject.toLowerCase(),
       );
       if (!pool.length)
         throw new BadRequestException(
-          'This subject does not yet have approved multiple-choice questions with explanations.',
+          `No reviewed ${subject} questions are available for ${grade} yet.`,
         );
       const recent = await this.prisma.kjseaMockAttempt.findMany({
         where: {
           schoolId: actor.schoolId,
           studentId: actor.id,
-          subject: { equals: subject, mode: 'insensitive' },
-          source: 'BANK',
+          subject: { equals: subject, mode: "insensitive" },
+          source: "BANK",
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 3,
         select: { questions: true },
       });
@@ -162,22 +184,23 @@ export class KjseaService {
         ),
       );
       questions = bankPaper(pool, seed, used);
-    } else questions = generatePaper(seed);
+    } else
+      questions =
+        grade === "Grade 9"
+          ? generatePaper(seed)
+          : generateGradePaper(seed, grade);
     const coverage = {
+      grade,
       questionCount: questions.length,
       topicCount: new Set(questions.map((q) => q.topicId)).size,
       visualCount: questions.filter(
         (q) =>
           q.visual ||
           q.diagramUrl ||
-          /<(?:img|svg|table)\b/i.test(q.contentHtml ?? ''),
+          /<(?:img|svg|table)\b/i.test(q.contentHtml ?? ""),
       ).length,
-      areaCount: source === 'GENERATED' ? 5 : undefined,
-      grades: [
-        ...new Set(
-          questions.map((q) => q.sourceGrade).filter((g): g is string => !!g),
-        ),
-      ],
+      areaCount: source === "GENERATED" ? 5 : undefined,
+      grades: [grade],
     };
     const attempt = await this.prisma.kjseaMockAttempt.create({
       data: {
@@ -185,7 +208,7 @@ export class KjseaService {
         studentId: actor.id,
         seed,
         version:
-          source === 'GENERATED' ? MOCK_BLUEPRINT.version : 'kjsea-bank-v1',
+          source === "GENERATED" ? MOCK_BLUEPRINT.version : "kjsea-bank-v1",
         subject,
         source,
         coverage: JSON.parse(JSON.stringify(coverage)),
@@ -198,7 +221,7 @@ export class KjseaService {
   async list(actor: AuthenticatedUser) {
     const attempts = await this.prisma.kjseaMockAttempt.findMany({
       where: { schoolId: actor.schoolId, studentId: actor.id },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 30,
       select: {
         id: true,
@@ -226,10 +249,10 @@ export class KjseaService {
   }
   async save(id: string, dto: SaveMockDto, actor: AuthenticatedUser) {
     const attempt = await this.owned(id, actor);
-    if (attempt.status !== 'DRAFT') return this.present(attempt);
+    if (attempt.status !== "DRAFT") return this.present(attempt);
     if (this.expired(attempt))
       throw new BadRequestException(
-        'Time has ended. Submit the paper to review your saved answers.',
+        "Time has ended. Submit the paper to review your saved answers.",
       );
     const answers = this.mergeAnswers(attempt, dto);
     await this.prisma.kjseaMockAttempt.updateMany({
@@ -237,7 +260,7 @@ export class KjseaService {
         id,
         schoolId: actor.schoolId,
         studentId: actor.id,
-        status: 'DRAFT',
+        status: "DRAFT",
       },
       data: { answers },
     });
@@ -245,7 +268,7 @@ export class KjseaService {
   }
   async submit(id: string, dto: SaveMockDto, actor: AuthenticatedUser) {
     const attempt = await this.owned(id, actor);
-    if (attempt.status !== 'DRAFT') return this.present(attempt);
+    if (attempt.status !== "DRAFT") return this.present(attempt);
     // After the server deadline, late changes are ignored; grade the last saved answers.
     const answers = this.expired(attempt)
       ? this.answers(attempt)
@@ -259,9 +282,9 @@ export class KjseaService {
         id,
         schoolId: actor.schoolId,
         studentId: actor.id,
-        status: 'DRAFT',
+        status: "DRAFT",
       },
-      data: { answers, score, status: 'SUBMITTED', completedAt: new Date() },
+      data: { answers, score, status: "SUBMITTED", completedAt: new Date() },
     });
     return this.get(id, actor);
   }
@@ -272,18 +295,18 @@ export class KjseaService {
         id,
         schoolId: actor.schoolId,
         studentId: actor.id,
-        status: 'DRAFT',
+        status: "DRAFT",
       },
     });
     if (!result.count)
-      throw new BadRequestException('Completed mocks are retained for review.');
+      throw new BadRequestException("Completed mocks are retained for review.");
     return { deleted: true };
   }
   private async owned(id: string, actor: AuthenticatedUser) {
     const a = await this.prisma.kjseaMockAttempt.findFirst({
       where: { id, schoolId: actor.schoolId, studentId: actor.id },
     });
-    if (!a) throw new NotFoundException('Mock attempt not found');
+    if (!a) throw new NotFoundException("Mock attempt not found");
     return a;
   }
   private answers(attempt: KjseaMockAttempt) {
@@ -301,7 +324,7 @@ export class KjseaService {
         answer.option < 0 ||
         answer.option > 3
       )
-        throw new BadRequestException('Invalid question or answer option');
+        throw new BadRequestException("Invalid question or answer option");
       answers[answer.questionId] = answer.option;
     }
     return answers;
@@ -313,7 +336,7 @@ export class KjseaService {
     );
   }
   private present(attempt: KjseaMockAttempt) {
-    const submitted = attempt.status === 'SUBMITTED';
+    const submitted = attempt.status === "SUBMITTED";
     return {
       id: attempt.id,
       version: attempt.version,

@@ -177,15 +177,11 @@ export function StemLabsPage() {
   const resume = labs.find((l) => drafts.has(l.id) && !completed.has(l.key));
   return (
     <div className="mx-auto max-w-6xl space-y-6 text-slate-800">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-teal-800">
-            Your investigation workspace
-          </p>
           <h1 className="text-3xl font-semibold tracking-tight">STEM Labs</h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-            Ask a question. Test an idea. Build an explanation from your
-            evidence.
+            Interactive investigations and your lab notebooks.
           </p>
         </div>
         {user?.grade && (
@@ -207,12 +203,12 @@ export function StemLabsPage() {
           <h2 className="mt-3 text-xl font-semibold">
             {resume
               ? `Pick up: ${resume.title}`
-              : 'Turn a good question into an investigation'}
+              : 'Lab notebooks'}
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">
             {resume
               ? 'Your notes and recorded trials are saved on this browser. Continue testing, then explain what you found.'
-              : 'Each notebook gives you space for a prediction, method, observations and conclusion. Download your work to share with your teacher.'}
+              : 'Record predictions, trials and conclusions. Export your notebook when you finish.'}
           </p>
           {resume && (
             <Link

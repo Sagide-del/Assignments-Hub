@@ -54,12 +54,12 @@ function TopicPicker({ topics, plans, onStart, loading }: { topics: LearningTopi
         <div className="flex items-start gap-4">
           <div className="rounded-xl bg-[#B5E61D] p-3 text-[#101820]"><BrainCircuit className="h-6 w-6" /></div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#607D00]">Learning Coach</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">Build confidence, one skill at a time.</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Short guided sessions help you understand, practise, remember, and return to difficult topics at the right time.</p>
+            <p className="text-xs font-medium text-slate-500">Practice & review</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">Learning Coach</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Choose a topic for guided practice or continue a saved session.</p>
           </div>
         </div>
-        {duePlan && dueTopic ? <div className="mt-6 rounded-2xl bg-[#101820] p-5 text-white"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#B5E61D]">Your next best step</p><h2 className="mt-1 text-xl font-semibold">{duePlan.subject}: {duePlan.topic}</h2><p className="mt-1 text-sm text-slate-300">{duePlan.masteryScore}% mastery · Review {formatReview(duePlan.nextReviewAt)} · about 20 minutes</p></div><button type="button" disabled={loading} onClick={() => onStart(dueTopic, 'PRACTICE')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820] disabled:opacity-60">Continue coaching <ArrowRight className="h-4 w-4" /></button></div></div> : null}
+        {duePlan && dueTopic ? <div className="mt-6 rounded-2xl bg-[#101820] p-5 text-white"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#B5E61D]">Continue your practice</p><h2 className="mt-1 text-xl font-semibold">{duePlan.subject}: {duePlan.topic}</h2><p className="mt-1 text-sm text-slate-300">{duePlan.masteryScore}% mastery · Review {formatReview(duePlan.nextReviewAt)} · about 20 minutes</p></div><button type="button" disabled={loading} onClick={() => onStart(dueTopic, 'PRACTICE')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#B5E61D] px-5 text-sm font-bold text-[#101820] disabled:opacity-60">Continue coaching <ArrowRight className="h-4 w-4" /></button></div></div> : null}
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
         <button type="button" onClick={() => setSubject('')} className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold ${!subject ? 'bg-[#101820] text-white' : 'border border-slate-200 bg-white text-slate-600'}`}>All subjects</button>
