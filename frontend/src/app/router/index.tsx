@@ -101,7 +101,7 @@ const studentNav = [
   },
   {
     to: '/student/kjsea-mock-test',
-    label: 'KJSEA Mock Test',
+    label: 'Mock Tests',
   },
   {
     to: '/student/mnemonic-cards',

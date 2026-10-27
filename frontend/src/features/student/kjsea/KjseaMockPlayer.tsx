@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,24 +11,24 @@ import {
   LoaderCircle,
   Save,
   XCircle,
-} from 'lucide-react';
-import { apiErrorMessage } from '../../../api/axios';
-import { kjseaApi, type MockAttempt } from '../../../api/kjsea.api';
-import { useAuthStore } from '../../../store/auth.store';
-import { RichContent } from '../../../components/ui/RichContent';
-import { resolveUploadUrl } from '../../../api/uploads.api';
-import { MockVisual } from './MockVisual';
+} from "lucide-react";
+import { apiErrorMessage } from "../../../api/axios";
+import { kjseaApi, type MockAttempt } from "../../../api/kjsea.api";
+import { useAuthStore } from "../../../store/auth.store";
+import { RichContent } from "../../../components/ui/RichContent";
+import { resolveUploadUrl } from "../../../api/uploads.api";
+import { MockVisual } from "./MockVisual";
 import {
   mockDraftKey,
   resultAreas,
   resultText,
   validAnswers,
-} from './mock-tools';
+} from "./mock-tools";
 export function KjseaMockPlayerPage() {
   const { id } = useParams();
   const userId = useAuthStore((s) => s.user?.id);
   const query = useQuery({
-    queryKey: ['kjsea-attempt', userId, id],
+    queryKey: ["kjsea-attempt", userId, id],
     queryFn: () => kjseaApi.get(id!),
     enabled: !!id && !!userId,
     retry: false,
@@ -44,7 +44,7 @@ export function KjseaMockPlayerPage() {
     return (
       <div role="alert" className="rounded-2xl border bg-white p-6">
         <p>
-          {apiErrorMessage(query.error, 'This mock paper could not be loaded.')}
+          {apiErrorMessage(query.error, "This mock paper could not be loaded.")}
         </p>
         <button
           type="button"
@@ -75,15 +75,15 @@ function PaperWorkspace({
 }) {
   const client = useQueryClient();
   const [result, setResult] = useState(initial);
-  const completed = result.status === 'SUBMITTED';
+  const completed = result.status === "SUBMITTED";
   const storageKey = mockDraftKey(userId, initial.id);
   const [answers, setAnswers] = useState<Record<string, number>>(() => {
-    if (initial.status === 'SUBMITTED') return initial.answers;
+    if (initial.status === "SUBMITTED") return initial.answers;
     try {
       return {
         ...initial.answers,
         ...validAnswers(
-          JSON.parse(localStorage.getItem(storageKey) ?? 'null'),
+          JSON.parse(localStorage.getItem(storageKey) ?? "null"),
           initial.questions,
         ),
       };
@@ -93,17 +93,17 @@ function PaperWorkspace({
   });
   const [index, setIndex] = useState(0);
   const [navigatorOpen, setNavigatorOpen] = useState(
-    () => window.matchMedia('(min-width: 1024px)').matches,
+    () => window.matchMedia("(min-width: 1024px)").matches,
   );
   const [flags, setFlags] = useState<string[]>([]);
   const [confirm, setConfirm] = useState(false);
   const [saveStatus, setSaveStatus] = useState(
-    'Answers autosave to your account.',
+    "Answers autosave to your account.",
   );
   const [saveError, setSaveError] = useState(false);
   const [storageError, setStorageError] = useState(false);
   const [finishing, setFinishing] = useState(false);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
   const [tick, setTick] = useState(Date.now());
   const serverOffset = useRef(Date.parse(initial.serverNow) - Date.now());
   const chain = useRef<Promise<unknown>>(Promise.resolve());
@@ -128,17 +128,17 @@ function PaperWorkspace({
   }, [completed]);
   function save(snapshot: Record<string, number>, version: number) {
     setSaveError(false);
-    setSaveStatus('Saving answers…');
+    setSaveStatus("Saving answers…");
     chain.current = chain.current
       .catch(() => undefined)
       .then(() => kjseaApi.save(initial.id, snapshot))
       .then((paper) => {
-        if (paper.status === 'SUBMITTED') {
+        if (paper.status === "SUBMITTED") {
           setResult(paper);
           setAnswers(paper.answers);
         }
         if (version === revision.current) {
-          setSaveStatus('All current answers saved to your account.');
+          setSaveStatus("All current answers saved to your account.");
           setSaveError(false);
         }
       })
@@ -147,7 +147,7 @@ function PaperWorkspace({
           setSaveStatus(
             apiErrorMessage(
               error,
-              'Answers could not be saved. Keep this page open and retry.',
+              "Answers could not be saved. Keep this page open and retry.",
             ),
           );
           setSaveError(true);
@@ -164,7 +164,7 @@ function PaperWorkspace({
       setStorageError(true);
     }
     if (expired) return;
-    setSaveStatus('Saving answers…');
+    setSaveStatus("Saving answers…");
     const timeout = setTimeout(() => save({ ...answers }, version), 600);
     return () => clearTimeout(timeout);
   }, [answers, completed, finishing, expired, storageKey]);
@@ -172,26 +172,26 @@ function PaperWorkspace({
     if (finishingRef.current || completed) return;
     finishingRef.current = true;
     setFinishing(true);
-    setSubmitError('');
+    setSubmitError("");
     setConfirm(false);
     try {
       await chain.current;
       const paper = await kjseaApi.submit(initial.id, answers);
       setResult(paper);
       setAnswers(paper.answers);
-      client.setQueryData(['kjsea-attempt', userId, initial.id], paper);
-      await client.invalidateQueries({ queryKey: ['kjsea-attempts'] });
+      client.setQueryData(["kjsea-attempt", userId, initial.id], paper);
+      await client.invalidateQueries({ queryKey: ["kjsea-attempts"] });
       try {
         localStorage.removeItem(storageKey);
       } catch {
         /* Server has the submitted paper. */
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       setSubmitError(
         apiErrorMessage(
           error,
-          'Submission failed. Your paper is still open; please retry.',
+          "Submission failed. Your paper is still open; please retry.",
         ),
       );
     } finally {
@@ -207,15 +207,15 @@ function PaperWorkspace({
   }, [expired, completed]);
   function go(next: number) {
     setIndex(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function download() {
     const url = URL.createObjectURL(
-      new Blob([resultText(result)], { type: 'text/plain;charset=utf-8' }),
+      new Blob([resultText(result)], { type: "text/plain;charset=utf-8" }),
     );
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'kjsea-mathematics-review.txt';
+    a.download = "kjsea-mathematics-review.txt";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -237,17 +237,17 @@ function PaperWorkspace({
         className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-600"
       >
         <ArrowLeft className="h-4 w-4" />
-        KJSEA Mock Test
+        Mock Tests
       </Link>
       <header className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
-          {result.subject} ·{' '}
-          {result.coverage?.grades?.join(', ') || 'Junior-school revision'}
+          {result.subject} ·{" "}
+          {result.coverage?.grades?.join(", ") || "School revision"}
         </p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">
-              {completed ? 'Your mock review' : `Your ${result.subject} mock`}
+              {completed ? "Your mock review" : `Your ${result.subject} mock`}
             </h1>
             <p className="mt-2 text-sm text-slate-300">
               {completed
@@ -280,24 +280,24 @@ function PaperWorkspace({
         </p>
       </header>
       <p className="text-xs leading-6 text-slate-500">
-        This paper: {result.questions.length} questions ·{' '}
-        {new Set(result.questions.map((q) => q.topicId)).size} topics ·{' '}
+        This paper: {result.questions.length} questions ·{" "}
+        {new Set(result.questions.map((q) => q.topicId)).size} topics ·{" "}
         {
           result.questions.filter(
             (q) =>
               q.visual ||
               q.diagramUrl ||
-              /<(?:img|svg|table)\b/i.test(q.contentHtml ?? ''),
+              /<(?:img|svg|table)\b/i.test(q.contentHtml ?? ""),
           ).length
-        }{' '}
-        questions with a diagram or table.{' '}
+        }{" "}
+        questions with a diagram or table.{" "}
         {result.questions.length < 40
-          ? 'Short practice set, not a full 40-question mock.'
-          : ''}
+          ? "Short practice set, not a full 40-question mock."
+          : ""}
       </p>
       {!completed && (
         <div
-          className={`rounded-xl border p-3 text-xs leading-6 ${saveError ? 'border-amber-300 bg-amber-50 text-amber-950' : 'border-slate-200 bg-white text-slate-500'}`}
+          className={`rounded-xl border p-3 text-xs leading-6 ${saveError ? "border-amber-300 bg-amber-50 text-amber-950" : "border-slate-200 bg-white text-slate-500"}`}
         >
           <p role="status" className="flex items-start gap-2">
             <Save className="mt-1 h-4 w-4 shrink-0" />
@@ -365,8 +365,8 @@ function PaperWorkspace({
           </div>
           <p className="mt-4 text-sm leading-7 text-slate-600">
             {gaps.length
-              ? `Topics to revisit: ${gaps.join(' · ')}. Review an explanation, correct an example, then try another paper.`
-              : 'You answered every question correctly. Explain a method in your own words, then try a new paper with different values.'}
+              ? `Topics to revisit: ${gaps.join(" · ")}. Review an explanation, correct an example, then try another paper.`
+              : "You answered every question correctly. Explain a method in your own words, then try a new paper with different values."}
           </p>
           <Link
             to="/student/kjsea-mock-test"
@@ -388,8 +388,8 @@ function PaperWorkspace({
             </summary>
             <p className="mt-2 text-xs leading-6 text-slate-500">
               {completed
-                ? 'Green: correct · red: incorrect or unanswered.'
-                : 'Use the flag to mark a question to revisit. Flags stay in this open session.'}
+                ? "Green: correct · red: incorrect or unanswered."
+                : "Use the flag to mark a question to revisit. Flags stay in this open session."}
             </p>
             <nav
               aria-label="Mock question navigator"
@@ -403,9 +403,9 @@ function PaperWorkspace({
                     type="button"
                     key={q.id}
                     onClick={() => go(i)}
-                    aria-current={i === index ? 'step' : undefined}
-                    aria-label={`Question ${i + 1}, ${completed ? (right ? 'correct' : 'incorrect or unanswered') : done ? 'answered' : 'unanswered'}${flags.includes(q.id) ? ', flagged' : ''}`}
-                    className={`relative min-h-10 rounded-lg border text-xs font-semibold ${i === index ? 'ring-2 ring-teal-700 ring-offset-1 ' : ''}${completed ? (right ? 'border-teal-200 bg-teal-50 text-teal-900' : 'border-red-200 bg-red-50 text-red-800') : done ? 'border-slate-700 bg-slate-800 text-white' : 'bg-white text-slate-500'}`}
+                    aria-current={i === index ? "step" : undefined}
+                    aria-label={`Question ${i + 1}, ${completed ? (right ? "correct" : "incorrect or unanswered") : done ? "answered" : "unanswered"}${flags.includes(q.id) ? ", flagged" : ""}`}
+                    className={`relative min-h-10 rounded-lg border text-xs font-semibold ${i === index ? "ring-2 ring-teal-700 ring-offset-1 " : ""}${completed ? (right ? "border-teal-200 bg-teal-50 text-teal-900" : "border-red-200 bg-red-50 text-red-800") : done ? "border-slate-700 bg-slate-800 text-white" : "bg-white text-slate-500"}`}
                   >
                     {i + 1}
                     {flags.includes(q.id) && (
@@ -421,7 +421,7 @@ function PaperWorkspace({
           <section className="rounded-2xl border bg-white p-5 sm:p-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
-                Question {index + 1} of {result.questions.length} ·{' '}
+                Question {index + 1} of {result.questions.length} ·{" "}
                 {question.area}
               </p>
               {!completed && (
@@ -437,9 +437,9 @@ function PaperWorkspace({
                   className="inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-slate-600"
                 >
                   <Flag
-                    className={`h-4 w-4 ${flags.includes(question.id) ? 'fill-amber-200 text-amber-700' : ''}`}
+                    className={`h-4 w-4 ${flags.includes(question.id) ? "fill-amber-200 text-amber-700" : ""}`}
                   />
-                  {flags.includes(question.id) ? 'Flagged' : 'Flag for review'}
+                  {flags.includes(question.id) ? "Flagged" : "Flag for review"}
                 </button>
               )}
             </div>
@@ -458,7 +458,7 @@ function PaperWorkspace({
                   <img
                     key={question.id}
                     src={resolveUploadUrl(question.diagramUrl)}
-                    alt={question.diagramAlt ?? 'Question illustration'}
+                    alt={question.diagramAlt ?? "Question illustration"}
                     className="mx-auto max-h-80 max-w-full object-contain"
                   />
                   {question.diagramAlt && (
@@ -477,7 +477,7 @@ function PaperWorkspace({
                 {question.options.map((option, i) => (
                   <label
                     key={`${question.id}-${i}`}
-                    className={`flex min-h-12 items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${completed && i === question.correctIndex ? 'border-teal-400 bg-teal-50' : answers[question.id] === i ? 'border-slate-700 bg-slate-50' : 'border-slate-200'}`}
+                    className={`flex min-h-12 items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${completed && i === question.correctIndex ? "border-teal-400 bg-teal-50" : answers[question.id] === i ? "border-slate-700 bg-slate-50" : "border-slate-200"}`}
                   >
                     <input
                       type="radio"
@@ -505,7 +505,7 @@ function PaperWorkspace({
             </fieldset>
             {completed && (
               <div
-                className={`mt-5 rounded-xl p-4 ${correct ? 'bg-teal-50' : 'bg-amber-50'}`}
+                className={`mt-5 rounded-xl p-4 ${correct ? "bg-teal-50" : "bg-amber-50"}`}
               >
                 <h2 className="flex items-center gap-2 text-sm font-semibold">
                   {correct ? (
@@ -514,10 +514,10 @@ function PaperWorkspace({
                     <XCircle className="h-4 w-4 text-amber-800" />
                   )}
                   {correct
-                    ? 'Correct'
+                    ? "Correct"
                     : answers[question.id] === undefined
-                      ? 'Not answered'
-                      : 'Let’s work through it'}
+                      ? "Not answered"
+                      : "Let’s work through it"}
                 </h2>
                 <p className="mt-3 text-sm leading-7">{question.explanation}</p>
               </div>
@@ -559,7 +559,7 @@ function PaperWorkspace({
             <section className="rounded-2xl border bg-white p-5">
               <h2 className="text-sm font-semibold">Ready to finish?</h2>
               <p className="mt-2 text-xs leading-6 text-slate-500">
-                {answered} answered · {result.questions.length - answered}{' '}
+                {answered} answered · {result.questions.length - answered}{" "}
                 unanswered · {flags.length} flagged. Unanswered questions
                 receive zero marks.
               </p>
@@ -598,7 +598,7 @@ function PaperWorkspace({
                   {finishing && (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
                   )}
-                  {finishing ? 'Submitting…' : 'Submit answers'}
+                  {finishing ? "Submitting…" : "Submit answers"}
                 </button>
               )}
             </section>
@@ -609,5 +609,5 @@ function PaperWorkspace({
   );
 }
 function formatTime(seconds: number) {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }

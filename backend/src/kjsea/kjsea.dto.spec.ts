@@ -18,13 +18,17 @@ describe('KJSEA request validation', () => {
       (
         await validate(
           plainToInstance(CreateMockDto, {
-            grade: 'Grade 12',
+            grade: 'Grade 13',
             source: 'unreviewed',
             timeLimitMinutes: 1,
           }),
         )
       ).length,
     ).toBeGreaterThan(0);
+  });
+  it('accepts all senior grade values while rejecting out-of-range grades', async () => {
+    for (const grade of ['Grade 10','Grade 11','Grade 12']) expect(await validate(plainToInstance(CreateMockDto,{grade}))).toHaveLength(0);
+    expect((await validate(plainToInstance(CreateMockDto,{grade:'Grade 13'}))).length).toBeGreaterThan(0);
   });
   it('rejects duplicate questions, invalid choices and oversized answer payloads', async () => {
     for (const answers of [

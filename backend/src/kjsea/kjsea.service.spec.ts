@@ -307,11 +307,106 @@ describe("Single-grade paper boundaries", () => {
     expect(paper.questions.every((q) => q.sourceGrade === "Grade 8")).toBe(
       true,
     );
-    await expect(service.subjects(actor, "Grade 12")).rejects.toBeInstanceOf(
+    await expect(service.subjects(actor, "Grade 13")).rejects.toBeInstanceOf(
       BadRequestException,
     );
     await expect(service.subjects(actor, "invalid")).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+});
+
+describe("Senior school mock papers", () => {
+  it("defaults Good Sam to Grade 11 with usable subjects even when the reviewed bank is empty", async () => {
+    const { model } = setup();
+    const questionBank = { findMany: jest.fn().mockResolvedValue([]) };
+    const service = new KjseaService({
+      kjseaMockAttempt: model,
+      questionBank,
+    } as any);
+    const sam = { ...actor, name: "Good Sam", grade: "Grade 11" };
+    const subjects = await service.subjects(sam);
+    expect(subjects.map((s) => s.subject)).toEqual(
+      expect.arrayContaining([
+        "Mathematics",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "English",
+        "Kiswahili",
+        "Computer Studies",
+        "Business Studies",
+        "Geography",
+        "Agriculture",
+        "History and Government",
+      ]),
+    );
+    expect(subjects.every((s) => s.grades.join(",") === "Grade 11")).toBe(true);
+    expect(questionBank.findMany.mock.calls[0][0].where.grade.in).toEqual([
+      "Grade 11",
+      "Grade11",
+      "11",
+    ]);
+    for (const subject of [
+      "Mathematics",
+      "Physics",
+      "Biology",
+      "English",
+      "Kiswahili",
+    ]) {
+      const paper = await service.create({ subject }, sam);
+      expect(paper.subject).toBe(subject);
+      expect(paper.coverage).toMatchObject({
+        grade: "Grade 11",
+        grades: ["Grade 11"],
+      });
+      expect(paper.questions.every((q) => q.sourceGrade === "Grade 11")).toBe(
+        true,
+      );
+      expect(paper.questions[0]).not.toHaveProperty("correctIndex");
+      expect(paper.questions[0]).not.toHaveProperty("explanation");
+    }
+  });
+  it("handles two-digit bank grades without accidentally querying or selecting Grade 1", async () => {
+    const { model } = setup();
+    const row = (id: number, grade: string) => ({
+      id,
+      grade,
+      subject: "Literature in English",
+      topic: "Narrative",
+      questionType: "MULTIPLE_CHOICE",
+      questionText: `Narrative question ${id}`,
+      options: ["A", "B", "C", "D"],
+      correctAnswer: "B",
+      explanation: "B fits the narrative evidence.",
+    });
+    const questionBank = {
+      findMany: jest
+        .fn()
+        .mockResolvedValue([
+          row(1, "Grade 1"),
+          row(2, "Grade 11"),
+          row(3, "Grade 12"),
+        ]),
+    };
+    const service = new KjseaService({
+      kjseaMockAttempt: model,
+      questionBank,
+    } as any);
+    const paper = await service.create(
+      { subject: "Literature in English", source: "BANK" },
+      { ...actor, grade: "Grade 11" },
+    );
+    expect(paper.questions.map((q) => q.sourceGrade)).toEqual(["Grade 11"]);
+    const subjects = await service.subjects({ ...actor, grade: "Grade 12" });
+    expect(subjects).toHaveLength(1);
+    expect(subjects[0]).toMatchObject({
+      subject: "Literature in English",
+      source: "BANK",
+      grades: ["Grade 12"],
+    });
+    await expect(
+      service.create({ grade: "Grade 12", subject: "Mathematics" }, actor),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

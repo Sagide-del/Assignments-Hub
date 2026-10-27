@@ -27,6 +27,25 @@ const JUNIOR_SUBJECTS = [
   "Islamic Religious Education",
   "Hindu Religious Education",
 ];
+const SENIOR_SUBJECTS = [
+  "Mathematics",
+  "English",
+  "Kiswahili",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "Computer Studies",
+  "Business Studies",
+  "Geography",
+  "History and Government",
+  "Agriculture",
+  "Christian Religious Education",
+  "Islamic Religious Education",
+  "Hindu Religious Education",
+  "Literature in English",
+  "Home Science",
+  "Technical Studies",
+];
 const subjectKey = (value: string) =>
   value
     .toLowerCase()
@@ -36,7 +55,9 @@ export function KjseaMockTestPage() {
   const user = useAuthStore((s) => s.user);
   const client = useQueryClient();
   const navigate = useNavigate();
-  const profileGrade = user?.grade?.match(/(?:grade\s*)?([789])$/i)?.[1];
+  const profileGrade = user?.grade
+    ?.trim()
+    .match(/^(?:grade\s*)?(7|8|9|10|11|12)$/i)?.[1];
   const [grade, setGrade] = useState(`Grade ${profileGrade ?? "9"}`);
   const [subjectId, setSubjectId] = useState("generated-mathematics");
   const subjects = useQuery({
@@ -46,7 +67,9 @@ export function KjseaMockTestPage() {
   });
   const selected =
     subjects.data?.find((s) => s.id === subjectId) ?? subjects.data?.[0];
-  const missingSubjects = JUNIOR_SUBJECTS.filter(
+  const junior = Number(grade.split(" ")[1]) <= 9;
+  const title = junior ? "KJSEA Mock Test" : `${grade} Mock Tests`;
+  const missingSubjects = (junior ? JUNIOR_SUBJECTS : SENIOR_SUBJECTS).filter(
     (name) =>
       !subjects.data?.some(
         (item) => subjectKey(item.subject) === subjectKey(name),
@@ -87,7 +110,7 @@ export function KjseaMockTestPage() {
   if (user?.isIndependentTrial)
     return (
       <div className="rounded-2xl border bg-white p-6">
-        <h1 className="text-2xl font-semibold">KJSEA Mock Test</h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="mt-3">Activate your account to open mock tests.</p>
         <Link
           className="mt-4 inline-block text-teal-800 underline"
@@ -104,21 +127,19 @@ export function KjseaMockTestPage() {
           <p className="mb-2 text-xs font-medium text-slate-500">
             Assessments / Mock tests
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            KJSEA Mock Test
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-2 text-sm text-slate-500">
             Practice by grade and subject. Review every answer.
           </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs font-medium text-slate-600">
           <GraduationCap className="h-4 w-4" />
-          Grades 7–9
+          {grade}
         </span>
       </header>
       <section
         className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"
-        aria-label="Generate a junior-school mock"
+        aria-label="Generate a mock test"
       >
         <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-7">
           <h2 className="text-lg font-semibold">Create a practice paper</h2>
@@ -140,7 +161,14 @@ export function KjseaMockTestPage() {
                 }}
                 className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-normal"
               >
-                {["Grade 7", "Grade 8", "Grade 9"].map((g) => (
+                {[
+                  "Grade 7",
+                  "Grade 8",
+                  "Grade 9",
+                  "Grade 10",
+                  "Grade 11",
+                  "Grade 12",
+                ].map((g) => (
                   <option key={g}>{g}</option>
                 ))}
               </select>
@@ -183,9 +211,11 @@ export function KjseaMockTestPage() {
               subjects.data?.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.subject}
-                  {item.source === "GENERATED"
-                    ? " · varied questions"
-                    : " · reviewed bank"}
+                  {item.source === "BANK"
+                    ? " · reviewed bank"
+                    : item.contentKind === "STARTER"
+                      ? " · topic practice"
+                      : " · varied questions"}
                 </option>
               ))
             )}
@@ -224,11 +254,17 @@ export function KjseaMockTestPage() {
               <span>{grade} only</span>
             </div>
           )}
-          {selected?.source === "BANK" && selected.questionCount < 40 && (
+          {selected && selected.questionCount < 40 && (
             <p className="mt-3 text-xs leading-6 text-amber-800">
               This is a short practice set of {selected.questionCount}{" "}
-              questions. A full mock needs more reviewed questions for this
-              grade.
+              questions. This set covers selected topics rather than a complete
+              exam syllabus.
+            </p>
+          )}
+          {!subjects.isPending && !subjects.isError && !selected && (
+            <p role="status" className="mt-4 text-sm text-slate-600">
+              No practice papers are available for {grade} yet. Questions from
+              other grades will not be substituted.
             </p>
           )}
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
@@ -270,19 +306,23 @@ export function KjseaMockTestPage() {
         <aside className="py-2 lg:py-5">
           <h2 className="text-sm font-semibold">How this paper is built</h2>
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            {selected?.source === "BANK"
-              ? `Questions come only from the reviewed ${grade} ${selected.subject} pool. Recent questions are avoided where possible.`
-              : "Original mathematics questions with varied values and order. Each grade has a separate practice progression; topic templates can repeat."}
+            {!selected
+              ? "Choose an available subject to see how its paper is built."
+              : selected.source === "BANK"
+                ? `Questions come only from the reviewed ${grade} ${selected.subject} pool. Recent questions are avoided where possible.`
+                : selected?.contentKind === "STARTER"
+                  ? `Original ${grade} ${selected.subject} questions covering selected topics. Question and answer order vary; the same questions can recur.`
+                  : `Original ${grade} ${selected?.subject ?? "subject"} questions with varied values and order. Topic templates can repeat.`}
           </p>
           <details className="mt-5 border-t border-slate-200 pt-4">
             <summary className="cursor-pointer text-xs font-medium text-slate-700">
               Coverage and sources
             </summary>
             <p className="mt-3 text-xs leading-6 text-slate-500">
-              Mathematics topic progression is platform-authored and awaits
-              verification against current grade-specific KICD designs. Other
-              subjects require reviewed questions for the selected grade. Scores
-              are practice results, not official KNEC grades.
+              Built-in practice sets are platform-authored and await teacher
+              verification against current grade-specific KICD designs. Reviewed
+              question-bank papers use only the selected grade. Scores are
+              practice results, not official KNEC grades.
             </p>
           </details>
           <div className="mt-5 border-t border-slate-200 pt-4">
@@ -290,8 +330,9 @@ export function KjseaMockTestPage() {
               Subject availability
             </h3>
             <p className="mt-2 text-xs leading-6 text-slate-500">
-              Every subject with reviewed questions for {grade} appears in the
-              selector. Content from other grades is excluded.
+              Built-in practice sets and every reviewed question-bank subject
+              for {grade} appear in the selector. Content from other grades is
+              excluded.
             </p>
           </div>
         </aside>
@@ -348,7 +389,7 @@ export function KjseaMockTestPage() {
                   <div>
                     <p className="text-sm font-semibold">
                       {a.subject} ·{" "}
-                      {a.coverage?.grades?.join(", ") || "Junior school"} ·{" "}
+                      {a.coverage?.grades?.join(", ") || "School practice"} ·{" "}
                       {new Intl.DateTimeFormat("en-KE", {
                         dateStyle: "medium",
                         timeStyle: "short",

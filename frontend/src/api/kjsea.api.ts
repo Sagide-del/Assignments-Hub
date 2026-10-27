@@ -23,6 +23,7 @@ export interface MockQuestion {
   explanation?: string;
 }
 export interface MockSubject {
+  contentKind?: 'VARIED' | 'STARTER' | 'BANK';
   id: string;
   subject: string;
   source: 'GENERATED' | 'BANK';

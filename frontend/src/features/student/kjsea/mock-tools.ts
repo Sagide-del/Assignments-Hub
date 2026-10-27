@@ -57,7 +57,7 @@ export function visualText(v: MockVisual | undefined): string {
 }
 export function resultText(paper: MockAttempt) {
   return [
-    `KJSEA ${paper.subject ?? 'Mathematics'} PRACTICE REVIEW`,
+    `${paper.coverage?.grades?.join(', ') || 'School'} ${paper.subject ?? 'Mathematics'} PRACTICE REVIEW`,
     'Original Assignment Hub practice; not an official KNEC paper.',
     `Completed: ${paper.completedAt ?? ''}`,
     `Score: ${paper.score ?? 0}/${paper.questions.length}`,

@@ -14,7 +14,9 @@ import {
   ValidateNested,
 } from "class-validator";
 export class CreateMockDto {
-  @IsOptional() @IsIn(["Grade 7", "Grade 8", "Grade 9"]) grade?: string;
+  @IsOptional()
+  @IsIn(["Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"])
+  grade?: string;
   @IsOptional() @IsIn(["GENERATED", "BANK"]) source?: "GENERATED" | "BANK";
   @IsOptional() @IsString() @MaxLength(120) subject?: string;
   @IsOptional() @IsIn([30, 60, 90]) timeLimitMinutes?: number;

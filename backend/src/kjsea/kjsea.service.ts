@@ -15,6 +15,7 @@ import {
   MOCK_BLUEPRINT,
   type MockQuestion,
 } from "./mathematics";
+import { seniorSubjects, seniorPaper } from "./senior-practice";
 import { approvedChoices, bankPaper, type BankItem } from "./question-pool";
 import { CreateMockDto, SaveMockDto } from "./kjsea.dto";
 
@@ -32,18 +33,18 @@ export class KjseaService {
         "The mock-test database is not ready yet. Please retry shortly.",
       );
     }
-    return { ...MOCK_BLUEPRINT, gradeSelection: true };
+    return { ...MOCK_BLUEPRINT, gradeSelection: true, seniorMocks: true };
   }
   private grade(value?: string | null) {
     if (!value) return "Grade 9";
-    const match = value.trim().match(/^(?:grade\s*)?([789])$/i);
+    const match = value.trim().match(/^(?:grade\s*)?(7|8|9|10|11|12)$/i);
     if (!match)
       throw new BadRequestException(
-        "Mock tests are available for Grades 7, 8 and 9. Choose a junior-school grade.",
+        "Mock tests support Grades 7–12. Choose a supported school grade.",
       );
     return `Grade ${match[1]}`;
   }
-  private async approvedBank(grade?: string) {
+  private async approvedBank(grade: string) {
     const rows = await this.prisma.questionBank.findMany({
       where: {
         isGlobal: true,
@@ -51,19 +52,7 @@ export class KjseaService {
         schoolId: null,
         status: "APPROVED",
         grade: {
-          in: grade
-            ? [grade, grade.replace(" ", ""), grade.slice(-1)]
-            : [
-                "Grade 7",
-                "Grade 8",
-                "Grade 9",
-                "Grade7",
-                "Grade8",
-                "Grade9",
-                "7",
-                "8",
-                "9",
-              ],
+          in: [grade, grade.replace(" ", ""), grade.split(" ")[1]],
           mode: "insensitive",
         },
         questionType: "MULTIPLE_CHOICE",
@@ -91,7 +80,7 @@ export class KjseaService {
         (row) =>
           !grade ||
           row.grade.replace(/\s/g, "").replace(/^grade/i, "") ===
-            grade.slice(-1),
+            grade.split(" ")[1],
       ),
     );
   }
@@ -104,23 +93,39 @@ export class KjseaService {
       groups.set(key, [...(groups.get(key) ?? []), row]);
     }
     return [
-      {
-        id: "generated-mathematics",
-        subject: "Mathematics",
-        source: "GENERATED",
-        availableCount: null,
-        questionCount: 40,
-        topicCount: gradeTopics(grade).length,
-        visualCount: grade === "Grade 9" ? 20 : null,
-        areaCount: 5,
-        grades: [grade],
-      },
+      ...(Number(grade.split(" ")[1]) <= 9
+        ? [
+            {
+              id: "generated-mathematics",
+              contentKind: "VARIED",
+              subject: "Mathematics",
+              source: "GENERATED",
+              availableCount: null,
+              questionCount: 40,
+              topicCount: gradeTopics(grade).length,
+              visualCount: grade === "Grade 9" ? 20 : null,
+              areaCount: 5,
+              grades: [grade],
+            },
+          ]
+        : seniorSubjects(grade).map((profile) => ({
+            id: `generated:${profile.subject.toLowerCase()}`,
+            subject: profile.subject,
+            source: "GENERATED",
+            contentKind: profile.varied ? "VARIED" : "STARTER",
+            availableCount: null,
+            questionCount: profile.questionCount,
+            topicCount: profile.topicCount,
+            visualCount: null,
+            grades: [grade],
+          }))),
       ...[...groups.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, items]) => ({
           id: `bank:${key}`,
           subject: items[0].subject.trim(),
           source: "BANK",
+          contentKind: "BANK",
           availableCount: items.length,
           questionCount: Math.min(40, items.length),
           topicCount: new Set(items.map((i) => i.topic)).size,
@@ -145,16 +150,21 @@ export class KjseaService {
     const seed = randomInt(1, 2147483647);
     const source = dto.source ?? "GENERATED";
     const subject =
-      source === "GENERATED" ? "Mathematics" : dto.subject?.trim();
+      dto.subject?.trim() ||
+      (source === "GENERATED" ? "Mathematics" : undefined);
     if (!subject)
       throw new BadRequestException("Choose a subject for your mock.");
+    const junior = Number(grade.split(" ")[1]) <= 9;
+    const senior = seniorSubjects(grade).find(
+      (s) => s.subject.toLowerCase() === subject.toLowerCase(),
+    );
     if (
       source === "GENERATED" &&
-      dto.subject &&
-      dto.subject.trim().toLowerCase() !== "mathematics"
+      !(junior && subject.toLowerCase() === "mathematics") &&
+      !senior
     )
       throw new BadRequestException(
-        "The parameterised generator is for Mathematics. Choose the approved-bank option for other subjects.",
+        `No built-in ${subject} practice is available for ${grade}. Choose a reviewed-bank subject.`,
       );
     let questions: MockQuestion[];
     if (source === "BANK") {
@@ -184,7 +194,8 @@ export class KjseaService {
         ),
       );
       questions = bankPaper(pool, seed, used);
-    } else
+    } else if (!junior) questions = seniorPaper(subject, seed);
+    else
       questions =
         grade === "Grade 9"
           ? generatePaper(seed)
@@ -199,7 +210,13 @@ export class KjseaService {
           q.diagramUrl ||
           /<(?:img|svg|table)\b/i.test(q.contentHtml ?? ""),
       ).length,
-      areaCount: source === "GENERATED" ? 5 : undefined,
+      areaCount: new Set(questions.map((q) => q.area)).size,
+      contentKind:
+        source === "BANK"
+          ? "BANK"
+          : senior && !senior.varied
+            ? "STARTER"
+            : "VARIED",
       grades: [grade],
     };
     const attempt = await this.prisma.kjseaMockAttempt.create({
@@ -208,7 +225,11 @@ export class KjseaService {
         studentId: actor.id,
         seed,
         version:
-          source === "GENERATED" ? MOCK_BLUEPRINT.version : "kjsea-bank-v1",
+          source === "GENERATED"
+            ? junior
+              ? MOCK_BLUEPRINT.version
+              : "senior-practice-v1"
+            : "kjsea-bank-v1",
         subject,
         source,
         coverage: JSON.parse(JSON.stringify(coverage)),
