@@ -19,7 +19,7 @@ import json,sys
 from pathlib import Path
 bucket,prefix,directory=sys.argv[1:]
 root=Path(directory)
-trust={'Version':'2012-10-17','Statement':[{'Effect':'Allow','Principal':{'Federated':'arn:aws:iam::516962256415:oidc-provider/token.actions.githubusercontent.com'},'Action':'sts:AssumeRoleWithWebIdentity','Condition':{'StringEquals':{'token.actions.githubusercontent.com:aud':'sts.amazonaws.com','token.actions.githubusercontent.com:sub':'repo:Sagide-del/Assignments-Hub:ref:refs/heads/main'}}}]}
+trust={'Version':'2012-10-17','Statement':[{'Effect':'Allow','Principal':{'Federated':'arn:aws:iam::516962256415:oidc-provider/token.actions.githubusercontent.com'},'Action':'sts:AssumeRoleWithWebIdentity','Condition':{'StringEquals':{'token.actions.githubusercontent.com:aud':'sts.amazonaws.com','token.actions.githubusercontent.com:sub':'repo:Sagide-del@210379737/Assignments-Hub@1302197760:ref:refs/heads/main'}}}]}
 objects=f'arn:aws:s3:::{bucket}/{prefix+"/" if prefix else ""}*'
 policy={'Version':'2012-10-17','Statement':[
  {'Effect':'Allow','Action':['s3:ListBucket','s3:GetBucketLocation'],'Resource':f'arn:aws:s3:::{bucket}'},
