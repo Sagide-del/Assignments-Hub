@@ -14,7 +14,7 @@
     "test:assignments": "node --test scripts/assignment-list.test.mjs scripts/assignment-catalogue.test.mjs",
     "test:skills": "node --test scripts/skill-progress.test.mjs scripts/skill-lessons.test.mjs",
     "check:firstaid-assets": "node scripts/check-firstaid-assets.mjs",
-    "test:stem": "node --test scripts/stem-investigations.test.mjs",
+    "test:stem": "node --test scripts/stem-investigations.test.mjs scripts/titration.test.mjs",
     "test:curriculum": "node --test scripts/curriculum.test.mjs",
     "test:kjsea": "node --test scripts/kjsea.test.mjs"
   },
@@ -32,6 +32,7 @@
     "react-quill-new": "^3.8.3",
     "react-router-dom": "^6.26.2",
     "recharts": "^2.12.7",
+    "three": "^0.180.0",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"
   },
@@ -39,6 +40,7 @@
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.180.0",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
     "@typescript-eslint/parser": "^8.5.0",
     "@vitejs/plugin-react": "^4.3.1",

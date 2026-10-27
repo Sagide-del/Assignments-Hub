@@ -125,7 +125,7 @@ const packs: Record<string, Investigation> = {
     safety:
       'For a physical extension, use a securely supported small bob with a clear swing area. Never swing objects near faces.',
     limitation:
-      'Small-angle, frictionless model. Air resistance, large angles and measurement error are omitted. The drawing shows length, not a timed animation.',
+      'Small-angle, frictionless model. Air resistance, large angles and measurement error are omitted. The 3D motion illustrates the ideal model, not a measured physical experiment.',
   },
   'ss-agr-10-2': {
     model: 'hydroponics',

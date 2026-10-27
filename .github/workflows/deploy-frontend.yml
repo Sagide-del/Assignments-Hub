@@ -6,6 +6,8 @@ on:
       - 'frontend/**'
       - 'backend/src/kjsea/**'
       - 'backend/src/submissions/**'
+      - 'backend/src/labs/**'
+      - 'backend/src/lab-sessions/**'
       - 'backend/prisma/schema.prisma'
       - 'backend/prisma/migrations/**'
       - 'scripts/deployment/**'
@@ -41,10 +43,13 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions && npm run build
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions && npm run build
       - name: Wait for assessment API capabilities
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
+      - name: Wait for immersive lab API and catalogue
+        working-directory: frontend
+        run: node scripts/check-stem-api.mjs
       - name: Connect to AWS without stored access keys
         uses: aws-actions/configure-aws-credentials@v4
         with:

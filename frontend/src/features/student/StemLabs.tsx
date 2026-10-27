@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Atom,
@@ -15,12 +15,13 @@ import {
   Sprout,
   Waves,
   Zap,
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { labsApi, labSessionsApi, stemApi } from '../../api/labs.api';
-import { useAuthStore } from '../../store/auth.store';
-import type { Lab, StemCategory, StemSubject } from '../../types';
-import { investigationFor, notebookKey } from './stem-workspace/investigations';
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { labsApi, labSessionsApi, stemApi } from "../../api/labs.api";
+import { useAuthStore } from "../../store/auth.store";
+import type { Lab, StemCategory, StemSubject } from "../../types";
+import { isTitrationKey } from "./stem-workspace/three-d/titration-model";
+import { investigationFor, notebookKey } from "./stem-workspace/investigations";
 
 function labMatchesCategory(
   lab: Lab,
@@ -37,65 +38,71 @@ function labMatchesCategory(
   );
 }
 function appearance(lab: Lab) {
+  if (isTitrationKey(lab.key))
+    return {
+      Icon: FlaskConical,
+      style: "bg-violet-50 text-violet-800",
+      line: "Prepare · titrate · analyse",
+    };
   const model = investigationFor(lab)?.model;
-  if (model === 'photoelectric')
+  if (model === "photoelectric")
     return {
       Icon: Zap,
-      style: 'bg-amber-50 text-amber-900',
-      line: 'Predict · test · reason',
+      style: "bg-amber-50 text-amber-900",
+      line: "Predict · test · reason",
     };
 
   if (
-    model === 'circuit' ||
+    model === "circuit" ||
     /electri|circuit|network|computer|cyber|algorithm/i.test(lab.title)
   )
     return {
       Icon: CircuitBoard,
-      style: 'bg-indigo-50 text-indigo-800',
-      line: 'Build · test · improve',
+      style: "bg-indigo-50 text-indigo-800",
+      line: "Build · test · improve",
     };
-  if (model === 'filter' || /water|hydro/i.test(lab.title))
+  if (model === "filter" || /water|hydro/i.test(lab.title))
     return {
       Icon: Droplets,
-      style: 'bg-cyan-50 text-cyan-800',
-      line: 'Compare · observe · explain',
+      style: "bg-cyan-50 text-cyan-800",
+      line: "Compare · observe · explain",
     };
-  if (model === 'pendulum' || /wave|motion|optics|physics/i.test(lab.title))
+  if (model === "pendulum" || /wave|motion|optics|physics/i.test(lab.title))
     return {
       Icon: Waves,
-      style: 'bg-violet-50 text-violet-800',
-      line: 'Measure · model · explain',
+      style: "bg-violet-50 text-violet-800",
+      line: "Measure · model · explain",
     };
   if (/plant|agri|soil|greenhouse|ecosystem|nutrition/i.test(lab.title))
     return {
       Icon: Sprout,
-      style: 'bg-emerald-50 text-emerald-800',
-      line: 'Observe · compare · grow',
+      style: "bg-emerald-50 text-emerald-800",
+      line: "Observe · compare · grow",
     };
   if (/bio|cell|body|genetic|dna/i.test(lab.title))
     return {
       Icon: Leaf,
-      style: 'bg-teal-50 text-teal-800',
-      line: 'Explore · connect · explain',
+      style: "bg-teal-50 text-teal-800",
+      line: "Explore · connect · explain",
     };
   return {
     Icon: Atom,
-    style: 'bg-sky-50 text-sky-800',
-    line: 'Question · investigate · explain',
+    style: "bg-sky-50 text-sky-800",
+    line: "Question · investigate · explain",
   };
 }
 export function StemLabsPage() {
   const user = useAuthStore((s) => s.user);
-  const [categoryId, setCategoryId] = useState('');
-  const [subjectId, setSubjectId] = useState('');
-  const [search, setSearch] = useState('');
-  const [view, setView] = useState('all');
+  const [categoryId, setCategoryId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState("all");
   const { data: categories = [] } = useQuery({
-    queryKey: ['stem-categories'],
+    queryKey: ["stem-categories"],
     queryFn: stemApi.findCategories,
   });
   const { data: subjects = [] } = useQuery({
-    queryKey: ['stem-subjects'],
+    queryKey: ["stem-subjects"],
     queryFn: stemApi.findSubjects,
   });
   const {
@@ -104,11 +111,11 @@ export function StemLabsPage() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['labs', 'student-catalogue', user?.id, user?.grade],
+    queryKey: ["labs", "student-catalogue", user?.id, user?.grade],
     queryFn: () => labsApi.findAll(),
   });
   const { data: sessions = [], isError: sessionsError } = useQuery({
-    queryKey: ['lab-sessions', 'my-discoveries', user?.id],
+    queryKey: ["lab-sessions", "my-discoveries", user?.id],
     queryFn: () => labSessionsApi.findAll(),
   });
   // The API enforces grade access. Never substitute local content for an inaccessible lab.
@@ -121,14 +128,20 @@ export function StemLabsPage() {
         labs
           .filter((lab) => {
             try {
-              const raw = localStorage.getItem(notebookKey(user!.id, lab.id));
+              const raw = localStorage.getItem(
+                isTitrationKey(lab.key)
+                  ? `titration-3d-v1:${user!.id}:${lab.id}`
+                  : notebookKey(user!.id, lab.id),
+              );
               if (!raw) return false;
               const d = JSON.parse(raw);
               return Boolean(
+                d.goggles ||
+                d.aliquot ||
                 d.prediction ||
-                  d.observations ||
-                  d.conclusion ||
-                  d.trials?.length,
+                d.observations ||
+                d.conclusion ||
+                d.trials?.length,
               );
             } catch {
               return false;
@@ -163,16 +176,34 @@ export function StemLabsPage() {
         if (c && !labMatchesCategory(l, c, subjects)) return false;
       }
       if (subjectId && l.subject !== subjectId) return false;
-      if (view === 'interactive' && !investigationFor(l)) return false;
-      if (view === 'notebooks' && !drafts.has(l.id)) return false;
-      if (view === 'completed' && !completed.has(l.key)) return false;
-      return `${l.title} ${l.subject} ${l.topic ?? l.topicArea ?? ''} ${investigationFor(l)?.question ?? ''}`
+      if (
+        view === "3d" &&
+        !isTitrationKey(l.key) &&
+        investigationFor(l)?.model !== "pendulum"
+      )
+        return false;
+      if (
+        view === "interactive" &&
+        !investigationFor(l) &&
+        !isTitrationKey(l.key)
+      )
+        return false;
+      if (view === "notebooks" && !drafts.has(l.id)) return false;
+      if (view === "completed" && !completed.has(l.key)) return false;
+      return `${l.title} ${l.subject} ${l.topic ?? l.topicArea ?? ""} ${investigationFor(l)?.question ?? ""}`
         .toLowerCase()
         .includes(search.trim().toLowerCase());
     })
     .sort(
-      (a, b) => Number(!!investigationFor(b)) - Number(!!investigationFor(a)),
+      (a, b) =>
+        Number(
+          isTitrationKey(b.key) || investigationFor(b)?.model === "pendulum",
+        ) -
+          Number(
+            isTitrationKey(a.key) || investigationFor(a)?.model === "pendulum",
+          ) || Number(!!investigationFor(b)) - Number(!!investigationFor(a)),
     );
+  const immersive = labs.find((l) => isTitrationKey(l.key));
   const resume = labs.find((l) => drafts.has(l.id) && !completed.has(l.key));
   return (
     <div className="mx-auto max-w-6xl space-y-6 text-slate-800">
@@ -180,7 +211,7 @@ export function StemLabsPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">STEM Labs</h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-            Interactive investigations and your lab notebooks.
+            Operate apparatus, test ideas and build an experimental record.
           </p>
         </div>
         {user?.grade && (
@@ -189,68 +220,84 @@ export function StemLabsPage() {
           </span>
         )}
       </header>
-      <section
-        className="grid overflow-hidden rounded-2xl border bg-white md:grid-cols-[1fr_280px]"
-        aria-label="Your lab notebook"
-      >
-        <div className="p-5 sm:p-6">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-800">
+      {immersive && (
+        <section
+          className="grid overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-[1.1fr_1fr]"
+          aria-label="3D laboratory"
+        >
+          <Link
+            to={`/student/stem-labs/${immersive.id}`}
+            className="min-h-52 overflow-hidden bg-[#e7eef5]"
+          >
+            <img
+              src="/stem/titration-bench.png"
+              alt="Three-dimensional titration bench with burette, pipette, conical flask and reagent bottles"
+              className="h-56 w-full object-cover lg:h-full"
+            />
+          </Link>
+          <div className="flex flex-col justify-center p-5 sm:p-7">
+            <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-800">
+              Interactive 3D practical · {immersive.grade}
+            </span>
+            <h2 className="mt-4 text-xl font-semibold">
+              Step into the titration lab
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-500">
+              Prepare your glassware. Control the burette. Find the endpoint and
+              record your readings.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              <Link
+                to={`/student/stem-labs/${immersive.id}`}
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-5 text-xs font-semibold text-white"
+              >
+                Enter 3D lab
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <span className="text-xs text-slate-500">
+                Guided & independent practice
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+        <span>
+          {isLoading
+            ? "Loading your labs…"
+            : `${labs.length} available activities · ${labs.filter((l) => isTitrationKey(l.key) || investigationFor(l)?.model === "pendulum").length} with 3D apparatus`}
+        </span>
+        {resume && (
+          <Link
+            to={`/student/stem-labs/${resume.id}`}
+            className="inline-flex min-h-10 items-center gap-2 font-medium text-slate-800"
+          >
             <ClipboardList className="h-4 w-4" />
-            My lab notebook
-          </div>
-          <h2 className="mt-3 text-xl font-semibold">
-            {resume
-              ? `Pick up: ${resume.title}`
-              : 'Lab notebooks'}
-          </h2>
-          <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">
-            {resume
-              ? 'Your notes and recorded trials are saved on this browser. Continue testing, then explain what you found.'
-              : 'Record predictions, trials and conclusions. Export your notebook when you finish.'}
-          </p>
-          {resume && (
-            <Link
-              to={`/student/stem-labs/${resume.id}`}
-              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl bg-teal-800 px-4 text-sm font-semibold text-white"
-            >
-              Continue notebook
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          )}
-        </div>
-        <div className="flex items-center justify-around gap-4 border-t bg-slate-50 p-6 md:border-l md:border-t-0">
-          <div>
-            <FlaskConical className="mb-3 h-5 w-5 text-teal-700" />
-            <p className="text-2xl font-semibold">
-              {isLoading ? '—' : labs.filter((l) => investigationFor(l)).length}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">Working models</p>
-          </div>
-          <div>
-            <CheckCircle2 className="mb-3 h-5 w-5 text-teal-700" />
-            <p className="text-2xl font-semibold">
-              {sessionsError
-                ? '—'
-                : labs.filter((l) => completed.has(l.key)).length}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">Labs completed</p>
-          </div>
-        </div>
-      </section>
+            Resume: {resume.title}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+        {!sessionsError && (
+          <span>
+            {labs.filter((l) => completed.has(l.key)).length} completed
+          </span>
+        )}
+      </div>
       <section aria-label="Find an investigation" className="space-y-4">
         <div className="flex flex-wrap gap-2">
           {[
-            ['all', 'Explore labs'],
-            ['interactive', 'Interactive models'],
-            ['notebooks', 'My notebooks'],
-            ['completed', 'Completed'],
+            ["all", "All activities"],
+            ["3d", "3D practicals"],
+            ["interactive", "Interactive models"],
+            ["notebooks", "My notebooks"],
+            ["completed", "Completed"],
           ].map(([key, label]) => (
             <button
               type="button"
               key={key}
               aria-pressed={view === key}
               onClick={() => setView(key)}
-              className={`min-h-10 rounded-xl px-4 text-sm font-semibold ${view === key ? 'bg-[#101820] text-white' : 'border bg-white text-slate-600'}`}
+              className={`min-h-10 rounded-xl px-4 text-sm font-semibold ${view === key ? "bg-[#101820] text-white" : "border bg-white text-slate-600"}`}
             >
               {label}
             </button>
@@ -276,7 +323,7 @@ export function StemLabsPage() {
               value={categoryId}
               onChange={(e) => {
                 setCategoryId(e.target.value);
-                setSubjectId('');
+                setSubjectId("");
               }}
               className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
             >
@@ -332,30 +379,30 @@ export function StemLabsPage() {
       ) : (
         <>
           <p className="text-sm text-slate-500" role="status">
-            {visible.length}{' '}
-            {visible.length === 1 ? 'investigation' : 'investigations'}
-            {view === 'interactive' ? ' with a working browser model' : ''}
+            {visible.length}{" "}
+            {visible.length === 1 ? "investigation" : "investigations"}
+            {view === "interactive" ? " with a working browser model" : ""}
           </p>
           {visible.length === 0 ? (
             <div className="rounded-2xl border bg-white p-8 text-center">
               <BookOpen className="mx-auto h-8 w-8 text-teal-700" />
               <h2 className="mt-3 font-semibold">
-                {view === 'notebooks'
-                  ? 'Your next investigation starts here'
-                  : 'No labs in this selection'}
+                {view === "notebooks"
+                  ? "Your next investigation starts here"
+                  : "No labs in this selection"}
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                {view === 'notebooks'
-                  ? 'Open a lab and write a prediction to start a notebook on this browser.'
-                  : 'Try another subject or clear your filters.'}
+                {view === "notebooks"
+                  ? "Open a lab and write a prediction to start a notebook on this browser."
+                  : "Try another subject or clear your filters."}
               </p>
               <button
                 type="button"
                 onClick={() => {
-                  setSearch('');
-                  setCategoryId('');
-                  setSubjectId('');
-                  setView('all');
+                  setSearch("");
+                  setCategoryId("");
+                  setSubjectId("");
+                  setView("all");
                 }}
                 className="mt-4 text-sm font-semibold text-teal-800 underline"
               >
@@ -369,6 +416,8 @@ export function StemLabsPage() {
             >
               {visible.map((lab) => {
                 const pack = investigationFor(lab);
+                const is3d =
+                  isTitrationKey(lab.key) || pack?.model === "pendulum";
                 const { Icon, style, line } = appearance(lab);
                 return (
                   <article
@@ -386,16 +435,22 @@ export function StemLabsPage() {
                       </div>
                       <Icon
                         strokeWidth={1.3}
-                        className="h-16 w-16 shrink-0"
+                        className="h-9 w-9 shrink-0"
                         aria-hidden="true"
                       />
                     </div>
                     <div className="flex flex-1 flex-col p-5">
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span
-                          className={`rounded-full px-2 py-1 font-semibold ${pack ? 'bg-teal-50 text-teal-800' : 'bg-slate-100 text-slate-600'}`}
+                          className={`rounded-full px-2 py-1 font-semibold ${pack ? "bg-teal-50 text-teal-800" : "bg-slate-100 text-slate-600"}`}
                         >
-                          {pack ? 'Interactive model' : 'Activity & notebook'}
+                          {isTitrationKey(lab.key)
+                            ? "3D practical"
+                            : is3d
+                              ? "3D model"
+                              : pack
+                                ? "Interactive model"
+                                : "Activity & notebook"}
                         </span>
                         {completed.has(lab.key) && (
                           <span className="inline-flex items-center gap-1 text-teal-800">
@@ -411,13 +466,15 @@ export function StemLabsPage() {
                         {pack?.question ??
                           lab.topic ??
                           lab.topicArea ??
-                          'Explore the activity, record your observations and explain what you learn.'}
+                          "Explore the activity, record your observations and explain what you learn."}
                       </p>
                       <div className="mt-4 flex items-center gap-2 border-t pt-3 text-xs text-slate-500">
                         <ClipboardList className="h-4 w-4" />
-                        {pack
-                          ? 'Controls · results table · evidence notebook'
-                          : 'Instructions and supporting resources inside'}
+                        {isTitrationKey(lab.key)
+                          ? "Apparatus · repeated trials · calculation & report"
+                          : pack
+                            ? "Controls · results table · evidence notebook"
+                            : "Instructions and supporting resources inside"}
                       </div>
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
                         {lab.durationMinutes ? (
@@ -434,11 +491,13 @@ export function StemLabsPage() {
                           to={`/student/stem-labs/${lab.id}`}
                           className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white"
                         >
-                          {drafts.has(lab.id)
-                            ? 'Open notebook'
-                            : pack
-                              ? 'Start investigating'
-                              : 'Explore activity'}
+                          {is3d
+                            ? "Enter 3D lab"
+                            : drafts.has(lab.id)
+                              ? "Open notebook"
+                              : pack
+                                ? "Start investigating"
+                                : "Explore activity"}
                           <ArrowRight className="h-4 w-4" />
                         </Link>
                       </div>

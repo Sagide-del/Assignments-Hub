@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,19 +12,23 @@ import {
   FlaskConical,
   Lightbulb,
   ShieldCheck,
-} from 'lucide-react';
-import { apiErrorMessage } from '../../api/axios';
-import { labsApi, labSessionsApi } from '../../api/labs.api';
-import { useAuthStore } from '../../store/auth.store';
-import type { Lab } from '../../types';
+} from "lucide-react";
+import { apiErrorMessage } from "../../api/axios";
+import { labsApi, labSessionsApi } from "../../api/labs.api";
+import { useAuthStore } from "../../store/auth.store";
+import type { Lab } from "../../types";
 import {
   emptyDraft,
   investigationFor,
   notebookKey,
   notebookReady,
   type LabDraft,
-} from './stem-workspace/investigations';
-import { ExperimentBench } from './stem-workspace/ExperimentBench';
+} from "./stem-workspace/investigations";
+import { isTitrationKey } from "./stem-workspace/three-d/titration-model";
+const TitrationPractical = lazy(
+  () => import("./stem-workspace/three-d/TitrationPractical"),
+);
+import { ExperimentBench } from "./stem-workspace/ExperimentBench";
 
 export function StemLabPlayerPage() {
   const { id } = useParams();
@@ -35,7 +39,7 @@ export function StemLabPlayerPage() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['lab-player', userId, Number(id)],
+    queryKey: ["lab-player", userId, Number(id)],
     queryFn: () => labsApi.findOne(Number(id)),
     enabled: !!userId && Number.isFinite(Number(id)),
   });
@@ -59,21 +63,37 @@ export function StemLabPlayerPage() {
         </Link>
       </div>
     );
+  if (isTitrationKey(lab.key))
+    return (
+      <Suspense
+        fallback={
+          <p className="p-6 text-sm text-slate-500">
+            Preparing your 3D laboratory…
+          </p>
+        }
+      >
+        <TitrationPractical
+          key={`${userId}:${lab.id}`}
+          lab={lab}
+          userId={userId!}
+        />
+      </Suspense>
+    );
   return <LabNotebook key={`${userId}:${lab.id}`} lab={lab} userId={userId!} />;
 }
 
 function readDraft(key: string): LabDraft {
   try {
-    const saved = JSON.parse(localStorage.getItem(key) ?? 'null');
-    if (!saved || typeof saved !== 'object') return emptyDraft();
+    const saved = JSON.parse(localStorage.getItem(key) ?? "null");
+    if (!saved || typeof saved !== "object") return emptyDraft();
     const base = emptyDraft();
     for (const field of [
-      'prediction',
-      'observations',
-      'conclusion',
-      'transfer',
+      "prediction",
+      "observations",
+      "conclusion",
+      "transfer",
     ] as const)
-      if (typeof saved[field] === 'string') base[field] = saved[field];
+      if (typeof saved[field] === "string") base[field] = saved[field];
     base.checked = Array.isArray(saved.checked)
       ? saved.checked.filter((n: unknown) => Number.isInteger(n))
       : [];
@@ -82,18 +102,18 @@ function readDraft(key: string): LabDraft {
           .filter(
             (t: unknown) =>
               t &&
-              typeof t === 'object' &&
-              'setting' in t &&
-              typeof t.setting === 'string' &&
-              'result' in t &&
-              typeof t.result === 'string',
+              typeof t === "object" &&
+              "setting" in t &&
+              typeof t.setting === "string" &&
+              "result" in t &&
+              typeof t.result === "string",
           )
           .slice(0, 20)
       : [];
-    for (const field of ['answers', 'reflections'] as const)
-      if (saved[field] && typeof saved[field] === 'object')
+    for (const field of ["answers", "reflections"] as const)
+      if (saved[field] && typeof saved[field] === "object")
         base[field] = Object.fromEntries(
-          Object.entries(saved[field]).filter(([, v]) => typeof v === 'string'),
+          Object.entries(saved[field]).filter(([, v]) => typeof v === "string"),
         ) as Record<number, string>;
     return base;
   } catch {
@@ -149,12 +169,12 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
         competency: lab.competency ?? undefined,
         answers: questions.map((q) => ({
           questionId: q.id,
-          answer: draft.answers[q.id] ?? '',
+          answer: draft.answers[q.id] ?? "",
         })),
       }),
     onSuccess: async () => {
       setSaved(true);
-      await client.invalidateQueries({ queryKey: ['lab-sessions'] });
+      await client.invalidateQueries({ queryKey: ["lab-sessions"] });
     },
   });
   function download() {
@@ -163,38 +183,38 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
       `${lab.grade} · ${lab.subject}`,
       `Exported: ${new Date().toISOString()}`,
       pack
-        ? 'Results below come from a simplified teaching model, not physical measurements.'
-        : 'Student investigation record.',
-      '\nQUESTION',
+        ? "Results below come from a simplified teaching model, not physical measurements."
+        : "Student investigation record.",
+      "\nQUESTION",
       pack?.question ?? lab.topic ?? lab.title,
-      '\nMY PREDICTION',
+      "\nMY PREDICTION",
       draft.prediction,
-      '\nMETHOD',
+      "\nMETHOD",
       ...steps.map(
         (s, i) =>
-          `${i + 1}. ${s.instruction} [${draft.checked.includes(i) ? 'done' : 'not checked'}]`,
+          `${i + 1}. ${s.instruction} [${draft.checked.includes(i) ? "done" : "not checked"}]`,
       ),
-      '\nRECORDED TRIALS',
+      "\nRECORDED TRIALS",
       ...draft.trials.map((t, i) => `${i + 1}. ${t.setting} → ${t.result}`),
-      '\nOBSERVATIONS',
+      "\nOBSERVATIONS",
       draft.observations,
-      '\nCONCLUSION',
+      "\nCONCLUSION",
       draft.conclusion,
-      '\nREAL-LIFE CONNECTION',
+      "\nREAL-LIFE CONNECTION",
       draft.transfer,
-      '\nQUESTIONS',
+      "\nQUESTIONS",
       ...questions.map(
-        (q) => `${q.questionText}\n${draft.answers[q.id] ?? ''}`,
+        (q) => `${q.questionText}\n${draft.answers[q.id] ?? ""}`,
       ),
-      '\nREFLECTIONS',
-      ...prompts.map((p) => `${p.prompt}\n${draft.reflections[p.id] ?? ''}`),
-      pack ? `\nMODEL LIMITS\n${pack.limitation}` : '',
-      '\nThis notebook records student work; it is not a teacher assessment.',
-    ].join('\n');
+      "\nREFLECTIONS",
+      ...prompts.map((p) => `${p.prompt}\n${draft.reflections[p.id] ?? ""}`),
+      pack ? `\nMODEL LIMITS\n${pack.limitation}` : "",
+      "\nThis notebook records student work; it is not a teacher assessment.",
+    ].join("\n");
     const url = URL.createObjectURL(
-      new Blob([text], { type: 'text/plain;charset=utf-8' }),
+      new Blob([text], { type: "text/plain;charset=utf-8" }),
     );
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `stem-lab-${lab.id}-notebook.txt`;
     a.click();
@@ -202,13 +222,13 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
   }
   const resources = [...(lab.media ?? [])].sort((a, b) => a.order - b.order);
   const stages = [
-    { title: 'Prepare', icon: BookOpen, detail: 'Question & prediction' },
-    { title: 'Investigate', icon: FlaskConical, detail: 'Test & record' },
-    { title: 'Explain', icon: Lightbulb, detail: 'Evidence & reflection' },
+    { title: "Prepare", icon: BookOpen, detail: "Question & prediction" },
+    { title: "Investigate", icon: FlaskConical, detail: "Test & record" },
+    { title: "Explain", icon: Lightbulb, detail: "Evidence & reflection" },
   ];
   function go(next: number) {
     setStage(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   return (
     <div className="mx-auto max-w-6xl space-y-5 text-slate-800">
@@ -231,19 +251,19 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
       </div>
       <header className="rounded-2xl bg-[#101820] p-6 text-white sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
-          {lab.subject} · {lab.grade} ·{' '}
-          {pack ? 'Interactive investigation' : 'Guided practical'}
+          {lab.subject} · {lab.grade} ·{" "}
+          {pack ? "Interactive investigation" : "Guided practical"}
         </p>
         <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">{lab.title}</h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-slate-200">
           {pack?.question ??
             lab.description ??
-            'Build an explanation from your own observations.'}
+            "Build an explanation from your own observations."}
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs">
           {(lab.coreCompetencies?.length
             ? lab.coreCompetencies
-            : ['Critical thinking and problem solving', 'Learning to learn']
+            : ["Critical thinking and problem solving", "Learning to learn"]
           ).map((c) => (
             <span
               key={c}
@@ -259,9 +279,9 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
           <button
             type="button"
             key={title}
-            aria-current={stage === i ? 'step' : undefined}
+            aria-current={stage === i ? "step" : undefined}
             onClick={() => go(i)}
-            className={`min-w-0 rounded-xl border p-3 text-left sm:p-4 ${stage === i ? 'border-teal-700 bg-teal-50 text-teal-950' : 'bg-white text-slate-500'}`}
+            className={`min-w-0 rounded-xl border p-3 text-left sm:p-4 ${stage === i ? "border-teal-700 bg-teal-50 text-teal-950" : "bg-white text-slate-500"}`}
           >
             <span className="flex items-center gap-2 text-sm font-semibold">
               <Icon className="hidden h-5 w-5 sm:block" />
@@ -273,11 +293,11 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
       </nav>
       <p
         role="status"
-        className={`text-xs ${storageError ? 'text-red-700' : 'text-slate-500'}`}
+        className={`text-xs ${storageError ? "text-red-700" : "text-slate-500"}`}
       >
         {storageError
-          ? 'This browser could not save your draft. Download your notebook before leaving.'
-          : 'Notebook autosaves on this browser for your account. Download it to keep or share your work.'}
+          ? "This browser could not save your draft. Download your notebook before leaving."
+          : "Notebook autosaves on this browser for your account. Download it to keep or share your work."}
       </p>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
         <main className="min-w-0 space-y-5">
@@ -313,7 +333,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                 <Field
                   label={
                     pack?.prediction ??
-                    'What do you think will happen, and why?'
+                    "What do you think will happen, and why?"
                   }
                   value={draft.prediction}
                   onChange={(prediction) => update({ prediction })}
@@ -322,9 +342,9 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                 {pack && (
                   <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
                     {[
-                      ['Change', pack.variable],
-                      ['Measure', pack.measure],
-                      ['Keep the same', pack.controls],
+                      ["Change", pack.variable],
+                      ["Measure", pack.measure],
+                      ["Keep the same", pack.controls],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-xl border p-3">
                         <dt className="text-xs font-semibold uppercase text-teal-800">
@@ -357,8 +377,8 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                 ) : (
                   <p className="mt-3 text-sm text-slate-600">
                     {pack
-                      ? 'Use a phone, tablet or computer. No physical equipment is needed for this browser model.'
-                      : 'Check the practical instructions and ask your teacher what equipment and supervision are needed.'}
+                      ? "Use a phone, tablet or computer. No physical equipment is needed for this browser model."
+                      : "Check the practical instructions and ask your teacher what equipment and supervision are needed."}
                   </p>
                 )}
                 {!!lab.safetyChecklist?.length && (
@@ -381,14 +401,14 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                   <div className="space-y-4">
                     {resources.map((m) => (
                       <div key={m.id}>
-                        {m.type.toUpperCase() === 'IMAGE' ? (
+                        {m.type.toUpperCase() === "IMAGE" ? (
                           <img
                             loading="lazy"
                             src={m.url}
-                            alt={m.caption ?? m.title ?? 'Lab illustration'}
+                            alt={m.caption ?? m.title ?? "Lab illustration"}
                             className="max-h-80 w-full rounded-xl object-contain"
                           />
-                        ) : m.type.toUpperCase() === 'AUDIO' ? (
+                        ) : m.type.toUpperCase() === "AUDIO" ? (
                           <audio controls src={m.url} className="w-full" />
                         ) : null}
                         <a
@@ -397,7 +417,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          {m.title ?? 'Open resource'}
+                          {m.title ?? "Open resource"}
                         </a>
                         {m.caption && (
                           <p className="mt-1 text-sm">{m.caption}</p>
@@ -530,7 +550,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                 <Field
                   label={
                     pack?.explain ??
-                    'What is your conclusion? Use evidence from the investigation to explain your reasoning.'
+                    "What is your conclusion? Use evidence from the investigation to explain your reasoning."
                   }
                   value={draft.conclusion}
                   onChange={(conclusion) => update({ conclusion })}
@@ -541,7 +561,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                     label={
                       pack?.transfer ??
                       lab.communityLink ??
-                      'Where could you use what you learned at home, school or in your community? (Optional)'
+                      "Where could you use what you learned at home, school or in your community? (Optional)"
                     }
                     value={draft.transfer}
                     onChange={(transfer) => update({ transfer })}
@@ -557,7 +577,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                     {questions.map((q, i) => {
                       const options = Array.isArray(q.options)
                         ? q.options.filter(
-                            (o): o is string => typeof o === 'string',
+                            (o): o is string => typeof o === "string",
                           )
                         : [];
                       return (
@@ -592,7 +612,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                           ) : (
                             <Field
                               label="Your answer"
-                              value={draft.answers[q.id] ?? ''}
+                              value={draft.answers[q.id] ?? ""}
                               onChange={(answer) =>
                                 update({
                                   answers: { ...draft.answers, [q.id]: answer },
@@ -616,7 +636,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                       <Field
                         key={p.id}
                         label={p.prompt}
-                        value={draft.reflections[p.id] ?? ''}
+                        value={draft.reflections[p.id] ?? ""}
                         onChange={(answer) =>
                           update({
                             reflections: {
@@ -655,7 +675,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                 {!ready && (
                   <p className="mt-3 text-sm text-amber-900">
                     Before saving: write a prediction, check every investigation
-                    step, {pack ? 'record at least three trials, ' : ''}write
+                    step, {pack ? "record at least three trials, " : ""}write
                     observations and a conclusion, and answer any questions and
                     reflections.
                   </p>
@@ -664,7 +684,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                   <p role="alert" className="mt-3 text-sm text-red-700">
                     {apiErrorMessage(
                       completion.error,
-                      'Could not save completion. Your notebook is still available; try again.',
+                      "Could not save completion. Your notebook is still available; try again.",
                     )}
                   </p>
                 )}
@@ -685,10 +705,10 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                     className="min-h-11 rounded-xl bg-teal-800 px-5 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     {completion.isPending
-                      ? 'Saving…'
+                      ? "Saving…"
                       : saved
-                        ? 'Completion saved'
-                        : 'Save completion'}
+                        ? "Completion saved"
+                        : "Save completion"}
                   </button>
                   <button
                     type="button"
@@ -718,7 +738,7 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
                 onClick={() => go(stage + 1)}
                 className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white"
               >
-                {stage === 0 ? 'Start investigating' : 'Explain your findings'}
+                {stage === 0 ? "Start investigating" : "Explain your findings"}
                 <ArrowRight className="h-4 w-4" />
               </button>
             )}
@@ -731,21 +751,21 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
           </h2>
           <ul className="mt-4 space-y-3 text-sm">
             {[
-              ['Prediction written', !!draft.prediction.trim()],
+              ["Prediction written", !!draft.prediction.trim()],
               [
-                'Investigation steps checked',
+                "Investigation steps checked",
                 steps.length > 0 &&
                   steps.every((_, i) => draft.checked.includes(i)),
               ],
               ...(pack
-                ? [['Three trials recorded', draft.trials.length >= 3]]
+                ? [["Three trials recorded", draft.trials.length >= 3]]
                 : []),
-              ['Observations recorded', !!draft.observations.trim()],
-              ['Conclusion explained', !!draft.conclusion.trim()],
+              ["Observations recorded", !!draft.observations.trim()],
+              ["Conclusion explained", !!draft.conclusion.trim()],
             ].map(([label, done]) => (
               <li key={String(label)} className="flex items-center gap-2">
                 <span
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${done ? 'bg-teal-100 text-teal-800' : 'border bg-slate-50'}`}
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${done ? "bg-teal-100 text-teal-800" : "border bg-slate-50"}`}
                 >
                   {done && <Check className="h-3 w-3" />}
                 </span>
@@ -805,7 +825,7 @@ function Field({
         rows={4}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder ?? 'Write your explanation…'}
+        placeholder={placeholder ?? "Write your explanation…"}
         className="mt-2 block w-full rounded-xl border border-slate-300 p-3 text-sm font-normal leading-6 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
       />
     </label>

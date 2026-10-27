@@ -1,8 +1,19 @@
-import { IsArray, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-import { AnswerInputDto } from '../../submissions/dto/answer-input.dto';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { TitrationEvidenceDto } from "./titration-evidence.dto";
+import { AnswerInputDto } from "../../submissions/dto/answer-input.dto";
 
 export class CreateLabSessionDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TitrationEvidenceDto)
+  practical?: TitrationEvidenceDto;
   // Identifies which lab was completed — matches Lab.key when the lab
   // exists in the catalog (see LabsService), or is a free-text key for labs
   // that predate the catalog / aren't in it.

@@ -1,18 +1,49 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { LabStatus, QuestionType } from '@prisma/client';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { Role } from '../common/enums/role.enum';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateLabDto } from './dto/create-lab.dto';
-import { CreateLabMediaBatchDto } from './dto/create-lab-media-batch.dto';
-import { CreateLabReflectionsBatchDto } from './dto/create-lab-reflections-batch.dto';
-import { CreateLabStepsBatchDto } from './dto/create-lab-steps-batch.dto';
-import { UpdateLabDto } from './dto/update-lab.dto';
-import { normalizeGrade } from '../common/utils/grade.util';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
+import { LabStatus, QuestionType } from "@prisma/client";
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { Role } from "../common/enums/role.enum";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateLabDto } from "./dto/create-lab.dto";
+import { CreateLabMediaBatchDto } from "./dto/create-lab-media-batch.dto";
+import { CreateLabReflectionsBatchDto } from "./dto/create-lab-reflections-batch.dto";
+import { CreateLabStepsBatchDto } from "./dto/create-lab-steps-batch.dto";
+import { UpdateLabDto } from "./dto/update-lab.dto";
+import { normalizeGrade } from "../common/utils/grade.util";
 
 @Injectable()
 export class LabsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async capabilities() {
+    const published = await this.prisma.lab.count({
+      where: {
+        key: {
+          in: [
+            "3d-titration-grade-10-v1",
+            "3d-titration-grade-11-v1",
+            "3d-titration-grade-12-v1",
+          ],
+        },
+        isPublished: true,
+        status: "PUBLISHED",
+      },
+    });
+    if (published !== 3)
+      throw new ServiceUnavailableException(
+        "The 3D practical catalogue is not ready.",
+      );
+    return {
+      immersiveLabsVersion: 1,
+      gradeLevels: [10, 11, 12],
+      practical: "titration-3d-v1",
+      evidenceStorage: "completionSummary",
+    };
+  }
 
   private readonly labCmsInclude = {
     category: true,
@@ -22,23 +53,26 @@ export class LabsService {
       },
     },
     media: {
-      orderBy: { order: 'asc' as const },
+      orderBy: { order: "asc" as const },
     },
     steps: {
-      orderBy: { order: 'asc' as const },
+      orderBy: { order: "asc" as const },
     },
     reflectionPrompts: {
-      orderBy: { order: 'asc' as const },
+      orderBy: { order: "asc" as const },
     },
     completionReportTemplate: true,
     questions: {
-      orderBy: { order: 'asc' as const },
+      orderBy: { order: "asc" as const },
     },
   };
 
   async create(dto: CreateLabDto, actor: AuthenticatedUser) {
-    const existing = await this.prisma.lab.findUnique({ where: { key: dto.key } });
-    if (existing) throw new ConflictException('A lab with this key already exists');
+    const existing = await this.prisma.lab.findUnique({
+      where: { key: dto.key },
+    });
+    if (existing)
+      throw new ConflictException("A lab with this key already exists");
 
     return this.prisma.lab.create({
       data: {
@@ -64,7 +98,9 @@ export class LabsService {
         animationUrl: dto.animationUrl,
         voiceAudioUrl: dto.voiceAudioUrl,
         isPublished: dto.isPublished ?? true,
-        guidanceSteps: dto.guidanceSteps?.length ? (dto.guidanceSteps as any) : undefined,
+        guidanceSteps: dto.guidanceSteps?.length
+          ? (dto.guidanceSteps as any)
+          : undefined,
         learningOutcomes: dto.learningOutcomes ?? [],
         coreCompetencies: dto.coreCompetencies ?? [],
         materials: dto.materials ?? [],
@@ -140,14 +176,22 @@ export class LabsService {
     const isPlatformAdmin = actor.role === Role.PLATFORM_ADMIN;
 
     const where = {
-      ...(isPlatformAdmin ? {} : isStudent ? { isPublished: true, status: LabStatus.PUBLISHED } : { isPublished: true }),
-      ...(isStudent ? { grade: actor.grade ?? '__none__' } : grade ? { grade } : {}),
+      ...(isPlatformAdmin
+        ? {}
+        : isStudent
+          ? { isPublished: true, status: LabStatus.PUBLISHED }
+          : { isPublished: true }),
+      ...(isStudent
+        ? { grade: actor.grade ?? "__none__" }
+        : grade
+          ? { grade }
+          : {}),
     };
 
     return this.prisma.lab.findMany({
       where,
       include: { _count: { select: { questions: true } } },
-      orderBy: [{ grade: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ grade: "asc" }, { createdAt: "desc" }],
     });
   }
 
@@ -156,19 +200,21 @@ export class LabsService {
       where: { id },
       include: this.labCmsInclude,
     });
-    if (!lab) throw new NotFoundException('Lab not found');
+    if (!lab) throw new NotFoundException("Lab not found");
     if (actor?.role === Role.STUDENT) {
-      const studentGrade = actor.grade ?? '__none__';
+      const studentGrade = actor.grade ?? "__none__";
       const isPublished = lab.isPublished === true;
       const hasPublishedStatus = lab.status === LabStatus.PUBLISHED;
       const gradeMatches = lab.grade === studentGrade;
 
       if (!isPublished || !hasPublishedStatus || !gradeMatches) {
-        throw new NotFoundException('Lab not found');
+        throw new NotFoundException("Lab not found");
       }
     }
 
-    return actor?.role === Role.STUDENT ? this.stripAnswersForStudent(lab) : lab;
+    return actor?.role === Role.STUDENT
+      ? this.stripAnswersForStudent(lab)
+      : lab;
   }
 
   async findOneCms(id: number) {
@@ -196,7 +242,10 @@ export class LabsService {
           categoryId: dto.categoryId ?? dto.category,
           stemSubjectId: dto.stemSubjectId ?? dto.stemSubject,
           subject: dto.subject,
-          grade: dto.grade !== undefined ? (normalizeGrade(dto.grade) ?? dto.grade) : undefined,
+          grade:
+            dto.grade !== undefined
+              ? (normalizeGrade(dto.grade) ?? dto.grade)
+              : undefined,
           topicArea: dto.topicArea,
           pathway: dto.pathway,
           topic: dto.topic,
@@ -261,12 +310,14 @@ export class LabsService {
                     create: {
                       title: dto.completionReportTemplate?.title,
                       summary: dto.completionReportTemplate?.summary,
-                      outcomesJson: dto.completionReportTemplate?.outcomesJson as any,
+                      outcomesJson: dto.completionReportTemplate
+                        ?.outcomesJson as any,
                     },
                     update: {
                       title: dto.completionReportTemplate?.title,
                       summary: dto.completionReportTemplate?.summary,
-                      outcomesJson: dto.completionReportTemplate?.outcomesJson as any,
+                      outcomesJson: dto.completionReportTemplate
+                        ?.outcomesJson as any,
                     },
                   },
                 }
@@ -336,7 +387,9 @@ export class LabsService {
     return this.findOne(id);
   }
 
-  private stripAnswersForStudent<T extends { questions: { correctAnswer: string | null }[] }>(lab: T): T {
+  private stripAnswersForStudent<
+    T extends { questions: { correctAnswer: string | null }[] },
+  >(lab: T): T {
     return {
       ...lab,
       questions: lab.questions.map(({ correctAnswer, ...rest }) => rest) as any,

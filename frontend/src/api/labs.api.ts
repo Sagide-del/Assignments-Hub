@@ -1,3 +1,4 @@
+import type { TitrationTrial } from '../features/student/stem-workspace/three-d/titration-model';
 import { api } from './axios';
 import type {
   AnswerInput,
@@ -162,7 +163,18 @@ export const labSessionsApi = {
   // answers uses AnswerInputDto's shape ({ questionId, answer }) — same DTO
   // the submissions module uses — NOT the Answer entity's `studentAnswer`
   // field. See backend/src/lab-sessions/dto/create-lab-session.dto.ts.
-  create: (dto: { labKey: string; competency?: string; answers?: AnswerInput[] }) =>
+  create: (dto: {
+    labKey: string;
+    competency?: string;
+    answers?: AnswerInput[];
+    practical?: {
+      version: string;
+      trials: TitrationTrial[];
+      selected: number[];
+      calculation: number;
+      conclusion: string;
+    };
+  }) =>
     api.post<LabSession>('/lab-sessions', dto).then((r) => r.data),
 
   findAll: (params?: { studentId?: number; schoolId?: number }) =>
