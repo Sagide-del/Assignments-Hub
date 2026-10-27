@@ -68,7 +68,7 @@ export function KjseaMockTestPage() {
   const selected =
     subjects.data?.find((s) => s.id === subjectId) ?? subjects.data?.[0];
   const junior = Number(grade.split(" ")[1]) <= 9;
-  const title = junior ? "KJSEA Mock Test" : `${grade} Mock Tests`;
+  const title = "KJSEA Mock Test";
   const missingSubjects = (junior ? JUNIOR_SUBJECTS : SENIOR_SUBJECTS).filter(
     (name) =>
       !subjects.data?.some(

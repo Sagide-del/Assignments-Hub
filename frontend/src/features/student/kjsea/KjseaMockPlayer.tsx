@@ -237,7 +237,7 @@ function PaperWorkspace({
         className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-600"
       >
         <ArrowLeft className="h-4 w-4" />
-        Mock Tests
+        KJSEA Mock Test
       </Link>
       <header className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">

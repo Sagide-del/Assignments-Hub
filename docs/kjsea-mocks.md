@@ -50,7 +50,7 @@ The shared signed-in workspace uses compact navigation, a persistent desktop sid
 
 ## Senior-school support (27 October 2026)
 
-The selector and API now support Grades 7–12, including two-digit grade aliases (`Grade 11`, `Grade11`, `11`). Good Sam’s Grade 11 profile defaults to Grade 11, not Grade 9. Senior pages use “Grade 11 Mock Tests”; the common navigation is “Mock Tests”, while junior pages retain KJSEA wording. Existing URLs and attempt records remain compatible.
+The selector and API now support Grades 7–12, including two-digit grade aliases (`Grade 11`, `Grade11`, `11`). Good Sam’s Grade 11 profile defaults to Grade 11, not Grade 9. All grades use the user-requested name “KJSEA Mock Test” in the page heading, navigation, dashboard link and return link; the selected grade remains visible separately. Existing URLs and attempt records remain compatible.
 
 Grade 11 includes 11 built-in subjects without a seed/migration dependency. Mathematics (12 practice topics), Physics (10) and Chemistry (8) each generate 40 distinct parameterised questions. Biology, English, Kiswahili, Computer Studies, Business Studies, Geography, Agriculture, and History and Government each provide a 12-question topic-practice set, with order/choices shuffled and explanations on release. These fixed sets can recur and are explicitly labelled short practice. Numerical papers vary values but reuse topic templates. These are original platform practice sets, not complete current KICD subject designs, official mock blueprints, teacher-approved bank records or KNEC examinations. Formal curriculum/subject-specialist review is still required before describing them as verified grade syllabus coverage.
 
