@@ -223,7 +223,8 @@ export class PresenceService {
     if (path.includes('stem')) return 'STEM Labs';
     if (path.includes('learn-skills') || path.includes('skill')) return 'Learn a Skill';
     if (path.includes('resources')) return 'Resources';
-    if (path.includes('kcse')) return 'KCSE Papers';
+    if (path.includes('kjsea')) return 'KJSEA Mock Test';
+    if (path.includes('kcse')) return 'KJSEA Mock Test';
     if (path.includes('mnemonic')) return 'Mnemonic Cards';
     if (path.startsWith('/teacher')) return 'Teacher workspace';
     if (path.startsWith('/school-admin')) return 'School administration';

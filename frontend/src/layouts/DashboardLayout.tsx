@@ -81,7 +81,7 @@ function SidebarSectionLabel({ children }: { children: ReactNode }) {
 function iconForNavigation(path: string): LucideIcon {
   if (path.includes('/activity')) return Activity;
   if (path.includes('my-assignments') || path.includes('independent-assignments')) return PenSquare;
-  if (path.includes('kcse-papers')) return FileText;
+  if (path.includes('kcse-papers') || path.includes('kjsea-mock-test')) return FileText;
   if (path.includes('mnemonic-cards')) return Brain;
   if (path.includes('learning-coach')) return BrainCircuit;
   if (path.includes('stem')) return FlaskConical;

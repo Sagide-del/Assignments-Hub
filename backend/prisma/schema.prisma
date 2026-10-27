@@ -318,6 +318,7 @@ enum InstitutionType {
 }
 
 model School {
+  kjseaMockAttempts KjseaMockAttempt[]
   id                 Int                 @id @default(autoincrement())
   name               String
   code               String              @unique // short code students use to log in, e.g. "GHSCH"
@@ -372,6 +373,7 @@ model School {
 }
 
 model User {
+  kjseaMockAttempts KjseaMockAttempt[]
   id       Int    @id @default(autoincrement())
   schoolId Int    @map("school_id")
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
@@ -2512,4 +2514,28 @@ model StudentAssignmentVariant {
   @@unique([assignmentId, studentId])
   @@index([schoolId, studentId, createdAt])
   @@map("student_assignment_variants")
+}
+
+// Private generated practice papers. Answer keys stay server-side until submission.
+model KjseaMockAttempt {
+  subject String @default("Mathematics")
+  source String @default("GENERATED")
+  coverage Json @default("{}")
+  id String @id @default(cuid())
+  schoolId Int @map("school_id")
+  studentId Int @map("student_id")
+  seed Int
+  version String @default("kjsea-maths-v1")
+  status String @default("DRAFT")
+  questions Json
+  answers Json @default("{}")
+  timeLimitMinutes Int? @map("time_limit_minutes")
+  score Int?
+  completedAt DateTime? @map("completed_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  school School @relation(fields:[schoolId],references:[id],onDelete:Cascade)
+  student User @relation(fields:[studentId],references:[id],onDelete:Cascade)
+  @@index([schoolId,studentId,createdAt])
+  @@map("kjsea_mock_attempts")
 }

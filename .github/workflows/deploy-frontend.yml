@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'backend/src/kjsea/**'
+      - 'backend/prisma/schema.prisma'
+      - 'backend/prisma/migrations/**'
       - 'scripts/deployment/**'
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
@@ -27,12 +30,18 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - name: Verify learning activities
-        run: npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:assignments && npm run test:revision
+        run: npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:assignments && npm run test:revision
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
         env:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
+      - name: Verify mock-test backend
+        working-directory: backend
+        run: npm ci && npm test -- --runInBand src/kjsea && npm run build
+      - name: Wait for KJSEA API and database migration
+        working-directory: frontend
+        run: node scripts/check-kjsea-api.mjs
       - name: Connect to AWS without stored access keys
         uses: aws-actions/configure-aws-credentials@v4
         with:

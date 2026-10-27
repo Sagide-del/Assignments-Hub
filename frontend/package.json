@@ -15,7 +15,8 @@
     "test:skills": "node --test scripts/skill-progress.test.mjs scripts/skill-lessons.test.mjs",
     "check:firstaid-assets": "node scripts/check-firstaid-assets.mjs",
     "test:stem": "node --test scripts/stem-investigations.test.mjs",
-    "test:curriculum": "node --test scripts/curriculum.test.mjs"
+    "test:curriculum": "node --test scripts/curriculum.test.mjs",
+    "test:kjsea": "node --test scripts/kjsea.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

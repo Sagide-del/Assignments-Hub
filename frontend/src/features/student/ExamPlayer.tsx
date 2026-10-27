@@ -531,7 +531,7 @@ export function ExamPlayer() {
   const unansweredCount = totalQuestions - answeredCount;
   const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
   const assignmentMaxPoints = assignment?.maxPoints ?? assignment?.totalMarks ?? 0;
-  const assignmentListPath = assignment?.kind === 'KCSE_PAPER' ? '/student/kcse-papers' : '/student/my-assignments';
+  const assignmentListPath = assignment?.kind === 'KCSE_PAPER' ? '/student/kjsea-mock-test' : '/student/my-assignments';
 
   if (loadingQuestions) {
     return <p className="text-sm text-gray-500">Loading...</p>;

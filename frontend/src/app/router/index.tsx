@@ -12,7 +12,6 @@ import IndependentRegister from '../../pages/IndependentRegister';
 
 import { StemLabsPage } from '../../features/student/StemLabs';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
-import { KcsePapersPage } from '../../features/student/KcsePapers';
 import { LearnSkillsPage } from '../../features/student/LearnSkills';
 import { SkillDetailPage } from '../../features/student/SkillDetail';
 import { MyPathwayPage } from '../../features/student/my-pathway/MyPathwayPage';
@@ -60,6 +59,8 @@ import { ParentPortal } from '../../features/parent/ParentPortal';
 const ExamPlayer = lazy(() =>
   import('../../features/student/ExamPlayer').then((module) => ({ default: module.ExamPlayer })),
 );
+const KjseaMockTestPage = lazy(() => import('../../features/student/kjsea/KjseaMockTest').then(m=>({default:m.KjseaMockTestPage})));
+const KjseaMockPlayerPage = lazy(() => import('../../features/student/kjsea/KjseaMockPlayer').then(m=>({default:m.KjseaMockPlayerPage})));
 const StemLabPlayerPage = lazy(() =>
   import('../../features/student/StemLabPlayer').then((module) => ({ default: module.StemLabPlayerPage })),
 );
@@ -99,8 +100,8 @@ const studentNav = [
     label: 'My Assignments',
   },
   {
-    to: '/student/kcse-papers',
-    label: 'KCSE Papers',
+    to: '/student/kjsea-mock-test',
+    label: 'KJSEA Mock Test',
   },
   {
     to: '/student/mnemonic-cards',
@@ -322,8 +323,10 @@ export const router = createBrowserRouter([
           },
           {
             path: '/student/kcse-papers',
-            element: <KcsePapersPage />,
+            element: <Navigate to="/student/kjsea-mock-test" replace />,
           },
+          {path:'/student/kjsea-mock-test',element:<KjseaMockTestPage/>},
+          {path:'/student/kjsea-mock-test/:id',element:<KjseaMockPlayerPage/>},
           {
             path: '/student/mnemonic-cards',
             element: <MnemonicCardsPage />,

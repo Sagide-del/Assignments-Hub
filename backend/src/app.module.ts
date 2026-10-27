@@ -43,6 +43,7 @@ import { MnemonicCardsModule } from './mnemonic-cards/mnemonic-cards.module';
 import { ResourcesModule } from './resources/resources.module';
 import { AcademicResultsModule } from './academic-results/academic-results.module';
 import { PresenceModule } from './presence/presence.module';
+import { KjseaModule } from './kjsea/kjsea.module';
 import { LearningCoachModule } from './learning-coach/learning-coach.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -128,6 +129,8 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
     PresenceModule,
 
     LearningCoachModule,
+
+    KjseaModule,
   ],
 
   providers: [
