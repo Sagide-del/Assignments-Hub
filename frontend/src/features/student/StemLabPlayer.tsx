@@ -1,593 +1,813 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  ClipboardList,
+  Download,
+  FlaskConical,
+  Lightbulb,
+  ShieldCheck,
+} from 'lucide-react';
 import { apiErrorMessage } from '../../api/axios';
 import { labsApi, labSessionsApi } from '../../api/labs.api';
-import type { LabMedia } from '../../types';
-import { gradeTier } from '../../utils/gradeTier';
-
-function ArrowIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-      <path d="M15 7l-6 5 6 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function MediaIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <rect x="4" y="5" width="11" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M15 9l5-3v12l-5-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function StepsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path d="M5 7h14M5 12h14M5 17h10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function QuestionIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M9.8 9.6a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1.3 1-1.3 1.8v.3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="12" cy="17.2" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function ReflectionIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path d="M7 5h10a2 2 0 0 1 2 2v10H7a2 2 0 0 0-2 2V7a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M9 9h6M9 12h6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ReportIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path d="M7 4h7l3 3v13H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M14 4v4h4M9 12h6M9 16h5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function OutcomesIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SafetyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path d="M12 4 4.5 7v5.5c0 4 3.2 6.9 7.5 7.5 4.3-.6 7.5-3.5 7.5-7.5V7L12 4Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M9 12.2l2 2 4-4.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CommunityIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <circle cx="8.5" cy="9" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="16" cy="9" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M3.5 19c.5-3 2.5-4.7 5-4.7s4.5 1.7 5 4.7M14.5 14.9c2 .3 3.5 1.9 4 4.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function formatMinutes(value?: number | null) {
-  return value ? `${value} min` : 'Flexible duration';
-}
-
-function normalizeOptions(options: unknown) {
-  return Array.isArray(options) ? (options as string[]) : [];
-}
-
-function mediaKind(value?: string | null) {
-  return (value ?? '').trim().toUpperCase();
-}
+import { useAuthStore } from '../../store/auth.store';
+import type { Lab } from '../../types';
+import {
+  emptyDraft,
+  investigationFor,
+  notebookKey,
+  notebookReady,
+  type LabDraft,
+} from './stem-workspace/investigations';
+import { ExperimentBench } from './stem-workspace/ExperimentBench';
 
 export function StemLabPlayerPage() {
   const { id } = useParams();
-  const labId = Number(id);
-  const queryClient = useQueryClient();
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [reflections, setReflections] = useState<Record<number, string>>({});
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  const { data: lab, isLoading } = useQuery({
-    queryKey: ['lab-player', labId],
-    queryFn: () => labsApi.findOne(labId),
-    enabled: Number.isFinite(labId),
+  const userId = useAuthStore((s) => s.user?.id);
+  const {
+    data: lab,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['lab-player', userId, Number(id)],
+    queryFn: () => labsApi.findOne(Number(id)),
+    enabled: !!userId && Number.isFinite(Number(id)),
   });
+  if (isLoading)
+    return (
+      <p className="rounded-2xl bg-white p-6">Preparing your investigation…</p>
+    );
+  if (isError || !lab)
+    return (
+      <div role="alert" className="rounded-2xl bg-white p-6">
+        <p>We couldn’t open this lab.</p>
+        <button
+          type="button"
+          className="mt-3 underline"
+          onClick={() => refetch()}
+        >
+          Try again
+        </button>
+        <Link className="ml-4 underline" to="/student/stem-labs">
+          Back to labs
+        </Link>
+      </div>
+    );
+  return <LabNotebook key={`${userId}:${lab.id}`} lab={lab} userId={userId!} />;
+}
 
-  const completeMutation = useMutation({
+function readDraft(key: string): LabDraft {
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) ?? 'null');
+    if (!saved || typeof saved !== 'object') return emptyDraft();
+    const base = emptyDraft();
+    for (const field of [
+      'prediction',
+      'observations',
+      'conclusion',
+      'transfer',
+    ] as const)
+      if (typeof saved[field] === 'string') base[field] = saved[field];
+    base.checked = Array.isArray(saved.checked)
+      ? saved.checked.filter((n: unknown) => Number.isInteger(n))
+      : [];
+    base.trials = Array.isArray(saved.trials)
+      ? saved.trials
+          .filter(
+            (t: unknown) =>
+              t &&
+              typeof t === 'object' &&
+              'setting' in t &&
+              typeof t.setting === 'string' &&
+              'result' in t &&
+              typeof t.result === 'string',
+          )
+          .slice(0, 20)
+      : [];
+    for (const field of ['answers', 'reflections'] as const)
+      if (saved[field] && typeof saved[field] === 'object')
+        base[field] = Object.fromEntries(
+          Object.entries(saved[field]).filter(([, v]) => typeof v === 'string'),
+        ) as Record<number, string>;
+    return base;
+  } catch {
+    return emptyDraft();
+  }
+}
+function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
+  const pack = investigationFor(lab);
+  const storageKey = notebookKey(userId, lab.id);
+  const [draft, setDraft] = useState(() => readDraft(storageKey));
+  const [stage, setStage] = useState(0);
+  const [storageError, setStorageError] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const client = useQueryClient();
+  const steps = pack
+    ? pack.steps.map((instruction, i) => ({
+        id: i,
+        title: `Investigation ${i + 1}`,
+        instruction,
+        expectedOutcome: null,
+        mediaUrl: null,
+      }))
+    : [...(lab.steps ?? [])].sort((a, b) => a.order - b.order);
+  const questions = [...(lab.questions ?? [])].sort(
+    (a, b) => a.order - b.order,
+  );
+  const prompts = [...(lab.reflectionPrompts ?? [])].sort(
+    (a, b) => a.order - b.order,
+  );
+  const ready = notebookReady(
+    draft,
+    steps.length,
+    questions.map((q) => q.id),
+    prompts.map((p) => p.id),
+    !!pack,
+  );
+  const update = (change: Partial<LabDraft>) => {
+    setDraft((d) => ({ ...d, ...change }));
+    setSaved(false);
+  };
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(draft));
+      setStorageError(false);
+    } catch {
+      setStorageError(true);
+    }
+  }, [draft, storageKey]);
+  const completion = useMutation({
     mutationFn: () =>
       labSessionsApi.create({
-        labKey: lab!.key,
-        competency: lab?.competency ?? undefined,
-        answers: Object.entries(answers).map(([questionId, answer]) => ({
-          questionId: Number(questionId),
-          answer,
+        labKey: lab.key,
+        competency: lab.competency ?? undefined,
+        answers: questions.map((q) => ({
+          questionId: q.id,
+          answer: draft.answers[q.id] ?? '',
         })),
       }),
     onSuccess: async () => {
-      setStatusMessage('Lab completed successfully.');
-      await queryClient.invalidateQueries({ queryKey: ['lab-sessions'] });
+      setSaved(true);
+      await client.invalidateQueries({ queryKey: ['lab-sessions'] });
     },
-    onError: (error) => setStatusMessage(apiErrorMessage(error, 'Could not save lab completion')),
   });
-
-  const tierVersionText = useMemo(() => {
-    if (!lab) return null;
-    const tier = gradeTier(lab.grade);
-    if (tier === 'junior') return lab.juniorVersion || null;
-    if (tier === 'senior') return lab.seniorVersion || null;
-    return null;
-  }, [lab]);
-
-  const totalSections = 5;
-  const progressCount = useMemo(() => {
-    if (!lab) return 0;
-    let count = 1;
-    if ((lab.media ?? []).length > 0 || lab.introVideoUrl || lab.animationUrl || lab.voiceAudioUrl) count++;
-    if ((lab.steps ?? []).length > 0) count++;
-    if ((lab.questions ?? []).length > 0) count++;
-    if ((lab.reflectionPrompts ?? []).length > 0) count++;
-    return Math.min(count, totalSections);
-  }, [lab]);
-
-  const playerMedia = useMemo(() => {
-    if (!lab) return [];
-
-    const structured = (lab.media ?? []).slice().sort((left, right) => left.order - right.order);
-    const fallbackMedia: LabMedia[] = [];
-    let nextId = -1;
-
-    if (lab.introVideoUrl || lab.resourceUrl) {
-      fallbackMedia.push({
-        id: nextId--,
-        labId: lab.id,
-        type: 'VIDEO',
-        title: 'Intro video',
-        caption: 'Core introduction for this lab.',
-        url: lab.introVideoUrl ?? lab.resourceUrl ?? '',
-        order: -3,
-      });
-    }
-
-    if (lab.animationUrl) {
-      fallbackMedia.push({
-        id: nextId--,
-        labId: lab.id,
-        type: 'ANIMATION',
-        title: 'Animation',
-        caption: 'Animated explanation for this lab.',
-        url: lab.animationUrl,
-        order: -2,
-      });
-    }
-
-    if (lab.voiceAudioUrl) {
-      fallbackMedia.push({
-        id: nextId--,
-        labId: lab.id,
-        type: 'AUDIO',
-        title: 'Voice guidance',
-        caption: 'Audio support for the lab experience.',
-        url: lab.voiceAudioUrl,
-        order: -1,
-      });
-    }
-
-    return [...fallbackMedia, ...structured];
-  }, [lab]);
-
-  if (isLoading) {
-    return <p className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Loading STEM lab...</p>;
+  function download() {
+    const text = [
+      `STEM LAB NOTEBOOK: ${lab.title}`,
+      `${lab.grade} · ${lab.subject}`,
+      `Exported: ${new Date().toISOString()}`,
+      pack
+        ? 'Results below come from a simplified teaching model, not physical measurements.'
+        : 'Student investigation record.',
+      '\nQUESTION',
+      pack?.question ?? lab.topic ?? lab.title,
+      '\nMY PREDICTION',
+      draft.prediction,
+      '\nMETHOD',
+      ...steps.map(
+        (s, i) =>
+          `${i + 1}. ${s.instruction} [${draft.checked.includes(i) ? 'done' : 'not checked'}]`,
+      ),
+      '\nRECORDED TRIALS',
+      ...draft.trials.map((t, i) => `${i + 1}. ${t.setting} → ${t.result}`),
+      '\nOBSERVATIONS',
+      draft.observations,
+      '\nCONCLUSION',
+      draft.conclusion,
+      '\nREAL-LIFE CONNECTION',
+      draft.transfer,
+      '\nQUESTIONS',
+      ...questions.map(
+        (q) => `${q.questionText}\n${draft.answers[q.id] ?? ''}`,
+      ),
+      '\nREFLECTIONS',
+      ...prompts.map((p) => `${p.prompt}\n${draft.reflections[p.id] ?? ''}`),
+      pack ? `\nMODEL LIMITS\n${pack.limitation}` : '',
+      '\nThis notebook records student work; it is not a teacher assessment.',
+    ].join('\n');
+    const url = URL.createObjectURL(
+      new Blob([text], { type: 'text/plain;charset=utf-8' }),
+    );
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stem-lab-${lab.id}-notebook.txt`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-
-  if (!lab) {
-    return <p className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Lab not available.</p>;
+  const resources = [...(lab.media ?? [])].sort((a, b) => a.order - b.order);
+  const stages = [
+    { title: 'Prepare', icon: BookOpen, detail: 'Question & prediction' },
+    { title: 'Investigate', icon: FlaskConical, detail: 'Test & record' },
+    { title: 'Explain', icon: Lightbulb, detail: 'Evidence & reflection' },
+  ];
+  function go(next: number) {
+    setStage(next);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link to="/student/stem-labs" className="inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:opacity-80">
-          <ArrowIcon />
-          Back to STEM catalogue
-        </Link>
-      </div>
-
-      <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(16,24,32,0.08)]">
-        <div
-          className="grid gap-6 px-6 py-8 text-white md:grid-cols-[1.2fr_0.8fr] md:px-8 md:py-10"
-          style={{ backgroundColor: 'var(--school-primary, #101820)' }}
+    <div className="mx-auto max-w-6xl space-y-5 text-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to="/student/stem-labs"
+          className="inline-flex items-center gap-2 text-sm font-semibold"
         >
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: 'var(--school-accent, #B5E61D)' }}>
-              STEM Lab Player
-            </p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">{lab.title}</h1>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 md:text-base">
-              {lab.description ?? 'Follow the practical steps, complete the learning tasks, and finish the lab record.'}
-            </p>
-            {tierVersionText ? (
-              <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300 md:text-base">{tierVersionText}</p>
-            ) : null}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">{lab.subject}</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">{lab.grade}</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90">{formatMinutes(lab.durationMinutes)}</span>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Progress</p>
-            <p className="mt-4 text-4xl font-semibold text-white">{Math.round((progressCount / totalSections) * 100)}%</p>
-            <p className="mt-2 text-sm text-slate-300">Learning sections prepared in this lab</p>
-            <div className="mt-5 h-3 rounded-full bg-white/10">
-              <div
-                className="h-3 rounded-full"
-                style={{
-                  width: `${(progressCount / totalSections) * 100}%`,
-                  backgroundColor: 'var(--school-accent, #B5E61D)',
-                }}
-              />
-            </div>
-          </div>
+          <ArrowLeft className="h-4 w-4" />
+          My STEM Labs
+        </Link>
+        <button
+          type="button"
+          onClick={download}
+          className="inline-flex min-h-10 items-center gap-2 rounded-xl border bg-white px-3 text-sm font-semibold"
+        >
+          <Download className="h-4 w-4" />
+          Download notebook
+        </button>
+      </div>
+      <header className="rounded-2xl bg-[#101820] p-6 text-white sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
+          {lab.subject} · {lab.grade} ·{' '}
+          {pack ? 'Interactive investigation' : 'Guided practical'}
+        </p>
+        <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">{lab.title}</h1>
+        <p className="mt-3 max-w-3xl text-base leading-7 text-slate-200">
+          {pack?.question ??
+            lab.description ??
+            'Build an explanation from your own observations.'}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2 text-xs">
+          {(lab.coreCompetencies?.length
+            ? lab.coreCompetencies
+            : ['Critical thinking', 'Problem solving', 'Learning to learn']
+          ).map((c) => (
+            <span
+              key={c}
+              className="rounded-full border border-white/20 px-3 py-1.5"
+            >
+              {c}
+            </span>
+          ))}
         </div>
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-6">
-          <SectionCard icon={<MediaIcon />} title="Lab overview">
-            <div className="grid gap-4 md:grid-cols-3">
-              <OverviewMeta label="Topic" value={lab.topic ?? lab.topicArea ?? 'Configured in studio'} />
-              <OverviewMeta label="Competency" value={lab.competency ?? 'Competency configured'} />
-              <OverviewMeta label="Pathway" value={lab.pathway ?? 'Grade-level STEM pathway'} />
-            </div>
-            {(lab.coreCompetencies ?? []).length > 0 || (lab.pertinentIssues ?? []).length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {(lab.coreCompetencies ?? []).map((item) => (
-                  <span key={item} className="rounded-full bg-[#101820] px-3 py-1 text-xs font-semibold text-[#B5E61D]">
-                    {item}
-                  </span>
-                ))}
-                {(lab.pertinentIssues ?? []).map((item) => (
-                  <span key={item} className="rounded-full border border-slate-200 bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-slate-500">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </SectionCard>
-
-          {(lab.learningOutcomes ?? []).length > 0 ? (
-            <SectionCard icon={<OutcomesIcon />} title="Learning outcomes">
-              <ul className="space-y-2">
-                {lab.learningOutcomes?.map((item) => (
-                  <li key={item} className="flex items-start gap-3 rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4 text-sm leading-6 text-slate-600">
-                    <OutcomesIcon />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </SectionCard>
-          ) : null}
-
-          {(lab.materials ?? []).length > 0 || (lab.safetyChecklist ?? []).length > 0 ? (
-            <SectionCard icon={<SafetyIcon />} title="Safety &amp; materials">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Materials needed</p>
-                  {(lab.materials ?? []).length > 0 ? (
-                    <ul className="mt-3 space-y-2">
-                      {lab.materials?.map((item) => (
-                        <li key={item} className="rounded-2xl border border-slate-200 bg-[#FCFDFE] px-4 py-2.5 text-sm text-slate-600">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-3 text-sm text-slate-500">No materials list configured.</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Safety checklist</p>
-                  {(lab.safetyChecklist ?? []).length > 0 ? (
-                    <ul className="mt-3 space-y-2">
-                      {lab.safetyChecklist?.map((item) => (
-                        <li key={item} className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
-                          <SafetyIcon />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-3 text-sm text-slate-500">No safety checklist configured.</p>
-                  )}
-                </div>
-              </div>
-            </SectionCard>
-          ) : null}
-
-          <SectionCard icon={<MediaIcon />} title="Media viewer">
-            <div className="grid gap-4 md:grid-cols-2">
-              <MediaSummaryCard title="Video" value={playerMedia.filter((item) => mediaKind(item.type) === 'VIDEO').length} />
-              <MediaSummaryCard title="Animation" value={playerMedia.filter((item) => mediaKind(item.type) === 'ANIMATION').length} />
-              <MediaSummaryCard title="Audio" value={playerMedia.filter((item) => mediaKind(item.type) === 'AUDIO').length} />
-              <MediaSummaryCard title="Images" value={playerMedia.filter((item) => mediaKind(item.type) === 'IMAGE').length} />
-            </div>
-            {playerMedia.length > 0 ? (
-              <div className="mt-4 grid gap-4">
-                {playerMedia.map((item) => (
-                  <RenderedMediaCard key={item.id} item={item} />
-                ))}
-              </div>
-            ) : (
-              <EmptyCard text="No structured media is configured for this lab yet." />
-            )}
-          </SectionCard>
-
-          <SectionCard icon={<StepsIcon />} title="Practical steps">
-            {(lab.steps ?? []).length > 0 ? (
-              <div className="space-y-3">
-                {lab.steps?.map((step, index) => (
-                  <div key={step.id} className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-semibold text-[#101820]">{step.title || `Step ${index + 1}`}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">{step.instruction}</p>
+      </header>
+      <nav aria-label="Investigation stages" className="grid grid-cols-3 gap-2">
+        {stages.map(({ title, icon: Icon, detail }, i) => (
+          <button
+            type="button"
+            key={title}
+            aria-current={stage === i ? 'step' : undefined}
+            onClick={() => go(i)}
+            className={`min-w-0 rounded-xl border p-3 text-left sm:p-4 ${stage === i ? 'border-teal-700 bg-teal-50 text-teal-950' : 'bg-white text-slate-500'}`}
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Icon className="hidden h-5 w-5 sm:block" />
+              {i + 1}. {title}
+            </span>
+            <span className="mt-1 hidden text-xs sm:block">{detail}</span>
+          </button>
+        ))}
+      </nav>
+      <p
+        role="status"
+        className={`text-xs ${storageError ? 'text-red-700' : 'text-slate-500'}`}
+      >
+        {storageError
+          ? 'This browser could not save your draft. Download your notebook before leaving.'
+          : 'Notebook autosaves on this browser for your account. Download it to keep or share your work.'}
+      </p>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <main className="min-w-0 space-y-5">
+          {stage === 0 && (
+            <>
+              <Panel
+                title="Start with a real problem"
+                icon={<Lightbulb className="h-5 w-5" />}
+              >
+                <p className="leading-7">
+                  {pack?.context ??
+                    lab.description ??
+                    `Investigate ${lab.topic ?? lab.topicArea ?? lab.title} using the practical instructions below.`}
+                </p>
+                {pack && (
+                  <div className="mt-4 rounded-xl bg-teal-50 p-4 text-sm leading-7">
+                    <h3 className="font-semibold">Before you begin</h3>
+                    <p className="mt-1">{pack.learn}</p>
+                  </div>
+                )}
+                {!!lab.learningOutcomes?.length && (
+                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
+                    {lab.learningOutcomes.map((o) => (
+                      <li key={o}>{o}</li>
+                    ))}
+                  </ul>
+                )}
+              </Panel>
+              <Panel
+                title="Make a prediction"
+                icon={<ClipboardList className="h-5 w-5" />}
+              >
+                <Field
+                  label={
+                    pack?.prediction ??
+                    'What do you think will happen, and why?'
+                  }
+                  value={draft.prediction}
+                  onChange={(prediction) => update({ prediction })}
+                  placeholder="I predict… because…"
+                />
+                {pack && (
+                  <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+                    {[
+                      ['Change', pack.variable],
+                      ['Measure', pack.measure],
+                      ['Keep the same', pack.controls],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-xl border p-3">
+                        <dt className="text-xs font-semibold uppercase text-teal-800">
+                          {label}
+                        </dt>
+                        <dd className="mt-2 leading-6">{value}</dd>
                       </div>
-                      <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-slate-500">Step {index + 1}</span>
-                    </div>
-                    {step.expectedOutcome ? <p className="mt-3 text-sm text-slate-600">Outcome: {step.expectedOutcome}</p> : null}
-                    {step.mediaUrl ? (
-                      <a
-                        href={step.mediaUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:opacity-80"
-                      >
-                        Open step media
-                      </a>
-                    ) : null}
+                    ))}
+                  </dl>
+                )}
+              </Panel>
+              <Panel
+                title="Get ready safely"
+                icon={<ShieldCheck className="h-5 w-5" />}
+              >
+                {pack && (
+                  <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                    {pack.safety}
+                  </p>
+                )}
+                {lab.materials?.length ? (
+                  <>
+                    <h3 className="mt-4 font-semibold">Materials</h3>
+                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
+                      {lab.materials.map((m) => (
+                        <li key={m}>{m}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-600">
+                    {pack
+                      ? 'Use a phone, tablet or computer. No physical equipment is needed for this browser model.'
+                      : 'Check the practical instructions and ask your teacher what equipment and supervision are needed.'}
+                  </p>
+                )}
+                {!!lab.safetyChecklist?.length && (
+                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
+                    {lab.safetyChecklist.map((s) => (
+                      <li key={s}>{s}</li>
+                    ))}
+                  </ul>
+                )}
+              </Panel>
+              {(resources.length > 0 ||
+                lab.introVideoUrl ||
+                lab.resourceUrl ||
+                lab.animationUrl ||
+                lab.voiceAudioUrl) && (
+                <Panel
+                  title="Supporting resources"
+                  icon={<BookOpen className="h-5 w-5" />}
+                >
+                  <div className="space-y-4">
+                    {resources.map((m) => (
+                      <div key={m.id}>
+                        {m.type.toUpperCase() === 'IMAGE' ? (
+                          <img
+                            loading="lazy"
+                            src={m.url}
+                            alt={m.caption ?? m.title ?? 'Lab illustration'}
+                            className="max-h-80 w-full rounded-xl object-contain"
+                          />
+                        ) : m.type.toUpperCase() === 'AUDIO' ? (
+                          <audio controls src={m.url} className="w-full" />
+                        ) : null}
+                        <a
+                          className="mt-2 block text-sm font-semibold text-teal-800 underline"
+                          href={m.url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {m.title ?? 'Open resource'}
+                        </a>
+                        {m.caption && (
+                          <p className="mt-1 text-sm">{m.caption}</p>
+                        )}
+                      </div>
+                    ))}
+                    {[
+                      lab.introVideoUrl,
+                      lab.resourceUrl,
+                      lab.animationUrl,
+                      lab.voiceAudioUrl,
+                    ]
+                      .filter((url, i, all) => url && all.indexOf(url) === i)
+                      .map((url, i) => (
+                        <a
+                          key={url}
+                          className="block text-sm font-semibold text-teal-800 underline"
+                          href={url!}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open supporting resource {i + 1}
+                        </a>
+                      ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyCard text="No practical steps are configured for this lab yet." />
-            )}
-          </SectionCard>
-        </div>
-
-        <div className="space-y-6">
-          <SectionCard icon={<QuestionIcon />} title="Questions">
-            {(lab.questions ?? []).length > 0 ? (
-              <div className="space-y-4">
-                {lab.questions?.map((question, index) => {
-                  const options = normalizeOptions(question.options);
-                  return (
-                    <div key={question.id} className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Question {index + 1}</p>
-                      <p className="mt-2 text-sm font-semibold text-[#101820]">{question.questionText}</p>
-                      {options.length > 0 ? (
-                        <div className="mt-3 space-y-2">
-                          {options.map((option) => (
-                            <label key={option} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                              <input
-                                type="radio"
-                                name={`lab-question-${question.id}`}
-                                checked={answers[question.id] === option}
-                                onChange={() => setAnswers((current) => ({ ...current, [question.id]: option }))}
-                              />
-                              {option}
-                            </label>
-                          ))}
-                        </div>
-                      ) : (
-                        <textarea
-                          value={answers[question.id] ?? ''}
-                          onChange={(e) => setAnswers((current) => ({ ...current, [question.id]: e.target.value }))}
-                          rows={3}
-                          className="mt-3 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#B5E61D]"
-                          placeholder="Write your answer here"
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <EmptyCard text="No lab questions are configured yet." />
-            )}
-          </SectionCard>
-
-          <SectionCard icon={<ReflectionIcon />} title="Reflections">
-            {(lab.reflectionPrompts ?? []).length > 0 ? (
-              <div className="space-y-4">
-                {lab.reflectionPrompts?.map((prompt, index) => (
-                  <div key={prompt.id} className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-                    <p className="text-sm font-semibold text-[#101820]">{prompt.prompt || `Reflection prompt ${index + 1}`}</p>
-                    <textarea
-                      value={reflections[prompt.id] ?? ''}
-                      onChange={(e) => setReflections((current) => ({ ...current, [prompt.id]: e.target.value }))}
-                      rows={3}
-                      className="mt-3 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#B5E61D]"
-                      placeholder="Record your reflection"
-                    />
+                </Panel>
+              )}
+            </>
+          )}
+          {stage === 1 && (
+            <>
+              <Panel
+                title="Follow the investigation"
+                icon={<FlaskConical className="h-5 w-5" />}
+              >
+                {steps.length ? (
+                  <ol className="space-y-4">
+                    {steps.map((step, i) => (
+                      <li key={step.id} className="rounded-xl border p-4">
+                        <label className="flex items-start gap-3">
+                          <input
+                            className="mt-1 h-4 w-4 shrink-0 accent-teal-700"
+                            type="checkbox"
+                            checked={draft.checked.includes(i)}
+                            onChange={(e) =>
+                              update({
+                                checked: e.target.checked
+                                  ? [...draft.checked, i]
+                                  : draft.checked.filter((n) => n !== i),
+                              })
+                            }
+                          />
+                          <span>
+                            <span className="font-semibold">
+                              {i + 1}. {step.title}
+                            </span>
+                            <span className="mt-2 block text-sm leading-7">
+                              {step.instruction}
+                            </span>
+                            {step.expectedOutcome && (
+                              <span className="mt-2 block text-sm text-teal-800">
+                                Look for: {step.expectedOutcome}
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                        {step.mediaUrl && (
+                          <a
+                            className="mt-2 block text-sm text-teal-800 underline"
+                            href={step.mediaUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open step resource
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <div className="rounded-xl bg-amber-50 p-4 text-sm leading-7">
+                    <p>
+                      This activity does not yet have practical instructions.
+                      You can plan a question and prediction, but completion is
+                      unavailable until your teacher adds the investigation.
+                    </p>
+                    <Link
+                      to="/student/stem-labs"
+                      className="mt-3 inline-block font-semibold underline"
+                    >
+                      Choose another lab
+                    </Link>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyCard text="No reflection prompts are configured yet." />
-            )}
-          </SectionCard>
-
-          {(lab.assessmentCriteria ?? []).length > 0 ? (
-            <SectionCard icon={<OutcomesIcon />} title="What you'll be assessed on">
-              <ul className="space-y-2">
-                {lab.assessmentCriteria?.map((item) => (
-                  <li key={item} className="rounded-2xl border border-slate-200 bg-[#FCFDFE] px-4 py-2.5 text-sm text-slate-600">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </SectionCard>
-          ) : null}
-
-          {lab.communityLink || lab.parentActivity || lab.portfolioPrompt ? (
-            <SectionCard icon={<CommunityIcon />} title="Beyond the classroom">
-              <div className="space-y-3">
-                {lab.portfolioPrompt ? (
-                  <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Portfolio prompt</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{lab.portfolioPrompt}</p>
+                )}
+              </Panel>
+              {pack && (
+                <ExperimentBench
+                  kind={pack.model}
+                  trials={draft.trials}
+                  onRecord={(trial) =>
+                    update({ trials: [...draft.trials, trial] })
+                  }
+                  onClear={() => update({ trials: draft.trials.slice(0, -1) })}
+                />
+              )}
+              {pack && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-950">
+                  <strong>Model limits:</strong> {pack.limitation}
+                </p>
+              )}
+              <Panel
+                title="Record what you observed"
+                icon={<ClipboardList className="h-5 w-5" />}
+              >
+                <Field
+                  label="What changed? Describe a pattern, result or surprise using your evidence."
+                  value={draft.observations}
+                  onChange={(observations) => update({ observations })}
+                  placeholder="When I changed… I observed… My recorded results show…"
+                />
+              </Panel>
+            </>
+          )}
+          {stage === 2 && (
+            <>
+              <Panel
+                title="Explain with evidence"
+                icon={<Lightbulb className="h-5 w-5" />}
+              >
+                <Field
+                  label={
+                    pack?.explain ??
+                    'What is your conclusion? Use evidence from the investigation to explain your reasoning.'
+                  }
+                  value={draft.conclusion}
+                  onChange={(conclusion) => update({ conclusion })}
+                  placeholder="My claim is… My evidence is… This supports my claim because…"
+                />
+                <div className="mt-5">
+                  <Field
+                    label={
+                      pack?.transfer ??
+                      lab.communityLink ??
+                      'Where could you use what you learned at home, school or in your community? (Optional)'
+                    }
+                    value={draft.transfer}
+                    onChange={(transfer) => update({ transfer })}
+                  />
+                </div>
+              </Panel>
+              {questions.length > 0 && (
+                <Panel
+                  title="Apply your understanding"
+                  icon={<BookOpen className="h-5 w-5" />}
+                >
+                  <div className="space-y-6">
+                    {questions.map((q, i) => {
+                      const options = Array.isArray(q.options)
+                        ? q.options.filter(
+                            (o): o is string => typeof o === 'string',
+                          )
+                        : [];
+                      return (
+                        <fieldset key={q.id}>
+                          <legend className="mb-3 text-sm font-semibold">
+                            {i + 1}. {q.questionText}
+                          </legend>
+                          {options.length ? (
+                            <div className="space-y-2">
+                              {options.map((option) => (
+                                <label
+                                  key={option}
+                                  className="flex items-start gap-3 rounded-xl border p-3 text-sm"
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`question-${q.id}`}
+                                    checked={draft.answers[q.id] === option}
+                                    onChange={() =>
+                                      update({
+                                        answers: {
+                                          ...draft.answers,
+                                          [q.id]: option,
+                                        },
+                                      })
+                                    }
+                                  />
+                                  {option}
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <Field
+                              label="Your answer"
+                              value={draft.answers[q.id] ?? ''}
+                              onChange={(answer) =>
+                                update({
+                                  answers: { ...draft.answers, [q.id]: answer },
+                                })
+                              }
+                            />
+                          )}
+                        </fieldset>
+                      );
+                    })}
                   </div>
-                ) : null}
-                {lab.communityLink ? (
-                  <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Community connection</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{lab.communityLink}</p>
+                </Panel>
+              )}
+              {prompts.length > 0 && (
+                <Panel
+                  title="Reflect on your method"
+                  icon={<ClipboardList className="h-5 w-5" />}
+                >
+                  <div className="space-y-5">
+                    {prompts.map((p) => (
+                      <Field
+                        key={p.id}
+                        label={p.prompt}
+                        value={draft.reflections[p.id] ?? ''}
+                        onChange={(answer) =>
+                          update({
+                            reflections: {
+                              ...draft.reflections,
+                              [p.id]: answer,
+                            },
+                          })
+                        }
+                      />
+                    ))}
                   </div>
-                ) : null}
-                {lab.parentActivity ? (
-                  <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Try this at home</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{lab.parentActivity}</p>
-                  </div>
-                ) : null}
-              </div>
-            </SectionCard>
-          ) : null}
-
-          <SectionCard icon={<ReportIcon />} title="Completion report">
-            <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-5">
-              <p className="text-lg font-semibold text-[#101820]">
-                {lab.completionReportTemplate?.title ?? 'Lab completion report'}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {lab.completionReportTemplate?.summary ?? 'A completion summary will be available when the lab studio provides one.'}
-              </p>
-              <pre className="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 text-xs leading-6 text-slate-600">
-                {lab.completionReportTemplate?.outcomesJson != null
-                  ? JSON.stringify(lab.completionReportTemplate.outcomesJson, null, 2)
-                  : '[]'}
-              </pre>
-            </div>
-
-            {statusMessage ? <p className="mt-4 text-sm text-slate-600">{statusMessage}</p> : null}
+                </Panel>
+              )}
+              {!!lab.assessmentCriteria?.length && (
+                <Panel
+                  title="Review your evidence"
+                  icon={<CheckCircle2 className="h-5 w-5" />}
+                >
+                  <ul className="list-disc space-y-2 pl-5 text-sm">
+                    {lab.assessmentCriteria.map((c) => (
+                      <li key={c}>{c}</li>
+                    ))}
+                  </ul>
+                </Panel>
+              )}
+              <Panel
+                title="Save your investigation"
+                icon={<CheckCircle2 className="h-5 w-5" />}
+              >
+                <p className="text-sm leading-7">
+                  Completion records your participation and any question answers
+                  on your account. Your full notebook stays on this browser;
+                  download it to submit or share with your teacher. Completion
+                  does not certify mastery.
+                </p>
+                {!ready && (
+                  <p className="mt-3 text-sm text-amber-900">
+                    Before saving: write a prediction, check every investigation
+                    step, {pack ? 'record at least three trials, ' : ''}write
+                    observations and a conclusion, and answer any questions and
+                    reflections.
+                  </p>
+                )}
+                {completion.isError && (
+                  <p role="alert" className="mt-3 text-sm text-red-700">
+                    {apiErrorMessage(
+                      completion.error,
+                      'Could not save completion. Your notebook is still available; try again.',
+                    )}
+                  </p>
+                )}
+                {saved && (
+                  <p
+                    role="status"
+                    className="mt-3 flex items-center gap-2 text-sm font-semibold text-teal-800"
+                  >
+                    <CheckCircle2 className="h-5 w-5" />
+                    Completion saved to your account.
+                  </p>
+                )}
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    disabled={!ready || completion.isPending || saved}
+                    onClick={() => completion.mutate()}
+                    className="min-h-11 rounded-xl bg-teal-800 px-5 text-sm font-semibold text-white disabled:opacity-40"
+                  >
+                    {completion.isPending
+                      ? 'Saving…'
+                      : saved
+                        ? 'Completion saved'
+                        : 'Save completion'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={download}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-semibold"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download notebook
+                  </button>
+                </div>
+              </Panel>
+            </>
+          )}
+          <div className="flex justify-between gap-3 pb-6">
             <button
               type="button"
-              onClick={() => completeMutation.mutate()}
-              disabled={completeMutation.isPending}
-              className="mt-5 inline-flex items-center justify-center rounded-2xl bg-[#101820] px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-900 disabled:opacity-60"
+              disabled={stage === 0}
+              onClick={() => go(stage - 1)}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border bg-white px-4 text-sm font-semibold disabled:opacity-30"
             >
-              {completeMutation.isPending ? 'Saving completion...' : 'Complete lab'}
+              <ArrowLeft className="h-4 w-4" />
+              Previous
             </button>
-          </SectionCard>
-        </div>
+            {stage < 2 && (
+              <button
+                type="button"
+                onClick={() => go(stage + 1)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white"
+              >
+                {stage === 0 ? 'Start investigating' : 'Explain your findings'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </main>
+        <aside className="rounded-2xl border bg-white p-5 lg:sticky lg:top-5">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <ClipboardList className="h-5 w-5 text-teal-700" />
+            My evidence checklist
+          </h2>
+          <ul className="mt-4 space-y-3 text-sm">
+            {[
+              ['Prediction written', !!draft.prediction.trim()],
+              [
+                'Investigation steps checked',
+                steps.length > 0 &&
+                  steps.every((_, i) => draft.checked.includes(i)),
+              ],
+              ...(pack
+                ? [['Three trials recorded', draft.trials.length >= 3]]
+                : []),
+              ['Observations recorded', !!draft.observations.trim()],
+              ['Conclusion explained', !!draft.conclusion.trim()],
+            ].map(([label, done]) => (
+              <li key={String(label)} className="flex items-center gap-2">
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${done ? 'bg-teal-100 text-teal-800' : 'border bg-slate-50'}`}
+                >
+                  {done && <Check className="h-3 w-3" />}
+                </span>
+                {label}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 border-t pt-4 text-xs leading-6 text-slate-500">
+            A useful notebook explains how you tested your idea, what the
+            evidence shows and what you would improve.
+          </p>
+          {lab.portfolioPrompt && (
+            <p className="mt-3 text-xs leading-6">{lab.portfolioPrompt}</p>
+          )}
+          {lab.adaptationNotes && (
+            <p className="mt-3 text-xs leading-6">{lab.adaptationNotes}</p>
+          )}
+        </aside>
       </div>
     </div>
   );
 }
-
-function SectionCard({
-  icon,
+function Panel({
   title,
+  icon,
   children,
 }: {
-  icon: React.ReactNode;
   title: string;
-  children: React.ReactNode;
+  icon: ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_12px_36px_rgba(16,24,32,0.06)]">
-      <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#101820] text-[#B5E61D]">{icon}</div>
-        <h2 className="text-xl font-semibold text-[#101820]">{title}</h2>
-      </div>
-      <div className="mt-6">{children}</div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+        <span className="text-teal-700">{icon}</span>
+        {title}
+      </h2>
+      {children}
     </section>
   );
 }
-
-function OverviewMeta({ label, value }: { label: string; value: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className="mt-2 text-sm font-medium text-[#101820]">{value}</p>
-    </div>
-  );
-}
-
-function EmptyCard({ text }: { text: string }) {
-  return <p className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-5 text-sm text-slate-500">{text}</p>;
-}
-
-function MediaSummaryCard({ title, value }: { title: string; value: number }) {
-  return (
-    <div className="rounded-[24px] border border-slate-200 bg-[#FCFDFE] p-4">
-      <p className="text-sm font-semibold text-[#101820]">{title}</p>
-      <p className="mt-2 text-sm text-slate-500">{value > 0 ? `${value} available` : 'Not configured yet'}</p>
-    </div>
-  );
-}
-
-function RenderedMediaCard({ item }: { item: LabMedia }) {
-  const kind = mediaKind(item.type);
-
-  return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#FCFDFE]">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-4">
-        <div>
-          <p className="text-sm font-semibold text-[#101820]">{item.title ?? item.type}</p>
-          {item.caption ? <p className="mt-1 text-sm text-slate-500">{item.caption}</p> : null}
-        </div>
-        <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          {kind}
-        </span>
-      </div>
-
-      <div className="p-4">
-        {kind === 'IMAGE' ? (
-          <img src={item.url} alt={item.title ?? 'Lab image'} className="max-h-[360px] w-full rounded-2xl object-contain bg-white" />
-        ) : kind === 'AUDIO' ? (
-          <audio controls className="w-full">
-            <source src={item.url} />
-          </audio>
-        ) : kind === 'VIDEO' || kind === 'ANIMATION' ? (
-          <video controls className="max-h-[420px] w-full rounded-2xl bg-black">
-            <source src={item.url} />
-          </video>
-        ) : (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-            This media type is available as a resource link.
-          </div>
-        )}
-
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#101820] transition hover:opacity-80"
-        >
-          Open source
-        </a>
-      </div>
-    </div>
+    <label className="block text-sm font-medium leading-6">
+      {label}
+      <textarea
+        rows={4}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder ?? 'Write your explanation…'}
+        className="mt-2 block w-full rounded-xl border border-slate-300 p-3 text-sm font-normal leading-6 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
+      />
+    </label>
   );
 }
