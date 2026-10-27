@@ -1,0 +1,47 @@
+name: Deploy frontend to AWS
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'scripts/deployment/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: production-frontend
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Verify learning activities
+        run: npm run test:stem && npm run test:skills && npm run test:assignments && npm run test:revision
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+        env:
+          VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
+      - name: Connect to AWS without stored access keys
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::516962256415:role/AssignmentHubGitHubFrontendDeploy
+          aws-region: eu-west-2
+      - name: Publish and verify frontend
+        run: bash scripts/deployment/publish-frontend.sh
+        env:
+          FRONTEND_DIST: frontend/dist
+      - name: Verify first-aid images
+        run: npm run check:firstaid-assets -- https://assignmenthub.co.ke
+        working-directory: frontend
