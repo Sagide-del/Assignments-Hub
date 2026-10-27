@@ -1,61 +1,608 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { ArrowRight, BarChart3, Calculator, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Clock3, GraduationCap, Leaf, LibraryBig, Search } from 'lucide-react';
-import { assignmentsApi } from '../../api/assignments.api';
-import { submissionsApi } from '../../api/submissions.api';
-import { useAuthStore } from '../../store/auth.store';
-import type { Assignment, Submission } from '../../types';
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import {
+  AlertCircle,
+  ArrowRight,
+  Atom,
+  Award,
+  BadgeCheck,
+  BookOpen,
+  BrainCircuit,
+  BriefcaseBusiness,
+  Calculator,
+  CalendarDays,
+  ChevronRight,
+  CircleDashed,
+  CirclePlay,
+  ClipboardCheck,
+  Clock3,
+  CodeXml,
+  Compass,
+  Dna,
+  FileCheck2,
+  FlaskConical,
+  Globe2,
+  Landmark,
+  Languages,
+  LibraryBig,
+  Palette,
+  Search,
+  Sprout,
+  type LucideIcon,
+} from "lucide-react";
+import { assignmentsApi } from "../../api/assignments.api";
+import { submissionsApi } from "../../api/submissions.api";
+import { useAuthStore } from "../../store/auth.store";
+import type { Assignment, Submission } from "../../types";
+import {
+  assignmentDeadline,
+  assignmentState,
+  assignmentSubject,
+  selectAssignments,
+  STATE_META,
+  type AssignmentState,
+} from "./assignment-list";
 
-type AssignmentState = 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'RESULTS_READY';
-
-function stateFor(submission?: Submission): AssignmentState {
-  if (!submission) return 'NOT_STARTED';
-  if (submission.status === 'DRAFT') return 'IN_PROGRESS';
-  return submission.resultsReleasedAt ? 'RESULTS_READY' : 'SUBMITTED';
+function subjectAppearance(subject: string): {
+  Icon: LucideIcon;
+  tone: string;
+} {
+  if (/math/i.test(subject))
+    return { Icon: Calculator, tone: "bg-blue-50 text-blue-700" };
+  if (/chem/i.test(subject))
+    return { Icon: FlaskConical, tone: "bg-violet-50 text-violet-700" };
+  if (/bio|life science/i.test(subject))
+    return { Icon: Dna, tone: "bg-emerald-50 text-emerald-700" };
+  if (/physic|integrated science/i.test(subject))
+    return { Icon: Atom, tone: "bg-sky-50 text-sky-700" };
+  if (/computer|coding|technology|technical/i.test(subject))
+    return { Icon: CodeXml, tone: "bg-indigo-50 text-indigo-700" };
+  if (/english|kiswahili|language|literature/i.test(subject))
+    return { Icon: Languages, tone: "bg-orange-50 text-orange-700" };
+  if (/geog|environment/i.test(subject))
+    return { Icon: Globe2, tone: "bg-cyan-50 text-cyan-700" };
+  if (/history|government|social/i.test(subject))
+    return { Icon: Landmark, tone: "bg-amber-50 text-amber-700" };
+  if (/agri|nutrition/i.test(subject))
+    return { Icon: Sprout, tone: "bg-green-50 text-green-700" };
+  if (/business|commerce|econom/i.test(subject))
+    return { Icon: BriefcaseBusiness, tone: "bg-slate-100 text-slate-700" };
+  if (/art|design|music/i.test(subject))
+    return { Icon: Palette, tone: "bg-rose-50 text-rose-700" };
+  return { Icon: BookOpen, tone: "bg-slate-100 text-slate-600" };
 }
+const METRICS: {
+  state: AssignmentState;
+  label: string;
+  Icon: LucideIcon;
+  tone: string;
+}[] = [
+  {
+    state: "NOT_STARTED",
+    label: "To start",
+    Icon: CircleDashed,
+    tone: "bg-slate-100 text-slate-600",
+  },
+  {
+    state: "IN_PROGRESS",
+    label: "In progress",
+    Icon: CirclePlay,
+    tone: "bg-blue-50 text-blue-700",
+  },
+  {
+    state: "SUBMITTED",
+    label: "Awaiting results",
+    Icon: ClipboardCheck,
+    tone: "bg-amber-50 text-amber-700",
+  },
+  {
+    state: "RESULTS_AVAILABLE",
+    label: "Results available",
+    Icon: BadgeCheck,
+    tone: "bg-emerald-50 text-emerald-700",
+  },
+];
+const TOOLS: {
+  title: string;
+  description: string;
+  href: string;
+  Icon: LucideIcon;
+}[] = [
+  {
+    title: "KJSEA Mock Test",
+    description: "Practice by grade and subject",
+    href: "/student/kjsea-mock-test",
+    Icon: FileCheck2,
+  },
+  {
+    title: "Learning Coach",
+    description: "Guided topic practice",
+    href: "/student/learning-coach",
+    Icon: BrainCircuit,
+  },
+  {
+    title: "STEM Labs",
+    description: "Experiments and notebooks",
+    href: "/student/stem-labs",
+    Icon: FlaskConical,
+  },
+  {
+    title: "Learn a Skill",
+    description: "Lessons and practical projects",
+    href: "/student/learn-skills",
+    Icon: CodeXml,
+  },
+  {
+    title: "My Resources",
+    description: "Learning guide and saved resources",
+    href: "/student/resources",
+    Icon: LibraryBig,
+  },
+  {
+    title: "My Pathway",
+    description: "Explore your study options",
+    href: "/student/my-pathway",
+    Icon: Compass,
+  },
+];
 
-function formatDate(value?: string | null) {
-  return value ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value)) : null;
-}
-
-function statusLabel(state: AssignmentState) {
-  return state === 'RESULTS_READY' ? 'Results ready' : state === 'SUBMITTED' ? 'Submitted' : state === 'IN_PROGRESS' ? 'In progress' : 'Not started';
-}
-
-function statusStyle(state: AssignmentState) {
-  return state === 'RESULTS_READY' ? 'border-lime-200 bg-lime-50 text-[#527000]' : state === 'SUBMITTED' ? 'border-sky-200 bg-sky-50 text-sky-700' : state === 'IN_PROGRESS' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-600';
-}
-
-function subjectIcon(subject: string) {
-  return /math/i.test(subject) ? <Calculator className="h-7 w-7" /> : <Leaf className="h-7 w-7" />;
-}
-
-function ProgressCard({ icon, value, label, tone }: { icon: ReactNode; value: number; label: string; tone: string }) {
-  return <Link to="/student/my-assignments" className="group flex min-h-28 items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md sm:p-5"><div className={`rounded-2xl p-3 ${tone}`}>{icon}</div><div className="min-w-0 flex-1"><p className="text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">{value}</p><p className="mt-1 text-sm font-medium text-slate-500">{label}</p></div><ChevronRight className="h-5 w-5 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#101820]" /></Link>;
-}
-
-function AssignmentRow({ assignment, submission }: { assignment: Assignment; submission?: Submission }) {
-  const state = stateFor(submission);
-  const marks = assignment.maxPoints ?? assignment.totalMarks ?? 0;
-  const questions = assignment._count?.questions ?? 0;
-  const isResult = state === 'RESULTS_READY';
-  const date = formatDate(submission?.completedAt ?? assignment.dueDate);
-  return <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex flex-col gap-5 lg:flex-row lg:items-center"><div className={`hidden rounded-2xl p-4 sm:block ${/math/i.test(assignment.subject) ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-700'}`}>{subjectIcon(assignment.subject)}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-bold uppercase tracking-[0.14em] text-[#607D00]">{assignment.subject}</span><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyle(state)}`}>{statusLabel(state)}</span></div><h2 className="mt-2 break-words text-lg font-semibold leading-snug text-[#101820] sm:text-xl">{assignment.title}</h2><div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500"><span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" />{questions} questions</span><span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />{marks} marks</span></div>{isResult && submission?.score != null ? <div className="mt-3 flex items-center gap-3"><span className="text-sm font-semibold text-[#466000]">Score {submission.score} / {marks}</span><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#14913f]" style={{ width: `${marks ? Math.min(100, (submission.score / marks) * 100) : 0}%` }} /></div></div> : null}</div><div className="flex items-center gap-4 border-t border-slate-100 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0"><div className="hidden min-w-28 text-sm text-slate-500 sm:block"><CalendarDays className="mb-1 h-4 w-4" />{date ? <span>{state === 'NOT_STARTED' ? 'Due ' : ''}{date}</span> : <span>Available now</span>}</div><Link to={`/student/assignments/${assignment.id}`} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white transition hover:bg-[#1d2c38] lg:flex-none">{isResult ? 'View results' : state === 'IN_PROGRESS' ? 'Continue' : state === 'NOT_STARTED' ? 'Start' : 'View'}<ArrowRight className="h-4 w-4" /></Link></div></div></article>;
+function AssignmentRow({
+  assignment,
+  submission,
+}: {
+  assignment: Assignment;
+  submission?: Submission;
+}) {
+  const subject = assignmentSubject(assignment);
+  const { Icon, tone } = subjectAppearance(subject);
+  const state = assignmentState(submission);
+  const meta = STATE_META[state];
+  const questions =
+    assignment._count?.questions ?? assignment.questions?.length;
+  const marks = assignment.maxPoints ?? assignment.totalMarks;
+  const deadline = assignmentDeadline(assignment.dueDate);
+  const unfinished = state === "NOT_STARTED" || state === "IN_PROGRESS";
+  return (
+    <article className="flex min-w-0 gap-3 border-t border-slate-100 px-4 py-5 sm:gap-4 sm:px-6">
+      <span
+        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tone}`}
+      >
+        <Icon className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-xs font-medium text-slate-500">{subject}</span>
+          <span
+            className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${meta.className}`}
+          >
+            {meta.label}
+          </span>
+        </div>
+        <h3 className="mt-2 break-words text-sm font-semibold leading-6 text-slate-900 sm:text-base">
+          {assignment.title}
+        </h3>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+          {questions != null && <span>{questions} questions</span>}
+          {marks != null && <span>{marks} marks</span>}
+          {unfinished && (
+            <span
+              title={deadline.detail}
+              className={`inline-flex items-center gap-1.5 ${deadline.isPast ? "text-red-700" : deadline.isSoon ? "text-amber-700" : ""}`}
+            >
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+              {deadline.label}
+            </span>
+          )}
+          {state === "SUBMITTED" && <span>Results have not been released</span>}
+          {state === "RESULTS_AVAILABLE" && submission?.score != null && (
+            <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
+              <Award className="h-3.5 w-3.5" aria-hidden="true" />
+              Score: {submission.score}
+              {marks != null ? ` / ${marks}` : ""}
+            </span>
+          )}
+        </div>
+        <Link
+          to={`/student/assignments/${assignment.id}`}
+          aria-label={`${meta.action}: ${assignment.title}`}
+          className="mt-3 inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-slate-800 hover:text-blue-700 sm:hidden"
+        >
+          {meta.action}
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      </div>
+      <Link
+        to={`/student/assignments/${assignment.id}`}
+        aria-label={`${meta.action}: ${assignment.title}`}
+        className="hidden min-h-10 shrink-0 items-center gap-2 self-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 sm:inline-flex"
+      >
+        {meta.action}
+        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </Link>
+    </article>
+  );
 }
 
 export function StudentDashboard() {
   const user = useAuthStore((state) => state.user);
-  const [subjectFilter, setSubjectFilter] = useState('All');
-  const [search, setSearch] = useState('');
-  const assignmentsQuery = useQuery({ queryKey: ['assignments', user?.schoolId, user?.grade], queryFn: () => assignmentsApi.findAll() });
-  const submissionsQuery = useQuery({ queryKey: ['student-submissions', user?.id], queryFn: () => submissionsApi.findAll(), enabled: Boolean(user?.id) });
-  const assignments = useMemo(() => (assignmentsQuery.data ?? []).filter((assignment) => assignment.isPublished), [assignmentsQuery.data]);
-  const submissionByAssignment = useMemo(() => new Map((submissionsQuery.data ?? []).map((submission) => [submission.assignmentId, submission])), [submissionsQuery.data]);
-  const subjects = useMemo(() => Array.from(new Set(assignments.map((item) => item.subject))).sort(), [assignments]);
-  const counts = useMemo(() => assignments.reduce((all, assignment) => { all[stateFor(submissionByAssignment.get(assignment.id))] += 1; return all; }, { NOT_STARTED: 0, IN_PROGRESS: 0, SUBMITTED: 0, RESULTS_READY: 0 } as Record<AssignmentState, number>), [assignments, submissionByAssignment]);
-  const visible = useMemo(() => assignments.filter((assignment) => (subjectFilter === 'All' || assignment.subject === subjectFilter) && assignment.title.toLowerCase().includes(search.toLowerCase())).sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()), [assignments, search, subjectFilter]);
-  const isLoading = assignmentsQuery.isLoading || submissionsQuery.isLoading;
-
-  return <div className="mx-auto max-w-7xl space-y-7 pb-8"><header className="flex flex-col gap-3 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">Dashboard</h1><p className="mt-1 text-sm text-slate-500 sm:text-base">{user?.name?.split(' ')[0] ?? 'Your'}’s assignments and learning activity.</p></div><Link to="/student/learning-coach" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#101820] shadow-sm hover:bg-slate-50"><GraduationCap className="h-4 w-4" /> Open Learning Coach</Link></header><section className="grid gap-3 md:grid-cols-3"><ProgressCard icon={<ClipboardList className="h-6 w-6" />} value={counts.NOT_STARTED} label="Not started" tone="bg-slate-100 text-slate-600" /><ProgressCard icon={<Clock3 className="h-6 w-6" />} value={counts.IN_PROGRESS} label="In progress" tone="bg-amber-50 text-amber-600" /><ProgressCard icon={<CheckCircle2 className="h-6 w-6" />} value={counts.SUBMITTED + counts.RESULTS_READY} label="Submitted" tone="bg-emerald-50 text-emerald-700" /></section><section><div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"><div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center"><h2 className="text-xl font-semibold tracking-tight text-[#101820] sm:text-2xl">My Assignments</h2><div className="flex gap-2 overflow-x-auto pb-1">{['All', ...subjects].map((subject) => <button key={subject} type="button" onClick={() => setSubjectFilter(subject)} className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold ${subjectFilter === subject ? 'bg-[#101820] text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>{subject}{subject === 'All' ? ` (${assignments.length})` : ''}</button>)}</div></div><label className="relative block w-full xl:w-72"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assignments..." className="min-h-11 w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-[#101820] outline-none transition focus:border-[#B5E61D] focus:ring-2 focus:ring-lime-100" /></label></div><div className="mt-5 space-y-4">{isLoading ? [0, 1].map((item) => <div key={item} className="h-40 animate-pulse rounded-2xl bg-slate-200" />) : visible.length ? visible.slice(0, 4).map((assignment) => <AssignmentRow key={assignment.id} assignment={assignment} submission={submissionByAssignment.get(assignment.id)} />) : <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">No assignments match your search.</div>}</div>{visible.length > 4 ? <Link to="/student/my-assignments" className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#101820] hover:text-[#607D00]">View all assignments <ArrowRight className="h-4 w-4" /></Link> : null}</section><section className="grid gap-3 md:grid-cols-3"><Link to="/student/kjsea-mock-test" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"><div className="flex items-center gap-3"><span className="rounded-xl bg-slate-100 p-3 text-[#101820]"><GraduationCap className="h-6 w-6" /></span><div><h3 className="font-semibold text-[#101820]">KJSEA Mock Test</h3><p className="mt-1 text-sm leading-5 text-slate-500">Generate a subject paper for your grade and review your answers.</p></div><ChevronRight className="ml-auto h-5 w-5 text-slate-400" /></div></Link><Link to="/student/learning-coach" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"><div className="flex items-center gap-3"><span className="rounded-xl bg-slate-100 p-3 text-[#101820]"><BarChart3 className="h-6 w-6" /></span><div><h3 className="font-semibold text-[#101820]">Learning Coach</h3><p className="mt-1 text-sm leading-5 text-slate-500">Continue your practice and review.</p></div><ChevronRight className="ml-auto h-5 w-5 text-slate-400" /></div></Link><Link to="/student/resources" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"><div className="flex items-center gap-3"><span className="rounded-xl bg-slate-100 p-3 text-[#101820]"><LibraryBig className="h-6 w-6" /></span><div><h3 className="font-semibold text-[#101820]">My Resources</h3><p className="mt-1 text-sm leading-5 text-slate-500">Access notes, cards, and learning tools.</p></div><ChevronRight className="ml-auto h-5 w-5 text-slate-400" /></div></Link></section></div>;
+  const [subject, setSubject] = useState("");
+  const [status, setStatus] = useState<AssignmentState | "ALL">("ALL");
+  const [search, setSearch] = useState("");
+  const assignmentsQuery = useQuery({
+    queryKey: ["dashboard-assignments", user?.id, user?.schoolId, user?.grade],
+    queryFn: () => assignmentsApi.findAll(),
+    enabled: Boolean(user?.id),
+  });
+  const submissionsQuery = useQuery({
+    queryKey: ["student-submissions", user?.id],
+    queryFn: () => submissionsApi.findAll(),
+    enabled: Boolean(user?.id),
+  });
+  const assignments = useMemo(
+    () => (assignmentsQuery.data ?? []).filter((item) => item.isPublished),
+    [assignmentsQuery.data],
+  );
+  const submissions = useMemo(() => {
+    const map = new Map<number, Submission>();
+    // The API returns newest first; keep that attempt if historical rows exist.
+    for (const item of submissionsQuery.data ?? [])
+      if (!map.has(item.assignmentId)) map.set(item.assignmentId, item);
+    return map;
+  }, [submissionsQuery.data]);
+  const subjects = useMemo(
+    () => [...new Set(assignments.map(assignmentSubject))].sort(),
+    [assignments],
+  );
+  const counts = useMemo(() => {
+    const result: Record<AssignmentState, number> = {
+      NOT_STARTED: 0,
+      IN_PROGRESS: 0,
+      SUBMITTED: 0,
+      RESULTS_AVAILABLE: 0,
+    };
+    for (const item of assignments)
+      result[assignmentState(submissions.get(item.id))]++;
+    return result;
+  }, [assignments, submissions]);
+  const visible = useMemo(
+    () =>
+      selectAssignments(assignments, submissions, {
+        subject,
+        state: status,
+        search,
+        sort: "priority",
+      }),
+    [assignments, submissions, subject, status, search],
+  );
+  const next = useMemo(
+    () =>
+      selectAssignments(assignments, submissions, {
+        subject: "",
+        state: "ALL",
+        search: "",
+        sort: "priority",
+      }).find((item) =>
+        ["NOT_STARTED", "IN_PROGRESS"].includes(
+          assignmentState(submissions.get(item.id)),
+        ),
+      ),
+    [assignments, submissions],
+  );
+  const loading = assignmentsQuery.isPending || submissionsQuery.isPending;
+  const error = assignmentsQuery.isError || submissionsQuery.isError;
+  const ready = !loading && !error;
+  const filtered = Boolean(subject || search || status !== "ALL");
+  const date = new Intl.DateTimeFormat("en-KE", {
+    timeZone: "Africa/Nairobi",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date());
+  function clearFilters() {
+    setSubject("");
+    setStatus("ALL");
+    setSearch("");
+  }
+  function retry() {
+    void assignmentsQuery.refetch();
+    void submissionsQuery.refetch();
+  }
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 pb-8">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+          <p className="mb-2 text-xs text-slate-500">
+            {date}
+            {user?.grade ? ` · ${user.grade}` : ""}
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+            Dashboard
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
+            Here’s your assignment overview.
+          </p>
+        </div>
+        <Link
+          to="/student/my-assignments"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          <BookOpen className="h-4 w-4" aria-hidden="true" />
+          My Assignments
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </header>
+      <section
+        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        aria-label="Assignment overview"
+      >
+        {METRICS.map(({ state, label, Icon, tone }) => (
+          <button
+            key={state}
+            type="button"
+            aria-pressed={status === state}
+            disabled={!ready}
+            onClick={() =>
+              setStatus((current) => (current === state ? "ALL" : state))
+            }
+            className={`flex min-w-0 items-center gap-3 rounded-xl border bg-white p-4 text-left transition sm:p-5 ${status === state ? "border-slate-500 ring-1 ring-slate-500" : "border-slate-200 hover:border-slate-300"} disabled:cursor-default`}
+          >
+            <span
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tone}`}
+            >
+              <Icon className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-2xl font-semibold tabular-nums text-slate-900">
+                {ready ? counts[state] : "—"}
+              </span>
+              <span className="mt-1 block text-[11px] leading-4 text-slate-500 sm:text-xs">
+                {label}
+              </span>
+            </span>
+          </button>
+        ))}
+      </section>
+      {error && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+        >
+          <span className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Your assignment overview could not be loaded.
+          </span>
+          <button
+            type="button"
+            onClick={retry}
+            disabled={
+              assignmentsQuery.isFetching || submissionsQuery.isFetching
+            }
+            className="min-h-10 rounded-lg border border-red-200 bg-white px-4 font-semibold disabled:opacity-50"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0 space-y-5">
+          {ready && next && (
+            <section
+              aria-label="Next assignment"
+              className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-blue-100 bg-white p-5"
+            >
+              <div className="flex w-full min-w-0 items-start gap-3 sm:w-auto sm:flex-1">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                  <Clock3 className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-slate-500">
+                    Up next · {assignmentSubject(next)}
+                  </p>
+                  <h2 className="mt-1 break-words text-sm font-semibold text-slate-900">
+                    {next.title}
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {assignmentDeadline(next.dueDate).label}
+                  </p>
+                </div>
+              </div>
+              <Link
+                to={`/student/assignments/${next.id}`}
+                className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white sm:w-auto"
+              >
+                {assignmentState(submissions.get(next.id)) === "IN_PROGRESS"
+                  ? "Continue assignment"
+                  : "Start assignment"}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </section>
+          )}
+          <section
+            className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+            aria-label="Your assignments"
+          >
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-base font-semibold text-slate-900">
+                  Your assignments
+                </h2>
+                <Link
+                  to="/student/my-assignments"
+                  className="inline-flex min-h-9 items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900"
+                >
+                  View all
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </Link>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_170px]">
+                <label className="relative">
+                  <span className="sr-only">Search assignments</span>
+                  <Search
+                    className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search title or subject"
+                    className="min-h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm"
+                  />
+                </label>
+                <label>
+                  <span className="sr-only">Assignment subject</span>
+                  <select
+                    aria-label="Assignment subject"
+                    value={subject}
+                    onChange={(event) => setSubject(event.target.value)}
+                    className="min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
+                  >
+                    <option value="">All subjects</option>
+                    {subjects.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                <p role="status">
+                  {error
+                    ? "Overview unavailable"
+                    : loading
+                      ? "Loading assignments…"
+                      : `${visible.length} ${visible.length === 1 ? "assignment" : "assignments"}${status === "ALL" ? " · unfinished first" : ` · ${METRICS.find((m) => m.state === status)?.label.toLowerCase()}`}`}
+                </p>
+                {filtered && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="min-h-9 font-medium text-slate-700 underline underline-offset-4"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            </div>
+            {loading && !error ? (
+              <div
+                role="status"
+                aria-label="Loading assignment overview"
+                className="space-y-4 border-t border-slate-100 p-6"
+              >
+                {[0, 1, 2].map((n) => (
+                  <div
+                    key={n}
+                    className="h-20 animate-pulse rounded-lg bg-slate-100"
+                  />
+                ))}
+              </div>
+            ) : error ? (
+              <p className="border-t border-slate-100 px-6 py-8 text-sm text-slate-500">
+                Retry to see your tasks and their latest status.
+              </p>
+            ) : visible.length ? (
+              <>
+                {visible.slice(0, 5).map((item) => (
+                  <AssignmentRow
+                    key={item.id}
+                    assignment={item}
+                    submission={submissions.get(item.id)}
+                  />
+                ))}
+                {visible.length > 5 && (
+                  <p className="border-t border-slate-100 px-6 py-4 text-xs text-slate-500">
+                    Showing 5 of {visible.length}.{" "}
+                    <Link
+                      to="/student/my-assignments"
+                      className="font-medium text-slate-800 underline underline-offset-4"
+                    >
+                      Open all assignments
+                    </Link>
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="border-t border-slate-100 px-6 py-10 text-center">
+                <BookOpen
+                  className="mx-auto h-7 w-7 text-slate-300"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+                <h3 className="mt-3 text-sm font-semibold text-slate-700">
+                  {filtered
+                    ? "No assignments match these filters"
+                    : "No assignments available yet"}
+                </h3>
+                <p className="mt-2 text-xs leading-6 text-slate-500">
+                  {filtered
+                    ? "Try another subject or clear your filters."
+                    : "Published assignments for your account will appear here."}
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+        <aside
+          aria-label="Learning tools"
+          className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+        >
+          <div className="border-b border-slate-100 px-5 py-4">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Learning tools
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Open your study workspace
+            </p>
+          </div>
+          <div className="p-2">
+            {(user?.isIndependentTrial ? [] : TOOLS).map(
+              ({ title, description, href, Icon }) => (
+                <Link
+                  key={href}
+                  to={href}
+                  className="group flex min-h-20 items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-50"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 group-hover:border-slate-300">
+                    <Icon
+                      className="h-[18px] w-[18px]"
+                      strokeWidth={1.7}
+                      aria-hidden="true"
+                    />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold text-slate-800">
+                      {title}
+                    </span>
+                    <span className="mt-1 block text-[11px] leading-5 text-slate-500">
+                      {description}
+                    </span>
+                  </span>
+                  <ChevronRight
+                    className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-slate-500"
+                    aria-hidden="true"
+                  />
+                </Link>
+              ),
+            )}
+          </div>
+          {user?.isIndependentTrial && (
+            <div className="border-t border-slate-100 p-5">
+              <p className="text-xs leading-6 text-slate-500">
+                Your account includes a starter assignment.
+              </p>
+              <Link
+                to="/student/activate"
+                className="mt-2 inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-slate-800"
+              >
+                Activate full access
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
 }
