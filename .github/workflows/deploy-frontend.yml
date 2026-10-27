@@ -38,7 +38,9 @@ jobs:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
       - name: Verify mock-test backend
         working-directory: backend
-        run: npm ci && npm test -- --runInBand src/kjsea && npm run build
+        env:
+          DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea && npm run build
       - name: Wait for KJSEA API and database migration
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
