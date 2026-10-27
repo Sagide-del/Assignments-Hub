@@ -1,3 +1,5 @@
+> UI update, 27 October 2026: supplementary learning-outcome panels and guide links have been removed from student assignment, skill and STEM working screens to reduce clutter. The dedicated My Resources learning guide, authored lesson content and existing saved evidence remain available. The implementation notes below describe the original framework structure.
+
 # Framework-based learning structure
 
 Source read: Kenya Institute of Curriculum Development, *Basic Education Curriculum Framework*, 2017, supplied by the user as CURRICULUMFRAMEWORK.pdf (145 PDF pages). The edition is printed on the title page. It is a foundational framework, not evidence that a current 2026 grade/subject design or rationalised subject list has been verified.

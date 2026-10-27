@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import type { ReactNode } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -22,8 +22,6 @@ import { assignmentsApi } from "../../api/assignments.api";
 import { submissionsApi } from "../../api/submissions.api";
 import { uploadsApi } from "../../api/uploads.api";
 import { apiErrorMessage } from "../../api/axios";
-import { LearningDesignPanel } from "./curriculum/LearningDesignPanel";
-import { assignmentDesign } from "./curriculum/activity-designs";
 import { RichContent } from "../../components/ui/RichContent";
 import { AnswerInputWithSymbols } from "./answer-input/AnswerInputWithSymbols";
 import type { Answer, Question } from "../../types";
@@ -468,6 +466,7 @@ export function ExamPlayer() {
   return <ExamWorkspace key={`${userId}:${id}`} />;
 }
 function ExamWorkspace() {
+  const catalogueReturn = useLocation().state?.assignmentCatalogue;
   const userId = useAuthStore((s) => s.user?.id) ?? 0;
   const { id } = useParams<{ id: string }>();
   const assignmentId = Number(id);
@@ -714,10 +713,16 @@ function ExamWorkspace() {
     totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
   const assignmentMaxPoints =
     assignment?.maxPoints ?? assignment?.totalMarks ?? 0;
-  const assignmentListPath =
+  const defaultAssignmentListPath =
     assignment?.kind === "KCSE_PAPER"
       ? "/student/kjsea-mock-test"
       : "/student/my-assignments";
+  const assignmentListPath =
+    typeof catalogueReturn === "string" &&
+    (catalogueReturn === "/student/my-assignments" ||
+      catalogueReturn.startsWith("/student/my-assignments?"))
+      ? catalogueReturn
+      : defaultAssignmentListPath;
 
   if (assignmentError || questionsError || submissionError)
     return (
@@ -894,9 +899,6 @@ function ExamWorkspace() {
                 index={reviewIndex}
                 total={reviewAnswers.length}
               />
-              {assignment && (
-                <LearningDesignPanel design={assignmentDesign(assignment)} />
-              )}
             </main>
 
             <aside className="hidden xl:block">
@@ -1172,7 +1174,7 @@ function ExamWorkspace() {
           {assignment.description && (
             <details className="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <summary className="cursor-pointer text-xs font-medium text-slate-600">
-                Teacher instructions & learning brief
+                Teacher instructions
               </summary>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
                 {assignment.description}

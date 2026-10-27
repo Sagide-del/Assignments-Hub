@@ -28,7 +28,6 @@ import {
   RotateCcw,
   type LucideIcon,
 } from 'lucide-react';
-import { LearningGuideLink } from './curriculum/LearningDesignPanel';
 import { skillsApi } from '../../api/skills.api';
 import { useAuthStore } from '../../store/auth.store';
 import type { SkillCourse, SkillEnrollment } from '../../types';
@@ -157,7 +156,6 @@ export function LearnSkillsPage() {
             Your courses, practical lessons and saved work.
           </p>
         </div>
-        <LearningGuideLink/>
       </header>
 
       {!loading && !error ? (

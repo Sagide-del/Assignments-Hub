@@ -48,6 +48,7 @@ export interface School {
 }
 
 export interface Assignment {
+  topic?: string | null;
   id: number;
   title: string;
   description?: string | null;

@@ -20,7 +20,6 @@ import { Link } from 'react-router-dom';
 import { labsApi, labSessionsApi, stemApi } from '../../api/labs.api';
 import { useAuthStore } from '../../store/auth.store';
 import type { Lab, StemCategory, StemSubject } from '../../types';
-import { LearningGuideLink } from './curriculum/LearningDesignPanel';
 import { investigationFor, notebookKey } from './stem-workspace/investigations';
 
 function labMatchesCategory(
@@ -190,7 +189,6 @@ export function StemLabsPage() {
           </span>
         )}
       </header>
-      <LearningGuideLink/>
       <section
         className="grid overflow-hidden rounded-2xl border bg-white md:grid-cols-[1fr_280px]"
         aria-label="Your lab notebook"

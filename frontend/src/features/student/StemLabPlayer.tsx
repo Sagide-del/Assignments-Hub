@@ -24,8 +24,6 @@ import {
   notebookReady,
   type LabDraft,
 } from './stem-workspace/investigations';
-import { LearningDesignPanel } from './curriculum/LearningDesignPanel';
-import { stemDesign } from './curriculum/activity-designs';
 import { ExperimentBench } from './stem-workspace/ExperimentBench';
 
 export function StemLabPlayerPage() {
@@ -256,7 +254,6 @@ function LabNotebook({ lab, userId }: { lab: Lab; userId: number }) {
           ))}
         </div>
       </header>
-      <LearningDesignPanel design={stemDesign(lab)}/>
       <nav aria-label="Investigation stages" className="grid grid-cols-3 gap-2">
         {stages.map(({ title, icon: Icon, detail }, i) => (
           <button

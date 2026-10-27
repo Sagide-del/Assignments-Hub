@@ -11,7 +11,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "prebuild": "node scripts/generate-revision.mjs",
     "test:revision": "node --test scripts/revision.test.mjs",
-    "test:assignments": "node --test scripts/assignment-list.test.mjs",
+    "test:assignments": "node --test scripts/assignment-list.test.mjs scripts/assignment-catalogue.test.mjs",
     "test:skills": "node --test scripts/skill-progress.test.mjs scripts/skill-lessons.test.mjs",
     "check:firstaid-assets": "node scripts/check-firstaid-assets.mjs",
     "test:stem": "node --test scripts/stem-investigations.test.mjs",

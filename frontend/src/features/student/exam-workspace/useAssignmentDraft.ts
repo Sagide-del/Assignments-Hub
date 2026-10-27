@@ -199,9 +199,10 @@ export function useAssignmentDraft({
       setOnline(false);
       setSaveState("offline");
     };
+    // Loading/empty exams have no local draft to protect.
     const guard = (e: BeforeUnloadEvent) => {
       if (
-        !final.current &&
+        initialized.current && !final.current &&
         (finalizing.current ||
           JSON.stringify(current.current) !== lastSaved.current)
       ) {

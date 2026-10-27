@@ -20,8 +20,6 @@ import {
   Square,
   Terminal,
 } from 'lucide-react';
-import { LearningDesignPanel } from '../curriculum/LearningDesignPanel';
-import { skillDesign } from '../curriculum/activity-designs';
 import { FirstAidGuide, FirstAidScenarios } from './FirstAidGuide';
 import { LessonMedia } from './LessonMedia';
 import { skillsApi } from '../../../api/skills.api';
@@ -302,7 +300,7 @@ export function LessonWorkspace({
           {learning?.objective ?? lesson.description ?? course.shortDescription}
         </p>
       </header>
-      {learning && <LearningDesignPanel design={skillDesign(course,learning)}/>}
+
       {!learning ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <h3 className="font-semibold text-amber-900">Lesson content is being prepared</h3>

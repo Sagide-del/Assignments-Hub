@@ -5,8 +5,6 @@ import { apiErrorMessage } from '../../api/axios';
 import { skillsApi } from '../../api/skills.api';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
 import { useAuthStore } from '../../store/auth.store';
-import { LearningDesignPanel } from './curriculum/LearningDesignPanel';
-import { skillDesign } from './curriculum/activity-designs';
 import { courseLessons, hasWorkspaceAccess } from './skill-workspace/workspace-mode';
 function label(value: string) {
   return value
@@ -69,7 +67,6 @@ export function SkillDetailPage() {
           Back to skills
         </Link>
       </div>
-      <LearningDesignPanel design={skillDesign({...course,learningOutcomes:lessons.some(l=>l.learning) ? lessons.flatMap(l=>l.learning?[l.learning.objective]:[]) : course.learningOutcomes})} review={false}/>
       {firstAid && cover ? (
         <section
           aria-label="First aid learning overview"
