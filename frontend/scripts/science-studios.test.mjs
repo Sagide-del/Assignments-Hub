@@ -217,3 +217,38 @@ test("server requires two distinct structures and rejects a mismatched studio", 
     /does not match/,
   );
 });
+
+const { starchGuide, starchInstruction } = await loadTypeScript(
+  new URL(
+    "../src/features/student/stem-workspace/studios/starch-guide.ts",
+    import.meta.url,
+  ),
+);
+test("every guided sample performs the safe procedure without recording student evidence", () => {
+  for (const sample of ["light", "dark", "variegated"]) {
+    const guide = starchGuide(sample);
+    let state = starch.replayStarch([{ type: "sample", sample }]);
+    for (const step of guide) {
+      assert.ok(step.caption.length > 50);
+      for (const event of step.events) state = starch.starchStep(state, event);
+    }
+    assert.ok(state.iodineApplied);
+    assert.equal(state.burner, false);
+    assert.equal(state.extractSeconds, 60);
+    assert.equal(state.trials.length, 0);
+    assert.equal(starch.starchReady(state, conclusion), false);
+  }
+});
+test("self narration follows actual procedure and changes only at meaningful transitions", () => {
+  let s = starch.freshStarch();
+  assert.match(starchInstruction(s), /eye protection/);
+  s = starch.starchStep(s, { type: "ppe" });
+  assert.match(starchInstruction(s), /light it/);
+  s = starch.starchStep(s, { type: "burner", on: true });
+  assert.match(starchInstruction(s), /heat/);
+  const heating = starchInstruction(s);
+  s = starch.starchStep(s, { type: "heat", seconds: 5 });
+  assert.equal(starchInstruction(s), heating);
+  s = starch.replayStarch(leaf("light").slice(0, -1));
+  assert.match(starchInstruction(s), /matching result/);
+});

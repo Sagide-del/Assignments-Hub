@@ -21,3 +21,11 @@ The additive `20261028150000_leaf_starch_practicals` migration publishes separat
 Run the frontend workflow test commands and production build, plus backend tests for `src/kjsea src/submissions src/lab-sessions` and the backend TypeScript build. Science tests cover unsafe transitions, wrong results, molecular valency/connectivity, paired controls, distinct structures, grade access, report derivation and the deployment readiness gate.
 
 Local Chromium testing uses a Grade 11 fixture, real WebGL rendering, actual tool/site clicks and independently compiled server report validation. It verifies complete paired starch trials, two molecular constructions, titration transfers, draft recovery and mobile widths. This is local verification, not confirmation of the production deployment or a live student login.
+
+## Starch demonstration and voice guidance
+
+The starch workspace opens in **Guided demonstration**. Press Start once to run the full safe procedure automatically. Pause stops progression and narration; Continue resumes without duplicating transfers. Restart clears only the demonstration. Each prepared sample has its own interpretation. Guided actions use a separate transient state and never create student observations or account evidence.
+
+**Self practical** retains the student's existing browser draft and equipment controls. Contextual instructions follow meaningful procedure transitions, rather than narrating every temperature tick. Heating pauses while the demonstration, notebook or another browser tab is open. Returning to the practical restores its own state, even after restarting or changing a demonstration sample.
+
+Narration uses the browser's installed English speech voices (prefer `en-KE`, then local `en-GB`). Voice on/off, replay and demonstration pause controls are provided; leaving the workspace cancels playback. Full narration is always visible. Unsupported or failed speech playback does not prevent following the captions and automated procedure. Demonstrations are not prerecorded audio and available voices vary by browser/device.
