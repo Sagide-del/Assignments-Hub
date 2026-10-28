@@ -1,0 +1,35 @@
+RESPIRATORY ANATOMY ATLAS SUBSET
+
+This directory's respiratory-atlas.glb contains a respiratory subset of Z-Anatomy,
+The Libre 3D Atlas of Anatomy, by Gauthier Kervyn (design, 3D, anatomy) and
+Marcin Zielinski (Blender script), derived from BodyParts3D by Kousaku Okubo,
+The Database Center for Life Science (DBCLS).
+
+Source: https://github.com/Z-Anatomy/Models-of-human-anatomy
+Source commit: 6ffffec1d9b17ed3db355903bbd762582cb2328e
+Source archive: Z-Anatomy.zip / Z-Anatomy/Startup.blend
+Upstream atlas license: Creative Commons Attribution-ShareAlike 4.0 International
+https://creativecommons.org/licenses/by-sa/4.0/
+Original BodyParts3D credit: "BodyParts3D - The Database Center for Life Science -
+CC-BY-SA 2.1 Japan". Original data: https://dbarchive.biosciencedbc.jp/en/bodyparts3d/
+See the upstream project's complete notices in UPSTREAM-LICENSE.txt.
+
+Extracted structures: five lung lobes, trachea, main/lobar/segmental bronchi and
+ diaphragm (35 named meshes). This subset does not include the separately
+credited kidney, inner-ear or cranial-nerve assets listed in the upstream notice.
+
+Assignment Hub modifications: extraction of the respiratory subset, conversion
+of airway curves to meshes, removal of atlas labels and excess modifiers,
+smoothing/subdivision of lung-lobe surfaces, glTF export, display materials and
+illustrative animated deformation. The anatomy mesh adaptations and rendered
+atlas previews are offered under CC BY-SA 4.0. Attribution must be retained and
+adapted model data shared under the same license. The source atlas and this
+adaptation are not an official endorsement of Assignment Hub.
+
+The original application code is separate from the licensed anatomy asset.
+The alveolar close-up is an original schematic, not a patient-derived mesh.
+Breathing deformation and ventilation calculations are educational models,
+not patient-specific medical measurements or a diagnostic device.
+
+Reproducible export script: frontend/scripts/assets/export-respiratory-atlas.py
+Model integrity and structure list: manifest.json

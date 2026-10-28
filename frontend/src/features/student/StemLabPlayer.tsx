@@ -15,6 +15,9 @@ const CyberStudio = lazy(() => import("./stem-workspace/studios/CyberStudio"));
 const PendulumStudio = lazy(
   () => import("./stem-workspace/studios/PendulumStudio"),
 );
+const RespiratoryStudio = lazy(
+  () => import("./stem-workspace/studios/RespiratoryStudio"),
+);
 export function StemLabPlayerPage() {
   const { id } = useParams();
   const userId = useAuthStore((s) => s.user?.id);
@@ -49,6 +52,18 @@ export function StemLabPlayerPage() {
       </div>
     );
   const kind = practicalFor(lab).kind;
+  if (kind === "respiration")
+    return (
+      <Suspense
+        fallback={<p className="p-6 text-sm">Preparing respiratory anatomy…</p>}
+      >
+        <RespiratoryStudio
+          key={`${userId}:${lab.id}`}
+          lab={lab}
+          userId={userId!}
+        />
+      </Suspense>
+    );
   if (kind === "cyber" || kind === "pendulum") {
     const Studio = kind === "cyber" ? CyberStudio : PendulumStudio;
     return (

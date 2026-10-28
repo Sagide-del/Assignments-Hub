@@ -39,10 +39,14 @@ export class LabsService {
         "The 3D practical catalogue is not ready.",
       );
     return {
-      immersiveLabsVersion: 3,
+      immersiveLabsVersion: 4,
       gradeLevels: [7, 8, 9, 10, 11, 12],
       workshopReportVersion: "stem-workshop-v2",
-      studios: ["cyber-studio-v1", "pendulum-studio-v1"],
+      studios: [
+        "cyber-studio-v1",
+        "pendulum-studio-v1",
+        "respiratory-studio-v1",
+      ],
       catalogueActivities: PRACTICAL_CATALOGUE.length + 1,
       practical: "titration-3d-v1",
       evidenceStorage: "completionSummary",

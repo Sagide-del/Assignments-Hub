@@ -21,6 +21,12 @@ import { isTitrationKey } from "./stem-workspace/three-d/titration-model";
 import type { Lab } from "../../types";
 function presentation(lab: Lab) {
   const kind = practicalFor(lab).kind;
+  if (kind === "respiration")
+    return {
+      Icon: Leaf,
+      colour: "text-rose-700 bg-rose-50",
+      image: "/stem/respiratory-studio.png",
+    };
   if (kind === "cyber")
     return {
       Icon: ShieldCheck,
@@ -118,7 +124,9 @@ export function StemLabsPage() {
           ? "cyber-studio-v1"
           : kind === "pendulum"
             ? "pendulum-studio-v1"
-            : "stem-workshop-v2";
+            : kind === "respiration"
+              ? "respiratory-studio-v1"
+              : "stem-workshop-v2";
       const d = JSON.parse(
         localStorage.getItem(`${version}:${user?.id}:${lab.id}`) ?? "null",
       );

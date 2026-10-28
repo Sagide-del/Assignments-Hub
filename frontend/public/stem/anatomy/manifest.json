@@ -1,0 +1,152 @@
+{
+  "source": {
+    "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "source": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+    "sourceCommit": "6ffffec1d9b17ed3db355903bbd762582cb2328e",
+    "modifications": "Respiratory subset, curve-to-mesh conversion, smooth subdivision of lung-lobe surfaces, glTF export. Teaching materials and breathing motion applied at runtime."
+  },
+  "sha256": "13404ca7f7ce09b87a6d0f38da715d19662381ab9126addcf86111b17462f7ce",
+  "bytes": 3036788,
+  "nodes": [
+    {
+      "id": "trachea",
+      "sourceName": "Trachea"
+    },
+    {
+      "id": "airway_superior_segmental_bronchus_of_right_lung_(bvi)",
+      "sourceName": "Superior segmental bronchus of right lung (BVI)"
+    },
+    {
+      "id": "airway_superior_segmental_bronchus_of_left_lung_(bvi)",
+      "sourceName": "Superior segmental bronchus of left lung (BVI)"
+    },
+    {
+      "id": "right_upper",
+      "sourceName": "Superior lobe of right lung"
+    },
+    {
+      "id": "left_upper",
+      "sourceName": "Superior lobe of left lung"
+    },
+    {
+      "id": "airway_superior_lingular_segmental_bronchus_of_left_lung_(biv)",
+      "sourceName": "Superior lingular segmental bronchus of left lung (BIV)"
+    },
+    {
+      "id": "airway_right_superior_lobar_bronchus",
+      "sourceName": "Right superior lobar bronchus"
+    },
+    {
+      "id": "airway_right_main_bronchus",
+      "sourceName": "Right main bronchus"
+    },
+    {
+      "id": "airway_right_inferior_lobar_bronchus",
+      "sourceName": "Right inferior lobar bronchus"
+    },
+    {
+      "id": "airway_posterior_segmental_bronchus_of_right_lung_(bii)",
+      "sourceName": "Posterior segmental bronchus of right lung (BII)"
+    },
+    {
+      "id": "airway_posterior_basal_segmental_bronchus_of_right_lung_(bx)",
+      "sourceName": "Posterior basal segmental bronchus of right lung (BX)"
+    },
+    {
+      "id": "airway_posterior_basal_segmental_bronchus_of_left_lung_(bx)",
+      "sourceName": "Posterior basal segmental bronchus of left lung (BX)"
+    },
+    {
+      "id": "right_middle",
+      "sourceName": "Middle lobe of right lung"
+    },
+    {
+      "id": "airway_middle_lobar_bronchus.r",
+      "sourceName": "Middle lobar bronchus.r"
+    },
+    {
+      "id": "airway_medial_segmental_bronchus_of_right_lung_(bv)",
+      "sourceName": "Medial segmental bronchus of right lung (BV)"
+    },
+    {
+      "id": "airway_medial_basal_segmental_bronchus_of_right_lung_(bvii)",
+      "sourceName": "Medial basal segmental bronchus of right lung (BVII)"
+    },
+    {
+      "id": "airway_medial_basal_segmental_bronchus_of_left_lung_(bvii)",
+      "sourceName": "Medial basal segmental bronchus of left lung (BVII)"
+    },
+    {
+      "id": "airway_left_superior_lobar_bronchus",
+      "sourceName": "Left superior lobar bronchus"
+    },
+    {
+      "id": "airway_left_main_bronchus",
+      "sourceName": "Left main bronchus"
+    },
+    {
+      "id": "airway_left_inferior_lobar_bronchus",
+      "sourceName": "Left inferior lobar bronchus"
+    },
+    {
+      "id": "airway_lateral_segmental_bronchus_of_right_lung_(biv)",
+      "sourceName": "Lateral segmental bronchus of right lung (BIV)"
+    },
+    {
+      "id": "airway_lateral_basal_segmental_bronchus_of_right_lung_(bix)",
+      "sourceName": "Lateral basal segmental bronchus of right lung (BIX)"
+    },
+    {
+      "id": "airway_lateral_basal_segmental_bronchus_of_left_lung_(bix)",
+      "sourceName": "Lateral basal segmental bronchus of left lung (BIX)"
+    },
+    {
+      "id": "airway_intermediate_bronchus.r",
+      "sourceName": "Intermediate bronchus.r"
+    },
+    {
+      "id": "right_lower",
+      "sourceName": "Inferior lobe of right lung"
+    },
+    {
+      "id": "left_lower",
+      "sourceName": "Inferior lobe of left lung"
+    },
+    {
+      "id": "airway_inferior_lingular_segmental_bronchus_of_left_lung_(bv)",
+      "sourceName": "Inferior lingular segmental bronchus of left lung (BV)"
+    },
+    {
+      "id": "diaphragm",
+      "sourceName": "Diaphragm"
+    },
+    {
+      "id": "airway_apicoposterior_segmental_bronchus_of_left_lung_(bi+bii)",
+      "sourceName": "Apicoposterior segmental bronchus of left lung (BI+BII)"
+    },
+    {
+      "id": "airway_apical_segmental_bronchus_of_right_lung_(bi)",
+      "sourceName": "Apical segmental bronchus of right lung (BI)"
+    },
+    {
+      "id": "airway_anterior_segmental_bronchus_of_right_lung_(biii)",
+      "sourceName": "Anterior segmental bronchus of right lung (BIII)"
+    },
+    {
+      "id": "airway_anterior_segmental_bronchus_of_left_lung_(biii)",
+      "sourceName": "Anterior segmental bronchus of left lung (BIII)"
+    },
+    {
+      "id": "airway_anterior_basal_segmental_bronchus_of_right_lung_(bviii)",
+      "sourceName": "Anterior basal segmental bronchus of right lung (BVIII)"
+    },
+    {
+      "id": "airway_anterior_basal_segmental_bronchus_of_left_lung_(bviii)",
+      "sourceName": "Anterior basal segmental bronchus of left lung (BVIII)"
+    },
+    {
+      "id": "airway_(anteromedial_basal_segmental_bronchus_of_left_lung)",
+      "sourceName": "(Anteromedial basal segmental bronchus of left lung)"
+    }
+  ]
+}

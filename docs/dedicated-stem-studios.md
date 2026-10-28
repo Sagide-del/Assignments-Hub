@@ -36,6 +36,6 @@ Both studios keep drafts scoped by student ID and lab ID, retain teacher questio
 
 The `studio` request DTO accepts only `cyber-studio-v1` or `pendulum-studio-v1`, bounds events and conclusion length, and disallows mixing report payload types. The backend replays events, derives scenario results/periods, enforces completion, checks grade and publication, and preserves teacher-question requirements. Evidence is student-reported virtual practice, not a proctored physical-skills assessment.
 
-`/labs/capabilities` advertises immersive version 3 and both studio versions. Frontend publication waits for this backend capability. No database schema migration or new service credentials are needed.
+`/labs/capabilities` advertises immersive version 4, both studio versions and the newer respiratory studio. Frontend publication waits for this backend capability. No database schema migration or new service credentials are needed.
 
 Validation covers startup/power/network preconditions, defence isolation, phishing decisions, baseline/retest completion, signed-angle numerical motion versus the nonlinear reference, duplicate/impossible readings, report ownership/grade and DTO bounds. Local Chromium exercises the actual 3D power button, desktop apps, policy changes, terminal, focus exit, real integrated ten-swing intervals, report retry/save, draft recovery, mobile layouts and runtime errors using synthetic accounts and intercepted APIs. It does not claim authenticated production verification.

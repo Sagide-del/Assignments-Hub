@@ -1,3 +1,4 @@
+import type { RespiratoryEvent } from "../../../../../../backend/src/labs/respiratory-engine";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, LoaderCircle, Save } from "lucide-react";
@@ -13,7 +14,10 @@ interface Draft<E> {
   conclusion: string;
   answers: Record<number, string>;
 }
-export function useStudio<E extends CyberEvent | PendulumEvent, S>({
+export function useStudio<
+  E extends CyberEvent | PendulumEvent | RespiratoryEvent,
+  S,
+>({
   lab,
   userId,
   version,

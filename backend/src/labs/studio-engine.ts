@@ -1,3 +1,8 @@
+import {
+  replayRespiratory,
+  respiratoryReady,
+  type RespiratoryEvent,
+} from "./respiratory-engine";
 export type CyberScenario = "service" | "signin" | "attachment";
 export interface CyberPolicy {
   denyRemoteService: boolean;
@@ -258,7 +263,7 @@ export function integratePendulum(
 }
 export interface StudioEvidence {
   version: string;
-  events: (CyberEvent | PendulumEvent)[];
+  events: (CyberEvent | PendulumEvent | RespiratoryEvent)[];
   conclusion: string;
 }
 export function assessStudio(kind: string, e: StudioEvidence) {
@@ -288,6 +293,20 @@ export function assessStudio(kind: string, e: StudioEvidence) {
       readings: s.readings,
       model:
         "Nonlinear ideal pendulum at g=9.81 m/s²; no damping, string elasticity or real sensor noise. Student-reported virtual measurements.",
+    };
+  }
+  if (kind === "respiration" && e.version === "respiratory-studio-v1") {
+    const state = replayRespiratory(e.events as RespiratoryEvent[]);
+    if (!respiratoryReady(state, e.conclusion))
+      throw new Error(
+        "Inspect the main respiratory structures, record three observations across two breathing conditions, and explain your evidence.",
+      );
+    return {
+      ...e,
+      observations: state.observations,
+      inspected: state.inspected,
+      model:
+        "Anatomical atlas geometry with illustrative breathing motion. Fixed adult anatomical dead space 0.15 L; ventilation calculations are teaching estimates, not clinical measurements.",
     };
   }
   throw new Error("This studio report does not match the activity.");

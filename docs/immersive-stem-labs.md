@@ -2,7 +2,7 @@
 
 ## Coverage and interaction
 
-Cybersecurity and pendulum now use dedicated studios with an interactive desktop and a timed nonlinear pendulum, respectively. See [dedicated-stem-studios.md](dedicated-stem-studios.md). The shared workshops described below continue to serve the other activities.
+Cybersecurity and pendulum use dedicated studios with an interactive desktop and a timed nonlinear pendulum. See [dedicated-stem-studios.md](dedicated-stem-studios.md). The respiratory activity now uses a licensed anatomical atlas: see [respiratory-anatomy-studio.md](respiratory-anatomy-studio.md). The shared workshops described below continue to serve the other activities.
 
 All 58 activities in the original seeded catalogue now open a 3D workspace: 57 authored activity profiles in `backend/src/labs/practical-catalogue.json`, plus the dedicated titration practical. The newer Grade 10/11/12 titration records use that same titration workspace. Unknown teacher-authored activities open a clearly described general modelling bench, with the teacher's description, instructions and supporting media retained in the practical brief; this does not reproduce arbitrary custom physics.
 
@@ -35,7 +35,7 @@ Reports are stored in existing `LabSession.completionSummary` alongside existing
 
 ## Deployment and validation
 
-No new schema migration is needed for workshop reports. The existing titration migration supplies the three grade-specific titration records. `/api/v1/labs/capabilities` reports immersive version 3 and workshop report version `stem-workshop-v2`. GitHub frontend publication waits for the new backend before S3 upload and CloudFront invalidation.
+No new schema migration is needed for workshop reports. The existing titration migration supplies the three grade-specific titration records. `/api/v1/labs/capabilities` reports immersive version 4 and workshop report version `stem-workshop-v2`. GitHub frontend publication waits for the new backend before S3 upload and CloudFront invalidation.
 
 Validation covers all original catalogue keys, every model across its scale, deterministic replay, procedure/placement rules, building alignment, attack-before-defence vs blocked-retest states, quantitative relationships, report DTO bounds, authenticated storage, grade/published access and required teacher questions.
 
