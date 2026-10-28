@@ -66,13 +66,13 @@ export default function IndependentRegister() {
             <div className="bg-[#101820] px-6 py-7 text-white sm:px-9">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5E61D]">Account created</p>
               <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Continue to secure payment</h1>
-              <p className="mt-3 text-sm leading-6 text-slate-300">Your starter account is ready. Sign in securely and choose a Paystack payment plan to unlock the full workspace.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">Your starter account is ready. Sign in securely and choose an M-Pesa payment plan to unlock the full workspace.</p>
             </div>
             <div className="space-y-6 p-6 sm:p-9">
               <div className="rounded-2xl border border-[#D9ED9A] bg-[#F8FCEB] p-5">
                 <p className="font-semibold text-[#101820]">Keep this Student ID</p>
                 <p className="mt-3 rounded-xl bg-white px-4 py-3 font-mono text-lg font-semibold tracking-wide text-[#101820]">{account.admissionNumber}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">Your account activates automatically after Paystack confirms payment. No Platform Admin approval is needed.</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600">Your account activates automatically after your M-Pesa payment is confirmed. No Platform Admin approval is needed.</p>
               </div>
               {error ? <ErrorMessage message={error} /> : null}
               <button type="button" onClick={() => continueMutation.mutate()} disabled={continueMutation.isPending} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60">

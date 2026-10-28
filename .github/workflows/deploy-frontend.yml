@@ -9,6 +9,8 @@ on:
       - 'backend/src/labs/**'
       - 'backend/src/ai-content/**'
       - 'backend/src/ai/**'
+      - 'backend/src/independent-students/**'
+      - 'backend/src/payment/**'
       - 'backend/src/lab-sessions/**'
       - 'backend/prisma/schema.prisma'
       - 'backend/prisma/migrations/**'
@@ -45,7 +47,7 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions && npm test -- --runInBand src/ai-content && npm run build
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions && npm test -- --runInBand src/ai-content && npm test -- --runInBand src/independent-students src/payment && npm run build
       - name: Wait for assessment API capabilities
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
@@ -55,6 +57,9 @@ jobs:
       - name: Wait for curriculum library API
         working-directory: frontend
         run: node scripts/check-curriculum-api.mjs
+      - name: Wait for Tuma payment API and migration
+        working-directory: frontend
+        run: node scripts/check-tuma-api.mjs
       - name: Connect to AWS without stored access keys
         uses: aws-actions/configure-aws-credentials@v4
         with:

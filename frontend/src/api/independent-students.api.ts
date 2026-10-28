@@ -1,4 +1,4 @@
-import { api } from './axios';
+import { api } from "./axios";
 import type {
   IndependentPaymentClaim,
   IndependentStudent,
@@ -9,52 +9,98 @@ import type {
   PrivateTutorOverview,
   TutorReviewState,
   TutorSubmission,
-} from '../types';
+} from "../types";
 
 // Matches backend/src/independent-students/independent-students.controller.ts.
 export const independentStudentsApi = {
-  getPaymentInfo: () => api.get<IndependentStudentPaymentInfo>('/independent-students/payment-info').then((r) => r.data),
+  getPaymentInfo: () =>
+    api
+      .get<IndependentStudentPaymentInfo>("/independent-students/payment-info")
+      .then((r) => r.data),
 
   getPublicPaymentInfo: () =>
-    api.get<IndependentStudentPaymentInfo>('/independent-students/public/payment-info').then((r) => r.data),
+    api
+      .get<IndependentStudentPaymentInfo>(
+        "/independent-students/public/payment-info",
+      )
+      .then((r) => r.data),
 
   submitPaymentClaim: (dto: {
     identifier: string;
-    interval: 'MONTHLY' | 'ANNUAL';
+    interval: "MONTHLY" | "ANNUAL";
     mpesaCode: string;
     payerPhone?: string;
   }) =>
-    api.post<Pick<IndependentPaymentClaim, 'id' | 'status' | 'amountKES' | 'interval' | 'createdAt'>>(
-      '/independent-students/public/payment-claims',
-      dto,
-    ).then((r) => r.data),
+    api
+      .post<
+        Pick<
+          IndependentPaymentClaim,
+          "id" | "status" | "amountKES" | "interval" | "createdAt"
+        >
+      >("/independent-students/public/payment-claims", dto)
+      .then((r) => r.data),
 
-  startPaystackCheckout: (interval: 'MONTHLY' | 'ANNUAL') =>
-    api.post<{ checkoutUrl: string; reference: string; amountKES: number; interval: string }>(
-      '/independent-students/paystack/checkout',
-      { interval },
-    ).then((r) => r.data),
+  startStkPayment: (input: {
+    interval: "MONTHLY" | "ANNUAL";
+    phone: string;
+    idempotencyKey: string;
+  }) =>
+    api
+      .post<TumaPayment>("/independent-students/tuma/stk-push", input)
+      .then((r) => r.data),
+  getStkPayment: () =>
+    api
+      .get<TumaPayment | null>("/independent-students/tuma/payment")
+      .then((r) => r.data),
+  getStkCapabilities: () =>
+    api
+      .get<{ tumaPaymentsVersion: number; configured: boolean }>(
+        "/independent-students/tuma/capabilities",
+      )
+      .then((r) => r.data),
 
-  findStudents: () => api.get<IndependentStudent[]>('/independent-students/students').then((r) => r.data),
+  findStudents: () =>
+    api
+      .get<IndependentStudent[]>("/independent-students/students")
+      .then((r) => r.data),
 
   getSummary: () =>
-    api.get<IndependentStudentSummary>('/independent-students/summary').then((r) => r.data),
+    api
+      .get<IndependentStudentSummary>("/independent-students/summary")
+      .then((r) => r.data),
 
-  createStudent: (dto: { name: string; admissionNumber?: string; grade?: string; parentPhone?: string }) =>
-    api.post<IndependentStudent>('/independent-students/students', dto).then((r) => r.data),
+  createStudent: (dto: {
+    name: string;
+    admissionNumber?: string;
+    grade?: string;
+    parentPhone?: string;
+  }) =>
+    api
+      .post<IndependentStudent>("/independent-students/students", dto)
+      .then((r) => r.data),
 
   deleteStudents: (ids: number[]) =>
     api
-      .delete<{ deleted: number; ids: number[] }>('/independent-students/students', {
-        data: { ids },
-      })
+      .delete<{ deleted: number; ids: number[] }>(
+        "/independent-students/students",
+        {
+          data: { ids },
+        },
+      )
       .then((r) => r.data),
 
   sendWelcome: (id: number, dto: { phone?: string; message?: string }) =>
-    api.post<IndependentWelcomeResult>(`/independent-students/students/${id}/welcome`, dto).then((r) => r.data),
+    api
+      .post<IndependentWelcomeResult>(
+        `/independent-students/students/${id}/welcome`,
+        dto,
+      )
+      .then((r) => r.data),
 
   getTutorOverview: () =>
-    api.get<PrivateTutorOverview>('/independent-students/tutor/overview').then((r) => r.data),
+    api
+      .get<PrivateTutorOverview>("/independent-students/tutor/overview")
+      .then((r) => r.data),
 
   getTutorSubmissions: (params?: {
     studentId?: number;
@@ -62,34 +108,68 @@ export const independentStudentsApi = {
     reviewState?: TutorReviewState;
   }) =>
     api
-      .get<TutorSubmission[]>('/independent-students/tutor/submissions', { params })
+      .get<TutorSubmission[]>("/independent-students/tutor/submissions", {
+        params,
+      })
       .then((r) => r.data),
 
   findInvoices: (studentId?: number) =>
-    api.get<IndependentStudentInvoice[]>('/independent-students/invoices', { params: { studentId } }).then((r) => r.data),
+    api
+      .get<IndependentStudentInvoice[]>("/independent-students/invoices", {
+        params: { studentId },
+      })
+      .then((r) => r.data),
 
   recordInvoice: (dto: {
     studentId: number;
     studentName?: string;
     amountKES: number;
-    interval?: 'monthly' | 'annual';
+    interval?: "monthly" | "annual";
     mpesaCode: string;
     payerPhone?: string;
-  }) => api.post<IndependentStudentInvoice>('/independent-students/invoices', dto).then((r) => r.data),
+  }) =>
+    api
+      .post<IndependentStudentInvoice>("/independent-students/invoices", dto)
+      .then((r) => r.data),
 
   deleteInvoice: (id: number) =>
     api
-      .delete<{ id: number; studentId: number; subscriptionExpiresAt: string | null }>(
-        `/independent-students/invoices/${id}`,
-      )
+      .delete<{
+        id: number;
+        studentId: number;
+        subscriptionExpiresAt: string | null;
+      }>(`/independent-students/invoices/${id}`)
       .then((r) => r.data),
 
   findPaymentClaims: () =>
-    api.get<IndependentPaymentClaim[]>('/independent-students/payment-claims').then((r) => r.data),
+    api
+      .get<IndependentPaymentClaim[]>("/independent-students/payment-claims")
+      .then((r) => r.data),
 
   approvePaymentClaim: (id: number) =>
-    api.patch(`/independent-students/payment-claims/${id}/approve`).then((r) => r.data),
+    api
+      .patch(`/independent-students/payment-claims/${id}/approve`)
+      .then((r) => r.data),
 
   rejectPaymentClaim: (id: number, reason?: string) =>
-    api.patch(`/independent-students/payment-claims/${id}/reject`, { reason }).then((r) => r.data),
+    api
+      .patch(`/independent-students/payment-claims/${id}/reject`, { reason })
+      .then((r) => r.data),
 };
+
+export interface TumaPayment {
+  reference: string;
+  status:
+    | "PENDING"
+    | "PROCESSING"
+    | "AWAITING_VERIFICATION"
+    | "CONFIRMED"
+    | "FAILED"
+    | "CANCELLED";
+  amountKES: number;
+  interval: "MONTHLY" | "ANNUAL";
+  phone: string;
+  expiresAt: string;
+  failureReason: string | null;
+  paidAt: string | null;
+}

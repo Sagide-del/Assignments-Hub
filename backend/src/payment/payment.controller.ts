@@ -14,31 +14,31 @@ import {
   RawBodyRequest,
   Req,
   Res,
-} from '@nestjs/common';
-import type { Request, Response } from 'express';
-import { PaymentService } from './payment.service';
-import { Public } from '../common/decorators/public.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '../common/enums/role.enum';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { AuditAction } from '../common/decorators/audit.decorator';
-import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { CreateSubscriptionPaymentDto } from './dto/create-subscription-payment.dto';
-import { CreateEquityPaymentDto } from './dto/create-equity-payment.dto';
-import { CreateMpesaPaymentDto } from './dto/create-mpesa-payment.dto';
-import { ReviewPaymentTransactionDto } from './dto/review-payment-transaction.dto';
-import { PLAN_TIERS } from '../common/config/plans';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+} from "@nestjs/common";
+import type { Request, Response } from "express";
+import { PaymentService } from "./payment.service";
+import { Public } from "../common/decorators/public.decorator";
+import { Roles } from "../common/decorators/roles.decorator";
+import { Role } from "../common/enums/role.enum";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { AuditAction } from "../common/decorators/audit.decorator";
+import { OptionalParseIntPipe } from "../common/pipes/optional-parse-int.pipe";
+import { CreatePaymentDto } from "./dto/create-payment.dto";
+import { CreateSubscriptionPaymentDto } from "./dto/create-subscription-payment.dto";
+import { CreateEquityPaymentDto } from "./dto/create-equity-payment.dto";
+import { CreateMpesaPaymentDto } from "./dto/create-mpesa-payment.dto";
+import { ReviewPaymentTransactionDto } from "./dto/review-payment-transaction.dto";
+import { PLAN_TIERS } from "../common/config/plans";
+import { PaymentMethod, PaymentStatus } from "@prisma/client";
 
-@Controller('payment')
+@Controller("payment")
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   // The pricing table itself — tier bands and day/boarding rates. Public so
   // it can be shown on a marketing/pricing page before anyone logs in.
-  @Get('tiers')
+  @Get("tiers")
   @Public()
   getTiers() {
     return { tiers: PLAN_TIERS };
@@ -48,94 +48,99 @@ export class PaymentController {
   // registered student count and declared type — no checkout started.
   // SCHOOL_ADMIN always sees their own school (TenantGuard enforces this if
   // they pass a schoolId that isn't theirs); PLATFORM_ADMIN must specify one.
-  @Get('pricing')
+  @Get("pricing")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   async getPricing(
     @CurrentUser() actor: AuthenticatedUser,
-    @Query('schoolId', new OptionalParseIntPipe()) schoolId?: number,
+    @Query("schoolId", new OptionalParseIntPipe()) schoolId?: number,
   ) {
-    const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
+    const targetSchoolId =
+      actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
     if (!targetSchoolId) {
-      throw new BadRequestException('schoolId is required');
+      throw new BadRequestException("schoolId is required");
     }
     return this.paymentService.getPricingForSchool(targetSchoolId);
   }
 
-  @Get('providers')
+  @Get("providers")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   async getProviders() {
     return this.paymentService.getPaymentProviders();
   }
 
-  @Get('subscription/current')
+  @Get("subscription/current")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   async getCurrentSubscription(
     @CurrentUser() actor: AuthenticatedUser,
-    @Query('schoolId', new OptionalParseIntPipe()) schoolId?: number,
+    @Query("schoolId", new OptionalParseIntPipe()) schoolId?: number,
   ) {
     return this.paymentService.getCurrentSubscription(actor, schoolId);
   }
 
-  @Get('invoices')
+  @Get("invoices")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   async getInvoices(
     @CurrentUser() actor: AuthenticatedUser,
-    @Query('schoolId', new OptionalParseIntPipe()) schoolId?: number,
+    @Query("schoolId", new OptionalParseIntPipe()) schoolId?: number,
   ) {
     return this.paymentService.getInvoices(actor, schoolId);
   }
 
-  @Get('invoices/:id/download')
+  @Get("invoices/:id/download")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   async downloadInvoice(
-    @Param('id', ParseIntPipe) id: number,
+    @Param("id", ParseIntPipe) id: number,
     @CurrentUser() actor: AuthenticatedUser,
     @Res() res: Response,
   ) {
     const invoice = await this.paymentService.downloadInvoice(id, actor);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${invoice.fileName}"`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${invoice.fileName}"`,
+    );
     res.send(invoice.buffer);
   }
 
-  @Get('transactions')
+  @Get("transactions")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   async getTransactions(
     @CurrentUser() actor: AuthenticatedUser,
-    @Query('schoolId', new OptionalParseIntPipe()) schoolId?: number,
-    @Query('status') status?: PaymentStatus,
-    @Query('method') method?: PaymentMethod,
+    @Query("schoolId", new OptionalParseIntPipe()) schoolId?: number,
+    @Query("status") status?: PaymentStatus,
+    @Query("method") method?: PaymentMethod,
   ) {
-    return this.paymentService.getTransactions(actor, { schoolId, status, method });
+    return this.paymentService.getTransactions(actor, {
+      schoolId,
+      status,
+      method,
+    });
   }
 
   // Only billing-capable roles may kick off a real charge. TenantGuard
   // (global) additionally enforces that a non-platform-admin's schoolId in
   // the body matches their own school.
-  @Post('create')
+  @Post("create")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
-  @AuditAction('payment.create')
+  @AuditAction("payment.create")
   async createPayment(@Body() dto: CreatePaymentDto) {
     return this.paymentService.createPayment(dto.email, dto.schoolId);
   }
 
-  @Post('subscription')
+  @Post("subscription")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
-  @AuditAction('payment.subscription_create')
+  @AuditAction("payment.subscription_create")
   async createSubscription(@Body() dto: CreateSubscriptionPaymentDto) {
-    return this.paymentService.createSubscription(dto.email, dto.schoolId, dto.interval || 'monthly');
+    return this.paymentService.createSubscription(
+      dto.email,
+      dto.schoolId,
+      dto.interval || "monthly",
+    );
   }
 
-  @Post('paystack/subscription')
+  @Post("equity-paybill")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
-  @AuditAction('payment.paystack_subscription_create')
-  async createPaystackSubscription(@Body() dto: CreateSubscriptionPaymentDto) {
-    return this.paymentService.createPaystackSubscription(dto.email, dto.schoolId, dto.interval || 'monthly');
-  }
-
-  @Post('equity-paybill')
-  @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
-  @AuditAction('payment.equity_paybill_submit')
+  @AuditAction("payment.equity_paybill_submit")
   async createEquityPaybillPayment(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: CreateEquityPaymentDto,
@@ -143,85 +148,77 @@ export class PaymentController {
     return this.paymentService.createEquityPaybillPayment(actor, dto);
   }
 
-  @Post('mpesa')
+  @Post("mpesa")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
-  @AuditAction('payment.mpesa_create')
-  async createMpesaPayment(@CurrentUser() actor: AuthenticatedUser, @Body() dto: CreateMpesaPaymentDto) {
+  @AuditAction("payment.mpesa_create")
+  async createMpesaPayment(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body() dto: CreateMpesaPaymentDto,
+  ) {
     return this.paymentService.createMpesaPayment(actor, dto);
   }
 
-  @Get('verify')
+  @Get("verify")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
-  async verifyPayment(@Query('invoiceId') invoiceId: string) {
+  async verifyPayment(@Query("invoiceId") invoiceId: string) {
     return this.paymentService.verifyPayment(invoiceId);
   }
 
-  @Patch('transactions/:id/approve')
+  @Patch("transactions/:id/approve")
   @Roles(Role.PLATFORM_ADMIN)
-  @AuditAction('payment.transaction_approve')
+  @AuditAction("payment.transaction_approve")
   async approveTransaction(
-    @Param('id', ParseIntPipe) id: number,
+    @Param("id", ParseIntPipe) id: number,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.paymentService.approveTransaction(id, actor);
   }
 
-  @Patch('transactions/:id/reject')
+  @Patch("transactions/:id/reject")
   @Roles(Role.PLATFORM_ADMIN)
-  @AuditAction('payment.transaction_reject')
+  @AuditAction("payment.transaction_reject")
   async rejectTransaction(
-    @Param('id', ParseIntPipe) id: number,
+    @Param("id", ParseIntPipe) id: number,
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: ReviewPaymentTransactionDto,
   ) {
     return this.paymentService.rejectTransaction(id, actor, dto.reason);
   }
 
-  @Get('dashboard')
+  @Get("dashboard")
   @Roles(Role.PLATFORM_ADMIN)
   async getBillingDashboard() {
     return this.paymentService.getBillingDashboard();
   }
 
-  @Get('reconciliation')
+  @Get("reconciliation")
   @Roles(Role.PLATFORM_ADMIN)
   async getReconciliation() {
     return this.paymentService.getReconciliation();
   }
 
-  @Get('ai-usage')
+  @Get("ai-usage")
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   async getAiUsageVisibility(
     @CurrentUser() actor: AuthenticatedUser,
-    @Query('schoolId', new OptionalParseIntPipe()) schoolId?: number,
+    @Query("schoolId", new OptionalParseIntPipe()) schoolId?: number,
   ) {
     return this.paymentService.getAiUsageBillingVisibility(actor, schoolId);
   }
 
-  @Get('publishable-key')
+  @Get("publishable-key")
   @Public()
   async getPublishableKey() {
     return { key: this.paymentService.getPublishableKey() };
   }
 
-  @Post('webhook')
+  @Post("webhook")
   @Public()
-  @AuditAction('payment.webhook_received')
+  @AuditAction("payment.webhook_received")
   @HttpCode(HttpStatus.OK)
   async webhook(@Body() payload: any) {
     // IntaSend verifies via a `challenge` field inside the JSON body itself
     // (see payment.service.ts verifyWebhookChallenge), not a header.
     return this.paymentService.handleWebhook(payload);
-  }
-
-  @Post('paystack/webhook')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  async paystackWebhook(
-    @Body() payload: Record<string, unknown>,
-    @Req() request: RawBodyRequest<Request>,
-    @Headers('x-paystack-signature') signature?: string,
-  ) {
-    return this.paymentService.handlePaystackWebhook(payload, signature, request.rawBody);
   }
 }

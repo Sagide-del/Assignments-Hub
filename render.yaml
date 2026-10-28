@@ -39,15 +39,13 @@ services:
         value: https://api.assignmenthub.co.ke
       - key: PAYMENT_REDIRECT_URL
         value: https://app.assignmenthub.co.ke/school-admin/subscription
-      # Paystack hosted checkout. Keep secret values in Render, never in Git.
-      - key: PAYSTACK_SECRET_KEY
+      # Individual M-Pesa STK payments. Set secrets in Render, never in Git.
+      - key: TUMA_BUSINESS_EMAIL
         sync: false
-      - key: PAYSTACK_PUBLIC_KEY
+      - key: TUMA_API_KEY
         sync: false
-      - key: PAYSTACK_CALLBACK_URL
-        value: https://assignmenthub.co.ke/school-admin/billing
-      - key: PAYSTACK_MODE
-        value: test
+      - key: TUMA_CALLBACK_BASE_URL
+        value: https://assignments-hub-api.onrender.com/api/v1/independent-students/tuma/callback
       # Africa's Talking SMS — read by SmsService via ConfigService. Omit
       # AFRICASTALKING_API_KEY to leave SMS silently disabled rather than
       # erroring (SmsService defaults apiKey to '').

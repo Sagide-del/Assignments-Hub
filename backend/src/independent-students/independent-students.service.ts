@@ -5,10 +5,10 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
-import { randomInt, randomUUID } from 'crypto';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcrypt";
+import { randomInt } from "crypto";
 import {
   IndependentPaymentClaimStatus,
   PaymentStatus,
@@ -16,19 +16,18 @@ import {
   SubmissionStatus,
   SubscriptionInterval,
   SubscriptionStatus,
-} from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { UsersService } from '../users/users.service';
-import { CreateIndependentStudentDto } from './dto/create-independent-student.dto';
-import { RecordIndependentInvoiceDto } from './dto/record-invoice.dto';
-import { SubmitIndependentPaymentClaimDto } from './dto/submit-payment-claim.dto';
-import { RejectIndependentPaymentClaimDto } from './dto/reject-payment-claim.dto';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { Role } from '../common/enums/role.enum';
-import { generateIndependentStudentId } from '../common/utils/independent-student-id.util';
-import { SmsService } from '../sms/sms.service';
-import { SendIndependentWelcomeDto } from './dto/send-independent-welcome.dto';
-import { PaystackPaymentProvider } from '../payment/providers/paystack-payment.provider';
+} from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
+import { UsersService } from "../users/users.service";
+import { CreateIndependentStudentDto } from "./dto/create-independent-student.dto";
+import { RecordIndependentInvoiceDto } from "./dto/record-invoice.dto";
+import { SubmitIndependentPaymentClaimDto } from "./dto/submit-payment-claim.dto";
+import { RejectIndependentPaymentClaimDto } from "./dto/reject-payment-claim.dto";
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { Role } from "../common/enums/role.enum";
+import { generateIndependentStudentId } from "../common/utils/independent-student-id.util";
+import { SmsService } from "../sms/sms.service";
+import { SendIndependentWelcomeDto } from "./dto/send-independent-welcome.dto";
 
 // The one system-wide School row every independent student belongs to —
 // lazily upserted by code so the rest of the app's schoolId-scoped
@@ -36,7 +35,7 @@ import { PaystackPaymentProvider } from '../payment/providers/paystack-payment.p
 // completely unmodified for them. It shows up in the platform admin's
 // regular Schools list like any other school (with no real subscription
 // revenue against it) — that's expected, not a bug.
-const INDEPENDENT_SCHOOL_CODE = 'INDEPENDENT';
+const INDEPENDENT_SCHOOL_CODE = "INDEPENDENT";
 
 @Injectable()
 export class IndependentStudentsService {
@@ -45,14 +44,13 @@ export class IndependentStudentsService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly smsService: SmsService,
-    private readonly paystackProvider: PaystackPaymentProvider,
   ) {}
 
   private async getOrCreateSchool() {
     return this.prisma.school.upsert({
       where: { code: INDEPENDENT_SCHOOL_CODE },
       create: {
-        name: 'Independent Students',
+        name: "Independent Students",
         code: INDEPENDENT_SCHOOL_CODE,
         subscriptionStatus: SubscriptionStatus.ACTIVE,
       },
@@ -65,10 +63,19 @@ export class IndependentStudentsService {
   // just where to send the money before its confirmation code gets
   // recorded here. Env-overridable the same way EQUITY_PAYBILL_NUMBER is.
   getPaymentInfo() {
-    const tillNumber = this.configService.get<string>('INDEPENDENT_MPESA_TILL_NUMBER')?.trim() || '';
-    const storeNumber = this.configService.get<string>('INDEPENDENT_MPESA_STORE_NUMBER')?.trim() || '';
-    const monthlyAmountKES = this.readPositiveAmount('INDEPENDENT_MONTHLY_PRICE_KES');
-    const annualAmountKES = this.readPositiveAmount('INDEPENDENT_ANNUAL_PRICE_KES');
+    const tillNumber =
+      this.configService.get<string>("INDEPENDENT_MPESA_TILL_NUMBER")?.trim() ||
+      "";
+    const storeNumber =
+      this.configService
+        .get<string>("INDEPENDENT_MPESA_STORE_NUMBER")
+        ?.trim() || "";
+    const monthlyAmountKES = this.readPositiveAmount(
+      "INDEPENDENT_MONTHLY_PRICE_KES",
+    );
+    const annualAmountKES = this.readPositiveAmount(
+      "INDEPENDENT_ANNUAL_PRICE_KES",
+    );
 
     return {
       enabled: Boolean(tillNumber && monthlyAmountKES),
@@ -77,8 +84,10 @@ export class IndependentStudentsService {
       monthlyAmountKES,
       annualAmountKES,
       instructions:
-        this.configService.get<string>('INDEPENDENT_MPESA_INSTRUCTIONS')?.trim() ||
-        'Pay via M-Pesa Buy Goods, then submit the confirmation code for verification.',
+        this.configService
+          .get<string>("INDEPENDENT_MPESA_INSTRUCTIONS")
+          ?.trim() ||
+        "Pay via M-Pesa Buy Goods, then submit the confirmation code for verification.",
     };
   }
 
@@ -99,10 +108,10 @@ export class IndependentStudentsService {
         createdAt: true,
         independentInvoices: {
           select: { amountKES: true, createdAt: true },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     const now = new Date();
@@ -127,10 +136,10 @@ export class IndependentStudentsService {
         totalPaidKES,
         lastPaymentAt: student.independentInvoices[0]?.createdAt ?? null,
         status: !student.subscriptionExpiresAt
-          ? 'NEVER_PAID'
+          ? "NEVER_PAID"
           : student.subscriptionExpiresAt > now
-            ? 'ACTIVE'
-            : 'EXPIRED',
+            ? "ACTIVE"
+            : "EXPIRED",
       };
     });
   }
@@ -173,11 +182,18 @@ export class IndependentStudentsService {
       totalPopulation: students.length,
       activeStudents,
       expiredStudents: students.filter(
-        (student) => student.subscriptionExpiresAt && student.subscriptionExpiresAt <= now,
+        (student) =>
+          student.subscriptionExpiresAt && student.subscriptionExpiresAt <= now,
       ).length,
-      neverPaidStudents: students.filter((student) => !student.subscriptionExpiresAt).length,
-      studentsWithPhone: students.filter((student) => Boolean(student.parentPhone)).length,
-      loginReadyStudents: students.filter((student) => Boolean(student.passwordHash)).length,
+      neverPaidStudents: students.filter(
+        (student) => !student.subscriptionExpiresAt,
+      ).length,
+      studentsWithPhone: students.filter((student) =>
+        Boolean(student.parentPhone),
+      ).length,
+      loginReadyStudents: students.filter((student) =>
+        Boolean(student.passwordHash),
+      ).length,
       paymentsMade: invoiceSummary._count._all,
       totalRevenueKES: invoiceSummary._sum.amountKES ?? 0,
       pendingPayments,
@@ -198,7 +214,9 @@ export class IndependentStudentsService {
       publishedMnemonicCards,
       recentLabSessions,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { schoolId: school.id, role: Role.STUDENT } }),
+      this.prisma.user.count({
+        where: { schoolId: school.id, role: Role.STUDENT },
+      }),
       this.prisma.assignment.count({ where: { schoolId: school.id } }),
       this.prisma.submission.count({
         where: {
@@ -240,16 +258,24 @@ export class IndependentStudentsService {
             },
           },
         },
-        orderBy: { completedAt: 'desc' },
+        orderBy: { completedAt: "desc" },
         take: 50,
       }),
     ]);
 
-    const labKeys = Array.from(new Set(recentLabSessions.map((session) => session.labKey)));
+    const labKeys = Array.from(
+      new Set(recentLabSessions.map((session) => session.labKey)),
+    );
     const labs = labKeys.length
       ? await this.prisma.lab.findMany({
           where: { key: { in: labKeys } },
-          select: { key: true, title: true, subject: true, topic: true, grade: true },
+          select: {
+            key: true,
+            title: true,
+            subject: true,
+            topic: true,
+            grade: true,
+          },
         })
       : [];
     const labByKey = new Map(labs.map((lab) => [lab.key, lab]));
@@ -279,11 +305,11 @@ export class IndependentStudentsService {
   }) {
     const school = await this.getOrCreateSchool();
     const reviewWhere =
-      filters.reviewState === 'PENDING'
+      filters.reviewState === "PENDING"
         ? { status: SubmissionStatus.SUBMITTED }
-        : filters.reviewState === 'AUTO_GRADED'
+        : filters.reviewState === "AUTO_GRADED"
           ? { status: SubmissionStatus.GRADED, gradedById: null }
-          : filters.reviewState === 'TUTOR_REVIEWED'
+          : filters.reviewState === "TUTOR_REVIEWED"
             ? { status: SubmissionStatus.GRADED, gradedById: { not: null } }
             : { status: { not: SubmissionStatus.DRAFT } };
 
@@ -294,7 +320,12 @@ export class IndependentStudentsService {
         assignment: {
           schoolId: school.id,
           ...(filters.subject?.trim()
-            ? { subject: { equals: filters.subject.trim(), mode: 'insensitive' } }
+            ? {
+                subject: {
+                  equals: filters.subject.trim(),
+                  mode: "insensitive",
+                },
+              }
             : {}),
         },
       },
@@ -319,12 +350,15 @@ export class IndependentStudentsService {
         },
         gradedBy: { select: { id: true, name: true } },
       },
-      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ completedAt: "desc" }, { createdAt: "desc" }],
       take: 200,
     });
   }
 
-  async createStudent(dto: CreateIndependentStudentDto, actor: AuthenticatedUser) {
+  async createStudent(
+    dto: CreateIndependentStudentDto,
+    actor: AuthenticatedUser,
+  ) {
     const school = await this.getOrCreateSchool();
 
     // Independent students don't come from a school register, so there's
@@ -332,7 +366,7 @@ export class IndependentStudentsService {
     // supply one, unique enough within this one school.
     const admissionNumber =
       dto.admissionNumber?.trim().toUpperCase() ||
-      await generateIndependentStudentId(this.prisma, school.id);
+      (await generateIndependentStudentId(this.prisma, school.id));
 
     return this.usersService.create(
       {
@@ -361,7 +395,7 @@ export class IndependentStudentsService {
 
       if (students.length !== studentIds.length) {
         throw new BadRequestException(
-          'One or more selected accounts are not independent students',
+          "One or more selected accounts are not independent students",
         );
       }
 
@@ -373,7 +407,9 @@ export class IndependentStudentsService {
         },
       });
       if (deleted.count !== studentIds.length) {
-        throw new ConflictException('The student list changed; refresh and try again');
+        throw new ConflictException(
+          "The student list changed; refresh and try again",
+        );
       }
 
       return { deleted: deleted.count, ids: studentIds };
@@ -391,8 +427,12 @@ export class IndependentStudentsService {
       include: { studentProfile: true },
     });
 
-    if (!student || student.schoolId !== school.id || student.role !== Role.STUDENT) {
-      throw new NotFoundException('Independent student not found');
+    if (
+      !student ||
+      student.schoolId !== school.id ||
+      student.role !== Role.STUDENT
+    ) {
+      throw new NotFoundException("Independent student not found");
     }
 
     if (
@@ -401,7 +441,7 @@ export class IndependentStudentsService {
       student.subscriptionExpiresAt <= new Date()
     ) {
       throw new ForbiddenException(
-        'Activate the student subscription before sending login credentials',
+        "Activate the student subscription before sending login credentials",
       );
     }
 
@@ -410,10 +450,12 @@ export class IndependentStudentsService {
       student.parentPhone?.trim() ||
       student.studentProfile?.parentPhone?.trim();
     if (!phone) {
-      throw new BadRequestException('Add a parent or guardian phone number first');
+      throw new BadRequestException(
+        "Add a parent or guardian phone number first",
+      );
     }
     if (!student.admissionNumber) {
-      throw new ConflictException('This student does not have a login ID');
+      throw new ConflictException("This student does not have a login ID");
     }
 
     const temporaryPassword = this.createTemporaryPassword();
@@ -421,20 +463,22 @@ export class IndependentStudentsService {
     const customMessage =
       dto.message?.trim() || `Welcome to Assignment Hub, ${student.name}.`;
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL')?.trim().replace(/\/$/, '') ||
-      'https://assignmenthub.co.ke';
+      this.configService
+        .get<string>("FRONTEND_URL")
+        ?.trim()
+        .replace(/\/$/, "") || "https://assignmenthub.co.ke";
     const message = [
       customMessage,
       `Login ID: ${student.admissionNumber}`,
       `Temporary password: ${temporaryPassword}`,
       `Sign in: ${frontendUrl}/login`,
-    ].join('\n');
+    ].join("\n");
     const loggedMessage = [
       customMessage,
       `Login ID: ${student.admissionNumber}`,
-      'Temporary password: [REDACTED]',
+      "Temporary password: [REDACTED]",
       `Sign in: ${frontendUrl}/login`,
-    ].join('\n');
+    ].join("\n");
 
     await this.prisma.$transaction(async (transaction) => {
       await transaction.user.update({
@@ -479,8 +523,11 @@ export class IndependentStudentsService {
     const school = await this.getOrCreateSchool();
     return this.prisma.independentStudentInvoice.findMany({
       where: studentId ? { studentId } : { student: { schoolId: school.id } },
-      include: { student: { select: { id: true, name: true } }, recordedBy: { select: { id: true, name: true } } },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        student: { select: { id: true, name: true } },
+        recordedBy: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -505,10 +552,12 @@ export class IndependentStudentsService {
         invoice.student.schoolId !== school.id ||
         invoice.student.role !== Role.STUDENT
       ) {
-        throw new NotFoundException('Independent student payment not found');
+        throw new NotFoundException("Independent student payment not found");
       }
 
-      await transaction.independentStudentInvoice.delete({ where: { id: invoice.id } });
+      await transaction.independentStudentInvoice.delete({
+        where: { id: invoice.id },
+      });
       const remaining = await transaction.independentStudentInvoice.aggregate({
         where: { studentId: invoice.studentId },
         _max: { periodEnd: true },
@@ -519,7 +568,9 @@ export class IndependentStudentsService {
         where: { id: invoice.studentId },
         data: {
           subscriptionExpiresAt,
-          isActive: Boolean(subscriptionExpiresAt && subscriptionExpiresAt > new Date()),
+          isActive: Boolean(
+            subscriptionExpiresAt && subscriptionExpiresAt > new Date(),
+          ),
         },
       });
 
@@ -534,7 +585,9 @@ export class IndependentStudentsService {
   async submitPaymentClaim(dto: SubmitIndependentPaymentClaimDto) {
     const paymentInfo = this.getPaymentInfo();
     if (!paymentInfo.enabled) {
-      throw new ServiceUnavailableException('Individual student payments are not configured yet');
+      throw new ServiceUnavailableException(
+        "Individual student payments are not configured yet",
+      );
     }
 
     const school = await this.getOrCreateSchool();
@@ -550,25 +603,33 @@ export class IndependentStudentsService {
       },
     });
     if (!student || student.role !== Role.STUDENT || !student.passwordHash) {
-      throw new NotFoundException('Individual student account not found');
+      throw new NotFoundException("Individual student account not found");
     }
 
     const interval = this.normalizeInterval(dto.interval);
-    const existingPending = await this.prisma.independentPaymentClaim.findFirst({
-      where: {
-        studentId: student.id,
-        interval,
-        status: IndependentPaymentClaimStatus.AWAITING_VERIFICATION,
+    const existingPending = await this.prisma.independentPaymentClaim.findFirst(
+      {
+        where: {
+          studentId: student.id,
+          interval,
+          status: IndependentPaymentClaimStatus.AWAITING_VERIFICATION,
+        },
       },
-    });
+    );
     if (existingPending) {
-      throw new ConflictException('A payment claim for this subscription is already awaiting verification');
+      throw new ConflictException(
+        "A payment claim for this subscription is already awaiting verification",
+      );
     }
 
     const mpesaCode = dto.mpesaCode.trim().toUpperCase();
-    const duplicateCode = await this.prisma.independentPaymentClaim.findUnique({ where: { mpesaCode } });
+    const duplicateCode = await this.prisma.independentPaymentClaim.findUnique({
+      where: { mpesaCode },
+    });
     if (duplicateCode) {
-      throw new ConflictException('This M-Pesa confirmation code has already been submitted');
+      throw new ConflictException(
+        "This M-Pesa confirmation code has already been submitted",
+      );
     }
 
     const amountKES =
@@ -576,7 +637,9 @@ export class IndependentStudentsService {
         ? paymentInfo.annualAmountKES
         : paymentInfo.monthlyAmountKES;
     if (!amountKES) {
-      throw new ServiceUnavailableException('The selected subscription interval is not configured');
+      throw new ServiceUnavailableException(
+        "The selected subscription interval is not configured",
+      );
     }
 
     const claim = await this.prisma.independentPaymentClaim.create({
@@ -598,135 +661,6 @@ export class IndependentStudentsService {
     };
   }
 
-  async startPaystackCheckout(actor: AuthenticatedUser, intervalValue?: string) {
-    const school = await this.getOrCreateSchool();
-    const student = await this.prisma.user.findUnique({ where: { id: actor.id } });
-    if (!student || student.schoolId !== school.id || student.role !== Role.STUDENT) {
-      throw new ForbiddenException('Only independent learner accounts can start this checkout');
-    }
-    if (!this.paystackProvider.isConfigured()) {
-      throw new ServiceUnavailableException('Online payments are not configured yet');
-    }
-
-    const interval = this.normalizeInterval(intervalValue);
-    const paymentInfo = this.getPaymentInfo();
-    const amountKES = interval === SubscriptionInterval.ANNUAL
-      ? paymentInfo.annualAmountKES
-      : paymentInfo.monthlyAmountKES;
-    if (!amountKES) {
-      throw new ServiceUnavailableException('The selected learner subscription price is not configured');
-    }
-
-    const outstanding = await this.prisma.independentPaystackPayment.findFirst({
-      where: {
-        studentId: student.id,
-        interval,
-        status: { in: [PaymentStatus.PENDING, PaymentStatus.PROCESSING] },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (outstanding) {
-      throw new ConflictException('A Paystack checkout is already in progress. Complete it or wait for it to expire.');
-    }
-
-    const reference = `AH-IND-${student.id}-${randomUUID().replace(/-/g, '').slice(0, 16)}`;
-    // Paystack requires an email during checkout, but many learners and
-    // guardians do not use email. A per-learner platform alias keeps the
-    // gateway requirement separate from sign-in and payment entitlement.
-    const paymentEmail = student.email?.trim() || `payments+learner-${student.id}@assignmenthub.co.ke`;
-    const payment = await this.prisma.independentPaystackPayment.create({
-      data: { studentId: student.id, reference, amountKES, interval, email: paymentEmail },
-    });
-
-    try {
-      const checkout = await this.paystackProvider.createCheckout({
-        email: paymentEmail,
-        amountKES,
-        currency: 'KES',
-        apiRef: reference,
-        redirectUrl: 'https://assignmenthub.co.ke/student/activate',
-      });
-      if (!checkout.checkoutUrl) throw new BadRequestException('Paystack did not return a checkout URL');
-
-      await this.prisma.independentPaystackPayment.update({
-        where: { id: payment.id },
-        data: { status: PaymentStatus.PROCESSING, rawPayload: this.toJson(checkout.rawResponse) },
-      });
-      return { checkoutUrl: checkout.checkoutUrl, reference, amountKES, interval };
-    } catch (error: any) {
-      await this.prisma.independentPaystackPayment.update({
-        where: { id: payment.id },
-        data: { status: PaymentStatus.FAILED, rawPayload: this.toJson(error.response?.data || error.message) },
-      });
-      throw error;
-    }
-  }
-
-  async handlePaystackWebhook(payload: unknown, signature: string | undefined, rawBody: Buffer | undefined) {
-    if (!this.paystackProvider.verifyWebhookSignature(rawBody, signature)) {
-      throw new ForbiddenException('Invalid Paystack webhook signature');
-    }
-    const event = this.readString(payload, 'event');
-    if (event !== 'charge.success') return { status: 'received', event: event ?? 'unknown' };
-
-    const eventData = this.readObject(payload, 'data');
-    const reference = this.readString(eventData, 'reference');
-    if (!reference) throw new BadRequestException('Paystack payment reference is missing');
-
-    const payment = await this.prisma.independentPaystackPayment.findUnique({
-      where: { reference },
-      include: { student: true },
-    });
-    if (!payment) throw new NotFoundException('Independent Paystack payment not found');
-    if (payment.status === PaymentStatus.CONFIRMED) return { status: 'success', message: 'Already activated' };
-
-    const verification = await this.paystackProvider.verifyPayment(reference);
-    const verificationData = this.readObject(verification, 'data');
-    if (
-      this.readString(verificationData, 'status') !== 'success' ||
-      this.readString(verificationData, 'reference') !== reference ||
-      this.readNumber(verificationData, 'amount') !== payment.amountKES * 100 ||
-      this.readString(verificationData, 'currency') !== 'KES'
-    ) {
-      throw new BadRequestException('Paystack verification did not match the expected learner payment');
-    }
-
-    const now = new Date();
-    const periodStart = payment.student.subscriptionExpiresAt && payment.student.subscriptionExpiresAt > now
-      ? payment.student.subscriptionExpiresAt
-      : now;
-    const periodEnd = this.calculatePeriodEnd(periodStart, payment.interval);
-
-    await this.prisma.$transaction(async (tx) => {
-      const locked = await tx.independentPaystackPayment.updateMany({
-        where: { id: payment.id, status: { not: PaymentStatus.CONFIRMED } },
-        data: { status: PaymentStatus.CONFIRMED, paidAt: now, rawPayload: this.toJson({ webhook: payload, verification }) },
-      });
-      if (locked.count !== 1) return;
-
-      await tx.independentStudentInvoice.create({
-        data: {
-          studentId: payment.studentId,
-          invoiceNumber: this.createInvoiceNumber(payment.studentId),
-          studentName: payment.student.name,
-          amountKES: payment.amountKES,
-          interval: payment.interval,
-          periodStart,
-          periodEnd,
-          // This legacy column is the existing payment-proof field. Prefixing
-          // the verified hosted-payment reference preserves invoice history.
-          mpesaCode: `PAYSTACK:${payment.reference}`,
-        },
-      });
-      await tx.user.update({
-        where: { id: payment.studentId },
-        data: { subscriptionExpiresAt: periodEnd, isActive: true, isIndependentTrial: false },
-      });
-    });
-
-    return { status: 'success', message: 'Individual learner access activated' };
-  }
-
   async findPaymentClaims() {
     const school = await this.getOrCreateSchool();
     return this.prisma.independentPaymentClaim.findMany({
@@ -735,7 +669,7 @@ export class IndependentStudentsService {
         student: { select: { id: true, name: true, email: true, grade: true } },
         reviewedBy: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -745,23 +679,33 @@ export class IndependentStudentsService {
       where: { id },
       include: { student: true },
     });
-    if (!claim || claim.student.schoolId !== school.id || claim.student.role !== Role.STUDENT) {
-      throw new NotFoundException('Payment claim not found');
+    if (
+      !claim ||
+      claim.student.schoolId !== school.id ||
+      claim.student.role !== Role.STUDENT
+    ) {
+      throw new NotFoundException("Payment claim not found");
     }
     if (claim.status !== IndependentPaymentClaimStatus.AWAITING_VERIFICATION) {
-      throw new ConflictException('This payment claim has already been reviewed');
+      throw new ConflictException(
+        "This payment claim has already been reviewed",
+      );
     }
 
     const now = new Date();
     const periodStart =
-      claim.student.subscriptionExpiresAt && claim.student.subscriptionExpiresAt > now
+      claim.student.subscriptionExpiresAt &&
+      claim.student.subscriptionExpiresAt > now
         ? claim.student.subscriptionExpiresAt
         : now;
     const periodEnd = this.calculatePeriodEnd(periodStart, claim.interval);
 
     return this.prisma.$transaction(async (tx) => {
       const locked = await tx.independentPaymentClaim.updateMany({
-        where: { id, status: IndependentPaymentClaimStatus.AWAITING_VERIFICATION },
+        where: {
+          id,
+          status: IndependentPaymentClaimStatus.AWAITING_VERIFICATION,
+        },
         data: {
           status: IndependentPaymentClaimStatus.CONFIRMED,
           reviewedById: actor.id,
@@ -770,7 +714,9 @@ export class IndependentStudentsService {
         },
       });
       if (locked.count !== 1) {
-        throw new ConflictException('This payment claim has already been reviewed');
+        throw new ConflictException(
+          "This payment claim has already been reviewed",
+        );
       }
 
       const invoice = await tx.independentStudentInvoice.create({
@@ -790,7 +736,11 @@ export class IndependentStudentsService {
 
       await tx.user.update({
         where: { id: claim.student.id },
-        data: { subscriptionExpiresAt: periodEnd, isActive: true, isIndependentTrial: false },
+        data: {
+          subscriptionExpiresAt: periodEnd,
+          isActive: true,
+          isIndependentTrial: false,
+        },
       });
 
       return {
@@ -802,17 +752,23 @@ export class IndependentStudentsService {
     });
   }
 
-  async rejectPaymentClaim(id: number, dto: RejectIndependentPaymentClaimDto, actor: AuthenticatedUser) {
+  async rejectPaymentClaim(
+    id: number,
+    dto: RejectIndependentPaymentClaimDto,
+    actor: AuthenticatedUser,
+  ) {
     const school = await this.getOrCreateSchool();
     const claim = await this.prisma.independentPaymentClaim.findUnique({
       where: { id },
       include: { student: { select: { schoolId: true } } },
     });
     if (!claim || claim.student.schoolId !== school.id) {
-      throw new NotFoundException('Payment claim not found');
+      throw new NotFoundException("Payment claim not found");
     }
     if (claim.status !== IndependentPaymentClaimStatus.AWAITING_VERIFICATION) {
-      throw new ConflictException('This payment claim has already been reviewed');
+      throw new ConflictException(
+        "This payment claim has already been reviewed",
+      );
     }
 
     return this.prisma.independentPaymentClaim.update({
@@ -827,11 +783,20 @@ export class IndependentStudentsService {
     });
   }
 
-  async recordInvoice(dto: RecordIndependentInvoiceDto, actor: AuthenticatedUser) {
+  async recordInvoice(
+    dto: RecordIndependentInvoiceDto,
+    actor: AuthenticatedUser,
+  ) {
     const school = await this.getOrCreateSchool();
-    const student = await this.prisma.user.findUnique({ where: { id: dto.studentId } });
-    if (!student || student.schoolId !== school.id || student.role !== Role.STUDENT) {
-      throw new NotFoundException('Independent student not found');
+    const student = await this.prisma.user.findUnique({
+      where: { id: dto.studentId },
+    });
+    if (
+      !student ||
+      student.schoolId !== school.id ||
+      student.role !== Role.STUDENT
+    ) {
+      throw new NotFoundException("Independent student not found");
     }
 
     const interval = this.normalizeInterval(dto.interval);
@@ -839,7 +804,10 @@ export class IndependentStudentsService {
     // Renewing before expiry extends from the current expiry date rather
     // than from today, so paying early never costs the student days they
     // already paid for.
-    const periodStart = student.subscriptionExpiresAt && student.subscriptionExpiresAt > now ? student.subscriptionExpiresAt : now;
+    const periodStart =
+      student.subscriptionExpiresAt && student.subscriptionExpiresAt > now
+        ? student.subscriptionExpiresAt
+        : now;
     const periodEnd = this.calculatePeriodEnd(periodStart, interval);
 
     const [invoice] = await this.prisma.$transaction([
@@ -856,11 +824,18 @@ export class IndependentStudentsService {
           payerPhone: dto.payerPhone,
           recordedById: actor.id,
         },
-        include: { student: { select: { id: true, name: true } }, recordedBy: { select: { id: true, name: true } } },
+        include: {
+          student: { select: { id: true, name: true } },
+          recordedBy: { select: { id: true, name: true } },
+        },
       }),
       this.prisma.user.update({
         where: { id: student.id },
-        data: { subscriptionExpiresAt: periodEnd, isActive: true, isIndependentTrial: false },
+        data: {
+          subscriptionExpiresAt: periodEnd,
+          isActive: true,
+          isIndependentTrial: false,
+        },
       }),
     ]);
 
@@ -868,33 +843,15 @@ export class IndependentStudentsService {
   }
 
   private normalizeInterval(interval?: string): SubscriptionInterval {
-    return interval?.toLowerCase() === 'annual' ? SubscriptionInterval.ANNUAL : SubscriptionInterval.MONTHLY;
+    return interval?.toLowerCase() === "annual"
+      ? SubscriptionInterval.ANNUAL
+      : SubscriptionInterval.MONTHLY;
   }
 
-  private toJson(value: unknown) {
-    return JSON.parse(JSON.stringify(value ?? null));
-  }
-
-  private readObject(value: unknown, key: string): Record<string, unknown> | undefined {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
-    const field = (value as Record<string, unknown>)[key];
-    return field && typeof field === 'object' && !Array.isArray(field)
-      ? (field as Record<string, unknown>)
-      : undefined;
-  }
-
-  private readString(value: unknown, key: string): string | undefined {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
-    const field = (value as Record<string, unknown>)[key];
-    return typeof field === 'string' ? field : undefined;
-  }
-
-  private readNumber(value: Record<string, unknown> | undefined, key: string): number | undefined {
-    const field = value?.[key];
-    return typeof field === 'number' && Number.isFinite(field) ? field : undefined;
-  }
-
-  private calculatePeriodEnd(periodStart: Date, interval: SubscriptionInterval): Date {
+  private calculatePeriodEnd(
+    periodStart: Date,
+    interval: SubscriptionInterval,
+  ): Date {
     const periodEnd = new Date(periodStart);
     if (interval === SubscriptionInterval.ANNUAL) {
       periodEnd.setFullYear(periodEnd.getFullYear() + 1);
@@ -910,15 +867,15 @@ export class IndependentStudentsService {
   }
 
   private createInvoiceNumber(studentId: number): string {
-    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const random = Math.floor(1000 + Math.random() * 9000);
     return `IND-${stamp}-${studentId}-${random}`;
   }
 
   private createTemporaryPassword(): string {
-    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const lowercase = 'abcdefghijkmnopqrstuvwxyz';
-    const digits = '23456789';
+    const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const lowercase = "abcdefghijkmnopqrstuvwxyz";
+    const digits = "23456789";
     const alphabet = `${uppercase}${lowercase}${digits}`;
     const characters = [
       uppercase[randomInt(uppercase.length)],
@@ -932,9 +889,12 @@ export class IndependentStudentsService {
 
     for (let index = characters.length - 1; index > 0; index -= 1) {
       const swapIndex = randomInt(index + 1);
-      [characters[index], characters[swapIndex]] = [characters[swapIndex], characters[index]];
+      [characters[index], characters[swapIndex]] = [
+        characters[swapIndex],
+        characters[index],
+      ];
     }
 
-    return characters.join('');
+    return characters.join("");
   }
 }

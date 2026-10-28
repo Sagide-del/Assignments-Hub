@@ -1,15 +1,20 @@
-import { Module } from '@nestjs/common';
-import { IndependentStudentsController } from './independent-students.controller';
-import { IndependentStudentsService } from './independent-students.service';
-import { UsersModule } from '../users/users.module';
-import { SmsModule } from '../sms/sms.module';
-import { PaystackPaymentProvider } from '../payment/providers/paystack-payment.provider';
+import { TumaPaymentProvider } from "./tuma-payment.provider";
+import { TumaPaymentsService } from "./tuma-payments.service";
+import { TumaPaymentsController } from "./tuma-payments.controller";
+import { Module } from "@nestjs/common";
+import { IndependentStudentsController } from "./independent-students.controller";
+import { IndependentStudentsService } from "./independent-students.service";
+import { UsersModule } from "../users/users.module";
+import { SmsModule } from "../sms/sms.module";
 
 @Module({
   imports: [UsersModule, SmsModule],
-  controllers: [IndependentStudentsController],
-  providers: [IndependentStudentsService, PaystackPaymentProvider],
-  // PaymentService verifies Paystack learner payments through this service.
+  controllers: [IndependentStudentsController, TumaPaymentsController],
+  providers: [
+    IndependentStudentsService,
+    TumaPaymentProvider,
+    TumaPaymentsService,
+  ],
   exports: [IndependentStudentsService],
 })
 export class IndependentStudentsModule {}

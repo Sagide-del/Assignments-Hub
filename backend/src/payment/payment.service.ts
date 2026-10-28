@@ -4,9 +4,9 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as crypto from "crypto";
 import {
   InvoiceStatus,
   PaymentMethod,
@@ -14,17 +14,19 @@ import {
   Prisma,
   SubscriptionInterval,
   SubscriptionStatus,
-} from '@prisma/client';
-import PDFDocument = require('pdfkit');
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { Role } from '../common/enums/role.enum';
-import { computeMonthlyPriceKES, ComputedPricing, SchoolType } from '../common/config/plans';
-import { PrismaService } from '../prisma/prisma.service';
-import { UploadsService } from '../uploads/uploads.service';
-import { IntaSendPaymentProvider } from './providers/intasend-payment.provider';
-import { MpesaPaymentProvider } from './providers/mpesa-payment.provider';
-import { PaystackPaymentProvider } from './providers/paystack-payment.provider';
-import { IndependentStudentsService } from '../independent-students/independent-students.service';
+} from "@prisma/client";
+import PDFDocument = require("pdfkit");
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { Role } from "../common/enums/role.enum";
+import {
+  computeMonthlyPriceKES,
+  ComputedPricing,
+  SchoolType,
+} from "../common/config/plans";
+import { PrismaService } from "../prisma/prisma.service";
+import { UploadsService } from "../uploads/uploads.service";
+import { IntaSendPaymentProvider } from "./providers/intasend-payment.provider";
+import { MpesaPaymentProvider } from "./providers/mpesa-payment.provider";
 
 interface SubscriptionActivationData {
   planName: string;
@@ -59,14 +61,13 @@ export class PaymentService {
     private readonly prisma: PrismaService,
     private readonly intaSendProvider: IntaSendPaymentProvider,
     private readonly mpesaProvider: MpesaPaymentProvider,
-    private readonly paystackProvider: PaystackPaymentProvider,
-    private readonly independentStudentsService: IndependentStudentsService,
     private readonly uploadsService: UploadsService,
   ) {
-    this.webhookSecret = this.configService.get('INTASEND_WEBHOOK_SECRET') || '';
+    this.webhookSecret =
+      this.configService.get("INTASEND_WEBHOOK_SECRET") || "";
     if (!this.webhookSecret) {
       this.logger.warn(
-        'INTASEND_WEBHOOK_SECRET is not set â€” all incoming IntaSend webhooks will be rejected, so paid subscriptions will never auto-activate. Set it in .env to the challenge string configured on the IntaSend dashboard.',
+        "INTASEND_WEBHOOK_SECRET is not set â€” all incoming IntaSend webhooks will be rejected, so paid subscriptions will never auto-activate. Set it in .env to the challenge string configured on the IntaSend dashboard.",
       );
     }
   }
@@ -81,10 +82,15 @@ export class PaymentService {
   }
 
   private normalizeInterval(interval?: string): SubscriptionInterval {
-    return interval?.toLowerCase() === 'annual' ? SubscriptionInterval.ANNUAL : SubscriptionInterval.MONTHLY;
+    return interval?.toLowerCase() === "annual"
+      ? SubscriptionInterval.ANNUAL
+      : SubscriptionInterval.MONTHLY;
   }
 
-  private buildCurrentPeriodEnd(start: Date, interval: SubscriptionInterval): Date {
+  private buildCurrentPeriodEnd(
+    start: Date,
+    interval: SubscriptionInterval,
+  ): Date {
     const end = new Date(start);
     if (interval === SubscriptionInterval.ANNUAL) {
       end.setFullYear(end.getFullYear() + 1);
@@ -95,7 +101,7 @@ export class PaymentService {
   }
 
   private createInvoiceNumber(schoolId: number): string {
-    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const random = Math.floor(1000 + Math.random() * 9000);
     return `INV-${stamp}-${schoolId}-${random}`;
   }
@@ -111,50 +117,46 @@ export class PaymentService {
     }> = [
       {
         method: PaymentMethod.INTASEND,
-        displayName: 'IntaSend',
-        logoUrl: this.logoDataUrl('IntaSend', '#101820', '#B5E61D'),
-        instructions: 'Pay online using the hosted IntaSend checkout. You will be redirected to complete the payment securely.',
+        displayName: "IntaSend",
+        logoUrl: this.logoDataUrl("IntaSend", "#101820", "#B5E61D"),
+        instructions:
+          "Pay online using the hosted IntaSend checkout. You will be redirected to complete the payment securely.",
         isActive: true,
         configuration: {
-          channel: 'online_checkout',
-          currency: 'KES',
-          settlement: 'automatic_webhook_confirmation',
-        },
-      },
-      {
-        method: PaymentMethod.PAYSTACK,
-        displayName: 'Paystack',
-        logoUrl: this.logoDataUrl('Paystack', '#0BA4DB', '#FFFFFF'),
-        instructions: 'Reserved for individual learner account activation. School onboarding is completed through the bank-payment process.',
-        isActive: false,
-        configuration: {
-          channel: 'hosted_checkout',
-          currency: 'KES',
-          settlement: 'verified_webhook_confirmation',
+          channel: "online_checkout",
+          currency: "KES",
+          settlement: "automatic_webhook_confirmation",
         },
       },
       {
         method: PaymentMethod.MPESA,
-        displayName: 'M-Pesa',
-        logoUrl: this.logoDataUrl('M-Pesa', '#1B5E20', '#FFFFFF'),
-        instructions: 'Mobile payment integration is prepared in the billing engine. A live provider connection can be enabled without changing the frontend contract.',
+        displayName: "M-Pesa",
+        logoUrl: this.logoDataUrl("M-Pesa", "#1B5E20", "#FFFFFF"),
+        instructions:
+          "Mobile payment integration is prepared in the billing engine. A live provider connection can be enabled without changing the frontend contract.",
         isActive: false,
         configuration: {
-          shortCode: this.configService.get('MPESA_SHORT_CODE') || 'Not configured',
-          accountReferenceLabel: 'Invoice Number',
-          integrationStatus: 'provider_ready',
+          shortCode:
+            this.configService.get("MPESA_SHORT_CODE") || "Not configured",
+          accountReferenceLabel: "Invoice Number",
+          integrationStatus: "provider_ready",
         },
       },
       {
         method: PaymentMethod.EQUITY_PAYBILL,
-        displayName: 'Equity Bank Paybill',
-        logoUrl: this.logoDataUrl('Equity', '#8B1E3F', '#FFFFFF'),
-        instructions: 'Make the payment to the configured Equity Bank paybill, then submit the payment reference for platform verification.',
+        displayName: "Equity Bank Paybill",
+        logoUrl: this.logoDataUrl("Equity", "#8B1E3F", "#FFFFFF"),
+        instructions:
+          "Make the payment to the configured Equity Bank paybill, then submit the payment reference for platform verification.",
         isActive: true,
         configuration: {
-          paybillNumber: this.configService.get('EQUITY_PAYBILL_NUMBER') || '247247',
-          accountReferenceLabel: 'Use the invoice number as the account/reference',
-          supportContact: this.configService.get('BILLING_SUPPORT_EMAIL') || 'billing@assignmenthub.local',
+          paybillNumber:
+            this.configService.get("EQUITY_PAYBILL_NUMBER") || "247247",
+          accountReferenceLabel:
+            "Use the invoice number as the account/reference",
+          supportContact:
+            this.configService.get("BILLING_SUPPORT_EMAIL") ||
+            "billing@assignmenthub.local",
         },
       },
     ];
@@ -163,18 +165,7 @@ export class PaymentService {
       defaults.map((config) =>
         this.prisma.paymentProviderConfig.upsert({
           where: { method: config.method },
-          // Paystack availability reflects the deployed secret. The other
-          // providers retain an administrator's existing enabled/disabled choice.
-          update:
-            config.method === PaymentMethod.PAYSTACK
-              ? {
-                  displayName: config.displayName,
-                  logoUrl: config.logoUrl,
-                  instructions: config.instructions,
-                  isActive: config.isActive,
-                  configuration: this.toJsonValue(config.configuration),
-                }
-              : {},
+          update: {},
           create: {
             method: config.method,
             displayName: config.displayName,
@@ -190,8 +181,13 @@ export class PaymentService {
 
   private async getProviderConfig(method: PaymentMethod) {
     await this.ensureProviderConfigs();
-    const config = await this.prisma.paymentProviderConfig.findUnique({ where: { method } });
-    if (!config) throw new NotFoundException(`Payment provider ${method} is not configured`);
+    const config = await this.prisma.paymentProviderConfig.findUnique({
+      where: { method },
+    });
+    if (!config)
+      throw new NotFoundException(
+        `Payment provider ${method} is not configured`,
+      );
     return config;
   }
 
@@ -210,27 +206,32 @@ export class PaymentService {
       instructions: config.instructions,
       isActive: config.isActive,
       paymentDetails:
-        config.configuration && typeof config.configuration === 'object' && !Array.isArray(config.configuration)
+        config.configuration &&
+        typeof config.configuration === "object" &&
+        !Array.isArray(config.configuration)
           ? (config.configuration as Record<string, unknown>)
           : null,
     };
   }
 
   private resolveTargetSchoolId(actor: AuthenticatedUser, schoolId?: number) {
-    const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
-    if (!targetSchoolId) throw new BadRequestException('schoolId is required');
+    const targetSchoolId =
+      actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
+    if (!targetSchoolId) throw new BadRequestException("schoolId is required");
     return targetSchoolId;
   }
 
   private assertTenant(schoolId: number, actor: AuthenticatedUser) {
     if (actor.role === Role.PLATFORM_ADMIN) return;
     if (actor.schoolId !== schoolId) {
-      throw new ForbiddenException("You cannot access another school's billing data");
+      throw new ForbiddenException(
+        "You cannot access another school's billing data",
+      );
     }
   }
 
   private buildApiRef(
-    kind: 'SCHOOL' | 'SUB',
+    kind: "SCHOOL" | "SUB",
     schoolId: number,
     pricing: ComputedPricing,
     invoiceId: number,
@@ -249,7 +250,9 @@ export class PaymentService {
       pt: paymentTransactionId,
       t: Date.now(),
     };
-    const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString(
+      "base64url",
+    );
     return `ISR_${encoded}`;
   }
 
@@ -263,29 +266,53 @@ export class PaymentService {
     invoiceId?: number;
     paymentTransactionId?: number;
   } {
-    if (!apiRef || !apiRef.startsWith('ISR_')) return {};
+    if (!apiRef || !apiRef.startsWith("ISR_")) return {};
     try {
-      const json = Buffer.from(apiRef.slice(4), 'base64url').toString('utf8');
+      const json = Buffer.from(apiRef.slice(4), "base64url").toString("utf8");
       const payload = JSON.parse(json);
       return {
-        schoolId: Number.isFinite(Number(payload.s)) ? Number(payload.s) : undefined,
-        plan: typeof payload.p === 'string' ? payload.p : undefined,
-        amountKES: Number.isFinite(Number(payload.a)) ? Number(payload.a) : undefined,
-        studentCount: Number.isFinite(Number(payload.c)) ? Number(payload.c) : undefined,
-        schoolType: payload.y === 'BOARDING' ? 'BOARDING' : payload.y === 'DAY' ? 'DAY' : undefined,
-        interval: payload.i === 'ANNUAL' || payload.i === 'MONTHLY' ? payload.i : undefined,
-        invoiceId: Number.isFinite(Number(payload.iv)) ? Number(payload.iv) : undefined,
-        paymentTransactionId: Number.isFinite(Number(payload.pt)) ? Number(payload.pt) : undefined,
+        schoolId: Number.isFinite(Number(payload.s))
+          ? Number(payload.s)
+          : undefined,
+        plan: typeof payload.p === "string" ? payload.p : undefined,
+        amountKES: Number.isFinite(Number(payload.a))
+          ? Number(payload.a)
+          : undefined,
+        studentCount: Number.isFinite(Number(payload.c))
+          ? Number(payload.c)
+          : undefined,
+        schoolType:
+          payload.y === "BOARDING"
+            ? "BOARDING"
+            : payload.y === "DAY"
+              ? "DAY"
+              : undefined,
+        interval:
+          payload.i === "ANNUAL" || payload.i === "MONTHLY"
+            ? payload.i
+            : undefined,
+        invoiceId: Number.isFinite(Number(payload.iv))
+          ? Number(payload.iv)
+          : undefined,
+        paymentTransactionId: Number.isFinite(Number(payload.pt))
+          ? Number(payload.pt)
+          : undefined,
       };
     } catch {
       return {};
     }
   }
 
-  private async computePricingForSchool(schoolId: number): Promise<ComputedPricing> {
-    const school = await this.prisma.school.findUnique({ where: { id: schoolId } });
-    if (!school) throw new BadRequestException('School not found');
-    const studentCount = await this.prisma.user.count({ where: { schoolId, role: Role.STUDENT } });
+  private async computePricingForSchool(
+    schoolId: number,
+  ): Promise<ComputedPricing> {
+    const school = await this.prisma.school.findUnique({
+      where: { id: schoolId },
+    });
+    if (!school) throw new BadRequestException("School not found");
+    const studentCount = await this.prisma.user.count({
+      where: { schoolId, role: Role.STUDENT },
+    });
     return computeMonthlyPriceKES(studentCount, school.type as SchoolType);
   }
 
@@ -296,10 +323,9 @@ export class PaymentService {
   async getPaymentProviders() {
     await this.ensureProviderConfigs();
     const configs = await this.prisma.paymentProviderConfig.findMany({
-      // Paystack belongs to the individual learner activation journey, not
-      // the school-admin billing interface.
+      // Exclude retired methods from new payment choices.
       where: { method: { not: PaymentMethod.PAYSTACK } },
-      orderBy: { displayName: 'asc' },
+      orderBy: { displayName: "asc" },
     });
     return configs.map((config) => this.mapProviderConfig(config));
   }
@@ -310,8 +336,10 @@ export class PaymentService {
     method: PaymentMethod,
     interval: SubscriptionInterval,
   ) {
-    const school = await this.prisma.school.findUnique({ where: { id: schoolId } });
-    if (!school) throw new NotFoundException('School not found');
+    const school = await this.prisma.school.findUnique({
+      where: { id: schoolId },
+    });
+    if (!school) throw new NotFoundException("School not found");
 
     const now = new Date();
     const dueAt = this.buildCurrentPeriodEnd(now, interval);
@@ -325,7 +353,7 @@ export class PaymentService {
           interval,
           paymentMethod: method,
           amountKES: pricing.amountKES,
-          currency: 'KES',
+          currency: "KES",
           studentCountSnapshot: pricing.studentCount,
           schoolTypeSnapshot: pricing.schoolType,
           planSnapshot: pricing.tier.name,
@@ -344,10 +372,13 @@ export class PaymentService {
           schoolId,
           invoiceId: invoice.id,
           method,
-          status: pricing.amountKES <= 0 ? PaymentStatus.CONFIRMED : PaymentStatus.PENDING,
+          status:
+            pricing.amountKES <= 0
+              ? PaymentStatus.CONFIRMED
+              : PaymentStatus.PENDING,
           providerName: method,
           amountKES: pricing.amountKES,
-          currency: 'KES',
+          currency: "KES",
           initiatedAt: now,
           confirmedAt: pricing.amountKES <= 0 ? now : undefined,
           metadata: this.toJsonValue({
@@ -436,14 +467,14 @@ export class PaymentService {
   }
 
   private async startIntaSendCheckout(
-    kind: 'SCHOOL' | 'SUB',
+    kind: "SCHOOL" | "SUB",
     email: string,
     schoolId: number,
     interval: SubscriptionInterval,
   ) {
     const provider = await this.getProviderConfig(PaymentMethod.INTASEND);
     if (!provider.isActive) {
-      throw new BadRequestException('IntaSend payments are currently disabled');
+      throw new BadRequestException("IntaSend payments are currently disabled");
     }
 
     const pricing = await this.computePricingForSchool(schoolId);
@@ -469,10 +500,18 @@ export class PaymentService {
       const checkout = await this.intaSendProvider.createCheckout({
         email,
         amountKES: pricing.amountKES,
-        currency: 'KES',
-        apiRef: this.buildApiRef(kind, schoolId, pricing, invoice.id, paymentTransaction.id, interval),
-        host: this.configService.get('APP_URL') || undefined,
-        redirectUrl: this.configService.get('PAYMENT_REDIRECT_URL') || undefined,
+        currency: "KES",
+        apiRef: this.buildApiRef(
+          kind,
+          schoolId,
+          pricing,
+          invoice.id,
+          paymentTransaction.id,
+          interval,
+        ),
+        host: this.configService.get("APP_URL") || undefined,
+        redirectUrl:
+          this.configService.get("PAYMENT_REDIRECT_URL") || undefined,
       });
 
       await this.prisma.paymentTransaction.update({
@@ -489,7 +528,11 @@ export class PaymentService {
         },
       });
 
-      return this.buildPaymentResponse(checkout.rawResponse, invoice.id, paymentTransaction.id);
+      return this.buildPaymentResponse(
+        checkout.rawResponse,
+        invoice.id,
+        paymentTransaction.id,
+      );
     } catch (error) {
       await this.finalizeCheckoutFailure(
         invoice.id,
@@ -501,23 +544,24 @@ export class PaymentService {
   }
 
   async createPayment(email: string, schoolId: number) {
-    return this.startIntaSendCheckout('SCHOOL', email, schoolId, SubscriptionInterval.MONTHLY);
+    return this.startIntaSendCheckout(
+      "SCHOOL",
+      email,
+      schoolId,
+      SubscriptionInterval.MONTHLY,
+    );
   }
 
-  async createSubscription(email: string, schoolId: number, interval: string = 'monthly') {
-    return this.startIntaSendCheckout('SUB', email, schoolId, this.normalizeInterval(interval));
-  }
-
-  private buildPaystackReference(paymentTransactionId: number) {
-    return `AH-PS-${paymentTransactionId}-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
-  }
-
-  async createPaystackSubscription(email: string, schoolId: number, interval: string = 'monthly') {
-    void email;
-    void schoolId;
-    void interval;
-    throw new BadRequestException(
-      'School subscriptions are activated during bank-payment onboarding. Paystack is available for individual learner accounts only.',
+  async createSubscription(
+    email: string,
+    schoolId: number,
+    interval: string = "monthly",
+  ) {
+    return this.startIntaSendCheckout(
+      "SUB",
+      email,
+      schoolId,
+      this.normalizeInterval(interval),
     );
   }
 
@@ -527,12 +571,20 @@ export class PaymentService {
 
   async createEquityPaybillPayment(
     actor: AuthenticatedUser,
-    input: { schoolId?: number; paymentReference: string; payerName: string; payerPhone: string; interval?: string },
+    input: {
+      schoolId?: number;
+      paymentReference: string;
+      payerName: string;
+      payerPhone: string;
+      interval?: string;
+    },
   ) {
     const schoolId = this.resolveTargetSchoolId(actor, input.schoolId);
     const provider = await this.getProviderConfig(PaymentMethod.EQUITY_PAYBILL);
     if (!provider.isActive) {
-      throw new BadRequestException('Equity Paybill payments are currently disabled');
+      throw new BadRequestException(
+        "Equity Paybill payments are currently disabled",
+      );
     }
 
     const pricing = await this.computePricingForSchool(schoolId);
@@ -567,12 +619,17 @@ export class PaymentService {
 
   async createMpesaPayment(
     actor: AuthenticatedUser,
-    input: { schoolId?: number; payerName: string; payerPhone: string; interval?: string },
+    input: {
+      schoolId?: number;
+      payerName: string;
+      payerPhone: string;
+      interval?: string;
+    },
   ) {
     const schoolId = this.resolveTargetSchoolId(actor, input.schoolId);
     const provider = await this.getProviderConfig(PaymentMethod.MPESA);
     if (!provider.isActive) {
-      throw new BadRequestException('M-Pesa payments are currently disabled');
+      throw new BadRequestException("M-Pesa payments are currently disabled");
     }
 
     const pricing = await this.computePricingForSchool(schoolId);
@@ -587,10 +644,17 @@ export class PaymentService {
     const providerResponse = await this.mpesaProvider.createCheckout({
       email: input.payerPhone,
       amountKES: pricing.amountKES,
-      currency: 'KES',
-      apiRef: this.buildApiRef('SUB', schoolId, pricing, invoice.id, paymentTransaction.id, interval),
-      host: this.configService.get('APP_URL') || undefined,
-      redirectUrl: this.configService.get('PAYMENT_REDIRECT_URL') || undefined,
+      currency: "KES",
+      apiRef: this.buildApiRef(
+        "SUB",
+        schoolId,
+        pricing,
+        invoice.id,
+        paymentTransaction.id,
+        interval,
+      ),
+      host: this.configService.get("APP_URL") || undefined,
+      redirectUrl: this.configService.get("PAYMENT_REDIRECT_URL") || undefined,
     });
 
     const updatedTransaction = await this.prisma.paymentTransaction.update({
@@ -619,14 +683,22 @@ export class PaymentService {
   }
 
   async handleWebhook(payload: any) {
-    this.logger.log('Processing IntaSend webhook...');
+    this.logger.log("Processing IntaSend webhook...");
 
     if (!this.verifyWebhookChallenge(payload)) {
-      this.logger.error('Invalid webhook challenge â€” payload.challenge did not match INTASEND_WEBHOOK_SECRET (or the secret is unset)');
-      return { status: 'error', message: 'Invalid challenge' };
+      this.logger.error(
+        "Invalid webhook challenge â€” payload.challenge did not match INTASEND_WEBHOOK_SECRET (or the secret is unset)",
+      );
+      return { status: "error", message: "Invalid challenge" };
     }
 
-    const { state, api_ref: apiRef, invoice_id: invoiceId, value, failed_reason: failedReason } = payload || {};
+    const {
+      state,
+      api_ref: apiRef,
+      invoice_id: invoiceId,
+      value,
+      failed_reason: failedReason,
+    } = payload || {};
     const {
       schoolId,
       plan,
@@ -638,14 +710,26 @@ export class PaymentService {
       paymentTransactionId,
     } = this.parseApiRef(apiRef);
 
-    await this.recordWebhookEvent(payload, state, invoiceId, paymentTransactionId, PaymentMethod.INTASEND);
+    await this.recordWebhookEvent(
+      payload,
+      state,
+      invoiceId,
+      paymentTransactionId,
+      PaymentMethod.INTASEND,
+    );
 
     switch (state) {
-      case 'COMPLETE': {
+      case "COMPLETE": {
         this.logger.log(`Payment complete (invoice ${invoiceId})`);
         if (!schoolId || !plan || !expectedAmount) {
-          this.logger.error(`Could not recover schoolId/plan/amount from api_ref "${apiRef}" â€” cannot activate a subscription automatically.`);
-          return { status: 'error', message: 'Missing schoolId/plan/amount in api_ref', state };
+          this.logger.error(
+            `Could not recover schoolId/plan/amount from api_ref "${apiRef}" â€” cannot activate a subscription automatically.`,
+          );
+          return {
+            status: "error",
+            message: "Missing schoolId/plan/amount in api_ref",
+            state,
+          };
         }
 
         const paidAmount = Number(value);
@@ -653,14 +737,18 @@ export class PaymentService {
           this.logger.error(
             `Webhook for invoice ${invoiceId} paid ${value} but checkout was for KES ${expectedAmount} (tier "${plan}") â€” refusing to activate. schoolId=${schoolId}`,
           );
-          return { status: 'error', message: 'Paid amount does not match quoted price', state };
+          return {
+            status: "error",
+            message: "Paid amount does not match quoted price",
+            state,
+          };
         }
 
         await this.activateSubscription(schoolId, {
           planName: plan,
           amountKES: expectedAmount,
           studentCount: studentCount ?? 0,
-          schoolType: schoolType ?? 'DAY',
+          schoolType: schoolType ?? "DAY",
           interval: interval ?? SubscriptionInterval.MONTHLY,
           paymentMethod: PaymentMethod.INTASEND,
           invoiceId: internalInvoiceId,
@@ -668,11 +756,13 @@ export class PaymentService {
           providerReference: invoiceId,
           rawPayload: payload,
         });
-        return { status: 'success', message: 'Subscription activated', state };
+        return { status: "success", message: "Subscription activated", state };
       }
 
-      case 'FAILED':
-        this.logger.log(`Payment failed (invoice ${invoiceId}): ${failedReason || 'no reason given'}`);
+      case "FAILED":
+        this.logger.log(
+          `Payment failed (invoice ${invoiceId}): ${failedReason || "no reason given"}`,
+        );
         await this.updatePendingBillingState(
           internalInvoiceId,
           paymentTransactionId,
@@ -681,128 +771,67 @@ export class PaymentService {
           invoiceId,
           payload,
         );
-        return { status: 'error', message: 'Payment failed', state };
+        return { status: "error", message: "Payment failed", state };
 
-      case 'PENDING':
-      case 'PROCESSING':
-        this.logger.log(`Payment ${state.toLowerCase()} (invoice ${invoiceId})`);
+      case "PENDING":
+      case "PROCESSING":
+        this.logger.log(
+          `Payment ${state.toLowerCase()} (invoice ${invoiceId})`,
+        );
         await this.updatePendingBillingState(
           internalInvoiceId,
           paymentTransactionId,
           InvoiceStatus.ISSUED,
-          state === 'PENDING' ? PaymentStatus.PENDING : PaymentStatus.PROCESSING,
+          state === "PENDING"
+            ? PaymentStatus.PENDING
+            : PaymentStatus.PROCESSING,
           invoiceId,
           payload,
         );
-        return { status: 'success', message: `Payment ${state.toLowerCase()}`, state };
+        return {
+          status: "success",
+          message: `Payment ${state.toLowerCase()}`,
+          state,
+        };
 
       default:
         this.logger.log(`Unhandled webhook state: ${state}`);
-        return { status: 'success', message: 'Webhook received', state: state || 'unknown' };
+        return {
+          status: "success",
+          message: "Webhook received",
+          state: state || "unknown",
+        };
     }
   }
 
-  async handlePaystackWebhook(payload: unknown, signature: string | undefined, rawBody: Buffer | undefined) {
-    if (!this.paystackProvider.verifyWebhookSignature(rawBody, signature)) {
-      this.logger.warn('Rejected Paystack webhook with an invalid signature');
-      throw new ForbiddenException('Invalid Paystack webhook signature');
-    }
-
-    const data = this.readObjectField(payload, 'data');
-    const reference = this.readStringField(data, 'reference');
-    // Paystack supports a single webhook URL. Learner checkout references are
-    // routed here to their own activation service after the signature check.
-    if (reference?.startsWith('AH-IND-')) {
-      return this.independentStudentsService.handlePaystackWebhook(payload, signature, rawBody);
-    }
-
-    const event = this.readStringField(payload, 'event') || 'UNKNOWN';
-    const transaction = reference
-      ? await this.prisma.paymentTransaction.findFirst({
-          where: { method: PaymentMethod.PAYSTACK, providerReference: reference },
-          include: { invoice: true },
-          orderBy: { createdAt: 'desc' },
-        })
-      : null;
-
-    await this.recordWebhookEvent(payload, event, reference, transaction?.id, PaymentMethod.PAYSTACK);
-
-    // Only a signature-checked and API-verified success may change access.
-    if (event !== 'charge.success') return { status: 'received', event };
-    if (!reference || !transaction || !transaction.invoice) {
-      this.logger.error(`Paystack success webhook could not be matched to a transaction (${reference ?? 'no reference'})`);
-      throw new BadRequestException('Unknown Paystack payment reference');
-    }
-    if (transaction.subscriptionId) return { status: 'success', message: 'Payment was already activated' };
-
-    const verification = await this.paystackProvider.verifyPayment(reference);
-    const verificationData = this.readObjectField(verification, 'data');
-    const verificationStatus = this.readStringField(verificationData, 'status');
-    const verificationReference = this.readStringField(verificationData, 'reference');
-    const amountInSubunits = this.readNumberField(verificationData, 'amount');
-    const currency = this.readStringField(verificationData, 'currency');
-
-    if (
-      verificationStatus !== 'success' ||
-      verificationReference !== reference ||
-      amountInSubunits !== transaction.amountKES * 100 ||
-      currency !== transaction.currency
-    ) {
-      this.logger.error(`Paystack verification did not match transaction ${transaction.id}`);
-      throw new BadRequestException('Paystack verification did not match the expected payment');
-    }
-
-    await this.activateSubscription(transaction.schoolId, {
-      planName: transaction.invoice.planSnapshot || 'Subscription',
-      amountKES: transaction.amountKES,
-      studentCount: transaction.invoice.studentCountSnapshot ?? 0,
-      schoolType: (transaction.invoice.schoolTypeSnapshot as SchoolType | null) || 'DAY',
-      interval: transaction.invoice.interval,
-      paymentMethod: PaymentMethod.PAYSTACK,
-      invoiceId: transaction.invoiceId ?? undefined,
-      paymentTransactionId: transaction.id,
-      providerReference: reference,
-      rawPayload: { webhook: payload, verification },
+  private async activateSubscription(
+    schoolId: number,
+    data: SubscriptionActivationData,
+  ) {
+    const school = await this.prisma.school.findUnique({
+      where: { id: schoolId },
     });
-
-    return { status: 'success', message: 'Subscription activated' };
-  }
-
-  private readObjectField(value: unknown, key: string): Record<string, unknown> | undefined {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
-    const field = (value as Record<string, unknown>)[key];
-    return field && typeof field === 'object' && !Array.isArray(field)
-      ? (field as Record<string, unknown>)
-      : undefined;
-  }
-
-  private readStringField(value: unknown, key: string): string | undefined {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
-    const field = (value as Record<string, unknown>)[key];
-    return typeof field === 'string' ? field : undefined;
-  }
-
-  private readNumberField(value: Record<string, unknown> | undefined, key: string): number | undefined {
-    const field = value?.[key];
-    return typeof field === 'number' && Number.isFinite(field) ? field : undefined;
-  }
-
-  private async activateSubscription(schoolId: number, data: SubscriptionActivationData) {
-    const school = await this.prisma.school.findUnique({ where: { id: schoolId } });
     if (!school) {
-      this.logger.error(`Billing referenced unknown schoolId ${schoolId} â€” ignoring.`);
+      this.logger.error(
+        `Billing referenced unknown schoolId ${schoolId} â€” ignoring.`,
+      );
       return;
     }
 
     const existingTransaction = data.paymentTransactionId
-      ? await this.prisma.paymentTransaction.findUnique({ where: { id: data.paymentTransactionId } })
+      ? await this.prisma.paymentTransaction.findUnique({
+          where: { id: data.paymentTransactionId },
+        })
       : null;
     if (existingTransaction?.subscriptionId) {
       return;
     }
 
     const currentPeriodStart = new Date();
-    const currentPeriodEnd = this.buildCurrentPeriodEnd(currentPeriodStart, data.interval);
+    const currentPeriodEnd = this.buildCurrentPeriodEnd(
+      currentPeriodStart,
+      data.interval,
+    );
     const expiresAt = currentPeriodEnd;
 
     await this.prisma.$transaction(async (tx) => {
@@ -850,7 +879,8 @@ export class PaymentService {
             invoiceId: data.invoiceId,
             status: PaymentStatus.CONFIRMED,
             providerReference: data.providerReference,
-            paymentReference: data.providerReference ?? existingTransaction?.paymentReference,
+            paymentReference:
+              data.providerReference ?? existingTransaction?.paymentReference,
             confirmedAt: currentPeriodStart,
             verifiedById: data.verifiedById,
             verifiedAt: data.verifiedById ? currentPeriodStart : undefined,
@@ -925,7 +955,7 @@ export class PaymentService {
         paymentTransactionId,
         method,
         status: this.mapWebhookStateToPaymentStatus(state),
-        eventType: state || 'UNKNOWN',
+        eventType: state || "UNKNOWN",
         providerReference,
         payload: this.toJsonValue(payload),
         processedAt: new Date(),
@@ -933,17 +963,19 @@ export class PaymentService {
     });
   }
 
-  private mapWebhookStateToPaymentStatus(state: string | undefined): PaymentStatus | null {
+  private mapWebhookStateToPaymentStatus(
+    state: string | undefined,
+  ): PaymentStatus | null {
     switch (state) {
-      case 'COMPLETE':
-      case 'charge.success':
+      case "COMPLETE":
+      case "charge.success":
         return PaymentStatus.CONFIRMED;
-      case 'FAILED':
-      case 'charge.failed':
+      case "FAILED":
+      case "charge.failed":
         return PaymentStatus.FAILED;
-      case 'PROCESSING':
+      case "PROCESSING":
         return PaymentStatus.PROCESSING;
-      case 'PENDING':
+      case "PENDING":
         return PaymentStatus.PENDING;
       default:
         return null;
@@ -952,30 +984,37 @@ export class PaymentService {
 
   async getCurrentSubscription(actor: AuthenticatedUser, schoolId?: number) {
     const targetSchoolId = this.resolveTargetSchoolId(actor, schoolId);
-    const [school, pricing, latestSubscription, latestLedger, tokenAggregate] = await Promise.all([
-      this.prisma.school.findUnique({ where: { id: targetSchoolId } }),
-      this.computePricingForSchool(targetSchoolId),
-      this.prisma.subscription.findFirst({
-        where: { schoolId: targetSchoolId },
-        orderBy: { startedAt: 'desc' },
-      }),
-      this.prisma.aIUsageLedger.findFirst({
-        where: { schoolId: targetSchoolId },
-        orderBy: { billingPeriodEnd: 'desc' },
-      }),
-      this.prisma.aiUsageLog.aggregate({
-        where: { schoolId: targetSchoolId },
-        _sum: { totalTokens: true },
-      }),
-    ]);
+    const [school, pricing, latestSubscription, latestLedger, tokenAggregate] =
+      await Promise.all([
+        this.prisma.school.findUnique({ where: { id: targetSchoolId } }),
+        this.computePricingForSchool(targetSchoolId),
+        this.prisma.subscription.findFirst({
+          where: { schoolId: targetSchoolId },
+          orderBy: { startedAt: "desc" },
+        }),
+        this.prisma.aIUsageLedger.findFirst({
+          where: { schoolId: targetSchoolId },
+          orderBy: { billingPeriodEnd: "desc" },
+        }),
+        this.prisma.aiUsageLog.aggregate({
+          where: { schoolId: targetSchoolId },
+          _sum: { totalTokens: true },
+        }),
+      ]);
 
-    if (!school) throw new NotFoundException('School not found');
+    if (!school) throw new NotFoundException("School not found");
 
     const allocatedTokens =
-      latestLedger?.metadata && typeof latestLedger.metadata === 'object' && !Array.isArray(latestLedger.metadata)
-        ? Number((latestLedger.metadata as Record<string, unknown>).allocatedTokens ?? 0) || null
+      latestLedger?.metadata &&
+      typeof latestLedger.metadata === "object" &&
+      !Array.isArray(latestLedger.metadata)
+        ? Number(
+            (latestLedger.metadata as Record<string, unknown>)
+              .allocatedTokens ?? 0,
+          ) || null
         : null;
-    const tokensUsed = tokenAggregate._sum.totalTokens ?? latestLedger?.totalTokens ?? 0;
+    const tokensUsed =
+      tokenAggregate._sum.totalTokens ?? latestLedger?.totalTokens ?? 0;
 
     return {
       school,
@@ -984,7 +1023,10 @@ export class PaymentService {
       aiUsage: {
         allocatedTokens,
         usedTokens: tokensUsed,
-        remainingTokens: allocatedTokens === null ? null : Math.max(allocatedTokens - tokensUsed, 0),
+        remainingTokens:
+          allocatedTokens === null
+            ? null
+            : Math.max(allocatedTokens - tokensUsed, 0),
         billingPeriodStart: latestLedger?.billingPeriodStart ?? null,
         billingPeriodEnd: latestLedger?.billingPeriodEnd ?? null,
       },
@@ -992,7 +1034,8 @@ export class PaymentService {
   }
 
   async getInvoices(actor: AuthenticatedUser, schoolId?: number) {
-    const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
+    const targetSchoolId =
+      actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
     return this.prisma.invoice.findMany({
       where: targetSchoolId ? { schoolId: targetSchoolId } : undefined,
       include: {
@@ -1000,18 +1043,23 @@ export class PaymentService {
           select: { id: true, name: true, code: true },
         },
         paymentTransactions: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
   async getTransactions(
     actor: AuthenticatedUser,
-    options?: { schoolId?: number; status?: PaymentStatus; method?: PaymentMethod },
+    options?: {
+      schoolId?: number;
+      status?: PaymentStatus;
+      method?: PaymentMethod;
+    },
   ) {
-    const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? options?.schoolId : actor.schoolId;
+    const targetSchoolId =
+      actor.role === Role.PLATFORM_ADMIN ? options?.schoolId : actor.schoolId;
     return this.prisma.paymentTransaction.findMany({
       where: {
         schoolId: targetSchoolId,
@@ -1024,7 +1072,7 @@ export class PaymentService {
         },
         invoice: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -1033,25 +1081,35 @@ export class PaymentService {
       where: { id },
       include: { invoice: true, school: true },
     });
-    if (!transaction || !transaction.invoice) throw new NotFoundException('Payment transaction not found');
+    if (!transaction || !transaction.invoice)
+      throw new NotFoundException("Payment transaction not found");
     if (actor.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only platform admins can approve payments');
+      throw new ForbiddenException("Only platform admins can approve payments");
     }
     if (transaction.status === PaymentStatus.CONFIRMED) return transaction;
-    if (transaction.status === PaymentStatus.REJECTED || transaction.status === PaymentStatus.CANCELLED) {
-      throw new BadRequestException('Rejected or cancelled payments cannot be approved');
+    if (
+      transaction.status === PaymentStatus.REJECTED ||
+      transaction.status === PaymentStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        "Rejected or cancelled payments cannot be approved",
+      );
     }
 
     await this.activateSubscription(transaction.schoolId, {
-      planName: transaction.invoice.planSnapshot || 'Subscription',
+      planName: transaction.invoice.planSnapshot || "Subscription",
       amountKES: transaction.amountKES,
       studentCount: transaction.invoice.studentCountSnapshot ?? 0,
-      schoolType: (transaction.invoice.schoolTypeSnapshot as SchoolType | null) || 'DAY',
+      schoolType:
+        (transaction.invoice.schoolTypeSnapshot as SchoolType | null) || "DAY",
       interval: transaction.invoice.interval,
       paymentMethod: transaction.method,
       invoiceId: transaction.invoiceId ?? undefined,
       paymentTransactionId: transaction.id,
-      providerReference: transaction.paymentReference ?? transaction.providerReference ?? undefined,
+      providerReference:
+        transaction.paymentReference ??
+        transaction.providerReference ??
+        undefined,
       rawPayload: {
         approvedBy: actor.id,
         approvedAt: new Date().toISOString(),
@@ -1065,14 +1123,19 @@ export class PaymentService {
     });
   }
 
-  async rejectTransaction(id: number, actor: AuthenticatedUser, reason?: string) {
+  async rejectTransaction(
+    id: number,
+    actor: AuthenticatedUser,
+    reason?: string,
+  ) {
     const transaction = await this.prisma.paymentTransaction.findUnique({
       where: { id },
       include: { invoice: true },
     });
-    if (!transaction) throw new NotFoundException('Payment transaction not found');
+    if (!transaction)
+      throw new NotFoundException("Payment transaction not found");
     if (actor.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only platform admins can reject payments');
+      throw new ForbiddenException("Only platform admins can reject payments");
     }
 
     const now = new Date();
@@ -1084,7 +1147,9 @@ export class PaymentService {
           verifiedById: actor.id,
           verifiedAt: now,
           rejectedAt: now,
-          rejectionReason: reason || 'Payment verification was rejected by the platform admin.',
+          rejectionReason:
+            reason ||
+            "Payment verification was rejected by the platform admin.",
         },
       }),
       ...(transaction.invoiceId
@@ -1110,13 +1175,22 @@ export class PaymentService {
   }
 
   async getBillingDashboard() {
-    const [confirmedRevenue, activeSubscriptions, pendingPayments, overdueInvoices] = await Promise.all([
+    const [
+      confirmedRevenue,
+      activeSubscriptions,
+      pendingPayments,
+      overdueInvoices,
+    ] = await Promise.all([
       this.prisma.paymentTransaction.aggregate({
         where: { status: PaymentStatus.CONFIRMED },
         _sum: { amountKES: true },
       }),
-      this.prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
-      this.prisma.paymentTransaction.count({ where: { status: PaymentStatus.AWAITING_VERIFICATION } }),
+      this.prisma.subscription.count({
+        where: { status: SubscriptionStatus.ACTIVE },
+      }),
+      this.prisma.paymentTransaction.count({
+        where: { status: PaymentStatus.AWAITING_VERIFICATION },
+      }),
       this.prisma.invoice.count({ where: { status: InvoiceStatus.OVERDUE } }),
     ]);
 
@@ -1129,19 +1203,24 @@ export class PaymentService {
   }
 
   async getReconciliation() {
-    const [invoiceStats, paymentStats, subscriptionStats, unreconciledInvoices] = await Promise.all([
+    const [
+      invoiceStats,
+      paymentStats,
+      subscriptionStats,
+      unreconciledInvoices,
+    ] = await Promise.all([
       this.prisma.invoice.groupBy({
-        by: ['status'],
+        by: ["status"],
         _count: { status: true },
         _sum: { amountKES: true },
       }),
       this.prisma.paymentTransaction.groupBy({
-        by: ['status'],
+        by: ["status"],
         _count: { status: true },
         _sum: { amountKES: true },
       }),
       this.prisma.subscription.groupBy({
-        by: ['status'],
+        by: ["status"],
         _count: { status: true },
       }),
       this.prisma.invoice.findMany({
@@ -1156,7 +1235,7 @@ export class PaymentService {
         include: {
           school: { select: { id: true, name: true, code: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
     ]);
 
@@ -1168,11 +1247,14 @@ export class PaymentService {
     };
   }
 
-  async getAiUsageBillingVisibility(actor: AuthenticatedUser, schoolId?: number) {
+  async getAiUsageBillingVisibility(
+    actor: AuthenticatedUser,
+    schoolId?: number,
+  ) {
     if (actor.role === Role.SCHOOL_ADMIN) {
       const current = await this.getCurrentSubscription(actor, schoolId);
       return {
-        scope: 'school',
+        scope: "school",
         schoolId: current.school.id,
         schoolName: current.school.name,
         allocatedTokens: current.aiUsage.allocatedTokens,
@@ -1188,10 +1270,10 @@ export class PaymentService {
         include: {
           school: { select: { id: true, name: true, code: true } },
         },
-        orderBy: { billingPeriodEnd: 'desc' },
+        orderBy: { billingPeriodEnd: "desc" },
       }),
       this.prisma.aiUsageLog.groupBy({
-        by: ['schoolId'],
+        by: ["schoolId"],
         _sum: { totalTokens: true },
       }),
       this.prisma.aiUsageLog.aggregate({
@@ -1205,33 +1287,38 @@ export class PaymentService {
     });
 
     return {
-      scope: 'platform',
+      scope: "platform",
       totalTokensUsed: totalUsage._sum.totalTokens ?? 0,
       usageByFeature: [
         {
-          feature: 'AI Assignment Generation',
+          feature: "AI Assignment Generation",
           tokensUsed: totalUsage._sum.totalTokens ?? 0,
         },
       ],
       usageBySchool: usageBySchool.map((row) => ({
         schoolId: row.schoolId,
-        schoolName: schools.find((school) => school.id === row.schoolId)?.name ?? `School ${row.schoolId}`,
+        schoolName:
+          schools.find((school) => school.id === row.schoolId)?.name ??
+          `School ${row.schoolId}`,
         tokensUsed: row._sum.totalTokens ?? 0,
       })),
       ledger: ledgerBySchool,
     };
   }
 
-  private async loadInvoiceForAccess(invoiceId: number, actor: AuthenticatedUser) {
+  private async loadInvoiceForAccess(
+    invoiceId: number,
+    actor: AuthenticatedUser,
+  ) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: invoiceId },
       include: {
         school: true,
         subscription: true,
-        paymentTransactions: { orderBy: { createdAt: 'desc' } },
+        paymentTransactions: { orderBy: { createdAt: "desc" } },
       },
     });
-    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (!invoice) throw new NotFoundException("Invoice not found");
     this.assertTenant(invoice.schoolId, actor);
     return invoice;
   }
@@ -1242,35 +1329,44 @@ export class PaymentService {
 
     const doc = new PDFDocument({ margin: 50 });
     const chunks: Buffer[] = [];
-    doc.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
     const endPromise = new Promise<Buffer>((resolve) => {
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
     });
 
-    doc.fontSize(24).fillColor('#101820').text('Assignment Hub Invoice');
+    doc.fontSize(24).fillColor("#101820").text("Assignment Hub Invoice");
     doc.moveDown();
-    doc.fontSize(11).fillColor('#475569');
+    doc.fontSize(11).fillColor("#475569");
     doc.text(`Invoice Number: ${invoice.invoiceNumber}`);
     doc.text(`School: ${invoice.school.name}`);
-    doc.text(`Plan: ${invoice.planSnapshot ?? 'Subscription'}`);
+    doc.text(`Plan: ${invoice.planSnapshot ?? "Subscription"}`);
     doc.text(`Student Count Snapshot: ${invoice.studentCountSnapshot ?? 0}`);
     doc.text(`Amount Due: KES ${invoice.amountKES.toLocaleString()}`);
-    doc.text(`Payment Method: ${invoice.paymentMethod ?? 'Pending selection'}`);
-    doc.text(`Issue Date: ${invoice.issuedAt ? new Date(invoice.issuedAt).toDateString() : 'Not issued'}`);
-    doc.text(`Due Date: ${invoice.dueAt ? new Date(invoice.dueAt).toDateString() : 'Not set'}`);
+    doc.text(`Payment Method: ${invoice.paymentMethod ?? "Pending selection"}`);
+    doc.text(
+      `Issue Date: ${invoice.issuedAt ? new Date(invoice.issuedAt).toDateString() : "Not issued"}`,
+    );
+    doc.text(
+      `Due Date: ${invoice.dueAt ? new Date(invoice.dueAt).toDateString() : "Not set"}`,
+    );
     doc.text(`Status: ${invoice.status}`);
     doc.moveDown();
-    doc.fontSize(13).fillColor('#101820').text('Payment Activity');
+    doc.fontSize(13).fillColor("#101820").text("Payment Activity");
     doc.moveDown(0.5);
 
     if (invoice.paymentTransactions.length === 0) {
-      doc.fontSize(10).fillColor('#64748B').text('No payment transactions recorded yet.');
+      doc
+        .fontSize(10)
+        .fillColor("#64748B")
+        .text("No payment transactions recorded yet.");
     } else {
       invoice.paymentTransactions.forEach((transaction) => {
-        doc.fontSize(10).fillColor('#334155');
+        doc.fontSize(10).fillColor("#334155");
         doc.text(
           `${transaction.method} | ${transaction.status} | KES ${transaction.amountKES.toLocaleString()} | Reference: ${
-            transaction.paymentReference ?? transaction.providerReference ?? 'Pending'
+            transaction.paymentReference ??
+            transaction.providerReference ??
+            "Pending"
           }`,
         );
       });
@@ -1281,8 +1377,8 @@ export class PaymentService {
     const storedInvoice = await this.uploadsService.uploadBuffer({
       body: buffer,
       filename: fileName,
-      contentType: 'application/pdf',
-      folder: 'invoices',
+      contentType: "application/pdf",
+      folder: "invoices",
     });
 
     await this.prisma.invoice.update({

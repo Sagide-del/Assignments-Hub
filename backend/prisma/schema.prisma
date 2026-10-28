@@ -456,6 +456,7 @@ model User {
   independentPaymentClaims         IndependentPaymentClaim[]    @relation("IndependentPaymentClaimStudent")
   reviewedIndependentPaymentClaims IndependentPaymentClaim[]    @relation("IndependentPaymentClaimReviewedBy")
   independentPaystackPayments     IndependentPaystackPayment[] @relation("IndependentPaystackPaymentStudent")
+  independentTumaPayments IndependentTumaPayment[]
   updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
   requestedAiGenerationJobs        AiGenerationJob[]            @relation("AiGenerationRequestedBy")
   uploadedAiExtractedContents      AiExtractedContent[]         @relation("AiExtractedContentUploadedBy")
@@ -2538,4 +2539,30 @@ model KjseaMockAttempt {
   student User @relation(fields:[studentId],references:[id],onDelete:Cascade)
   @@index([schoolId,studentId,createdAt])
   @@map("kjsea_mock_attempts")
+}
+
+// Historical Paystack records remain intact; all new individual STK payments use this ledger.
+model IndependentTumaPayment {
+  id                Int                  @id @default(autoincrement())
+  studentId         Int                  @map("student_id")
+  student           User                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reference         String               @unique
+  idempotencyKey    String               @unique @map("idempotency_key")
+  amountKES         Int                  @map("amount_kes")
+  phone             String
+  interval          SubscriptionInterval
+  status            PaymentStatus        @default(PENDING)
+  callbackTokenHash String               @map("callback_token_hash")
+  checkoutRequestId String?              @unique @map("checkout_request_id")
+  merchantRequestId String?              @map("merchant_request_id")
+  receiptNumber     String?              @unique @map("receipt_number")
+  callbackPayload   Json?                @map("callback_payload")
+  failureReason     String?              @map("failure_reason")
+  expiresAt         DateTime             @map("expires_at")
+  paidAt            DateTime?            @map("paid_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  @@index([studentId, status])
+  @@map("independent_tuma_payments")
 }
