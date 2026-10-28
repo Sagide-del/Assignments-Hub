@@ -45,6 +45,7 @@ import { AcademicResults } from '../../features/school-admin/AcademicResults';
 
 import { PlatformOverview } from '../../features/platform-admin/Overview';
 import { PlatformAdminDashboard } from '../../features/platform-admin/Dashboard';
+import {CurriculumLibrary} from '../../features/platform-admin/CurriculumLibrary';
 import { AiManagement } from '../../features/platform-admin/AiManagement';
 import { SchoolActivation } from '../../features/platform-admin/SchoolActivation';
 import { IndependentStudentsPage } from '../../features/platform-admin/IndependentStudents';
@@ -258,6 +259,10 @@ const platformAdminNav = [
   {
     to: '/platform/billing',
     label: 'Billing',
+  },
+  {
+    to: '/platform/curriculum-library',
+    label: 'Curriculum Library',
   },
   {
     to: '/platform/ai-management',
@@ -601,6 +606,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/billing',
             element: <PlatformBilling />,
+          },
+          {
+            path: '/platform/curriculum-library',
+            element: <CurriculumLibrary />,
           },
           {
             path: '/platform/ai-management',

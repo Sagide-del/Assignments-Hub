@@ -17,6 +17,7 @@ describe("AI content tenant security", () => {
     email: null,
     admissionNumber: null,
     grade: null,
+    isIndependentTrial: false,
   };
   const student = { ...teacher, id: 20, role: Role.STUDENT };
 

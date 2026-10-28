@@ -1,7 +1,7 @@
 import { AiFeature } from "@prisma/client";
 
-export const AI_EXTRACTION_PROMPT_VERSION = "topics-v1";
-export const AI_ASSIGNMENT_PROMPT_VERSION = "topic-assignment-v1";
+export const AI_EXTRACTION_PROMPT_VERSION = "topics-v2-outcomes";
+export const AI_ASSIGNMENT_PROMPT_VERSION = "topic-assignment-v2-outcomes";
 export const AI_SOURCE_MAX_BYTES = 15 * 1024 * 1024;
 export const AI_SOURCE_TEXT_MAX_CHARACTERS = 100_000;
 export const AI_TOPIC_CONTEXT_MAX_CHARACTERS = 60_000;

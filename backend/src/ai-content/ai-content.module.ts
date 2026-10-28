@@ -1,3 +1,8 @@
+import {
+  CurriculumLibraryController,
+  CurriculumCapabilitiesController,
+} from "./curriculum-library.controller";
+import { CurriculumLibraryService } from "./curriculum-library.service";
 import { Module } from "@nestjs/common";
 import { AiModule } from "../ai/ai.module";
 import { AssignmentsModule } from "../assignments/assignments.module";
@@ -18,8 +23,13 @@ import { DocumentOcrModule } from "../document-processing/document-ocr.module";
 
 @Module({
   imports: [AiModule, AssignmentsModule, DocumentOcrModule],
-  controllers: [AiContentController],
+  controllers: [
+    AiContentController,
+    CurriculumLibraryController,
+    CurriculumCapabilitiesController,
+  ],
   providers: [
+    CurriculumLibraryService,
     AiFeatureConfigService,
     AiQuotaService,
     AiSourceStorageService,

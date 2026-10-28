@@ -14,6 +14,7 @@ describe("AiContentController", () => {
     email: "teacher@example.com",
     admissionNumber: null,
     grade: null,
+    isIndependentTrial: false,
   };
 
   const extractions = {

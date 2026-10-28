@@ -99,7 +99,7 @@ function iconForNavigation(path: string): LucideIcon {
     return GraduationCap;
   if (path.includes("my-pathway") || path.includes("pathways")) return Compass;
   if (path.includes("messages")) return MessageCircle;
-  if (path.includes("question-bank")) return BookMarked;
+  if (path.includes("question-bank") || path.includes("curriculum-library")) return BookMarked;
   if (path.includes("marking") || path.includes("csl-review"))
     return BookOpenCheck;
   if (path.includes("analytics") || path.includes("reports")) return BarChart3;

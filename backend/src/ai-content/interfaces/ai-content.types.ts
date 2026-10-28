@@ -6,6 +6,7 @@ export interface AiExtractedSubtopic {
   id: string;
   name: string;
   keyConcepts: string[];
+  learningOutcomes?: string[];
   sourceContent: string;
 }
 
@@ -41,6 +42,12 @@ export interface AiAssignmentArtifactContent {
   grade: string;
   topicName: string;
   difficulty: AiDifficulty;
+  source?: {
+    extractionId: number;
+    topicId: string;
+    subtopicIds: string[];
+    learningOutcomes: string[];
+  };
   questions: AiGeneratedQuestion[];
 }
 

@@ -44,6 +44,7 @@ export class AiArtifactMapperService {
             options: question.options,
             correctAnswer: question.correctAnswer,
             hint: question.hint,
+            explanation: question.explanation,
             config: this.questionConfig(question),
           })),
         },
@@ -75,6 +76,7 @@ export class AiArtifactMapperService {
         points: question.points,
         order: index,
         hint: question.hint,
+        explanation: question.explanation,
       })),
     };
   }

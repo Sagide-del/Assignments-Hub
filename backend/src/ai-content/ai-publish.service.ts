@@ -1,3 +1,6 @@
+import { Role } from "../common/enums/role.enum";
+import { AssignmentType } from "@prisma/client";
+import { normalizeGrade } from "../common/utils/grade.util";
 import {
   BadRequestException,
   ConflictException,
@@ -43,7 +46,12 @@ export class AiPublishService {
     artifactId: number,
     publishNow: boolean,
     actor: AuthenticatedUser,
+    destination: "SCHOOL" | "INDEPENDENT" = "SCHOOL",
   ): Promise<AiPublishResult> {
+    if (destination === "INDEPENDENT" && actor.role !== Role.PLATFORM_ADMIN)
+      throw new ForbiddenException(
+        "Only platform administrators can publish independent practice.",
+      );
     let artifact = await this.artifacts.findOne(artifactId, actor);
     if (artifact.status === AiArtifactStatus.PUBLISHED) {
       if (!artifact.publishedAssignmentId) {
@@ -51,6 +59,8 @@ export class AiPublishService {
           "Published artifact has no linked assignment",
         );
       }
+      if (destination === "INDEPENDENT")
+        await this.assertIndependent(artifact.publishedAssignmentId);
       const assignment = await this.assignments.findOne(
         artifact.publishedAssignmentId,
         actor,
@@ -79,6 +89,24 @@ export class AiPublishService {
     );
 
     const content = this.mapper.readAssignmentContent(artifact.content);
+    if (destination === "INDEPENDENT") {
+      const grade = normalizeGrade(content.grade);
+      if (!grade || !/^Grade (?:[1-9]|1[0-2])$/.test(grade))
+        throw new BadRequestException(
+          "Independent practice requires a Grade 1–12 designation.",
+        );
+      if (
+        content.questions.some(
+          (q) =>
+            !["MULTIPLE_CHOICE", "TRUE_FALSE", "NUMERIC"].includes(
+              q.questionType,
+            ),
+        )
+      )
+        throw new BadRequestException(
+          "Independent self-marking practice requires objective questions.",
+        );
+    }
     const validation = await this.assignments.validateExamJsonRaw(
       this.mapper.toValidationPayload(content),
     );
@@ -105,7 +133,7 @@ export class AiPublishService {
       if (claimed.count === 0) {
         artifact = await this.artifacts.findOne(artifact.id, actor);
         if (artifact.status === AiArtifactStatus.PUBLISHED) {
-          return this.publish(artifact.id, publishNow, actor);
+          return this.publish(artifact.id, publishNow, actor, destination);
         }
         if (!artifact.publishedAssignmentId) {
           throw new ConflictException(
@@ -119,10 +147,13 @@ export class AiPublishService {
 
     try {
       if (!assignmentId) {
-        const created = await this.assignments.create(
-          this.mapper.toCreateAssignmentDto(content),
-          actor,
-        );
+        const dto = this.mapper.toCreateAssignmentDto(content);
+        if (destination === "INDEPENDENT")
+          dto.type = AssignmentType.AUTO_MARKED;
+        const created =
+          destination === "INDEPENDENT"
+            ? await this.assignments.createIndependent(dto, actor)
+            : await this.assignments.create(dto, actor);
         assignmentId = created.id;
         await this.prisma.aiContentArtifact.update({
           where: { id: artifact.id },
@@ -131,6 +162,8 @@ export class AiPublishService {
         linked = true;
       }
 
+      if (destination === "INDEPENDENT")
+        await this.assertIndependent(assignmentId);
       let assignment = await this.assignments.findOne(assignmentId, actor);
       if (publishNow && !assignment.isPublished) {
         await this.assignments.update(
@@ -171,7 +204,11 @@ export class AiPublishService {
         schoolId: artifact.schoolId,
         userId: actor.id,
         resource: `AiContentArtifact:${artifact.id}`,
-        metadata: { assignmentId, publishedToStudents: publishNow },
+        metadata: {
+          assignmentId,
+          publishedToStudents: publishNow,
+          destination,
+        },
       });
       return { assignmentId, assignment, artifact: updatedArtifact };
     } catch (error) {
@@ -193,5 +230,15 @@ export class AiPublishService {
       }
       throw error;
     }
+  }
+  private async assertIndependent(assignmentId: number) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      select: { school: { select: { code: true } } },
+    });
+    if (assignment?.school.code !== "INDEPENDENT")
+      throw new ConflictException(
+        "This artifact is already linked to a school assignment. Generate a separate independent practice draft.",
+      );
   }
 }

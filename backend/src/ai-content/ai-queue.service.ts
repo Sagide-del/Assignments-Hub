@@ -26,6 +26,10 @@ export class AiQueueService implements OnModuleInit, OnModuleDestroy {
   private workerConnection: Redis | null = null;
   private queue: Queue<AiQueuePayload> | null = null;
   private worker: Worker<AiQueuePayload> | null = null;
+  private localPending: { payload: AiQueuePayload; jobId: string }[] = [];
+  private localIds = new Set<string>();
+  private localRunning = 0;
+  private closing = false;
 
   constructor(
     private readonly config: ConfigService,
@@ -101,6 +105,7 @@ export class AiQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
+    this.closing = true;
     await this.worker?.close();
     await this.queue?.close();
     await this.workerConnection?.quit();
@@ -124,15 +129,35 @@ export class AiQueueService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    setImmediate(() => {
-      void this.processPayload(payload).catch((error: unknown) => {
-        this.logger.error(
-          `Local AI ${name} job failed`,
-          error instanceof Error ? error.stack : String(error),
-        );
-      });
-    });
+    if (!this.localIds.has(jobId)) {
+      this.localIds.add(jobId);
+      this.localPending.push({ payload, jobId });
+      setImmediate(() => this.drainLocal());
+    }
     return { queued: true, mode: "local" as const };
+  }
+
+  private drainLocal() {
+    while (
+      !this.closing &&
+      this.localRunning < this.workerConcurrency() &&
+      this.localPending.length
+    ) {
+      const next = this.localPending.shift()!;
+      this.localRunning++;
+      void this.processPayload(next.payload)
+        .catch((error: unknown) =>
+          this.logger.error(
+            "Local AI job failed",
+            error instanceof Error ? error.stack : String(error),
+          ),
+        )
+        .finally(() => {
+          this.localRunning--;
+          this.localIds.delete(next.jobId);
+          this.drainLocal();
+        });
+    }
   }
 
   private async process(job: Job<AiQueuePayload>) {

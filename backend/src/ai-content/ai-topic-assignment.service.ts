@@ -192,12 +192,18 @@ export class AiTopicAssignmentService {
         parameters.difficulty,
       );
       const artifactContent: AiAssignmentArtifactContent = {
-        title: `${topic.name} Assignment`,
-        description: `Questions based on ${topic.name}.`,
+        title: `${subtopics.length === 1 ? subtopics[0].name : topic.name} · Practice`,
+        description: `Assignment Hub practice. Topic: ${subtopics.length === 1 ? subtopics[0].name : topic.name}. Original questions based on the uploaded source; not an official KNEC paper.`,
         subject: parameters.subject,
         grade: parameters.grade,
         topicName: topic.name,
         difficulty: parameters.difficulty,
+        source: {
+          extractionId: job.extractedContentId!,
+          topicId: topic.id,
+          subtopicIds: subtopics.map((s) => s.id),
+          learningOutcomes: subtopics.flatMap((s) => s.learningOutcomes ?? []),
+        },
         questions,
       };
       const contentHash = sha256(artifactContent);
@@ -396,6 +402,7 @@ export class AiTopicAssignmentService {
       ...subtopics.flatMap((entry) => [
         `Subtopic: ${entry.name}`,
         `Key concepts: ${entry.keyConcepts.join(", ")}`,
+        `Specific learning outcomes: ${(entry.learningOutcomes ?? []).join("; ")}`,
         entry.sourceContent,
       ]),
     ]
@@ -419,9 +426,11 @@ Requirements:
 7. NUMERIC correctAnswer must begin with the expected numeric value and may include a unit.
 8. SHORT_ANSWER must have a concise expected answer.
 9. Do not include student names, personal data, or invented citations.
+10. When the source is a curriculum blueprint, write original solvable practice assessing its concepts and specific learning outcomes; do not ask students to recall curriculum wording. Do not claim a missing outcome is present or invent official exam predictions.
+11. Use a progression from basic understanding to application for MIXED difficulty, with short, concrete language for younger grades. Explanations must show the reasoning, including calculation steps where applicable.
 
-Return only a JSON array:
-[{
+Return only a JSON object:
+{"questions":[{
   "questionText": "string",
   "questionType": "MULTIPLE_CHOICE | TRUE_FALSE | NUMERIC | SHORT_ANSWER | ESSAY",
   "options": ["four options for MCQ only"],
@@ -430,7 +439,7 @@ Return only a JSON array:
   "points": 1,
   "difficulty": "EASY | MEDIUM | HARD",
   "hint": "optional string"
-}]
+}]}
 
 <source>
 ${context}
@@ -455,6 +464,7 @@ ${context}
       );
     }
     const allowed = new Set(requestedTypes);
+    const seen = new Set<string>();
     return raw.map((entry, index) => {
       if (!isRecord(entry)) {
         throw new BadRequestException(`AI question ${index + 1} is malformed`);
@@ -464,6 +474,12 @@ ${context}
         `question ${index + 1} text`,
         4_000,
       );
+      const identity = questionText.toLowerCase().replace(/\s+/g, " ").trim();
+      if (seen.has(identity))
+        throw new BadRequestException(
+          `AI question ${index + 1} duplicates another question in this set`,
+        );
+      seen.add(identity);
       const questionType = entry.questionType as QuestionType;
       if (
         typeof questionType !== "string" ||
@@ -543,6 +559,10 @@ ${context}
       );
     }
     const options = value.map((entry) => String(entry).trim().slice(0, 1_000));
+    if (new Set(options.map((o) => o.toLowerCase())).size !== 4)
+      throw new BadRequestException(
+        `AI question ${index + 1} must have four distinct options`,
+      );
     if (!options.includes(correctAnswer)) {
       throw new BadRequestException(
         `AI question ${index + 1} correct answer must match an option`,
