@@ -15,6 +15,12 @@ import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
+  @Get("independent/capabilities")
+  independentCapabilities() {
+    return { usernameRegistrationVersion: 1 };
+  }
+
   // Tighter limit than the global default to slow down credential stuffing.
   @Public()
   @Throttle({ default: { limit: 10, ttl: 60000 } })

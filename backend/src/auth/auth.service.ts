@@ -157,12 +157,15 @@ export class AuthService {
     );
   }
 
-  async registerIndependentStudent(dto: RegisterIndependentStudentDto, ipAddress?: string) {
+  async registerIndependentStudent(
+    dto: RegisterIndependentStudentDto,
+    ipAddress?: string,
+  ) {
     const email = dto.email?.trim().toLowerCase() || undefined;
     const school = await this.prisma.school.upsert({
       where: { code: INDEPENDENT_SCHOOL_CODE },
       create: {
-        name: 'Independent Students',
+        name: "Independent Students",
         code: INDEPENDENT_SCHOOL_CODE,
         subscriptionStatus: SubscriptionStatus.ACTIVE,
       },
@@ -174,40 +177,71 @@ export class AuthService {
         where: { schoolId_email: { schoolId: school.id, email } },
       });
       if (existing) {
-        throw new ConflictException('An individual student account already exists for this email');
+        throw new ConflictException(
+          "An individual student account already exists for this email",
+        );
       }
     }
 
     const grade = normalizeGrade(dto.grade) ?? dto.grade.trim();
-    const admissionNumber = await generateIndependentStudentId(this.prisma, school.id);
+    // Independent usernames share the existing per-school unique login column.
+    // Preserve uppercase storage so new names and legacy IDs cannot collide by case.
+    const admissionNumber = dto.username
+      ? dto.username.trim().toUpperCase()
+      : await generateIndependentStudentId(this.prisma, school.id);
+    if (dto.username) {
+      const existing = await this.prisma.user.findUnique({
+        where: {
+          schoolId_admissionNumber: { schoolId: school.id, admissionNumber },
+        },
+        select: { id: true },
+      });
+      if (existing)
+        throw new ConflictException(
+          "This username is already taken. Try adding a number or your surname.",
+        );
+    }
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
-    const student = await this.prisma.user.create({
-      data: {
-        schoolId: school.id,
-        name: dto.name.trim(),
-        email,
-        passwordHash,
-        admissionNumber,
-        grade,
-        parentPhone: dto.parentPhone?.trim() || undefined,
-        role: Role.STUDENT,
-        // A new learner can enter the restricted starter-assignment trial.
-        // Activation payment unlocks the wider workspace and turns this off.
-        isActive: true,
-        isIndependentTrial: true,
-        studentProfile: {
-          create: {
-            admissionNumber,
-            grade,
-            parentPhone: dto.parentPhone?.trim() || undefined,
+    const student = await this.prisma.user
+      .create({
+        data: {
+          schoolId: school.id,
+          name: dto.name.trim(),
+          email,
+          passwordHash,
+          admissionNumber,
+          grade,
+          parentPhone: dto.parentPhone?.trim() || undefined,
+          role: Role.STUDENT,
+          // A new learner can enter the restricted starter-assignment trial.
+          // Activation payment unlocks the wider workspace and turns this off.
+          isActive: true,
+          isIndependentTrial: true,
+          studentProfile: {
+            create: {
+              admissionNumber,
+              grade,
+              parentPhone: dto.parentPhone?.trim() || undefined,
+            },
           },
         },
-      },
-    });
+      })
+      .catch((error: unknown) => {
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002"
+        )
+          throw new ConflictException(
+            "This username or email is already in use. Choose another username or sign in to your existing account.",
+          );
+        throw error;
+      });
 
     await this.auditService.record({
-      action: 'auth.independent_student.register',
+      action: "auth.independent_student.register",
       userId: student.id,
       schoolId: school.id,
       resource: `User:${student.id}`,
@@ -216,6 +250,7 @@ export class AuthService {
 
     return {
       studentId: student.id,
+      username: dto.username ? student.admissionNumber?.toLowerCase() : null,
       name: student.name,
       email: student.email,
       admissionNumber: student.admissionNumber,

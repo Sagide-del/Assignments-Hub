@@ -20,6 +20,7 @@ export const authApi = {
 
   registerIndependent: (dto: {
     name: string;
+    username: string;
     email?: string;
     password: string;
     grade: string;

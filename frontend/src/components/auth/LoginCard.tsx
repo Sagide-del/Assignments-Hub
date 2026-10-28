@@ -65,7 +65,7 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
   }
 
   const helpText = loginType === 'independent'
-    ? 'Use the Student ID or email linked to your individual account.'
+    ? 'Use your username or email. Existing Student IDs still work.'
     : 'Forgot your credentials? Contact your school administrator.';
 
   return (
@@ -140,11 +140,11 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
           </>
         ) : (
           <>
-            <Field label={loginType === 'independent' ? 'Student ID or email' : 'Email address'}>
+            <Field label={loginType === 'independent' ? 'Username or email' : 'Email address'}>
               <input
                 type={loginType === 'independent' ? 'text' : 'email'}
                 name={loginType === 'independent' ? 'independentIdentifier' : 'email'}
-                placeholder={loginType === 'independent' ? 'Enter Student ID or email' : 'Enter email address'}
+                placeholder={loginType === 'independent' ? 'Enter Username or email' : 'Enter email address'}
                 value={loginType === 'independent' ? form.independentIdentifier : form.email}
                 onChange={handleChange}
                 required

@@ -1029,6 +1029,7 @@ export interface IndependentStudentPaymentInfo {
 }
 
 export interface IndependentRegistrationResult {
+  username?: string | null;
   studentId: number;
   name: string;
   email: string | null;

@@ -11,9 +11,11 @@ import { loginIndependent } from '../services/authService';
 
 export default function IndependentRegister() {
   const navigate = useNavigate();
+  const [usernameEdited, setUsernameEdited] = useState(false);
   const [account, setAccount] = useState<IndependentRegistrationResult | null>(null);
   const [form, setForm] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -26,6 +28,7 @@ export default function IndependentRegister() {
     mutationFn: () =>
       authApi.registerIndependent({
         name: form.name.trim(),
+        username: form.username.trim().toLowerCase(),
         email: form.email.trim().toLowerCase() || undefined,
         password: form.password,
         grade: form.grade,
@@ -41,7 +44,7 @@ export default function IndependentRegister() {
   const continueMutation = useMutation({
     mutationFn: async () => {
       if (!account) throw new Error('Create an account before continuing');
-      await loginIndependent(account.admissionNumber, form.password);
+      await loginIndependent(account.username ?? account.admissionNumber, form.password);
     },
     onSuccess: () => navigate('/student/activate'),
     onError: (err) => setError(apiErrorMessage(err, 'Your account was created, but we could not sign you in automatically. Please sign in to continue.')),
@@ -70,9 +73,9 @@ export default function IndependentRegister() {
             </div>
             <div className="space-y-6 p-6 sm:p-9">
               <div className="rounded-2xl border border-[#D9ED9A] bg-[#F8FCEB] p-5">
-                <p className="font-semibold text-[#101820]">Keep this Student ID</p>
-                <p className="mt-3 rounded-xl bg-white px-4 py-3 font-mono text-lg font-semibold tracking-wide text-[#101820]">{account.admissionNumber}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">Your account activates automatically after your M-Pesa payment is confirmed. No Platform Admin approval is needed.</p>
+                <p className="font-semibold text-[#101820]">Your username</p>
+                <p className="mt-3 rounded-xl bg-white px-4 py-3 font-mono text-lg font-semibold tracking-wide text-[#101820]">{account.username ?? account.admissionNumber}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600">Use this username and your password to sign in. Your account activates automatically after your M-Pesa payment is confirmed.</p>
               </div>
               {error ? <ErrorMessage message={error} /> : null}
               <button type="button" onClick={() => continueMutation.mutate()} disabled={continueMutation.isPending} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60">
@@ -120,9 +123,25 @@ export default function IndependentRegister() {
               <Field
                 label="Learner's full name"
                 value={form.name}
-                onChange={(value) => setForm((current) => ({ ...current, name: value }))}
+                onChange={(value) => setForm((current) => ({ ...current, name: value, username: usernameEdited ? current.username : suggestUsername(value) }))}
                 autoComplete="name"
               />
+              <div>
+                <Field
+                  label="Username"
+                  value={form.username}
+                  onChange={(value) => {
+                    setUsernameEdited(true);
+                    setForm((current) => ({ ...current, username: value.toLowerCase() }));
+                  }}
+                  autoComplete="username"
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[a-zA-Z][a-zA-Z0-9._]{2,29}"
+                  title="3–30 characters, starting with a letter. Use letters, numbers, dots or underscores."
+                />
+                <p className="mt-2 text-xs leading-5 text-slate-500">Use a name you will remember, such as sam.jeptoo. You can edit the suggestion. Capital letters do not matter.</p>
+              </div>
               <div>
                 <label htmlFor="registration-grade" className="mb-1.5 block text-sm font-medium text-slate-700">Current grade</label>
                 <select
@@ -199,6 +218,9 @@ function Field({
   autoComplete,
   required = true,
   minLength,
+  maxLength,
+  pattern,
+  title,
 }: {
   label: string;
   type?: string;
@@ -207,6 +229,9 @@ function Field({
   autoComplete: string;
   required?: boolean;
   minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  title?: string;
 }) {
   const id = useId();
   return (
@@ -219,6 +244,9 @@ function Field({
         onChange={(event) => onChange(event.target.value)}
         required={required}
         minLength={minLength}
+        maxLength={maxLength}
+        pattern={pattern}
+        title={title}
         autoComplete={autoComplete}
         className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#8CB500]"
       />
@@ -227,5 +255,15 @@ function Field({
 }
 
 function ErrorMessage({ message }: { message: string }) {
-  return <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{message}</p>;
+  return <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{message}</p>;
+}
+
+function suggestUsername(name: string) {
+  return name.normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9\s._]/g, '')
+    .replace(/\s+/g, '.')
+    .replace(/^[^a-z]+/, '')
+    .slice(0, 30);
 }
