@@ -1,4 +1,9 @@
 import {
+  practicalFor,
+  replayPractical,
+  practicalComplete,
+} from "../labs/practical-engine";
+import {
   BadRequestException,
   NotFoundException,
   Injectable,
@@ -44,6 +49,51 @@ export class LabSessionsService {
     )
       throw new NotFoundException("Lab not found");
     let completionSummary;
+    if (dto.workshop) {
+      if (!lab) throw new NotFoundException("Lab not found");
+      if (dto.practical || isTitrationKey(lab.key))
+        throw new BadRequestException(
+          "Use the titration evidence for this lab.",
+        );
+      try {
+        const spec = practicalFor(lab),
+          state = replayPractical(spec, dto.workshop.events);
+        if (
+          dto.workshop.version !== "stem-workshop-v2" ||
+          !practicalComplete(spec, state, dto.workshop.conclusion)
+        )
+          throw new Error(
+            "Record three trials across two settings, complete the full procedure, and explain your findings.",
+          );
+        completionSummary = {
+          version: "stem-workshop-v2",
+          activity: lab.title,
+          grade: lab.grade,
+          model: spec.kind,
+          events: dto.workshop.events,
+          trials: state.trials,
+          conclusion: dto.workshop.conclusion,
+          limitations: spec.explain,
+          evidence:
+            "Student-reported virtual practice; not physical skills certification.",
+        };
+      } catch (error) {
+        throw new BadRequestException(
+          error instanceof Error ? error.message : "Invalid practical evidence",
+        );
+      }
+      if (
+        lab.questions.some(
+          (q) =>
+            !(dto.answers ?? []).some(
+              (a) => a.questionId === q.id && a.answer.trim(),
+            ),
+        )
+      )
+        throw new BadRequestException(
+          "Answer the lab questions before saving the report.",
+        );
+    }
     if (isTitrationKey(dto.labKey)) {
       if (!lab) throw new NotFoundException("Lab not found");
       if (!dto.practical)
@@ -73,9 +123,13 @@ export class LabSessionsService {
         "This lab does not accept titration evidence.",
       );
 
-    // Labs predating the catalog (or an ad-hoc key not in it) are allowed
-    // through with no quiz — same "log completion, no score" behaviour this
-    // endpoint had before the quiz system existed.
+    if (lab && !isTitrationKey(lab.key) && !dto.workshop)
+      throw new BadRequestException(
+        "This 3D lab requires its practical event log and report.",
+      );
+
+    // Preserve legacy ad-hoc completion keys. Real catalogue labs above require
+    // practical evidence; labs without a quiz receive no fabricated quiz score.
     if (!lab || lab.questions.length === 0) {
       return this.prisma.labSession.create({
         data: {

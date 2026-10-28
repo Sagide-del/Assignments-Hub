@@ -1,34 +1,40 @@
 # Immersive STEM laboratories
 
-The catalogue distinguishes 3D practicals, 3D models, existing 2D interactive models and activity notebooks. It only displays labs returned by the authenticated, grade-scoped API.
+## Coverage and interaction
 
-## Available experiences
+All 58 activities in the original seeded catalogue now open a 3D workspace: 57 authored activity profiles in `backend/src/labs/practical-catalogue.json`, plus the dedicated titration practical. The newer Grade 10/11/12 titration records use that same titration workspace. Unknown teacher-authored activities open a clearly described general modelling bench, with the teacher's description, instructions and supporting media retained in the practical brief; this does not reproduce arbitrary custom physics.
 
-- Acid–base titration: original Three.js apparatus, orbit/zoom and camera presets, keyboard-accessible equipment selection, preparation sequence, continuous tap flow and 0.05 mL drops, swirl action, indicator change, manually entered meniscus readings, repeated trials, concordance checks, concentration calculation, conclusion and downloadable notebook.
-- Pendulum: animated Three.js apparatus in the existing investigation notebook. Length affects the ideal period; mass changes the bob size and does not change the calculated period.
-- Other existing experiments retain their original interactive models or teacher-authored activities. They are not labelled as 3D practicals.
+The shared Three.js workshop supports direct pointer dragging, object picking, work-mat placement, translation, rotation, orbit and zoom, with equivalent keyboard controls. Objects use procedural geometry rather than external model downloads. Equipment geometry is shared across families of related teaching activities; this is a collection of schematic teaching models, not 58 commercial physics-engine simulators.
 
-Titration uses an ideal strong acid/strong base equilibrium model at 25 °C, 25.00 mL acid and 0.100 mol/dm³ sodium hydroxide. The acid concentration is fixed in this teaching model. The representation does not simulate full fluid dynamics, real measurement noise, chemical hazards or the persistence of an endpoint over 30 seconds. Physical practicals require teacher supervision. Stored evidence is student-reported simulation work, not certification of laboratory competence.
+- Titration: move the burette, flask and pipette; clamp the burette, position the pipette at the flask and place the flask beneath the tip. Moving or holding equipment closes the tap. Existing preparation, continuous flow, single drops, swirling, manual readings, concordance, calculation and account report remain available.
+- Computing: power the virtual workstation, connect the local network, trigger one of three contained threat scenarios, enable the matching defence and retest. The 3D screen, packet animation and event console reflect the procedure state. There are no external connections, executable payloads or real attacks.
+- Design: position and rotate a slab, supporting walls and roof beam on a work grid. The ideal load model requires aligned components. This is an introductory two-support model, not general CAD, structural certification or an engineering safety analysis.
+- Other profiles cover circuitry, optics, a pendulum, chemistry, molecules/DNA, biological systems, plant/environment investigations, agriculture and technical topics. Each profile provides its own apparatus names, procedure, instrument scale, model relationship and limitations.
 
-## Evidence and persistence
+If WebGL fails, the UI explicitly identifies the unavailable 3D renderer and retains accessible equipment and procedure controls. Browser draft keys include student ID and lab ID. Earlier `stem-notebook-v1` data is not deleted and can be exported from the brief.
 
-Browser drafts are scoped by student ID and lab ID. Each run can only be recorded once. A fresh run keeps previous readings. Rough, unmixed, overshot or inconsistent readings do not qualify as concordant endpoint runs. Completion requires at least three trials, two accurate endpoint titres within 0.10 mL, a calculation consistent with those titres, and a conclusion.
+## Curriculum and grade handling
 
-The existing lab-session endpoint validates this evidence independently and saves the report in `LabSession.completionSummary`, scoped to the authenticated student. The UI only confirms account saving after a successful server response for the submitted report. An unsuccessful request preserves the browser draft and permits retry. Existing teacher-authored quiz questions remain required and retain server grading. A prior account report can be loaded without silently replacing current browser readings.
+The authenticated backend's exact grade and published-status checks remain authoritative. The frontend does not invent accessible labs or substitute another grade's catalogue. Staff-assigned `Lab.grade`, subject, description, instructions, safety notes and junior/senior variants are preserved.
 
-If WebGL creation fails or its context is lost, an explicitly labelled 2D view retains the controls and readings. The 3D dependency loads only when entering an appropriate experiment.
+Grade 7 prompts emphasise observation and fair comparisons; Grade 8 controlled variables; Grade 9 interpretation; Grade 10 quantitative methods; Grade 11 relationships and model evaluation; and Grade 12 uncertainty and validation. These are Assignment Hub adaptations of the supplied KICD BECF's inquiry, competencies and evidence/reflection approach, not quoted official subject-design outcomes.
 
-## Deployment
+The provided CBC HTML is a directory of curriculum links, and the supplied BECF is a framework. They do not establish the exact subject-by-sub-strand sequencing for all 58 activities. The historic senior catalogue assigned every activity to Grade 10, including advanced topics; this release does not silently redistribute those records to invented grades or claim KICD approval. Exact subject-design sequencing still needs verification against the relevant grade/subject PDFs and correction through the existing lab CMS.
 
-The additive migration `20261028090000_immersive_titration_labs` creates published titration catalogue records for Grades 10, 11 and 12. Existing records are preserved. No schema columns are added.
+## Models and evidence
 
-The public `/api/v1/labs/capabilities` endpoint exposes only feature readiness and checks that all three catalogue records exist. GitHub frontend deployment waits for this readiness before uploading to S3 and invalidating CloudFront. The backend must deploy and run its normal Prisma migrations first.
+Each brief states the formula or approximation used. Some are established ideal relationships (Ohm's law, small-angle pendulum, projectile range, moments, half-life, PCR ideal doubling); others are explicitly labelled illustrative indices (plant growth, nutrient availability, enzyme activity). There is no full fluid dynamics, molecular-energy solver, clinical simulation, real network stack or physical laboratory certification.
 
-## Validation
+Titration retains its ideal strong-acid/strong-base model at 25 °C, a 25.00 mL aliquot and 0.100 mol/dm³ NaOH. It does not simulate real measurement noise or verify a physical endpoint's 30-second persistence.
 
-- Frontend unit suite: 47 tests, including chemistry monotonicity, frontend/backend model agreement, endpoint evidence, calculation readiness and draft restoration.
-- Backend assessment/session suites: 42 tests, including report validation, grade/published access checks, DTO validation and authenticated report storage.
-- TypeScript frontend production build, backend compilation and Prisma schema validation.
-- Local Chromium with software WebGL and fixture APIs: real rendered apparatus, preparation controls, tap flow, drop/swirl, repeated readings, concordance, concentration, server-side evidence assessment, failed-save recovery, refresh restoration, 320/390 px layouts, explicit WebGL-context-loss fallback with working controls, catalogue navigation and pendulum animation.
+The workshop event log records placements, variable changes, procedure actions, resets and observations. The backend independently replays it, derives readings and validates completion; it does not accept client-supplied trial results. Procedures require the appropriate equipment on the work mat. Moving used apparatus invalidates the current procedure; a changed variable requires a new procedure. Completion requires three trials across at least two settings, one fully completed procedure, a substantive conclusion and the teacher's quiz responses where present.
 
-Browser checks use synthetic accounts and intercepted API responses; they do not claim authenticated production testing. The catalogue preview is a screenshot of the actual rendered scene.
+Reports are stored in existing `LabSession.completionSummary` alongside existing quiz grading. The account and school come from authentication. The UI distinguishes browser drafts from account saves and only confirms an acknowledged unchanged report; failures preserve drafts for retry/export. Evidence remains student-reported virtual work, not a proctored physical assessment.
+
+## Deployment and validation
+
+No new schema migration is needed for workshop reports. The existing titration migration supplies the three grade-specific titration records. `/api/v1/labs/capabilities` reports immersive version 2 and workshop report version `stem-workshop-v2`. GitHub frontend publication waits for the new backend before S3 upload and CloudFront invalidation.
+
+Validation covers all original catalogue keys, every model across its scale, deterministic replay, procedure/placement rules, building alignment, attack-before-defence vs blocked-retest states, quantitative relationships, report DTO bounds, authenticated storage, grade/published access and required teacher questions.
+
+Local Chromium checks use synthetic accounts and intercepted API responses, with the real shared backend replay logic for submitted reports. All 57 authored workshop profiles were rendered and their procedures operated in Chromium; the dedicated titration interaction was checked separately. Checks cover genuine 3D dragging, procedure operation, pointer/keyboard placement, account-save failure/retry, refresh recovery, mobile widths, context-loss fallback, titration interlocks and access-denied rendering. Catalogue previews are native screenshots of actual rendered scenes. These checks do not claim authenticated production verification.

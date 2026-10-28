@@ -1,3 +1,4 @@
+import type { PracticalEvent } from '../../../backend/src/labs/practical-engine';
 import type { TitrationTrial } from '../features/student/stem-workspace/three-d/titration-model';
 import { api } from './axios';
 import type {
@@ -167,6 +168,7 @@ export const labSessionsApi = {
     labKey: string;
     competency?: string;
     answers?: AnswerInput[];
+    workshop?: { version: string; events: PracticalEvent[]; conclusion: string };
     practical?: {
       version: string;
       trials: TitrationTrial[];

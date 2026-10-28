@@ -1,3 +1,4 @@
+import { PRACTICAL_CATALOGUE } from "./practical-engine";
 import {
   ConflictException,
   Injectable,
@@ -38,8 +39,10 @@ export class LabsService {
         "The 3D practical catalogue is not ready.",
       );
     return {
-      immersiveLabsVersion: 1,
-      gradeLevels: [10, 11, 12],
+      immersiveLabsVersion: 2,
+      gradeLevels: [7, 8, 9, 10, 11, 12],
+      workshopReportVersion: "stem-workshop-v2",
+      catalogueActivities: PRACTICAL_CATALOGUE.length + 1,
       practical: "titration-3d-v1",
       evidenceStorage: "completionSummary",
     };

@@ -49,6 +49,7 @@ export default function TitrationPractical({
   const [tab, setTab] = useState<"bench" | "results" | "guide">("bench");
   const [mode, setMode] = useState<"guided" | "independent">("guided");
   const [selected, setSelected] = useState("Burette");
+  const [held, setHeld] = useState<string | null>(null);
   const [view, setView] = useState("bench");
   const [valve, setValve] = useState(false);
   const [rate, setRate] = useState(1);
@@ -151,7 +152,26 @@ export default function TitrationPractical({
   const colour = draft.indicator
     ? indicatorColour(draft.dispensed)
     : "Colourless";
+  const burette = draft.placements.Burette ?? { x: 0, z: 0, rotation: 0 },
+    flaskPosition = draft.placements.Flask ?? { x: 0, z: 0, rotation: 0 };
+  const apparatusAligned =
+    Math.abs(burette.x) < 0.15 &&
+    Math.abs(burette.z) < 0.15 &&
+    Math.hypot(flaskPosition.x - burette.x, flaskPosition.z - burette.z) < 0.2;
+  useEffect(() => {
+    if (!apparatusAligned || held) setValve(false);
+  }, [apparatusAligned, held]);
+  const placeEquipment = (
+    name: string,
+    p: { x: number; z: number; rotation: number },
+  ) => {
+    setValve(false);
+    setHeld(null);
+    update({ placements: { ...latest.current.placements, [name]: p } });
+  };
   const canDose =
+    !held &&
+    apparatusAligned &&
     draft.goggles &&
     draft.rinsed &&
     draft.filled &&
@@ -208,6 +228,7 @@ export default function TitrationPractical({
       calculation: d.calculation,
       conclusion: d.conclusion,
       quiz: d.quiz,
+      placements: d.placements,
       rough: d.trials.length === 0,
     }));
     setSaved(false);
@@ -407,6 +428,14 @@ export default function TitrationPractical({
                   }}
                   view={view}
                   onSelect={setSelected}
+                  placements={draft.placements}
+                  held={held}
+                  onPick={(name) => {
+                    setValve(false);
+                    setSelected(name);
+                    setHeld(name);
+                  }}
+                  onPlace={placeEquipment}
                 />
               </Suspense>
             </div>
@@ -433,9 +462,84 @@ export default function TitrationPractical({
                 ),
               )}
             </div>
+            <div
+              className="flex flex-wrap gap-2 px-3 pb-3"
+              aria-label="Equipment handling"
+            >
+              <button
+                type="button"
+                className="min-h-10 rounded-lg border px-3 text-xs"
+                onClick={() => {
+                  setValve(false);
+                  setHeld(selected);
+                }}
+              >
+                Pick up {selected}
+              </button>
+              <button
+                type="button"
+                className="min-h-10 rounded-lg border px-3 text-xs"
+                onClick={() =>
+                  placeEquipment(selected, { x: 0, z: 0, rotation: 0 })
+                }
+              >
+                Return to original position
+              </button>
+              {selected === "Burette" && (
+                <button
+                  type="button"
+                  className="min-h-10 rounded-lg bg-slate-900 px-3 text-xs text-white"
+                  onClick={() =>
+                    placeEquipment("Burette", { x: 0, z: 0, rotation: 0 })
+                  }
+                >
+                  Clamp burette to stand
+                </button>
+              )}
+              {selected === "Flask" && (
+                <button
+                  type="button"
+                  className="min-h-10 rounded-lg bg-slate-900 px-3 text-xs text-white"
+                  onClick={() => placeEquipment("Flask", { ...burette })}
+                >
+                  Place under burette
+                </button>
+              )}
+              {selected === "Pipette" && (
+                <button
+                  type="button"
+                  className="min-h-10 rounded-lg bg-slate-900 px-3 text-xs text-white"
+                  onClick={() =>
+                    placeEquipment("Pipette", {
+                      x: flaskPosition.x - 1.15,
+                      z: flaskPosition.z - 0.4,
+                      rotation: 0,
+                    })
+                  }
+                >
+                  Position pipette at flask
+                </button>
+              )}
+              <button
+                type="button"
+                className="min-h-10 rounded-lg border px-3 text-xs"
+                onClick={() =>
+                  placeEquipment(selected, { x: 1, z: 0.6, rotation: 0 })
+                }
+              >
+                Place at side of bench
+              </button>
+            </div>
+            {(!apparatusAligned || held) && (
+              <p role="status" className="px-4 pb-3 text-xs text-amber-800">
+                {held
+                  ? `Holding ${held}. Place it before operating the tap.`
+                  : "Clamp the burette to its stand and position the flask beneath the tip before titrating."}
+              </p>
+            )}
             <p className="px-4 pb-3 text-[11px] text-slate-500">
-              Drag to orbit · scroll/pinch to zoom · tap apparatus to inspect.
-              Equipment buttons offer keyboard access.
+              Drag equipment to move it · drag empty space to orbit ·
+              scroll/pinch to zoom. Equipment buttons offer keyboard access.
             </p>
           </section>
           <aside className="min-w-0 space-y-4" aria-label="Practical controls">

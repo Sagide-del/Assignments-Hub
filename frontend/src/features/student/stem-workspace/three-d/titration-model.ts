@@ -16,6 +16,7 @@ export interface TitrationTrial {
 export interface TitrationDraft {
   version: typeof TITRATION_VERSION;
   quiz: Record<number, string>;
+  placements: Record<string, { x: number; z: number; rotation: number }>;
   recorded: boolean;
   goggles: boolean;
   rinsed: boolean;
@@ -37,6 +38,7 @@ export interface TitrationDraft {
 export const freshTitration = (): TitrationDraft => ({
   version: TITRATION_VERSION,
   quiz: {},
+  placements: {},
   recorded: false,
   goggles: false,
   rinsed: false,
@@ -189,6 +191,27 @@ export function restoreTitration(value: unknown): TitrationDraft {
   if (typeof v.initial !== "number")
     d.initial = Number((0.2 + (d.trials.length % 4) * 0.45).toFixed(2));
   if (typeof v.rough !== "boolean") d.rough = d.trials.length === 0;
+  if (v.placements && typeof v.placements === "object")
+    d.placements = Object.fromEntries(
+      Object.entries(v.placements).filter(
+        ([name, p]) =>
+          [
+            "Burette",
+            "Pipette",
+            "Flask",
+            "Goggles",
+            "Indicator",
+            "NaOH",
+            "HCl",
+          ].includes(name) &&
+          p &&
+          typeof p === "object" &&
+          [p.x, p.z, p.rotation].every(Number.isFinite) &&
+          Math.abs(p.x) <= 2.8 &&
+          Math.abs(p.z) <= 1.2 &&
+          Math.abs(p.rotation) <= Math.PI * 4,
+      ),
+    );
   // Invalid preparation combinations cannot unlock dosing after restoration.
   if (!d.goggles) d.rinsed = false;
   if (!d.rinsed) d.filled = false;

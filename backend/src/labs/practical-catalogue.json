@@ -1,0 +1,1316 @@
+[
+  {
+    "key": "js7-lab1",
+    "kind": "plant",
+    "title": "Plant growth",
+    "goal": "Compare seedlings under controlled light conditions.",
+    "variable": "Daily light / h",
+    "min": 0,
+    "max": 12,
+    "step": 1,
+    "initial": 6,
+    "unit": "growth index",
+    "tools": [
+      "Seed tray",
+      "Watering can",
+      "Grow lamp"
+    ],
+    "actions": [
+      "Plant equal seeds",
+      "Water equal volumes",
+      "Run seven model days"
+    ],
+    "explain": "Compare two light settings while holding water constant. Index values illustrate a model, not actual centimetres."
+  },
+  {
+    "key": "js7-lab2",
+    "kind": "filter",
+    "title": "Water filtration",
+    "goal": "Build a filter and compare the visible suspended particles.",
+    "variable": "Filter layers",
+    "min": 1,
+    "max": 4,
+    "step": 1,
+    "initial": 2,
+    "unit": "particles",
+    "tools": [
+      "Filter funnel",
+      "Sand layer",
+      "Sample beaker"
+    ],
+    "actions": [
+      "Place filter on stand",
+      "Add filter layers",
+      "Pour muddy sample"
+    ],
+    "explain": "Explain why removing visible particles does not prove water is safe to drink."
+  },
+  {
+    "key": "js7-lab3",
+    "kind": "circuit",
+    "title": "Circuit construction",
+    "goal": "Connect a low-voltage battery, lamp and switch.",
+    "variable": "Voltage / V",
+    "min": 1,
+    "max": 6,
+    "step": 1,
+    "initial": 3,
+    "unit": "A",
+    "tools": [
+      "Battery",
+      "Lamp",
+      "Switch"
+    ],
+    "actions": [
+      "Connect battery to lamp",
+      "Complete return wire",
+      "Close switch"
+    ],
+    "explain": "Use I = V/R with a fixed 10 ohm lamp. Opening the switch breaks the circuit."
+  },
+  {
+    "key": "js7-lab4",
+    "kind": "thermal",
+    "title": "Heat transfer",
+    "goal": "Compare energy transfer through a model conducting rod.",
+    "variable": "Heating time / s",
+    "min": 0,
+    "max": 120,
+    "step": 10,
+    "initial": 30,
+    "unit": "\u00b0C",
+    "tools": [
+      "Heater",
+      "Metal rod",
+      "Thermometer"
+    ],
+    "actions": [
+      "Place rod on supports",
+      "Attach thermometer",
+      "Switch on heater"
+    ],
+    "explain": "Explain transfer from hotter to cooler regions. The model is lumped heating, not a full convection simulation."
+  },
+  {
+    "key": "js7-lab5",
+    "kind": "firstaid",
+    "title": "First aid response",
+    "goal": "Assess a virtual emergency scenario and explain the safe next action.",
+    "variable": "Scene scenario",
+    "min": 1,
+    "max": 3,
+    "step": 1,
+    "initial": 1,
+    "unit": "checks",
+    "tools": [
+      "Casualty mannequin",
+      "First aid kit",
+      "Phone"
+    ],
+    "actions": [
+      "Observe scene from safety",
+      "Assess response and normal breathing",
+      "Request trained emergency help"
+    ],
+    "explain": "Scenario 1: unresponsive but breathing normally in a safe place \u2014 get help and follow trained recovery-position guidance. Scenario 2: a dangerous scene \u2014 stay clear and call for help. Scenario 3: unresponsive and not breathing normally \u2014 call 112/999, seek an AED and trained resuscitation help immediately. This model does not certify first-aid skills."
+  },
+  {
+    "key": "js7-lab6",
+    "kind": "nutrition",
+    "title": "Balanced meal",
+    "goal": "Assemble a model meal and compare its energy contribution.",
+    "variable": "Portion / g",
+    "min": 50,
+    "max": 300,
+    "step": 25,
+    "initial": 100,
+    "unit": "kJ",
+    "tools": [
+      "Plate",
+      "Staple food",
+      "Beans and vegetables"
+    ],
+    "actions": [
+      "Place plate",
+      "Add staple portion",
+      "Add beans and vegetables"
+    ],
+    "explain": "Compare portions and discuss variety. This energy-only model is not an individual dietary prescription."
+  },
+  {
+    "key": "js7-lab7",
+    "kind": "water",
+    "title": "Water testing",
+    "goal": "Measure a water sample with a model pH probe.",
+    "variable": "Sample pH",
+    "min": 2,
+    "max": 12,
+    "step": 1,
+    "initial": 7,
+    "unit": "pH",
+    "tools": [
+      "Sample beaker",
+      "pH probe",
+      "Test strip"
+    ],
+    "actions": [
+      "Collect sample",
+      "Calibrate probe",
+      "Immerse probe"
+    ],
+    "explain": "pH alone cannot establish potability; explain what microbiological testing would add."
+  },
+  {
+    "key": "js8-lab1",
+    "kind": "acid",
+    "title": "Acids and bases",
+    "goal": "Add indicator and compare acidic and alkaline samples.",
+    "variable": "Sample pH",
+    "min": 1,
+    "max": 13,
+    "step": 1,
+    "initial": 7,
+    "unit": "pH",
+    "tools": [
+      "Sample beaker",
+      "Indicator dropper",
+      "Mixing rod"
+    ],
+    "actions": [
+      "Place sample",
+      "Add indicator",
+      "Mix sample"
+    ],
+    "explain": "Use indicator colour to classify the sample. This is classification, not a quantitative titration."
+  },
+  {
+    "key": "js8-lab2",
+    "kind": "anatomy",
+    "title": "Body systems",
+    "goal": "Locate organs and trace the flow of oxygenated blood.",
+    "variable": "Heart rate / bpm",
+    "min": 60,
+    "max": 120,
+    "step": 10,
+    "initial": 80,
+    "unit": "L/min",
+    "tools": [
+      "Body model",
+      "Heart",
+      "Lungs"
+    ],
+    "actions": [
+      "Inspect lungs",
+      "Trace oxygenated blood",
+      "Locate body tissues"
+    ],
+    "explain": "Explain how breathing and circulation work together. Cardiac output assumes a fixed 70 mL stroke volume."
+  },
+  {
+    "key": "js8-lab3",
+    "kind": "lever",
+    "title": "Simple machines",
+    "goal": "Place a load and change the effort-arm length.",
+    "variable": "Effort arm / m",
+    "min": 0.25,
+    "max": 2,
+    "step": 0.25,
+    "initial": 1,
+    "unit": "N",
+    "tools": [
+      "Lever beam",
+      "Fulcrum",
+      "Load"
+    ],
+    "actions": [
+      "Place fulcrum",
+      "Place 10 N load",
+      "Apply effort"
+    ],
+    "explain": "Balance moments: effort \u00d7 effort arm = 10 N \u00d7 0.5 m, ignoring friction and beam mass."
+  },
+  {
+    "key": "js8-lab4",
+    "kind": "magnet",
+    "title": "Electromagnets",
+    "goal": "Wind a coil and use current to lift model iron pieces.",
+    "variable": "Coil turns",
+    "min": 10,
+    "max": 100,
+    "step": 10,
+    "initial": 50,
+    "unit": "ampere-turns",
+    "tools": [
+      "Iron core",
+      "Wire coil",
+      "Battery"
+    ],
+    "actions": [
+      "Insert iron core",
+      "Wind coil",
+      "Connect low-voltage supply"
+    ],
+    "explain": "Compare N \u00d7 I at a fixed 0.5 A. This is magnetising force, not a prediction of lifting mass."
+  },
+  {
+    "key": "js8-lab5",
+    "kind": "microscope",
+    "title": "Microscope",
+    "goal": "Place a slide, focus and change magnification.",
+    "variable": "Objective magnification",
+    "min": 4,
+    "max": 40,
+    "step": 4,
+    "initial": 8,
+    "unit": "\u00d7",
+    "tools": [
+      "Microscope",
+      "Cell slide",
+      "Focus knob"
+    ],
+    "actions": [
+      "Place cell slide",
+      "Focus specimen",
+      "Illuminate slide"
+    ],
+    "explain": "Total magnification = 10\u00d7 eyepiece \u00d7 objective. The specimen is a schematic cell representation."
+  },
+  {
+    "key": "js8-lab6",
+    "kind": "digestion",
+    "title": "Digestion",
+    "goal": "Trace food through the main digestive organs.",
+    "variable": "Transit stage",
+    "min": 1,
+    "max": 4,
+    "step": 1,
+    "initial": 1,
+    "unit": "stage",
+    "tools": [
+      "Mouth",
+      "Stomach",
+      "Small intestine"
+    ],
+    "actions": [
+      "Begin at mouth",
+      "Move to stomach",
+      "Trace absorption in small intestine"
+    ],
+    "explain": "Distinguish mechanical digestion, chemical digestion and absorption; stage numbers are not elapsed time."
+  },
+  {
+    "key": "js8-lab7",
+    "kind": "weather",
+    "title": "Weather station",
+    "goal": "Site instruments and record a model weather reading.",
+    "variable": "Air temperature / \u00b0C",
+    "min": 10,
+    "max": 35,
+    "step": 1,
+    "initial": 22,
+    "unit": "\u00b0C",
+    "tools": [
+      "Thermometer",
+      "Rain gauge",
+      "Anemometer"
+    ],
+    "actions": [
+      "Place instruments in station",
+      "Inspect rain gauge",
+      "Read thermometer"
+    ],
+    "explain": "Explain consistent siting and recording time. The selected readings are inputs, not a weather forecast."
+  },
+  {
+    "key": "js9-lab1",
+    "kind": "genetics",
+    "title": "Inheritance",
+    "goal": "Cross two heterozygous parent models and compare expected offspring.",
+    "variable": "Number of offspring",
+    "min": 4,
+    "max": 40,
+    "step": 4,
+    "initial": 20,
+    "unit": "expected dominant",
+    "tools": [
+      "Parent A",
+      "Parent B",
+      "Offspring tray"
+    ],
+    "actions": [
+      "Select parent Aa",
+      "Select second parent Aa",
+      "Cross parent models"
+    ],
+    "explain": "Aa \u00d7 Aa gives AA:Aa:aa = 1:2:1; expected dominant phenotype is 75%, not a guarantee for a small family."
+  },
+  {
+    "key": "js9-lab2",
+    "kind": "dna",
+    "title": "DNA model",
+    "goal": "Assemble complementary bases on a double-helix model.",
+    "variable": "Base pairs",
+    "min": 2,
+    "max": 12,
+    "step": 1,
+    "initial": 6,
+    "unit": "hydrogen bonds",
+    "tools": [
+      "DNA backbone",
+      "A\u2013T pair",
+      "G\u2013C pair"
+    ],
+    "actions": [
+      "Place backbone",
+      "Pair A with T",
+      "Pair G with C"
+    ],
+    "explain": "A\u2013T has two hydrogen bonds and G\u2013C has three; the model uses alternating pairs."
+  },
+  {
+    "key": "js9-lab3",
+    "kind": "molecule",
+    "title": "Chemical bonds",
+    "goal": "Build a molecule from atoms and inspect its bonds.",
+    "variable": "Hydrogen atoms",
+    "min": 1,
+    "max": 4,
+    "step": 1,
+    "initial": 2,
+    "unit": "O\u2013H bonds",
+    "tools": [
+      "Oxygen atom",
+      "Hydrogen atom",
+      "Bond connector"
+    ],
+    "actions": [
+      "Place oxygen",
+      "Attach hydrogen atoms",
+      "Inspect bonds"
+    ],
+    "explain": "A neutral water model uses two O\u2013H bonds. Other settings show incomplete or invalid assemblies, not new stable molecules."
+  },
+  {
+    "key": "js9-lab4",
+    "kind": "waves",
+    "title": "Wave interference",
+    "goal": "Switch on two wave sources and compare superposition.",
+    "variable": "Phase difference / degrees",
+    "min": 0,
+    "max": 180,
+    "step": 15,
+    "initial": 0,
+    "unit": "relative amplitude",
+    "tools": [
+      "Wave source A",
+      "Wave source B",
+      "Observation screen"
+    ],
+    "actions": [
+      "Position wave sources",
+      "Start source A",
+      "Start source B"
+    ],
+    "explain": "For equal unit-amplitude waves, resultant amplitude is 2|cos(phase/2)| at equal path length."
+  },
+  {
+    "key": "js9-lab5",
+    "kind": "ecosystem",
+    "title": "Ecosystem balance",
+    "goal": "Change starting prey population and observe one model time step.",
+    "variable": "Starting prey",
+    "min": 20,
+    "max": 100,
+    "step": 10,
+    "initial": 50,
+    "unit": "prey next step",
+    "tools": [
+      "Habitat",
+      "Prey model",
+      "Predator model"
+    ],
+    "actions": [
+      "Prepare habitat",
+      "Introduce prey",
+      "Introduce predators"
+    ],
+    "explain": "A discrete teaching model combines prey reproduction and predation; it is not a field population forecast."
+  },
+  {
+    "key": "js9-lab6",
+    "kind": "electrolysis",
+    "title": "Electrolysis",
+    "goal": "Place electrodes in an aqueous teaching cell and switch on low voltage.",
+    "variable": "Current / A",
+    "min": 0.1,
+    "max": 1,
+    "step": 0.1,
+    "initial": 0.5,
+    "unit": "relative gas units",
+    "tools": [
+      "Electrolysis cell",
+      "Electrodes",
+      "DC supply"
+    ],
+    "actions": [
+      "Fill cell with model electrolyte",
+      "Immerse electrodes",
+      "Connect DC supply"
+    ],
+    "explain": "Water electrolysis produces hydrogen and oxygen in a 2:1 volume ratio in this ideal cell. Relative gas units are illustrative."
+  },
+  {
+    "key": "js9-lab7",
+    "kind": "climate",
+    "title": "Greenhouse effect",
+    "goal": "Compare a simple radiative-forcing model at different carbon dioxide levels.",
+    "variable": "CO\u2082 / ppm",
+    "min": 280,
+    "max": 560,
+    "step": 20,
+    "initial": 400,
+    "unit": "W/m\u00b2",
+    "tools": [
+      "Earth model",
+      "Atmosphere shell",
+      "Radiation source"
+    ],
+    "actions": [
+      "Inspect Earth model",
+      "Add atmosphere",
+      "Run radiation model"
+    ],
+    "explain": "Use \u0394F = 5.35 ln(C/280). This is radiative forcing, not temperature or a local climate forecast."
+  },
+  {
+    "key": "ss-bio-10-1",
+    "kind": "division",
+    "title": "Cell division",
+    "goal": "Sequence chromosome separation in a model cell.",
+    "variable": "Division stage",
+    "min": 1,
+    "max": 4,
+    "step": 1,
+    "initial": 1,
+    "unit": "stage",
+    "tools": [
+      "Cell model",
+      "Chromosome pair",
+      "Spindle"
+    ],
+    "actions": [
+      "Place chromosome pair",
+      "Attach spindle",
+      "Separate chromosomes"
+    ],
+    "explain": "Compare chromosome movement across stages. This schematic shows mitotic separation; explain how meiosis differs."
+  },
+  {
+    "key": "ss-bio-10-2",
+    "kind": "enzyme",
+    "title": "Enzyme activity",
+    "goal": "Place enzyme and substrate in a temperature-controlled bath.",
+    "variable": "Temperature / \u00b0C",
+    "min": 10,
+    "max": 80,
+    "step": 5,
+    "initial": 35,
+    "unit": "% model activity",
+    "tools": [
+      "Water bath",
+      "Enzyme tube",
+      "Substrate tube"
+    ],
+    "actions": [
+      "Set water bath",
+      "Add enzyme",
+      "Add substrate"
+    ],
+    "explain": "Compare activity around a notional 37 \u00b0C optimum. The curve is an illustrative approximation, not measured enzyme data."
+  },
+  {
+    "key": "ss-bio-10-3",
+    "kind": "extraction",
+    "title": "DNA extraction",
+    "goal": "Carry out a schematic sample preparation and precipitation sequence.",
+    "variable": "Sample mass / g",
+    "min": 1,
+    "max": 10,
+    "step": 1,
+    "initial": 5,
+    "unit": "relative DNA units",
+    "tools": [
+      "Sample tube",
+      "Detergent bottle",
+      "Alcohol bottle"
+    ],
+    "actions": [
+      "Break up sample",
+      "Add detergent and mix",
+      "Layer cold model alcohol"
+    ],
+    "explain": "Explain membrane disruption and DNA precipitation. Relative yield is illustrative and does not predict a real extraction."
+  },
+  {
+    "key": "ss-bio-10-4",
+    "kind": "plant",
+    "title": "Photosynthesis",
+    "goal": "Compare a water-plant model at controlled light levels.",
+    "variable": "Light level / relative units",
+    "min": 1,
+    "max": 10,
+    "step": 1,
+    "initial": 5,
+    "unit": "relative rate",
+    "tools": [
+      "Water plant",
+      "Lamp",
+      "Gas collector"
+    ],
+    "actions": [
+      "Place plant in water",
+      "Position lamp",
+      "Collect model oxygen"
+    ],
+    "explain": "Rate saturates as light increases when another factor limits it. Values are relative teaching units."
+  },
+  {
+    "key": "ss-bio-10-5",
+    "kind": "respiration",
+    "title": "Respiration",
+    "goal": "Operate a lung model and compare ventilation.",
+    "variable": "Breaths / minute",
+    "min": 10,
+    "max": 30,
+    "step": 2,
+    "initial": 16,
+    "unit": "L/min",
+    "tools": [
+      "Lung model",
+      "Diaphragm",
+      "Air tube"
+    ],
+    "actions": [
+      "Inspect air tube",
+      "Lower diaphragm",
+      "Observe inflation"
+    ],
+    "explain": "Minute ventilation = 0.5 L tidal volume \u00d7 breathing rate; this is not an individual lung-function test."
+  },
+  {
+    "key": "ss-bio-10-6",
+    "kind": "ecosystem",
+    "title": "Ecosystem dynamics",
+    "goal": "Compare prey abundance in a fixed predator model.",
+    "variable": "Starting prey",
+    "min": 20,
+    "max": 150,
+    "step": 10,
+    "initial": 60,
+    "unit": "prey next step",
+    "tools": [
+      "Habitat",
+      "Prey model",
+      "Predator model"
+    ],
+    "actions": [
+      "Prepare habitat",
+      "Introduce prey",
+      "Introduce predators"
+    ],
+    "explain": "Use the discrete model to discuss interactions and identify missing environmental factors."
+  },
+  {
+    "key": "ss-bio-10-7",
+    "kind": "pcr",
+    "title": "PCR cycles",
+    "goal": "Load a model tube and run an ideal amplification cycle.",
+    "variable": "Cycles",
+    "min": 1,
+    "max": 20,
+    "step": 1,
+    "initial": 5,
+    "unit": "DNA copies",
+    "tools": [
+      "PCR machine",
+      "DNA tube",
+      "Primer tube"
+    ],
+    "actions": [
+      "Load template tube",
+      "Add primers",
+      "Run thermal cycles"
+    ],
+    "explain": "Ideal doubling gives 2\u207f copies from one molecule; real amplification efficiency and contamination are omitted."
+  },
+  {
+    "key": "ss-bio-10-8",
+    "kind": "gel",
+    "title": "Gel electrophoresis",
+    "goal": "Load a sample and run a model gel.",
+    "variable": "Fragment size / base pairs",
+    "min": 100,
+    "max": 1000,
+    "step": 100,
+    "initial": 500,
+    "unit": "relative travel",
+    "tools": [
+      "Gel tank",
+      "Sample pipette",
+      "Power supply"
+    ],
+    "actions": [
+      "Prepare model gel",
+      "Load DNA sample",
+      "Connect supply"
+    ],
+    "explain": "Smaller fragments travel farther in this schematic. Relative distance is not calibrated for a real gel."
+  },
+  {
+    "key": "ss-chem-10-2",
+    "kind": "organic",
+    "title": "Organic molecules",
+    "goal": "Assemble a carbon backbone and count hydrogens for an alkane.",
+    "variable": "Carbon atoms",
+    "min": 1,
+    "max": 6,
+    "step": 1,
+    "initial": 2,
+    "unit": "hydrogen atoms",
+    "tools": [
+      "Carbon atom",
+      "Hydrogen atom",
+      "Bond connector"
+    ],
+    "actions": [
+      "Place carbon backbone",
+      "Add hydrogen atoms",
+      "Inspect saturated bonds"
+    ],
+    "explain": "For an acyclic alkane, C\u2099H\u2082\u2099\u208a\u2082. The ball-and-stick representation is schematic, not a molecular-energy solver."
+  },
+  {
+    "key": "ss-chem-10-3",
+    "kind": "electrolysis",
+    "title": "Electrochemical cell",
+    "goal": "Connect electrodes and compare transferred charge.",
+    "variable": "Current / A",
+    "min": 0.1,
+    "max": 1,
+    "step": 0.1,
+    "initial": 0.5,
+    "unit": "C in 60 s",
+    "tools": [
+      "Electrolyte beaker",
+      "Electrode pair",
+      "DC supply"
+    ],
+    "actions": [
+      "Fill teaching cell",
+      "Immerse electrodes",
+      "Connect supply"
+    ],
+    "explain": "Charge Q = It. Distinguish externally driven electrolysis from a galvanic cell."
+  },
+  {
+    "key": "ss-chem-10-4",
+    "kind": "rate",
+    "title": "Reaction rates",
+    "goal": "Mix reactants and compare a notional concentration-dependent rate.",
+    "variable": "Relative concentration",
+    "min": 1,
+    "max": 5,
+    "step": 1,
+    "initial": 2,
+    "unit": "relative rate",
+    "tools": [
+      "Reactant flask",
+      "Measuring cylinder",
+      "Timer"
+    ],
+    "actions": [
+      "Measure equal volumes",
+      "Mix model reactants",
+      "Start timer"
+    ],
+    "explain": "This model assumes first-order dependence on concentration; experimental rate laws must be determined from evidence."
+  },
+  {
+    "key": "ss-chem-10-5",
+    "kind": "spectrum",
+    "title": "Emission spectra",
+    "goal": "Excite a model element and compare emitted photon energy.",
+    "variable": "Wavelength / nm",
+    "min": 400,
+    "max": 700,
+    "step": 25,
+    "initial": 550,
+    "unit": "eV",
+    "tools": [
+      "Discharge tube",
+      "Spectroscope",
+      "Viewing screen"
+    ],
+    "actions": [
+      "Position model source",
+      "Align spectroscope",
+      "Read spectrum"
+    ],
+    "explain": "E = hc/\u03bb. A chosen single wavelength is not a complete element-identification spectrum."
+  },
+  {
+    "key": "ss-chem-10-6",
+    "kind": "polymer",
+    "title": "Polymer assembly",
+    "goal": "Join monomer units into a chain.",
+    "variable": "Monomer units",
+    "min": 2,
+    "max": 12,
+    "step": 1,
+    "initial": 5,
+    "unit": "repeat units",
+    "tools": [
+      "Monomer tray",
+      "Chain connector",
+      "Polymer model"
+    ],
+    "actions": [
+      "Place monomer",
+      "Join repeat units",
+      "Inspect polymer chain"
+    ],
+    "explain": "Distinguish monomer count from polymer properties; this model does not predict strength or reaction conditions."
+  },
+  {
+    "key": "ss-chem-10-7",
+    "kind": "chromatography",
+    "title": "Chromatography",
+    "goal": "Spot paper and develop a model chromatogram.",
+    "variable": "Solvent travel / cm",
+    "min": 2,
+    "max": 10,
+    "step": 1,
+    "initial": 6,
+    "unit": "Rf",
+    "tools": [
+      "Paper strip",
+      "Sample dropper",
+      "Solvent tank"
+    ],
+    "actions": [
+      "Spot baseline above solvent",
+      "Place paper in tank",
+      "Develop chromatogram"
+    ],
+    "explain": "Rf = spot travel/solvent-front travel. A fixed model solute has Rf 0.60; compare distances at different front positions."
+  },
+  {
+    "key": "ss-chem-10-8",
+    "kind": "calorimetry",
+    "title": "Calorimetry",
+    "goal": "Insulate a model cup and measure water heating.",
+    "variable": "Energy supplied / J",
+    "min": 500,
+    "max": 5000,
+    "step": 500,
+    "initial": 2000,
+    "unit": "\u00b0C rise",
+    "tools": [
+      "Insulated cup",
+      "Heater",
+      "Thermometer"
+    ],
+    "actions": [
+      "Measure 100 g water",
+      "Place thermometer",
+      "Supply measured energy"
+    ],
+    "explain": "Use \u0394T = Q/(mc), m=100 g and c=4.18 J/g/\u00b0C. Heat losses and cup heat capacity are omitted."
+  },
+  {
+    "key": "ss-phy-10-1",
+    "kind": "projectile",
+    "title": "Projectile motion",
+    "goal": "Set a launcher and measure ideal horizontal range.",
+    "variable": "Launch angle / degrees",
+    "min": 15,
+    "max": 75,
+    "step": 5,
+    "initial": 45,
+    "unit": "m",
+    "tools": [
+      "Launcher",
+      "Projectile",
+      "Range marker"
+    ],
+    "actions": [
+      "Position launcher",
+      "Load projectile",
+      "Launch model"
+    ],
+    "explain": "R = v\u00b2sin(2\u03b8)/g for 10 m/s, level launch/landing and no drag."
+  },
+  {
+    "key": "ss-phy-10-2",
+    "kind": "pendulum",
+    "title": "Pendulum",
+    "goal": "Attach a bob, release it and compare the ideal period.",
+    "variable": "Length / m",
+    "min": 0.25,
+    "max": 2,
+    "step": 0.25,
+    "initial": 1,
+    "unit": "s",
+    "tools": [
+      "Stand",
+      "Pendulum bob",
+      "Stopwatch"
+    ],
+    "actions": [
+      "Attach bob to stand",
+      "Set small release angle",
+      "Release pendulum"
+    ],
+    "explain": "T = 2\u03c0\u221a(L/g), g=9.81 m/s\u00b2. Mass does not affect this small-angle model."
+  },
+  {
+    "key": "ss-phy-10-3",
+    "kind": "optics",
+    "title": "Lens bench",
+    "goal": "Align an object, converging lens and screen.",
+    "variable": "Object distance / cm",
+    "min": 15,
+    "max": 60,
+    "step": 5,
+    "initial": 30,
+    "unit": "image distance / cm",
+    "tools": [
+      "Light source",
+      "Converging lens",
+      "Screen"
+    ],
+    "actions": [
+      "Place illuminated object",
+      "Align 10 cm focal-length lens",
+      "Move screen to image"
+    ],
+    "explain": "Use 1/f = 1/u + 1/v with f=10 cm and u>f; the ray model is paraxial."
+  },
+  {
+    "key": "ss-phy-10-4",
+    "kind": "waves",
+    "title": "Wave superposition",
+    "goal": "Align two coherent sources and compare phase.",
+    "variable": "Phase difference / degrees",
+    "min": 0,
+    "max": 180,
+    "step": 15,
+    "initial": 60,
+    "unit": "relative amplitude",
+    "tools": [
+      "Wave source A",
+      "Wave source B",
+      "Observation screen"
+    ],
+    "actions": [
+      "Position wave sources",
+      "Start source A",
+      "Start source B"
+    ],
+    "explain": "At equal path length, equal waves sum to 2|cos(phase/2)| times one wave amplitude."
+  },
+  {
+    "key": "ss-phy-10-5",
+    "kind": "circuit",
+    "title": "Circuit analysis",
+    "goal": "Wire a model resistor circuit and compare voltage/current.",
+    "variable": "Voltage / V",
+    "min": 1,
+    "max": 12,
+    "step": 1,
+    "initial": 6,
+    "unit": "A",
+    "tools": [
+      "Battery",
+      "Resistor",
+      "Switch"
+    ],
+    "actions": [
+      "Connect source to resistor",
+      "Complete return wire",
+      "Close switch"
+    ],
+    "explain": "Use a fixed 10 ohm resistor. This module explores resistive DC circuits, not capacitor transients."
+  },
+  {
+    "key": "ss-phy-10-6",
+    "kind": "induction",
+    "title": "Electromagnetic induction",
+    "goal": "Move a magnet through a coil and compare induced EMF.",
+    "variable": "Magnet speed / relative units",
+    "min": 1,
+    "max": 5,
+    "step": 1,
+    "initial": 2,
+    "unit": "relative EMF",
+    "tools": [
+      "Coil",
+      "Bar magnet",
+      "Voltmeter"
+    ],
+    "actions": [
+      "Connect coil to meter",
+      "Move magnet into coil",
+      "Reverse magnet motion"
+    ],
+    "explain": "Magnitude scales with rate of flux change. Relative EMF is illustrative; polarity reverses with motion."
+  },
+  {
+    "key": "ss-phy-10-7",
+    "kind": "decay",
+    "title": "Radioactive decay",
+    "goal": "Compare remaining nuclei after a chosen number of half-lives.",
+    "variable": "Elapsed half-lives",
+    "min": 0,
+    "max": 6,
+    "step": 1,
+    "initial": 2,
+    "unit": "expected nuclei",
+    "tools": [
+      "Source model",
+      "Detector",
+      "Shield"
+    ],
+    "actions": [
+      "Position source model",
+      "Place detector",
+      "Run decay interval"
+    ],
+    "explain": "N = 1000 \u00d7 2\u207b\u207f is an expectation. Real decay is random; no radioactive material is used."
+  },
+  {
+    "key": "ss-phy-10-8",
+    "kind": "photoelectric",
+    "title": "Photoelectric effect",
+    "goal": "Illuminate a surface and compare photon energy with its work function.",
+    "variable": "Frequency / \u00d710\u00b9\u2074 Hz",
+    "min": 2,
+    "max": 10,
+    "step": 0.5,
+    "initial": 6,
+    "unit": "eV maximum KE",
+    "tools": [
+      "Light source",
+      "Metal surface",
+      "Electron collector"
+    ],
+    "actions": [
+      "Position source",
+      "Select 2.0 eV surface",
+      "Illuminate surface"
+    ],
+    "explain": "Kmax = max(0,hf\u2212\u03c6), h=0.4135667696 eV per 10\u00b9\u2074 Hz. Brightness cannot overcome the frequency threshold."
+  },
+  {
+    "key": "ss-agr-10-1",
+    "kind": "soil",
+    "title": "Soil testing",
+    "goal": "Collect a model sample and measure pH.",
+    "variable": "Soil pH",
+    "min": 3,
+    "max": 9,
+    "step": 0.5,
+    "initial": 6,
+    "unit": "pH",
+    "tools": [
+      "Soil pot",
+      "Sample tube",
+      "pH probe"
+    ],
+    "actions": [
+      "Collect soil sample",
+      "Mix with model water",
+      "Immerse pH probe"
+    ],
+    "explain": "Describe why crop-specific nutrient advice and representative sampling are needed beyond a pH reading."
+  },
+  {
+    "key": "ss-agr-10-2",
+    "kind": "hydroponics",
+    "title": "Hydroponics",
+    "goal": "Assemble a grow channel and compare solution pH.",
+    "variable": "Nutrient solution pH",
+    "min": 3,
+    "max": 9,
+    "step": 0.5,
+    "initial": 6,
+    "unit": "% availability index",
+    "tools": [
+      "Grow channel",
+      "Nutrient tank",
+      "Pump"
+    ],
+    "actions": [
+      "Place seedlings in channel",
+      "Connect nutrient tank",
+      "Power circulation pump"
+    ],
+    "explain": "The availability curve is an illustrative index centred at pH 6, not crop-specific advice or a yield prediction."
+  },
+  {
+    "key": "ss-agr-10-3",
+    "kind": "greenhouse",
+    "title": "Greenhouse control",
+    "goal": "Position a sensor and adjust a model greenhouse temperature.",
+    "variable": "Temperature / \u00b0C",
+    "min": 10,
+    "max": 40,
+    "step": 2,
+    "initial": 24,
+    "unit": "% comfort index",
+    "tools": [
+      "Greenhouse frame",
+      "Plant tray",
+      "Ventilation fan"
+    ],
+    "actions": [
+      "Place seedling tray",
+      "Install temperature sensor",
+      "Run ventilation comparison"
+    ],
+    "explain": "A notional optimum of 24 \u00b0C is used to practise control and comparison; real crops differ."
+  },
+  {
+    "key": "ss-agr-10-4",
+    "kind": "livestock",
+    "title": "Livestock care",
+    "goal": "Compare a model feed allocation and record a daily plan.",
+    "variable": "Feed per animal / kg",
+    "min": 1,
+    "max": 10,
+    "step": 1,
+    "initial": 4,
+    "unit": "kg for 5 animals",
+    "tools": [
+      "Animal model",
+      "Feed trough",
+      "Water trough"
+    ],
+    "actions": [
+      "Inspect animal model",
+      "Provide model water",
+      "Measure feed ration"
+    ],
+    "explain": "Total feed = ration \u00d7 5. This is arithmetic practice, not a species-specific feeding recommendation."
+  },
+  {
+    "key": "ss-cs-10-1",
+    "kind": "network",
+    "title": "Network topology",
+    "goal": "Connect computers to a switch and test the local simulated network.",
+    "variable": "Workstations",
+    "min": 2,
+    "max": 6,
+    "step": 1,
+    "initial": 3,
+    "unit": "star links",
+    "tools": [
+      "Computer",
+      "Switch",
+      "Network cable"
+    ],
+    "actions": [
+      "Power computer",
+      "Connect switch",
+      "Run connectivity test"
+    ],
+    "explain": "A star topology needs one link per workstation. All devices are simulated; no external hosts are contacted."
+  },
+  {
+    "key": "ss-cs-10-2",
+    "kind": "cyber",
+    "title": "Cybersecurity",
+    "goal": "Observe a simulated intrusion, enable a defence and compare event logs.",
+    "variable": "Attack scenario",
+    "min": 1,
+    "max": 3,
+    "step": 1,
+    "initial": 1,
+    "unit": "blocked events",
+    "tools": [
+      "Computer",
+      "Router",
+      "Security gateway"
+    ],
+    "actions": [
+      "Power computer",
+      "Connect local network",
+      "Trigger simulated attack",
+      "Enable matching defence",
+      "Repeat attack test"
+    ],
+    "explain": "Compare open-service, repeated-sign-in and suspicious-attachment scenarios. The security gateway represents the matching service rule, sign-in rate limit or attachment filter. This is a contained state model, not real malware or an attack against a network."
+  },
+  {
+    "key": "ss-cs-10-3",
+    "kind": "database",
+    "title": "Database design",
+    "goal": "Build two table models and link a learner key to a result table.",
+    "variable": "Learner records",
+    "min": 2,
+    "max": 10,
+    "step": 1,
+    "initial": 4,
+    "unit": "linked records",
+    "tools": [
+      "Learner table",
+      "Results table",
+      "Key connector"
+    ],
+    "actions": [
+      "Create learner table",
+      "Create results table",
+      "Link learner ID foreign key"
+    ],
+    "explain": "Explain primary and foreign keys and why orphan result rows should be rejected. This relational model does not run SQL."
+  },
+  {
+    "key": "ss-cs-10-4",
+    "kind": "algorithm",
+    "title": "Sorting algorithms",
+    "goal": "Arrange a model array and step through bubble-sort comparisons.",
+    "variable": "Array length",
+    "min": 3,
+    "max": 8,
+    "step": 1,
+    "initial": 5,
+    "unit": "worst-case comparisons",
+    "tools": [
+      "Array blocks",
+      "Comparison pointer",
+      "Sorted tray"
+    ],
+    "actions": [
+      "Load reverse-order array",
+      "Compare neighbouring blocks",
+      "Run bubble sort"
+    ],
+    "explain": "A reverse-order bubble sort makes n(n\u22121)/2 comparisons in the unoptimised triangular-pass model."
+  },
+  {
+    "key": "ss-tech-10-1",
+    "kind": "aviation",
+    "title": "Flight principles",
+    "goal": "Position a wing model and compare lift at different airspeeds.",
+    "variable": "Airspeed / m/s",
+    "min": 10,
+    "max": 40,
+    "step": 5,
+    "initial": 20,
+    "unit": "N lift",
+    "tools": [
+      "Wing model",
+      "Airflow source",
+      "Lift balance"
+    ],
+    "actions": [
+      "Place wing at fixed angle",
+      "Start model airflow",
+      "Read lift balance"
+    ],
+    "explain": "L = 0.5\u03c1v\u00b2SCL, with \u03c1=1.225, S=1 m\u00b2, CL=0.5 fixed. Stall, drag and navigation are outside this model."
+  },
+  {
+    "key": "ss-tech-10-2",
+    "kind": "building",
+    "title": "Building design",
+    "goal": "Place structural components on a grid, rotate them and test a load model.",
+    "variable": "Roof load / kN",
+    "min": 2,
+    "max": 20,
+    "step": 2,
+    "initial": 10,
+    "unit": "kN per support",
+    "tools": [
+      "Floor slab",
+      "Wall panel",
+      "Roof beam"
+    ],
+    "actions": [
+      "Place floor slab",
+      "Place supporting walls",
+      "Place roof beam",
+      "Test distributed load"
+    ],
+    "explain": "For a symmetric ideal two-support beam each reaction is half the total load. This is a learning model, not structural approval."
+  },
+  {
+    "key": "ss-tech-10-3",
+    "kind": "circuit",
+    "title": "Electrical workshop",
+    "goal": "Assemble and fault-check a model low-voltage installation.",
+    "variable": "Supply voltage / V",
+    "min": 1,
+    "max": 12,
+    "step": 1,
+    "initial": 6,
+    "unit": "A",
+    "tools": [
+      "Battery",
+      "Lamp",
+      "Switch"
+    ],
+    "actions": [
+      "Connect fused model source",
+      "Complete return wire",
+      "Close switch"
+    ],
+    "explain": "Use I=V/10. Physical school extensions must use approved low-voltage equipment; never practise on mains wiring."
+  },
+  {
+    "key": "ss-tech-10-4",
+    "kind": "automotive",
+    "title": "Automotive diagnostics",
+    "goal": "Inspect a model vehicle battery circuit and read a diagnostic value.",
+    "variable": "Battery voltage / V",
+    "min": 10,
+    "max": 14,
+    "step": 0.5,
+    "initial": 12,
+    "unit": "V",
+    "tools": [
+      "Engine model",
+      "Battery",
+      "Multimeter"
+    ],
+    "actions": [
+      "Isolate model engine",
+      "Connect meter to battery",
+      "Read diagnostic value"
+    ],
+    "explain": "Compare resting voltage; one voltage reading cannot establish battery health or diagnose an engine fault."
+  },
+  {
+    "key": "demo-volcano-1",
+    "kind": "volcano",
+    "title": "Volcano model",
+    "goal": "Inspect a volcano cross-section and compare a schematic pressure index.",
+    "variable": "Gas pressure / relative units",
+    "min": 1,
+    "max": 5,
+    "step": 1,
+    "initial": 2,
+    "unit": "eruption index",
+    "tools": [
+      "Volcano model",
+      "Magma chamber",
+      "Gas vent"
+    ],
+    "actions": [
+      "Inspect magma chamber",
+      "Add model gas pressure",
+      "Open model vent"
+    ],
+    "explain": "This schematic illustrates gas pressure and release. It does not forecast eruptions or simulate magma rheology."
+  }
+]

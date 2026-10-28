@@ -18,11 +18,22 @@ export default function LabScene3D({
   kind = "titration",
   view = "bench",
   onSelect,
+  placements,
+  held,
+  onPick,
+  onPlace,
 }: {
   state: SceneState;
   kind?: "titration" | "pendulum";
   view?: string;
   onSelect?: (name: string) => void;
+  placements?: Record<string, { x: number; z: number; rotation: number }>;
+  held?: string | null;
+  onPick?: (name: string) => void;
+  onPlace?: (
+    name: string,
+    position: { x: number; z: number; rotation: number },
+  ) => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
     latest = useRef(state),
@@ -31,6 +42,8 @@ export default function LabScene3D({
   latest.current = state;
   select.current = onSelect;
   cameraView.current = view;
+  const interaction = useRef({ placements, held, onPick, onPlace });
+  interaction.current = { placements, held, onPick, onPlace };
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -317,6 +330,11 @@ export default function LabScene3D({
         const g = new THREE.Group();
         scene.add(g);
         g.position.set(x, 0.51, -0.65);
+        g.userData.equipment = text.startsWith("Indicator")
+          ? "Indicator"
+          : text.startsWith("NaOH")
+            ? "NaOH"
+            : "HCl";
         cylinder(0.19, 0.22, 0.55, glass, [0, 0.3, 0], text, g);
         cylinder(0.16, 0.19, 0.38, mat("#cae5ee"), [0, 0.23, 0], text, g);
         cylinder(0.09, 0.09, 0.12, mat(cap), [0, 0.64, 0], text, g);
@@ -375,27 +393,116 @@ export default function LabScene3D({
       ball.name = "bob";
       label("SIMPLE PENDULUM", 1.7, 0.25, [0, 0.65, 0.7]);
     }
+    const movable: Record<string, THREE.Group> = {};
+    if (kind === "titration") {
+      for (const name of [
+        "Burette",
+        "Flask",
+        "Pipette",
+        "Goggles",
+        "Indicator",
+        "NaOH",
+        "HCl",
+      ]) {
+        const group = new THREE.Group();
+        group.userData.equipment = name;
+        group.userData.movable = true;
+        const members = scene.children.filter(
+          (child) =>
+            child.userData.equipment === name ||
+            child ===
+              (
+                { Flask: flask, Pipette: pipette } as Record<
+                  string,
+                  THREE.Object3D | undefined
+                >
+              )[name] ||
+            (child instanceof THREE.Group &&
+              child.children.some((c) => c.userData.equipment === name)),
+        );
+        members.forEach((child) => group.add(child));
+        scene.add(group);
+        movable[name] = group;
+      }
+    }
     const raycaster = new THREE.Raycaster(),
       pointer = new THREE.Vector2();
-    let down = [0, 0];
-    const onDown = (e: PointerEvent) => {
-      down = [e.clientX, e.clientY];
-    };
-    const onUp = (e: PointerEvent) => {
-      if (Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
-      const rect = renderer.domElement.getBoundingClientRect();
+    let down = [0, 0],
+      dragging: string | null = null;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.52),
+      point = new THREE.Vector3(),
+      offset = new THREE.Vector3();
+    const aim = (e: PointerEvent) => {
+      const r = renderer.domElement.getBoundingClientRect();
       pointer.set(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        (-(e.clientY - rect.top) / rect.height) * 2 + 1,
+        ((e.clientX - r.left) / r.width) * 2 - 1,
+        (-(e.clientY - r.top) / r.height) * 2 + 1,
       );
       raycaster.setFromCamera(pointer, camera);
+    };
+    const onDown = (e: PointerEvent) => {
+      down = [e.clientX, e.clientY];
+      if (e.button !== 0) return;
+      aim(e);
+      const hit = raycaster
+        .intersectObjects(scene.children, true)
+        .find(
+          (h) =>
+            h.object.userData.equipment || h.object.parent?.userData.equipment,
+        );
+      if (!hit) return;
+      let root: THREE.Object3D | null = hit.object;
+      while (root && !root.userData.movable) root = root.parent;
+      if (root && interaction.current.onPlace) {
+        dragging = root.userData.equipment;
+        controls.enabled = false;
+        interaction.current.onPick?.(dragging!);
+        renderer.domElement.setPointerCapture(e.pointerId);
+        if (raycaster.ray.intersectPlane(plane, point))
+          offset.copy(root.position).sub(point);
+      }
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return;
+      aim(e);
+      if (!raycaster.ray.intersectPlane(plane, point)) return;
+      point.add(offset);
+      movable[dragging].position.set(
+        THREE.MathUtils.clamp(point.x, -2.8, 2.8),
+        0.15,
+        THREE.MathUtils.clamp(point.z, -1.2, 1.2),
+      );
+    };
+    const onUp = (e: PointerEvent) => {
+      if (dragging) {
+        const name = dragging,
+          p = movable[name].position;
+        dragging = null;
+        controls.enabled = true;
+        interaction.current.onPlace?.(name, {
+          x: p.x,
+          z: p.z,
+          rotation: movable[name].rotation.y,
+        });
+        if (renderer.domElement.hasPointerCapture(e.pointerId))
+          renderer.domElement.releasePointerCapture(e.pointerId);
+        return;
+      }
+      if (Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
+      aim(e);
       const hit = raycaster
         .intersectObjects(scene.children, true)
         .find((h) => h.object.userData.equipment);
       if (hit) select.current?.(hit.object.userData.equipment);
     };
+    const cancel = () => {
+      dragging = null;
+      controls.enabled = true;
+    };
     renderer.domElement.addEventListener("pointerdown", onDown);
+    renderer.domElement.addEventListener("pointermove", onMove);
     renderer.domElement.addEventListener("pointerup", onUp);
+    renderer.domElement.addEventListener("pointercancel", cancel);
     let contextLost = false;
     const lost = (e: Event) => {
       contextLost = true;
@@ -418,6 +525,16 @@ export default function LabScene3D({
     const start = performance.now();
     const animate = (now: number) => {
       if (contextLost) return;
+      for (const [name, group] of Object.entries(movable)) {
+        if (name === dragging) continue;
+        const p = interaction.current.placements?.[name];
+        group.position.set(
+          p?.x ?? 0,
+          interaction.current.held === name ? 0.2 : 0,
+          p?.z ?? 0,
+        );
+        group.rotation.y = p?.rotation ?? 0;
+      }
       const s = latest.current,
         t = (now - start) / 1000;
       if (previousView !== cameraView.current) {
@@ -471,10 +588,11 @@ export default function LabScene3D({
       }
       if (pipette) {
         const moving = s.action.startsWith("pipette") && t - actionStart < 2;
+        const placed = !!interaction.current.placements?.Pipette;
         pipette.position.set(
-          moving ? 0 : 1.15,
+          moving && !placed ? 0 : 1.15,
           moving ? 2.45 : 1.65,
-          moving ? 0 : 0.4,
+          moving && !placed ? 0 : 0.4,
         );
         pipette.rotation.z = moving ? 0 : -0.22;
       }
@@ -503,6 +621,8 @@ export default function LabScene3D({
       controls.dispose();
       renderer.domElement.removeEventListener("pointerdown", onDown);
       renderer.domElement.removeEventListener("pointerup", onUp);
+      renderer.domElement.removeEventListener("pointermove", onMove);
+      renderer.domElement.removeEventListener("pointercancel", cancel);
       renderer.domElement.removeEventListener("webglcontextlost", lost);
       scene.traverse((obj) => {
         if (obj instanceof THREE.Mesh) obj.geometry.dispose();
