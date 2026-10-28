@@ -43,3 +43,19 @@ The respiratory studio reuses scoped browser drafts, export, account-report reco
 The 3D asset loads only in this activity, with progress and an explicit retry on model/network/WebGL failure; it is not replaced with a fake anatomical placeholder. The display caps pixel ratio for ordinary devices. The gate for frontend deployment now checks immersive API version 4 and the respiratory studio capability. No database schema migration is required.
 
 Validation covers model integrity, embedded attribution, required anatomical meshes, ventilation/dead-space arithmetic, continuity of breathing volume/flow, evidence validation and grade/ownership checks. Chromium checks use synthetic Grade 11 fixtures and local production builds, not authenticated production access. They exercise actual model loading, views, anatomy inspection, timed observations, failed-save retry, account recovery, mobile layouts and WebGL fallback.
+
+## Live breathing graphs
+
+The **Live graphs** view places the graph beside the same breathing controls used by the anatomical viewer. It follows the shared simulated clock, speed and pause state. Switching between the viewer and graphs preserves the current observation's time after the first model load. A condition change resets the trace; recorded observations remain intact.
+
+The graph offers three views, 10/20/30-second rolling windows, pointer/touch and keyboard sample inspection, inspiration shading and an accessible numeric sample table. Its SVG plotting dimensions adjust to the available width so labels remain readable on narrow screens.
+
+- **Breath volume:** air added above the model's resting volume, in mL. The wave height is the tidal volume, not total lung capacity.
+- **Airflow:** the derivative of the same smooth breathing waveform, in L/s, with positive inspiration and negative expiration.
+- **O₂ & CO₂:** illustrative gas carried at the mouth, in mL/s. It distinguishes inspired oxygen, expired oxygen and expired carbon dioxide.
+
+The gas illustration assumes fixed dry example fractions: inspired oxygen 20.95%, expired oxygen 16%, expired carbon dioxide 4%, and equal total inspired/expired volumes. Multiplying positive/negative bulk airflow by these fractions produces the traces. Per-minute totals use minute ventilation and the same fractions. These are carried-gas illustrations, not measurements or predictions of blood oxygen uptake, metabolic CO₂ production or blood-gas concentrations. Gas fractions do not respond to changing metabolism or ventilation/perfusion. The assumptions are visible beside the chart and expanded in its help panel.
+
+Consequently, the three equal-minute-volume presets have equal example carried-gas totals even though their waveform timing differs and the existing dead-space model yields different alveolar ventilation. This keeps the two teaching concepts distinct. No additional clinical inference is made from the ventilation controls.
+
+No API, database or assessment-evidence format change is needed. New tests independently integrate the traces over a breath, verify the stated fractions/units, check rate/depth scaling, bound the rolling window and confirm that no future or prior-condition samples are fabricated.

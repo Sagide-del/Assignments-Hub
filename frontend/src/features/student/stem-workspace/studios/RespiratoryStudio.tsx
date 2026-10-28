@@ -25,6 +25,7 @@ import { StudioBrief, StudioReport, useStudio } from "./useStudio";
 import { RESPIRATORY_GUIDE } from "./respiratory-guide";
 import type { RespiratoryMotion, RespiratoryView } from "./RespiratoryScene";
 const Scene = lazy(() => import("./RespiratoryScene"));
+const RespiratoryGraphs = lazy(() => import("./RespiratoryGraphs"));
 const patterns = [
   { name: "Quiet breathing", rate: 12, tidalVolume: 0.5 },
   { name: "Rapid, shallow", rate: 24, tidalVolume: 0.25 },
@@ -44,7 +45,7 @@ export default function RespiratoryStudio({
       replay: replayRespiratory,
     }),
     { state, draft, dispatch } = studio;
-  const [tab, setTab] = useState<"anatomy" | "notebook">("anatomy"),
+  const [tab, setTab] = useState<"anatomy" | "graphs" | "notebook">("anatomy"),
     [view, setView] = useState<RespiratoryView>("surface"),
     [selected, setSelected] = useState<RespiratoryStructure>("right-lung"),
     [cameraView, setCameraView] = useState<"front" | "back" | "side">("front"),
@@ -107,7 +108,7 @@ export default function RespiratoryStudio({
     rates = ventilation(state.config),
     guide = RESPIRATORY_GUIDE[selected];
   const canRecord =
-    ready &&
+    (ready || tab === "graphs") &&
     !state.recorded &&
     display.cycles >= 2 &&
     notes.trim().length >= 12;
@@ -140,9 +141,9 @@ export default function RespiratoryStudio({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav
           aria-label="Respiratory lab views"
-          className="flex rounded-lg bg-slate-100 p-1"
+          className="flex flex-wrap rounded-lg bg-slate-100 p-1"
         >
-          {(["anatomy", "notebook"] as const).map((t) => (
+          {(["anatomy", "graphs", "notebook"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -151,7 +152,9 @@ export default function RespiratoryStudio({
             >
               {t === "anatomy"
                 ? "Anatomy & breathing"
-                : `Notebook (${state.observations.length})`}
+                : t === "graphs"
+                  ? "Live graphs"
+                  : `Notebook (${state.observations.length})`}
             </button>
           ))}
         </nav>
@@ -168,153 +171,173 @@ export default function RespiratoryStudio({
           {studio.message}
         </p>
       )}
-      {tab === "anatomy" && (
+      {(tab === "anatomy" || tab === "graphs") && (
         <>
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <section
-              className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
-              aria-label="Respiratory anatomy viewer"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-                <div
-                  className="flex flex-wrap gap-1"
-                  aria-label="Anatomy display modes"
-                >
-                  {(
-                    [
-                      { id: "surface", title: "Lung surface" },
-                      { id: "airways", title: "Reveal airways" },
-                      { id: "lobes", title: "Lung lobes" },
-                      { id: "alveoli", title: "Alveoli close-up" },
-                    ] as const
-                  ).map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => {
-                        setView(t.id);
-                        if (t.id === "alveoli") inspect("alveoli");
-                      }}
-                      aria-pressed={view === t.id}
-                      className={`min-h-9 rounded-md px-3 text-[11px] font-semibold ${view === t.id ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`}
-                    >
-                      {t.title}
-                    </button>
-                  ))}
-                </div>
-                <label className="flex min-h-9 items-center gap-2 text-[11px] text-slate-500">
-                  <input
-                    aria-label="Show anatomical labels"
-                    type="checkbox"
-                    checked={labels}
-                    onChange={(e) => setLabels(e.target.checked)}
-                    className="accent-blue-700"
-                  />
-                  Labels
-                </label>
-              </div>
-              <div className="relative h-[520px] sm:h-[620px]">
-                <Suspense
-                  fallback={
-                    <p className="p-6 text-sm">
-                      Preparing the anatomical viewer…
-                    </p>
-                  }
-                >
-                  <Scene
-                    config={state.config}
-                    motion={motion}
-                    view={view}
-                    selected={selected}
-                    cameraView={cameraView}
-                    resetKey={resetKey}
-                    labels={labels}
-                    onSelect={inspect}
-                    onLoaded={() => {
-                      setReady(true);
-                      motion.current.time = 0;
-                      setDisplay({ time: 0, cycles: 0 });
-                    }}
-                  />
-                </Suspense>
-                <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/80 bg-white/90 px-4 py-3 text-xs backdrop-blur-sm">
-                  <span className="flex items-center gap-2 text-slate-700">
-                    <span
-                      className={`h-2 w-2 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`}
+            {tab === "graphs" ? (
+              <Suspense
+                fallback={
+                  <p className="rounded-xl border bg-white p-6 text-sm">
+                    Preparing live graphs…
+                  </p>
+                }
+              >
+                <RespiratoryGraphs
+                  config={state.config}
+                  time={display.time}
+                  running={running}
+                />
+              </Suspense>
+            ) : (
+              <section
+                className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
+                aria-label="Respiratory anatomy viewer"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+                  <div
+                    className="flex flex-wrap gap-1"
+                    aria-label="Anatomy display modes"
+                  >
+                    {(
+                      [
+                        { id: "surface", title: "Lung surface" },
+                        { id: "airways", title: "Reveal airways" },
+                        { id: "lobes", title: "Lung lobes" },
+                        { id: "alveoli", title: "Alveoli close-up" },
+                      ] as const
+                    ).map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => {
+                          setView(t.id);
+                          if (t.id === "alveoli") inspect("alveoli");
+                        }}
+                        aria-pressed={view === t.id}
+                        className={`min-h-9 rounded-md px-3 text-[11px] font-semibold ${view === t.id ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                      >
+                        {t.title}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="flex min-h-9 items-center gap-2 text-[11px] text-slate-500">
+                    <input
+                      aria-label="Show anatomical labels"
+                      type="checkbox"
+                      checked={labels}
+                      onChange={(e) => setLabels(e.target.checked)}
+                      className="accent-blue-700"
                     />
-                    {running
-                      ? sample.inhale
-                        ? "Inspiration · air entering"
-                        : "Expiration · air leaving"
-                      : "Breathing paused"}
-                  </span>
-                  <span className="font-mono text-slate-500">
-                    {display.cycles} complete breaths
-                  </span>
+                    Labels
+                  </label>
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4">
-                <p className="max-w-md text-[11px] leading-6 text-slate-500">
-                  {view === "alveoli"
-                    ? "Enlarged gas-exchange schematic · not to scale. O₂ enters blood; CO₂ enters the airspace."
-                    : "Drag to rotate · scroll/pinch to zoom · select a lung or airway to inspect it."}
-                </p>
-                <div
-                  className="flex flex-wrap gap-1"
-                  aria-label="Anatomy camera views"
-                >
-                  {(["front", "back", "side"] as const).map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => {
-                        setCameraView(v);
-                        setResetKey((n) => n + 1);
+                <div className="relative h-[520px] sm:h-[620px]">
+                  <Suspense
+                    fallback={
+                      <p className="p-6 text-sm">
+                        Preparing the anatomical viewer…
+                      </p>
+                    }
+                  >
+                    <Scene
+                      config={state.config}
+                      motion={motion}
+                      view={view}
+                      selected={selected}
+                      cameraView={cameraView}
+                      resetKey={resetKey}
+                      labels={labels}
+                      onSelect={inspect}
+                      onLoaded={() => {
+                        if (!ready) {
+                          motion.current.time = 0;
+                          setDisplay({ time: 0, cycles: 0 });
+                        }
+                        setReady(true);
                       }}
-                      aria-pressed={cameraView === v}
-                      className={`min-h-9 rounded-lg border px-3 text-xs capitalize ${cameraView === v ? "border-slate-400 bg-slate-50" : "text-slate-500"}`}
-                    >
-                      {v}
-                    </button>
-                  ))}
+                    />
+                  </Suspense>
+                  <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/80 bg-white/90 px-4 py-3 text-xs backdrop-blur-sm">
+                    <span className="flex items-center gap-2 text-slate-700">
+                      <span
+                        className={`h-2 w-2 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`}
+                      />
+                      {running
+                        ? sample.inhale
+                          ? "Inspiration · air entering"
+                          : "Expiration · air leaving"
+                        : "Breathing paused"}
+                    </span>
+                    <span className="font-mono text-slate-500">
+                      {display.cycles} complete breaths
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </section>
-            <aside className="space-y-4">
-              <section className="rounded-xl border bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-700">
-                  Explore the anatomy
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {(
-                    Object.keys(RESPIRATORY_GUIDE) as RespiratoryStructure[]
-                  ).map((id) => (
-                    <button
-                      key={id}
-                      onClick={() => inspect(id)}
-                      aria-pressed={selected === id}
-                      className={`flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 text-left text-xs ${selected === id ? "border-rose-300 bg-rose-50 text-rose-900" : "border-slate-200 text-slate-600"}`}
-                    >
-                      {RESPIRATORY_GUIDE[id].name}
-                      {state.inspected.includes(id) ? (
-                        <Check className="h-3 w-3 shrink-0 text-emerald-600" />
-                      ) : (
-                        <Eye className="h-3 w-3 shrink-0 opacity-40" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-4 border-t pt-4">
-                  <h2 className="text-base font-semibold">{guide.name}</h2>
-                  <p className="mt-1 text-[11px] font-medium text-rose-700">
-                    {guide.short}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4">
+                  <p className="max-w-md text-[11px] leading-6 text-slate-500">
+                    {view === "alveoli"
+                      ? "Enlarged gas-exchange schematic · not to scale. O₂ enters blood; CO₂ enters the airspace."
+                      : "Drag to rotate · scroll/pinch to zoom · select a lung or airway to inspect it."}
                   </p>
-                  <p className="mt-3 text-xs leading-7 text-slate-600">
-                    {guide.description}
-                  </p>
-                  <p className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] leading-6 text-slate-500">
-                    {guide.observe}
-                  </p>
+                  <div
+                    className="flex flex-wrap gap-1"
+                    aria-label="Anatomy camera views"
+                  >
+                    {(["front", "back", "side"] as const).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => {
+                          setCameraView(v);
+                          setResetKey((n) => n + 1);
+                        }}
+                        aria-pressed={cameraView === v}
+                        className={`min-h-9 rounded-lg border px-3 text-xs capitalize ${cameraView === v ? "border-slate-400 bg-slate-50" : "text-slate-500"}`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </section>
+            )}
+            <aside className="space-y-4">
+              {tab === "anatomy" && (
+                <section className="rounded-xl border bg-white p-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-700">
+                    Explore the anatomy
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {(
+                      Object.keys(RESPIRATORY_GUIDE) as RespiratoryStructure[]
+                    ).map((id) => (
+                      <button
+                        key={id}
+                        onClick={() => inspect(id)}
+                        aria-pressed={selected === id}
+                        className={`flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 text-left text-xs ${selected === id ? "border-rose-300 bg-rose-50 text-rose-900" : "border-slate-200 text-slate-600"}`}
+                      >
+                        {RESPIRATORY_GUIDE[id].name}
+                        {state.inspected.includes(id) ? (
+                          <Check className="h-3 w-3 shrink-0 text-emerald-600" />
+                        ) : (
+                          <Eye className="h-3 w-3 shrink-0 opacity-40" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-4 border-t pt-4">
+                    <h2 className="text-base font-semibold">{guide.name}</h2>
+                    <p className="mt-1 text-[11px] font-medium text-rose-700">
+                      {guide.short}
+                    </p>
+                    <p className="mt-3 text-xs leading-7 text-slate-600">
+                      {guide.description}
+                    </p>
+                    <p className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] leading-6 text-slate-500">
+                      {guide.observe}
+                    </p>
+                  </div>
+                </section>
+              )}
               <section className="rounded-xl border bg-white p-5">
                 <h2 className="flex items-center gap-2 text-sm font-semibold">
                   <Wind className="h-4 w-4 text-slate-400" />
@@ -383,7 +406,16 @@ export default function RespiratoryStudio({
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <button
-                    onClick={() => setRunning((v) => !v)}
+                    onClick={() => {
+                      if (running)
+                        setDisplay({
+                          time: motion.current.time,
+                          cycles: Math.floor(
+                            motion.current.time / (60 / state.config.rate),
+                          ),
+                        });
+                      setRunning(!running);
+                    }}
                     className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white"
                   >
                     {running ? (
