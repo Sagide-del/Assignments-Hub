@@ -1,3 +1,4 @@
+import { assessStudio } from "../labs/studio-engine";
 import {
   practicalFor,
   replayPractical,
@@ -49,6 +50,33 @@ export class LabSessionsService {
     )
       throw new NotFoundException("Lab not found");
     let completionSummary;
+    if (dto.studio) {
+      if (!lab) throw new NotFoundException("Lab not found");
+      if (dto.workshop || dto.practical)
+        throw new BadRequestException("Submit one practical report at a time.");
+      try {
+        completionSummary = {
+          ...assessStudio(practicalFor(lab).kind, dto.studio),
+          grade: lab.grade,
+          activity: lab.title,
+        };
+      } catch (error) {
+        throw new BadRequestException(
+          error instanceof Error ? error.message : "Invalid studio report",
+        );
+      }
+      if (
+        lab.questions.some(
+          (q) =>
+            !(dto.answers ?? []).some(
+              (a) => a.questionId === q.id && a.answer.trim(),
+            ),
+        )
+      )
+        throw new BadRequestException(
+          "Answer the lab questions before saving the report.",
+        );
+    }
     if (dto.workshop) {
       if (!lab) throw new NotFoundException("Lab not found");
       if (dto.practical || isTitrationKey(lab.key))
@@ -123,7 +151,7 @@ export class LabSessionsService {
         "This lab does not accept titration evidence.",
       );
 
-    if (lab && !isTitrationKey(lab.key) && !dto.workshop)
+    if (lab && !isTitrationKey(lab.key) && !dto.workshop && !dto.studio)
       throw new BadRequestException(
         "This 3D lab requires its practical event log and report.",
       );

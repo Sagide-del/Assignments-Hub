@@ -9,8 +9,10 @@ for (let attempt = 1; attempt <= 24; attempt++) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (
-      data.immersiveLabsVersion !== 2 ||
+      data.immersiveLabsVersion !== 3 ||
       data.workshopReportVersion !== "stem-workshop-v2" ||
+      !data.studios?.includes("cyber-studio-v1") ||
+      !data.studios?.includes("pendulum-studio-v1") ||
       data.evidenceStorage !== "completionSummary" ||
       !data.gradeLevels?.includes(11)
     )

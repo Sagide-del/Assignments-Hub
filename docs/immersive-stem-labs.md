@@ -2,6 +2,8 @@
 
 ## Coverage and interaction
 
+Cybersecurity and pendulum now use dedicated studios with an interactive desktop and a timed nonlinear pendulum, respectively. See [dedicated-stem-studios.md](dedicated-stem-studios.md). The shared workshops described below continue to serve the other activities.
+
 All 58 activities in the original seeded catalogue now open a 3D workspace: 57 authored activity profiles in `backend/src/labs/practical-catalogue.json`, plus the dedicated titration practical. The newer Grade 10/11/12 titration records use that same titration workspace. Unknown teacher-authored activities open a clearly described general modelling bench, with the teacher's description, instructions and supporting media retained in the practical brief; this does not reproduce arbitrary custom physics.
 
 The shared Three.js workshop supports direct pointer dragging, object picking, work-mat placement, translation, rotation, orbit and zoom, with equivalent keyboard controls. Objects use procedural geometry rather than external model downloads. Equipment geometry is shared across families of related teaching activities; this is a collection of schematic teaching models, not 58 commercial physics-engine simulators.
@@ -33,7 +35,7 @@ Reports are stored in existing `LabSession.completionSummary` alongside existing
 
 ## Deployment and validation
 
-No new schema migration is needed for workshop reports. The existing titration migration supplies the three grade-specific titration records. `/api/v1/labs/capabilities` reports immersive version 2 and workshop report version `stem-workshop-v2`. GitHub frontend publication waits for the new backend before S3 upload and CloudFront invalidation.
+No new schema migration is needed for workshop reports. The existing titration migration supplies the three grade-specific titration records. `/api/v1/labs/capabilities` reports immersive version 3 and workshop report version `stem-workshop-v2`. GitHub frontend publication waits for the new backend before S3 upload and CloudFront invalidation.
 
 Validation covers all original catalogue keys, every model across its scale, deterministic replay, procedure/placement rules, building alignment, attack-before-defence vs blocked-retest states, quantitative relationships, report DTO bounds, authenticated storage, grade/published access and required teacher questions.
 

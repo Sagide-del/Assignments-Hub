@@ -1,3 +1,4 @@
+import { practicalFor } from "../../../../backend/src/labs/practical-engine";
 import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
@@ -9,6 +10,10 @@ const TitrationPractical = lazy(
 );
 const PracticalWorkshop = lazy(
   () => import("./stem-workspace/three-d/PracticalWorkshop"),
+);
+const CyberStudio = lazy(() => import("./stem-workspace/studios/CyberStudio"));
+const PendulumStudio = lazy(
+  () => import("./stem-workspace/studios/PendulumStudio"),
 );
 export function StemLabPlayerPage() {
   const { id } = useParams();
@@ -43,6 +48,17 @@ export function StemLabPlayerPage() {
         </Link>
       </div>
     );
+  const kind = practicalFor(lab).kind;
+  if (kind === "cyber" || kind === "pendulum") {
+    const Studio = kind === "cyber" ? CyberStudio : PendulumStudio;
+    return (
+      <Suspense
+        fallback={<p className="p-6 text-sm">Preparing your laboratory…</p>}
+      >
+        <Studio key={`${userId}:${lab.id}`} lab={lab} userId={userId!} />
+      </Suspense>
+    );
+  }
   if (isTitrationKey(lab.key))
     return (
       <Suspense

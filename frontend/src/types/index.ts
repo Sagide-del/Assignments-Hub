@@ -374,6 +374,7 @@ export interface Lab {
 }
 
 export interface LabSession {
+  answers?: {questionId:number;answer:string}[] | null;
   completionSummary?: Record<string, unknown> | null;
   id: number;
   schoolId: number;

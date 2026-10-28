@@ -21,6 +21,18 @@ import { isTitrationKey } from "./stem-workspace/three-d/titration-model";
 import type { Lab } from "../../types";
 function presentation(lab: Lab) {
   const kind = practicalFor(lab).kind;
+  if (kind === "cyber")
+    return {
+      Icon: ShieldCheck,
+      colour: "text-blue-700 bg-blue-50",
+      image: "/stem/computer-studio.png",
+    };
+  if (kind === "pendulum")
+    return {
+      Icon: Waves,
+      colour: "text-indigo-700 bg-indigo-50",
+      image: "/stem/pendulum-studio.png",
+    };
   if (["dna", "molecule", "organic", "polymer"].includes(kind))
     return {
       Icon: Atom,
@@ -99,12 +111,16 @@ export function StemLabsPage() {
   );
   const inProgress = (lab: Lab) => {
     try {
+      const kind = practicalFor(lab).kind;
+      const version = isTitrationKey(lab.key)
+        ? "titration-3d-v1"
+        : kind === "cyber"
+          ? "cyber-studio-v1"
+          : kind === "pendulum"
+            ? "pendulum-studio-v1"
+            : "stem-workshop-v2";
       const d = JSON.parse(
-        localStorage.getItem(
-          isTitrationKey(lab.key)
-            ? `titration-3d-v1:${user?.id}:${lab.id}`
-            : `stem-workshop-v2:${user?.id}:${lab.id}`,
-        ) ?? "null",
+        localStorage.getItem(`${version}:${user?.id}:${lab.id}`) ?? "null",
       );
       return !!(d?.goggles || d?.trials?.length || d?.events?.length);
     } catch {

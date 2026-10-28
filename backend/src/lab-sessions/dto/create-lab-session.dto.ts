@@ -1,3 +1,4 @@
+import { StudioEvidenceDto } from "./studio-evidence.dto";
 import { WorkshopEvidenceDto } from "./workshop-evidence.dto";
 import {
   IsArray,
@@ -11,6 +12,10 @@ import { TitrationEvidenceDto } from "./titration-evidence.dto";
 import { AnswerInputDto } from "../../submissions/dto/answer-input.dto";
 
 export class CreateLabSessionDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => StudioEvidenceDto)
+  studio?: StudioEvidenceDto;
   @IsOptional()
   @ValidateNested()
   @Type(() => WorkshopEvidenceDto)
