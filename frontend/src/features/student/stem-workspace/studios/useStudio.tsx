@@ -1,3 +1,5 @@
+import type { StarchEvent } from "../../../../../../backend/src/labs/starch-engine";
+import type { MolecularEvent } from "../../../../../../backend/src/labs/molecular-engine";
 import type { RespiratoryEvent } from "../../../../../../backend/src/labs/respiratory-engine";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +17,12 @@ interface Draft<E> {
   answers: Record<number, string>;
 }
 export function useStudio<
-  E extends CyberEvent | PendulumEvent | RespiratoryEvent,
+  E extends
+    | CyberEvent
+    | PendulumEvent
+    | RespiratoryEvent
+    | StarchEvent
+    | MolecularEvent,
   S,
 >({
   lab,

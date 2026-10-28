@@ -49,6 +49,7 @@ export default function TitrationPractical({
   const [tab, setTab] = useState<"bench" | "results" | "guide">("bench");
   const [mode, setMode] = useState<"guided" | "independent">("guided");
   const [selected, setSelected] = useState("Burette");
+  const [activeTool, setActiveTool] = useState<string | null>(null);
   const [held, setHeld] = useState<string | null>(null);
   const [view, setView] = useState("bench");
   const [valve, setValve] = useState(false);
@@ -200,19 +201,65 @@ export default function TitrationPractical({
       signal("fill");
       return;
     }
-    if (step === "pipette" && draft.filled) {
-      update({ aliquot: true });
+    if (draft.dispensed > 0 || draft.recorded) {
+      setMessage("Prepare a fresh trial before changing the sample.");
+      return;
+    }
+    if (step === "pipette" && draft.filled && !draft.aliquot) {
+      update({ pipetteVolume: 25 });
+      setSelected("Pipette");
+      signal("aspirate");
+      setMessage(
+        "25.00 mL HCl measured using the pipette filler. Select the flask to deliver it.",
+      );
+      return;
+    }
+    if (step === "deliver" && draft.pipetteVolume === 25 && !draft.aliquot) {
+      update({ aliquot: true, pipetteVolume: 0 });
       setSelected("Pipette");
       signal("pipette");
       return;
     }
-    if (step === "indicator" && draft.aliquot) {
-      update({ indicator: true });
+    if (step === "load-indicator" && draft.aliquot && !draft.indicator) {
+      update({ dropperFilled: true });
+      signal("load-indicator");
+      setMessage(
+        "Indicator dropper loaded. Select the conical flask to add two drops.",
+      );
+      return;
+    }
+    if (
+      step === "indicator" &&
+      draft.aliquot &&
+      draft.dropperFilled &&
+      !draft.indicator
+    ) {
+      update({ indicator: true, dropperFilled: false });
       setSelected("Flask");
       signal("indicator");
+      return;
     }
+    setMessage(
+      "Complete the preparation in order and use the correct reagent and receiving vessel.",
+    );
+  }
+  function useOn(target: string) {
+    if (activeTool === "Pipette" && target === "HCl") return prepare("pipette");
+    if (activeTool === "Pipette" && target === "Flask")
+      return prepare("deliver");
+    if (activeTool === "Dropper" && target === "Indicator")
+      return prepare("load-indicator");
+    if (activeTool === "Dropper" && target === "Flask")
+      return prepare("indicator");
+    if (activeTool === "Burette" && target === "NaOH") return prepare("fill");
+    setMessage(
+      activeTool === "Pipette"
+        ? "Use the volumetric pipette for the HCl sample, then deliver into the flask. Indicator is added with a separate dropper; the pipette does not go into the burette."
+        : "Choose the matching reagent bottle or receiving flask for this tool.",
+    );
   }
   function newRun() {
+    setActiveTool(null);
     setValve(false);
     setConfirmReset(false);
     setMessage(
@@ -424,9 +471,13 @@ export default function TitrationPractical({
                     mixed: draft.mixed,
                     aliquot: draft.aliquot,
                     indicator: draft.indicator,
+                    pipetteVolume: draft.pipetteVolume,
+                    dropperFilled: draft.dropperFilled,
                     action,
                   }}
                   view={view}
+                  activeTool={activeTool}
+                  onTarget={useOn}
                   onSelect={setSelected}
                   placements={draft.placements}
                   held={held}
@@ -438,6 +489,75 @@ export default function TitrationPractical({
                   onPlace={placeEquipment}
                 />
               </Suspense>
+            </div>
+            <div className="border-t bg-slate-50 p-4 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {["Pipette", "Dropper", "Burette"].map((tool) => (
+                  <button
+                    key={tool}
+                    aria-pressed={activeTool === tool}
+                    className={`min-h-11 rounded-lg border px-3 text-xs ${activeTool === tool ? "bg-blue-700 text-white" : "bg-white"}`}
+                    onClick={() => {
+                      setHeld(null);
+                      setValve(false);
+                      setActiveTool(activeTool === tool ? null : tool);
+                    }}
+                  >
+                    Use {tool.toLowerCase()}
+                  </button>
+                ))}
+                {activeTool && (
+                  <button
+                    className="min-h-11 px-3 text-xs underline"
+                    onClick={() => setActiveTool(null)}
+                  >
+                    Put tool down
+                  </button>
+                )}
+              </div>
+              <p className="text-xs leading-6 text-slate-600">
+                {activeTool
+                  ? `Using ${activeTool.toLowerCase()}: select a labelled reagent bottle, then the receiving flask.`
+                  : "Select a tool to transfer liquids, or drag apparatus to arrange your bench."}{" "}
+                Pipette: {draft.pipetteVolume.toFixed(2)} mL · Dropper:{" "}
+                {draft.dropperFilled ? "indicator loaded" : "empty"}
+              </p>
+              {activeTool && (
+                <div className="flex flex-wrap gap-2">
+                  {["HCl", "NaOH", "Indicator", "Flask"].map((target) => (
+                    <button
+                      key={target}
+                      className="min-h-10 rounded-lg border bg-white px-3 text-xs"
+                      onClick={() => useOn(target)}
+                    >
+                      {target === "Flask"
+                        ? "Conical flask"
+                        : target === "HCl"
+                          ? "HCl sample"
+                          : target === "NaOH"
+                            ? "NaOH stock"
+                            : "Indicator bottle"}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-3 text-xs">
+                <span
+                  className="h-7 w-7 rounded-full border"
+                  style={{
+                    background:
+                      colour === "Deep pink"
+                        ? "#d81b70"
+                        : colour === "Pale pink"
+                          ? "#ef9fc3"
+                          : "#fafafa",
+                  }}
+                />
+                <span>
+                  Flask: {draft.aliquot ? colour : "empty"}
+                  {!draft.mixed && draft.dispensed > 0 ? " · swirl to mix" : ""}
+                </span>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2 border-t p-3">
               {["Burette", "Pipette", "Flask", "Indicator", "Goggles"].map(
@@ -567,15 +687,27 @@ export default function TitrationPractical({
                   },
                   {
                     id: "pipette",
-                    label: "Rinse & pipette 25.00 mL HCl",
-                    done: draft.aliquot,
+                    label: "Rinse & draw 25.00 mL HCl into pipette",
+                    done: draft.pipetteVolume === 25 || draft.aliquot,
                     enabled: draft.filled,
                   },
                   {
-                    id: "indicator",
-                    label: "Add phenolphthalein",
-                    done: draft.indicator,
+                    id: "deliver",
+                    label: "Deliver pipette sample into flask",
+                    done: draft.aliquot,
+                    enabled: draft.pipetteVolume === 25,
+                  },
+                  {
+                    id: "load-indicator",
+                    label: "Load separate indicator dropper",
+                    done: draft.dropperFilled || draft.indicator,
                     enabled: draft.aliquot,
+                  },
+                  {
+                    id: "indicator",
+                    label: "Add two indicator drops into flask",
+                    done: draft.indicator,
+                    enabled: draft.dropperFilled,
                   },
                 ].map((step, i) => (
                   <button

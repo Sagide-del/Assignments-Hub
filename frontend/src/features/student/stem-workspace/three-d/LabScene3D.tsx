@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 export interface SceneState {
   reading: number;
@@ -12,6 +13,8 @@ export interface SceneState {
   action: string;
   length?: number;
   mass?: number;
+  pipetteVolume?: number;
+  dropperFilled?: boolean;
 }
 export default function LabScene3D({
   state,
@@ -22,6 +25,8 @@ export default function LabScene3D({
   held,
   onPick,
   onPlace,
+  activeTool,
+  onTarget,
 }: {
   state: SceneState;
   kind?: "titration" | "pendulum";
@@ -29,6 +34,8 @@ export default function LabScene3D({
   onSelect?: (name: string) => void;
   placements?: Record<string, { x: number; z: number; rotation: number }>;
   held?: string | null;
+  activeTool?: string | null;
+  onTarget?: (target: string) => void;
   onPick?: (name: string) => void;
   onPlace?: (
     name: string,
@@ -42,8 +49,22 @@ export default function LabScene3D({
   latest.current = state;
   select.current = onSelect;
   cameraView.current = view;
-  const interaction = useRef({ placements, held, onPick, onPlace });
-  interaction.current = { placements, held, onPick, onPlace };
+  const interaction = useRef({
+    placements,
+    held,
+    onPick,
+    onPlace,
+    activeTool,
+    onTarget,
+  });
+  interaction.current = {
+    placements,
+    held,
+    onPick,
+    onPlace,
+    activeTool,
+    onTarget,
+  };
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -79,6 +100,10 @@ export default function LabScene3D({
     );
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#e7eef5");
+    const pmrem = new THREE.PMREMGenerator(renderer),
+      room = new RoomEnvironment(),
+      environment = pmrem.fromScene(room, 0.06);
+    scene.environment = environment.texture;
     scene.fog = new THREE.Fog("#e7eef5", 13, 26);
     const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 50);
     camera.position.set(3.9, 3.5, 6);
@@ -105,7 +130,7 @@ export default function LabScene3D({
       return m;
     };
     const glass = new THREE.MeshPhysicalMaterial({
-      color: "#90bad0",
+      color: "#cedee5",
       transparent: true,
       opacity: 0.36,
       roughness: 0.07,
@@ -186,11 +211,14 @@ export default function LabScene3D({
       tap: THREE.Mesh | undefined,
       drop: THREE.Mesh | undefined,
       pipette: THREE.Group | undefined,
+      pipetteFluid: THREE.Mesh | undefined,
+      dropper: THREE.Group | undefined,
+      dropperFluid: THREE.Mesh | undefined,
       flask: THREE.Group | undefined,
       cloud: THREE.Mesh | undefined,
       bob: THREE.Group | undefined,
       string: THREE.Mesh | undefined;
-    const liquidMat = mat("#b1dbef", 0, 0.18),
+    const liquidMat = mat("#e4eaed", 0, 0.18),
       indicatorMat = mat("#e75d9e", 0, 0.2);
     if (kind === "titration") {
       const metal = mat("#697d91", 0.8, 0.2);
@@ -288,7 +316,7 @@ export default function LabScene3D({
         0.38,
         0.43,
         0.24,
-        mat("#b7deeb", 0, 0.18),
+        mat("#eef1ed", 0, 0.18),
         [0, 0.13, 0],
         "Flask",
         flask,
@@ -325,6 +353,37 @@ export default function LabScene3D({
         "Pipette",
         pipette,
       );
+      pipetteFluid = cylinder(
+        0.012,
+        0.012,
+        1.35,
+        mat("#d9e4e7"),
+        [0, 0, 0],
+        "Pipette",
+        pipette,
+      );
+      dropper = new THREE.Group();
+      dropper.userData.equipment = "Dropper";
+      scene.add(dropper);
+      cylinder(0.025, 0.025, 0.55, glass, [0, 0, 0], "Dropper", dropper);
+      cylinder(
+        0.065,
+        0.055,
+        0.17,
+        mat("#293d4a"),
+        [0, 0.35, 0],
+        "Dropper",
+        dropper,
+      );
+      dropperFluid = cylinder(
+        0.018,
+        0.018,
+        0.35,
+        mat("#eef1ed"),
+        [0, -0.07, 0],
+        "Dropper",
+        dropper,
+      );
       label("25.00 mL", 0.36, 0.12, [0, 0.4, 0.035], pipette);
       function bottle(x: number, text: string, cap: string) {
         const g = new THREE.Group();
@@ -336,7 +395,7 @@ export default function LabScene3D({
             ? "NaOH"
             : "HCl";
         cylinder(0.19, 0.22, 0.55, glass, [0, 0.3, 0], text, g);
-        cylinder(0.16, 0.19, 0.38, mat("#cae5ee"), [0, 0.23, 0], text, g);
+        cylinder(0.16, 0.19, 0.38, mat("#eef1ed"), [0, 0.23, 0], text, g);
         cylinder(0.09, 0.09, 0.12, mat(cap), [0, 0.64, 0], text, g);
         label(text, 0.38, 0.21, [0, 0.3, 0.218], g);
       }
@@ -345,7 +404,7 @@ export default function LabScene3D({
       bottle(1.95, "Indicator\nPhenolphthalein", "#e26a9a");
       drop = mesh(
         new THREE.SphereGeometry(0.021, 12, 8),
-        mat("#b7dff6"),
+        mat("#eef1ed"),
         [0, 1.5, 0],
       );
       const goggles = new THREE.Group();
@@ -397,6 +456,7 @@ export default function LabScene3D({
     if (kind === "titration") {
       for (const name of [
         "Burette",
+        "Dropper",
         "Flask",
         "Pipette",
         "Goggles",
@@ -425,6 +485,39 @@ export default function LabScene3D({
         movable[name] = group;
       }
     }
+    const domLabels: {
+      button: HTMLButtonElement;
+      name: string;
+      anchor: THREE.Object3D;
+    }[] = [];
+    if (kind === "titration")
+      for (const [name, words, x, y, z] of [
+        ["Burette", "Burette · NaOH 0.100 mol/L", -0.55, 3.8, 0],
+        ["Pipette", "Volumetric pipette · 25.00 mL", 1.15, 3.08, 0.4],
+        ["Flask", "Conical flask", 0, 0.65, 0.95],
+        ["HCl", "HCl · sample", -1.25, 1.55, -0.65],
+        ["NaOH", "NaOH · stock", -1.9, 1.95, -0.65],
+        ["Indicator", "Phenolphthalein", 1.95, 1.6, -0.65],
+        ["Dropper", "Indicator dropper", 2.45, 0.65, 0.6],
+      ] as [string, string, number, number, number][]) {
+        const anchor = new THREE.Object3D();
+        anchor.position.set(x, y, z);
+        movable[name]?.add(anchor);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = words;
+        button.className =
+          "absolute z-10 rounded-lg border bg-white/95 px-2 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm";
+        button.onclick = () => {
+          if (interaction.current.activeTool)
+            interaction.current.onTarget?.(name);
+          else select.current?.(name);
+        };
+        container.appendChild(button);
+        domLabels.push({ button, name, anchor });
+      }
+    const projected = new THREE.Vector3();
+    let consumed = false;
     const raycaster = new THREE.Raycaster(),
       pointer = new THREE.Vector2();
     let down = [0, 0],
@@ -441,6 +534,7 @@ export default function LabScene3D({
       raycaster.setFromCamera(pointer, camera);
     };
     const onDown = (e: PointerEvent) => {
+      consumed = false;
       down = [e.clientX, e.clientY];
       if (e.button !== 0) return;
       aim(e);
@@ -453,6 +547,11 @@ export default function LabScene3D({
       if (!hit) return;
       let root: THREE.Object3D | null = hit.object;
       while (root && !root.userData.movable) root = root.parent;
+      if (root && interaction.current.activeTool) {
+        consumed = true;
+        interaction.current.onTarget?.(root.userData.equipment);
+        return;
+      }
       if (root && interaction.current.onPlace) {
         dragging = root.userData.equipment;
         controls.enabled = false;
@@ -474,6 +573,10 @@ export default function LabScene3D({
       );
     };
     const onUp = (e: PointerEvent) => {
+      if (consumed) {
+        consumed = false;
+        return;
+      }
       if (dragging) {
         const name = dragging,
           p = movable[name].position;
@@ -572,11 +675,11 @@ export default function LabScene3D({
         (flaskLiquid.material as THREE.MeshStandardMaterial).color.set(
           s.indicator && s.mixed
             ? s.colour === "Deep pink"
-              ? "#df5497"
+              ? "#d81b70"
               : s.colour === "Pale pink"
-                ? "#f6bed8"
-                : "#b7deeb"
-            : "#b7deeb",
+                ? "#ef9fc3"
+                : "#eef1ed"
+            : "#eef1ed",
         );
       }
       if (cloud) cloud.visible = s.indicator && !s.mixed && s.volume > 0;
@@ -587,14 +690,27 @@ export default function LabScene3D({
         drop.position.y = 1.52 - ((t * 2.4) % 1) * 0.24;
       }
       if (pipette) {
-        const moving = s.action.startsWith("pipette") && t - actionStart < 2;
-        const placed = !!interaction.current.placements?.Pipette;
+        const deliver = s.action.startsWith("pipette") && t - actionStart < 2;
+        const aspirate = s.action.startsWith("aspirate") && t - actionStart < 2;
         pipette.position.set(
-          moving && !placed ? 0 : 1.15,
-          moving ? 2.45 : 1.65,
-          moving && !placed ? 0 : 0.4,
+          deliver ? 0 : aspirate ? -1.25 : 1.15,
+          deliver ? 2.45 : aspirate ? 1.9 : 1.65,
+          deliver ? 0 : aspirate ? -0.65 : 0.4,
         );
-        pipette.rotation.z = moving ? 0 : -0.22;
+        pipette.rotation.z = deliver || aspirate ? 0 : -0.22;
+        if (pipetteFluid)
+          pipetteFluid.visible = (s.pipetteVolume ?? 0) > 0 || deliver;
+      }
+      if (dropper) {
+        const pour = s.action.startsWith("indicator-") && t - actionStart < 2,
+          load = s.action.startsWith("load-indicator") && t - actionStart < 2;
+        dropper.position.set(
+          pour ? 0 : load ? 1.95 : 2.45,
+          pour ? 1.85 : load ? 1.45 : 0.95,
+          pour ? 0 : load ? -0.65 : 0.6,
+        );
+        dropper.rotation.z = pour || load ? 0 : 0.35;
+        if (dropperFluid) dropperFluid.visible = !!s.dropperFilled || pour;
       }
       if (flask)
         flask.rotation.z =
@@ -611,6 +727,22 @@ export default function LabScene3D({
         ball.scale.setScalar(Math.cbrt(s.mass ?? 1));
       }
       controls.update();
+      for (const l of domLabels) {
+        l.anchor.getWorldPosition(projected);
+        projected.project(camera);
+        const visible =
+          cameraView.current === "bench" ||
+          (cameraView.current === "flask" && l.name === "Flask") ||
+          (cameraView.current === "meniscus" && l.name === "Burette");
+        l.button.hidden =
+          !visible ||
+          Math.abs(projected.x) > 0.96 ||
+          Math.abs(projected.y) > 0.96 ||
+          projected.z > 1;
+        l.button.style.left = `${(projected.x + 1) * 0.5 * container.clientWidth}px`;
+        l.button.style.top = `${(1 - projected.y) * 0.5 * container.clientHeight}px`;
+        l.button.style.transform = "translate(-50%,-50%)";
+      }
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);
     };
@@ -618,6 +750,7 @@ export default function LabScene3D({
     return () => {
       cancelAnimationFrame(frame);
       resize.disconnect();
+      domLabels.forEach((l) => l.button.remove());
       controls.dispose();
       renderer.domElement.removeEventListener("pointerdown", onDown);
       renderer.domElement.removeEventListener("pointerup", onUp);
@@ -629,6 +762,9 @@ export default function LabScene3D({
       });
       materials.forEach((m) => m.dispose());
       textures.forEach((t) => t.dispose());
+      environment.dispose();
+      room.dispose();
+      pmrem.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
@@ -637,7 +773,7 @@ export default function LabScene3D({
     <div className="relative h-full min-h-[360px] w-full overflow-hidden rounded-xl bg-[#e7eef5]">
       <div
         ref={host}
-        className={`h-full min-h-[360px] w-full ${failed ? "hidden" : ""}`}
+        className={`relative h-full min-h-[360px] w-full ${failed ? "hidden" : ""}`}
       />
       {failed && (
         <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-4 p-6 text-center">

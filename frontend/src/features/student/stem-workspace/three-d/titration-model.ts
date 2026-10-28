@@ -23,6 +23,8 @@ export interface TitrationDraft {
   filled: boolean;
   aliquot: boolean;
   indicator: boolean;
+  pipetteVolume: number;
+  dropperFilled: boolean;
   initial: number;
   dispensed: number;
   mixed: boolean;
@@ -45,6 +47,8 @@ export const freshTitration = (): TitrationDraft => ({
   filled: false,
   aliquot: false,
   indicator: false,
+  pipetteVolume: 0,
+  dropperFilled: false,
   initial: 0.2,
   dispensed: 0,
   mixed: true,
@@ -120,7 +124,9 @@ export function restoreTitration(value: unknown): TitrationDraft {
   if (!value || typeof value !== "object") return d;
   const v = value as Record<string, unknown>;
   if (v.version !== TITRATION_VERSION) return d;
+  if (v.pipetteVolume === 25) d.pipetteVolume = 25;
   for (const key of [
+    "dropperFilled",
     "recorded",
     "goggles",
     "rinsed",
@@ -196,6 +202,7 @@ export function restoreTitration(value: unknown): TitrationDraft {
       Object.entries(v.placements).filter(
         ([name, p]) =>
           [
+            "Dropper",
             "Burette",
             "Pipette",
             "Flask",
@@ -216,7 +223,12 @@ export function restoreTitration(value: unknown): TitrationDraft {
   if (!d.goggles) d.rinsed = false;
   if (!d.rinsed) d.filled = false;
   if (!d.filled) d.aliquot = false;
-  if (!d.aliquot) d.indicator = false;
+  if (!d.aliquot) {
+    d.indicator = false;
+    d.dropperFilled = false;
+  }
+  if (!d.filled || d.aliquot) d.pipetteVolume = 0;
+  if (d.indicator) d.dropperFilled = false;
   return d;
 }
 export const isTitrationKey = (key: string) =>

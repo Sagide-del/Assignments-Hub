@@ -20,6 +20,14 @@ export function practicalFor(lab: {
   title?: string;
   subject?: string;
 }): PracticalSpec {
+  if (lab.key.startsWith("starch-test-grade-"))
+    return {
+      ...catalogue[0],
+      key: lab.key,
+      kind: "starch",
+      title: "Leaf starch test",
+      goal: "Compare starch in a light-grown leaf and a dark control.",
+    };
   const exact = catalogue.find((s) => s.key === lab.key);
   if (exact) return exact;
   // Catalogue IDs retain their historic -10- segment even where staff assign a later grade.

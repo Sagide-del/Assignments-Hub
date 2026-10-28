@@ -21,6 +21,18 @@ import { isTitrationKey } from "./stem-workspace/three-d/titration-model";
 import type { Lab } from "../../types";
 function presentation(lab: Lab) {
   const kind = practicalFor(lab).kind;
+  if (kind === "starch")
+    return {
+      Icon: Leaf,
+      colour: "text-emerald-700 bg-emerald-50",
+      image: "/stem/starch-studio.png",
+    };
+  if (["organic", "molecule"].includes(kind))
+    return {
+      Icon: Atom,
+      colour: "text-violet-700 bg-violet-50",
+      image: "/stem/molecular-studio.png",
+    };
   if (kind === "respiration")
     return {
       Icon: Leaf,
@@ -126,7 +138,11 @@ export function StemLabsPage() {
             ? "pendulum-studio-v1"
             : kind === "respiration"
               ? "respiratory-studio-v1"
-              : "stem-workshop-v2";
+              : kind === "starch"
+                ? "starch-studio-v1"
+                : ["organic", "molecule"].includes(kind)
+                  ? "molecular-studio-v1"
+                  : "stem-workshop-v2";
       const d = JSON.parse(
         localStorage.getItem(`${version}:${user?.id}:${lab.id}`) ?? "null",
       );

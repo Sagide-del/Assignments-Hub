@@ -18,6 +18,12 @@ const PendulumStudio = lazy(
 const RespiratoryStudio = lazy(
   () => import("./stem-workspace/studios/RespiratoryStudio"),
 );
+const MolecularStudio = lazy(
+  () => import("./stem-workspace/studios/MolecularStudio"),
+);
+const StarchStudio = lazy(
+  () => import("./stem-workspace/studios/StarchStudio"),
+);
 export function StemLabPlayerPage() {
   const { id } = useParams();
   const userId = useAuthStore((s) => s.user?.id);
@@ -52,6 +58,14 @@ export function StemLabPlayerPage() {
       </div>
     );
   const kind = practicalFor(lab).kind;
+  if (["starch", "organic", "molecule"].includes(kind)) {
+    const Studio = kind === "starch" ? StarchStudio : MolecularStudio;
+    return (
+      <Suspense fallback={<p className="p-6">Preparing practical…</p>}>
+        <Studio key={`${userId}:${lab.id}`} lab={lab} userId={userId!} />
+      </Suspense>
+    );
+  }
   if (kind === "respiration")
     return (
       <Suspense

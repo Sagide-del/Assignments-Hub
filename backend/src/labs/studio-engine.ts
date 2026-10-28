@@ -1,3 +1,9 @@
+import { replayStarch, starchReady, type StarchEvent } from "./starch-engine";
+import {
+  replayMolecular,
+  molecularReady,
+  type MolecularEvent,
+} from "./molecular-engine";
 import {
   replayRespiratory,
   respiratoryReady,
@@ -263,7 +269,9 @@ export function integratePendulum(
 }
 export interface StudioEvidence {
   version: string;
-  events: (CyberEvent | PendulumEvent | RespiratoryEvent)[];
+  events: (
+    CyberEvent | PendulumEvent | RespiratoryEvent | StarchEvent | MolecularEvent
+  )[];
   conclusion: string;
 }
 export function assessStudio(kind: string, e: StudioEvidence) {
@@ -307,6 +315,35 @@ export function assessStudio(kind: string, e: StudioEvidence) {
       inspected: state.inspected,
       model:
         "Anatomical atlas geometry with illustrative breathing motion. Fixed adult anatomical dead space 0.15 L; ventilation calculations are teaching estimates, not clinical measurements.",
+    };
+  }
+  if (kind === "starch" && e.version === "starch-studio-v1") {
+    const s = replayStarch(e.events as StarchEvent[]);
+    if (!starchReady(s, e.conclusion))
+      throw new Error(
+        "Compare a light-grown leaf with a dark control and explain your evidence.",
+      );
+    return {
+      ...e,
+      trials: s.trials,
+      model:
+        "Illustrative prepared-leaf starch test; accelerated heating, not a prediction of real apparatus temperatures or reaction times.",
+    };
+  }
+  if (
+    ["organic", "molecule"].includes(kind) &&
+    e.version === "molecular-studio-v1"
+  ) {
+    const s = replayMolecular(e.events as MolecularEvent[]);
+    if (!molecularReady(s, e.conclusion))
+      throw new Error(
+        "Construct two different correct molecules and explain their bonding.",
+      );
+    return {
+      ...e,
+      builds: s.builds,
+      model:
+        "Guided idealised ball-and-stick geometries and normal valencies; not a molecular dynamics or energy calculation.",
     };
   }
   throw new Error("This studio report does not match the activity.");
