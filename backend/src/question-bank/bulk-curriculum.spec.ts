@@ -124,14 +124,21 @@ describe("Grade 6–12 bulk curriculum", () => {
       questionBankSourceDocument: {
         findMany: jest.fn().mockResolvedValue(sources),
       },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest
           .fn()
           .mockImplementation(({ data }) => Promise.resolve(data)),
       },
-      $transaction: jest
-        .fn()
-        .mockImplementation((values) => Promise.all(values)),
+      $transaction: jest.fn().mockImplementation(function (
+        this: any,
+        values: any,
+      ) {
+        return typeof values === "function"
+          ? values(this)
+          : Promise.all(values);
+      }),
     };
     const service = new ContentLibraryService(
       prisma as any,

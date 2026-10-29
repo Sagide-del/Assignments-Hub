@@ -233,6 +233,9 @@ export const ingestionApi = {
       });
       queued += r.data.length;
     }
-    return { queued };
+    return {
+      queued,
+      reused: unitIds.length * (kind === "BOTH" ? 2 : 1) - queued,
+    };
   },
 };

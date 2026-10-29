@@ -1,3 +1,4 @@
+import { enqueueGeneration } from "./generation-queue";
 import repositoryManifest from "./github-curriculum.manifest.json";
 import { GitHubCurriculumService } from "./github-curriculum.service";
 import {
@@ -799,19 +800,20 @@ export class CollectionService {
     return { unit, ids };
   }
   async generate(dto: OutcomeGenerationDto, actor: AuthenticatedUser) {
-    const checked = [];
+    const checked: Array<Awaited<ReturnType<typeof this.grounding>>> = [];
     for (const id of dto.unitIds) checked.push(await this.grounding(id));
     return this.prisma.$transaction(
-      checked.flatMap(({ unit }) =>
-        (dto.kind === "BOTH"
-          ? ["OUTCOME_QUESTIONS", "OUTCOME_CARDS"]
-          : [`OUTCOME_${dto.kind}`]
-        ).map((kind) =>
-          this.prisma.contentLibraryJob.create({
-            data: {
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('content-generation-queue'))`;
+        const jobs = [];
+        for (const { unit } of checked) {
+          for (const kind of dto.kind === "BOTH"
+            ? ["OUTCOME_QUESTIONS", "OUTCOME_CARDS"]
+            : [`OUTCOME_${dto.kind}`]) {
+            const job = await enqueueGeneration(
+              tx,
               kind,
-              createdById: actor.id,
-              input: {
+              {
                 unitId: unit.id,
                 grade: unit.scope.grade,
                 subject: unit.scope.subject,
@@ -819,12 +821,17 @@ export class CollectionService {
                 count: dto.count,
                 assessmentMode: dto.assessmentMode ?? "PRACTICE",
               },
-            },
-          }),
-        ),
-      ),
+              actor.id,
+            );
+            if (job) jobs.push(job);
+          }
+        }
+        return jobs;
+      },
+      { timeout: 30000 },
     );
   }
+
   async process(
     job: { id: string; kind: string; input: any },
     actor: AuthenticatedUser,

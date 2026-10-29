@@ -211,10 +211,17 @@ describe("Durable content generation", () => {
       questionBankSourceDocument: {
         findMany: jest.fn().mockResolvedValue([source]),
       },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockImplementation((x) => Promise.resolve(x.data)),
       },
-      $transaction: jest.fn().mockImplementation((jobs) => Promise.all(jobs)),
+      $transaction: jest.fn().mockImplementation(function (
+        this: any,
+        jobs: any,
+      ) {
+        return typeof jobs === "function" ? jobs(this) : Promise.all(jobs);
+      }),
     };
     const service = new ContentLibraryService(
       prisma as any,
@@ -273,7 +280,12 @@ describe("Content worker persistence", () => {
     const prisma = {
       contentLibraryJob: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        findFirst: jest.fn().mockResolvedValue(job),
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest
+          .fn()
+          .mockImplementation(async () =>
+            job.status === "QUEUED" ? job : null,
+          ),
         update: jest.fn(),
       },
       user: {
@@ -282,6 +294,17 @@ describe("Content worker persistence", () => {
           .mockResolvedValue({ ...actor, role: Role.PLATFORM_ADMIN }),
       },
     };
+    (prisma as any).$executeRaw = jest.fn();
+    (prisma as any).$transaction = jest
+      .fn()
+      .mockImplementation((fn: any) => fn(prisma));
+    prisma.contentLibraryJob.updateMany.mockImplementation(
+      async ({ where, data }: any) => {
+        if (!where.id || job.status !== "QUEUED") return { count: 0 };
+        Object.assign(job, data);
+        return { count: 1 };
+      },
+    );
     const bank = {
       generate: jest.fn().mockResolvedValue([{ id: 7 }, { id: 8 }]),
     };

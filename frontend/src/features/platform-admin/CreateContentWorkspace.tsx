@@ -377,6 +377,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const generate = useMutation({
     mutationFn: async () => {
       let queued = 0;
+      let reused = 0;
       const failures: string[] = [];
       for (const plan of plans) {
         try {
@@ -387,19 +388,20 @@ function GradeContentFlow({ grade }: { grade: string }) {
             written ? "WRITTEN" : "PRACTICE",
           );
           queued += result.queued;
+          reused += result.reused;
         } catch (e) {
           failures.push(
             `${plan.scope.subject}: ${apiErrorMessage(e, "Could not queue this subject")}`,
           );
         }
       }
-      return { queued, failures };
+      return { queued, reused, failures };
     },
-    onSuccess: ({ queued, failures }) => {
+    onSuccess: ({ queued, reused, failures }) => {
       setNotice(
-        `${queued} generation jobs queued. ${queued ? "Drafts and memory cards will be saved automatically for your review." : "No new jobs were queued."}${failures.length ? " Could not queue: " + failures.join(" · ") : ""}`,
+        `${queued} new jobs queued${reused ? ` · ${reused} existing jobs or saved drafts reused` : ""}. ${queued ? "Questions run first, with up to three jobs together. Drafts and memory cards are saved for your review." : "Existing matching jobs or saved drafts are being reused."}${failures.length ? " Could not queue: " + failures.join(" · ") : ""}`,
       );
-      if (queued) setStep(3);
+      if (queued || reused) setStep(3);
       refresh();
     },
     onError: error,

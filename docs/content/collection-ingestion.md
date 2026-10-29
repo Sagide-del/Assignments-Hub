@@ -99,3 +99,11 @@ See [the supplied framework assessment](framework-source-assessment.md) for what
 The guided setup also offers a packaged [pinned GitHub curriculum source](github-curriculum-import.md). Its source audit and gap acknowledgement are preserved when a document is edited or indexed; it is an alternative intake route through the same review and generation pipeline.
 
 Automatic grade preparation pauses queued alternative Drive downloads for the chosen grade without deleting them. Paused work can be resumed from Generation jobs if needed. The main setup view prioritises pinned source status and shows source details, old downloads and manual corrections only on demand. Generated answer approval remains separate.
+
+### Generation throughput
+
+The persistent content-library worker runs three jobs concurrently by default (`CONTENT_GENERATION_CONCURRENCY`, 1–6 per API instance). A free lane claims the next job immediately; the four-second poll only wakes an idle worker. Grade preparation takes priority, followed by question jobs, then cards and other imports. Existing queued jobs use this scheduling without being re-enqueued.
+
+Generation enqueue and claim operations share a PostgreSQL advisory transaction lock. Repeated requests reuse matching queued/running jobs or completed drafts with enough surviving non-rejected questions/cards. Grade, subject, outcome/source, assessment mode and requested size are checked. Existing queued duplicates are marked `SKIPPED`, linked to their owner in `result.reusedJobId`, and make no AI call. Failed jobs remain explicitly retryable; output is still reviewed before publication. A larger batch can be requested when more material is needed.
+
+DeepSeek uses the configured model without alteration, with a 180-second timeout per request and two SDK retries using exponential backoff/Retry-After for transient failures. This bounds individual calls; it does not promise a fixed completion time or a higher provider quota. Subject progress includes all generation jobs, while detailed history shows the most recent 100. Finished jobs are not equivalent to approved/published learning content.

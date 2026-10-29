@@ -1,3 +1,10 @@
+import {
+  enqueueGeneration,
+  generationConcurrency,
+  GENERATION_KINDS,
+  QUESTION_KINDS,
+  reusableGeneration,
+} from "./generation-queue";
 import { CollectionService } from "./collection.service";
 import {
   BadRequestException,
@@ -31,6 +38,7 @@ import { validateRecall } from "./content-tools";
 export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | undefined;
   private running = false;
+  private lastRecoveryAt = 0;
   private closing = false;
   private readonly logger = new Logger(ContentLibraryService.name);
   constructor(
@@ -49,7 +57,7 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
   async overview() {
-    const [coverage, jobs, sources] = await Promise.all([
+    const [coverage, jobs, sources, progress] = await Promise.all([
       this.prisma.questionBank.groupBy({
         by: ["grade", "subject", "status"],
         where: { isGlobal: true },
@@ -60,8 +68,61 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
         take: 100,
       }),
       this.retrieval.listSources(),
+      this.prisma.contentLibraryJob.findMany({
+        where: { kind: { in: GENERATION_KINDS } },
+        select: { status: true, input: true },
+      }),
     ]);
-    return { version: 2, coverage, jobs, sources };
+    const subjects = new Map<
+      string,
+      {
+        grade: string;
+        subject: string;
+        queued: number;
+        running: number;
+        completed: number;
+        failed: number;
+        skipped: number;
+      }
+    >();
+    for (const job of progress) {
+      const input = job.input as any;
+      const key = `${input.grade}|${input.subject}`;
+      const row = subjects.get(key) ?? {
+        grade: input.grade,
+        subject: input.subject,
+        queued: 0,
+        running: 0,
+        completed: 0,
+        failed: 0,
+        skipped: 0,
+      };
+      const field = (
+        {
+          QUEUED: "queued",
+          RUNNING: "running",
+          COMPLETED: "completed",
+          FAILED: "failed",
+          SKIPPED: "skipped",
+        } as const
+      )[job.status];
+      if (field) row[field]++;
+      subjects.set(key, row);
+    }
+    return {
+      version: 3,
+      coverage,
+      jobs,
+      sources,
+      queue: {
+        concurrency: generationConcurrency(),
+        subjects: [...subjects.values()].sort(
+          (a, b) =>
+            a.grade.localeCompare(b.grade) ||
+            a.subject.localeCompare(b.subject),
+        ),
+      },
+    };
   }
   async discover(file?: Express.Multer.File, requestedGrades = CONTENT_GRADES) {
     const startedAt = Date.now();
@@ -374,26 +435,34 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
     )
       throw new BadRequestException("Select verified Grade 6–12 sources.");
     return this.prisma.$transaction(
-      sources.flatMap((source) =>
-        (dto.kind === "BOTH" ? ["QUESTIONS", "CARDS"] : [dto.kind]).map(
-          (kind) =>
-            this.prisma.contentLibraryJob.create({
-              data: {
-                kind,
-                createdById: actor.id,
-                input: {
-                  sourceId: source.id,
-                  grade: source.grade,
-                  subject: source.subject,
-                  topic: dto.topic?.trim() || "Curriculum coverage",
-                  count: dto.count,
-                },
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('content-generation-queue'))`;
+        const jobs = [];
+        for (const source of sources) {
+          for (const kind of dto.kind === "BOTH"
+            ? ["QUESTIONS", "CARDS"]
+            : [dto.kind]) {
+            const job = await enqueueGeneration(
+              tx,
+              kind,
+              {
+                sourceId: source.id,
+                grade: source.grade,
+                subject: source.subject,
+                topic: dto.topic?.trim() || "Curriculum coverage",
+                count: dto.count,
               },
-            }),
-        ),
-      ),
+              actor.id,
+            );
+            if (job) jobs.push(job);
+          }
+        }
+        return jobs;
+      },
+      { timeout: 30000 },
     );
   }
+
   async retry(id: string) {
     const job = await this.prisma.contentLibraryJob.findUnique({
       where: { id },
@@ -414,158 +483,227 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
     if (this.running || this.closing) return;
     this.running = true;
     try {
-      await this.prisma.contentLibraryJob.updateMany({
-        where: {
-          status: "RUNNING",
-          updatedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
-        },
-        data: {
-          status: "FAILED",
-          error: "Worker interrupted. Review existing output, then retry.",
-        },
-      });
-      const priority = await this.prisma.contentLibraryJob.findFirst({
-        where: { status: "QUEUED", kind: "PREPARE_GRADE" },
-        orderBy: { createdAt: "asc" },
-      });
-      const job =
-        priority ??
-        (await this.prisma.contentLibraryJob.findFirst({
-          where: { status: "QUEUED" },
-          orderBy: { createdAt: "asc" },
-        }));
-      if (!job) return;
-      const claimed = await this.prisma.contentLibraryJob.updateMany({
-        where: { id: job.id, status: "QUEUED" },
-        data: { status: "RUNNING", error: null },
-      });
-      if (!claimed.count) return;
-      const heartbeat = setInterval(
-        () =>
-          void this.prisma.contentLibraryJob
-            .updateMany({
-              where: { id: job.id, status: "RUNNING" },
-              data: { updatedAt: new Date() },
-            })
-            .catch(() => {}),
-        20000,
+      await this.recoverInterrupted();
+      // Wait for every lane even if one DB request fails; otherwise a new
+      // polling cycle could overlap surviving lanes and exceed concurrency.
+      const results = await Promise.allSettled(
+        Array.from({ length: generationConcurrency() }, () => this.drain()),
       );
-      try {
-        const actor = await this.prisma.user.findUnique({
-          where: { id: job.createdById },
-          select: {
-            id: true,
-            schoolId: true,
-            role: true,
-            name: true,
-            email: true,
-            admissionNumber: true,
-            grade: true,
-            isIndependentTrial: true,
-          },
-        });
-        if (!actor || actor.role !== "PLATFORM_ADMIN")
-          throw Error("The generating admin no longer has access.");
-        const input = job.input as any;
-        let result: any;
-        if (
-          [
-            "MAP_SOURCE",
-            "PREPARE_GRADE",
-            "INGEST_FILE",
-            "INGEST_GITHUB",
-            "INGEST_URL",
-            "INDEX_ASSET",
-            "OUTCOME_QUESTIONS",
-            "OUTCOME_CARDS",
-          ].includes(job.kind)
-        ) {
-          if (!this.collections)
-            throw Error("Collection worker is unavailable.");
-          result = await this.collections.process(job as any, actor);
-        } else if (job.kind === "IMPORT") {
-          const fetched = await fetchOfficial(input.url);
-          if (fetched.bytes.subarray(0, 5).toString() !== "%PDF-")
-            throw Error("This link does not return a PDF curriculum design.");
-          const parser = new PDFParse({ data: fetched.bytes });
-          let text: string;
-          try {
-            text = (await parser.getText()).text;
-          } finally {
-            await parser.destroy();
-          }
-          if (!detectedGrades(text.slice(0, 18000)).includes(input.grade))
-            throw Error(
-              "The PDF does not confirm the selected grade. Review this mapping.",
-            );
-          const source = await this.retrieval.storeSource({
-            title: input.subject + " · " + input.grade,
-            subject: input.subject.trim(),
-            grade: input.grade,
-            text: text.slice(0, 100000),
-            fileName: fetched.url,
-            sourceType: "PDF",
-            createdById: actor.id,
-          });
-          result = { sourceId: source.id };
-        } else if (job.kind === "QUESTIONS") {
-          const rows: { id: number }[] = [];
-          for (let offset = 0; offset < input.count; offset += 15) {
-            const part = await this.bank.generate(
-              undefined,
-              {
-                inputType: "KNOWLEDGE",
-                sourceDocumentId: input.sourceId,
-                subject: input.subject,
-                grade: input.grade,
-                topic: input.topic,
-                questionCount: Math.min(15, input.count - offset),
-                difficulty: "MIXED",
-                questionTypes: [QuestionType.MULTIPLE_CHOICE],
-                autoTagTopic: true,
-              },
-              actor,
-              `${job.id}:${offset}`,
-            );
-            rows.push(...part);
-            await this.prisma.contentLibraryJob.update({
-              where: { id: job.id },
-              data: {
-                result: {
-                  count: rows.length,
-                  questionIds: rows.map((q) => q.id),
-                },
-              },
-            });
-          }
-          result = { count: rows.length, questionIds: rows.map((q) => q.id) };
-        } else if (job.kind === "CARDS")
-          result = await this.cards(input, actor, job.id);
-        else throw Error("Unsupported library job.");
-        await this.prisma.contentLibraryJob.update({
-          where: { id: job.id },
-          data: { status: "COMPLETED", result },
-        });
-      } catch (e) {
-        await this.prisma.contentLibraryJob.update({
-          where: { id: job.id },
-          data: {
-            status: "FAILED",
-            error: (e instanceof Error ? e.message : "Generation failed").slice(
-              0,
-              2000,
-            ),
-          },
-        });
-      } finally {
-        clearInterval(heartbeat);
-      }
+      for (const result of results)
+        if (result.status === "rejected")
+          this.logger.warn(
+            result.reason instanceof Error
+              ? result.reason.message
+              : "Content lane failed",
+          );
     } catch (e) {
       this.logger.warn(
         e instanceof Error ? e.message : "Content worker unavailable",
       );
     } finally {
       this.running = false;
+    }
+  }
+  private async recoverInterrupted() {
+    // A busy drain can last hours. Recover interrupted jobs while it runs,
+    // instead of waiting for the entire backlog to finish.
+    const now = Date.now();
+    if (now - this.lastRecoveryAt < 60_000) return;
+    this.lastRecoveryAt = now;
+    await this.prisma.contentLibraryJob.updateMany({
+      where: {
+        status: "RUNNING",
+        updatedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+      },
+      data: {
+        status: "FAILED",
+        error: "Worker interrupted. Review existing output, then retry.",
+      },
+    });
+  }
+  private async claim() {
+    await this.recoverInterrupted();
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Serialise claiming and duplicate checks, not the AI requests themselves.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('content-generation-queue'))`;
+        const orderBy = [{ createdAt: "asc" as const }, { id: "asc" as const }];
+        const priority = await tx.contentLibraryJob.findFirst({
+          where: { status: "QUEUED", kind: "PREPARE_GRADE" },
+          orderBy,
+        });
+        const question = priority
+          ? null
+          : await tx.contentLibraryJob.findFirst({
+              where: { status: "QUEUED", kind: { in: QUESTION_KINDS } },
+              orderBy,
+            });
+        const job =
+          priority ??
+          question ??
+          (await tx.contentLibraryJob.findFirst({
+            where: { status: "QUEUED" },
+            orderBy,
+          }));
+        if (!job) return null;
+        if (GENERATION_KINDS.includes(job.kind)) {
+          // Ignore other queued requests here: the oldest candidate is the owner.
+          // A larger queued request must not cause two jobs to skip each other.
+          const runningOrDone = await reusableGeneration(
+            tx,
+            job.kind,
+            job.input,
+            job.id,
+            false,
+          );
+          if (runningOrDone) {
+            await tx.contentLibraryJob.update({
+              where: { id: job.id },
+              data: {
+                status: "SKIPPED",
+                error: null,
+                result: { reusedJobId: runningOrDone.id },
+              },
+            });
+            return { skipped: true };
+          }
+        }
+        const claimed = await tx.contentLibraryJob.updateMany({
+          where: { id: job.id, status: "QUEUED" },
+          data: { status: "RUNNING", error: null },
+        });
+        return claimed.count ? { job } : { skipped: true };
+      },
+      { timeout: 30000 },
+    );
+  }
+  private async drain() {
+    while (!this.closing) {
+      const claim = await this.claim();
+      if (!claim) return;
+      if (!claim.job) continue;
+      await this.runJob(claim.job);
+    }
+  }
+  private async runJob(job: any) {
+    const heartbeat = setInterval(
+      () =>
+        void this.prisma.contentLibraryJob
+          .updateMany({
+            where: { id: job.id, status: "RUNNING" },
+            data: { updatedAt: new Date() },
+          })
+          .catch(() => {}),
+      20000,
+    );
+    try {
+      const actor = await this.prisma.user.findUnique({
+        where: { id: job.createdById },
+        select: {
+          id: true,
+          schoolId: true,
+          role: true,
+          name: true,
+          email: true,
+          admissionNumber: true,
+          grade: true,
+          isIndependentTrial: true,
+        },
+      });
+      if (!actor || actor.role !== "PLATFORM_ADMIN")
+        throw Error("The generating admin no longer has access.");
+      const input = job.input as any;
+      let result: any;
+      if (
+        [
+          "MAP_SOURCE",
+          "PREPARE_GRADE",
+          "INGEST_FILE",
+          "INGEST_GITHUB",
+          "INGEST_URL",
+          "INDEX_ASSET",
+          "OUTCOME_QUESTIONS",
+          "OUTCOME_CARDS",
+        ].includes(job.kind)
+      ) {
+        if (!this.collections) throw Error("Collection worker is unavailable.");
+        result = await this.collections.process(job as any, actor);
+      } else if (job.kind === "IMPORT") {
+        const fetched = await fetchOfficial(input.url);
+        if (fetched.bytes.subarray(0, 5).toString() !== "%PDF-")
+          throw Error("This link does not return a PDF curriculum design.");
+        const parser = new PDFParse({ data: fetched.bytes });
+        let text: string;
+        try {
+          text = (await parser.getText()).text;
+        } finally {
+          await parser.destroy();
+        }
+        if (!detectedGrades(text.slice(0, 18000)).includes(input.grade))
+          throw Error(
+            "The PDF does not confirm the selected grade. Review this mapping.",
+          );
+        const source = await this.retrieval.storeSource({
+          title: input.subject + " · " + input.grade,
+          subject: input.subject.trim(),
+          grade: input.grade,
+          text: text.slice(0, 100000),
+          fileName: fetched.url,
+          sourceType: "PDF",
+          createdById: actor.id,
+        });
+        result = { sourceId: source.id };
+      } else if (job.kind === "QUESTIONS") {
+        const rows: { id: number }[] = [];
+        for (let offset = 0; offset < input.count; offset += 15) {
+          const part = await this.bank.generate(
+            undefined,
+            {
+              inputType: "KNOWLEDGE",
+              sourceDocumentId: input.sourceId,
+              subject: input.subject,
+              grade: input.grade,
+              topic: input.topic,
+              questionCount: Math.min(15, input.count - offset),
+              difficulty: "MIXED",
+              questionTypes: [QuestionType.MULTIPLE_CHOICE],
+              autoTagTopic: true,
+            },
+            actor,
+            `${job.id}:${offset}`,
+          );
+          rows.push(...part);
+          await this.prisma.contentLibraryJob.update({
+            where: { id: job.id },
+            data: {
+              result: {
+                count: rows.length,
+                questionIds: rows.map((q) => q.id),
+              },
+            },
+          });
+        }
+        result = { count: rows.length, questionIds: rows.map((q) => q.id) };
+      } else if (job.kind === "CARDS")
+        result = await this.cards(input, actor, job.id);
+      else throw Error("Unsupported library job.");
+      await this.prisma.contentLibraryJob.update({
+        where: { id: job.id },
+        data: { status: "COMPLETED", result },
+      });
+    } catch (e) {
+      await this.prisma.contentLibraryJob.update({
+        where: { id: job.id },
+        data: {
+          status: "FAILED",
+          error: (e instanceof Error ? e.message : "Generation failed").slice(
+            0,
+            2000,
+          ),
+        },
+      });
+    } finally {
+      clearInterval(heartbeat);
     }
   }
   private async cards(input: any, actor: AuthenticatedUser, jobId: string) {

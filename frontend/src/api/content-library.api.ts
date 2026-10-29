@@ -1,4 +1,13 @@
 import { api } from "./axios";
+export interface SubjectQueueProgress {
+  grade: string;
+  subject: string;
+  queued: number;
+  running: number;
+  completed: number;
+  failed: number;
+  skipped: number;
+}
 export interface LibraryJob {
   id: string;
   kind: string;
@@ -12,6 +21,7 @@ export interface LibraryJob {
   };
   result?: {
     count?: number;
+    reusedJobId?: string;
     sourceId?: number;
     processed?: number;
     total?: number;
@@ -48,6 +58,7 @@ export const contentLibraryApi = {
     api
       .get<{
         version: number;
+        queue?: { concurrency: number; subjects: SubjectQueueProgress[] };
         coverage: Coverage[];
         jobs: LibraryJob[];
         sources: LibrarySource[];

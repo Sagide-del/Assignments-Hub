@@ -172,9 +172,11 @@ export function QuestionBankManagement() {
   const generation = useMutation({
     mutationFn: (kind: "QUESTIONS" | "CARDS" | "BOTH") =>
       contentLibraryApi.generate(generationIds, kind, count, generationTopic),
-    onSuccess: () => {
+    onSuccess: (jobs) => {
       setNotice(
-        "Generation queued. You can leave this page; progress is saved.",
+        jobs.length
+          ? `${jobs.length} new generation jobs queued. Questions run first; progress is saved.`
+          : "Matching jobs or saved drafts already exist. No duplicate work was queued.",
       );
       refresh();
       changeView("jobs");
@@ -785,67 +787,134 @@ export function QuestionBankManagement() {
               Refresh
             </button>
           </div>
-          {(overview.data?.jobs ?? []).map((job) => (
-            <article
-              key={job.id}
-              className="flex flex-wrap justify-between gap-3 border-b p-5 text-sm"
-            >
-              <div>
-                <strong>
-                  {[job.input.grade, job.input.subject]
-                    .filter(Boolean)
-                    .join(" · ") || "Curriculum processing"}
-                </strong>
-                <p className="mt-1 text-xs text-slate-500">
-                  {jobLabels[job.kind] ?? job.kind} ·{" "}
-                  {job.input.topic ??
-                    (job.kind === "PREPARE_GRADE"
-                      ? "Available subjects"
-                      : "Source preparation")}{" "}
-                  ·{" "}
-                  {job.status === "COMPLETED"
-                    ? "Finished"
-                    : job.status === "RUNNING"
-                      ? "Processing"
-                      : job.status === "PAUSED"
-                        ? "Paused"
-                        : job.status === "FAILED"
-                          ? "Needs attention"
-                          : "Queued"}
-                  {job.result?.count !== undefined
-                    ? ` · ${job.result.count} created`
-                    : ""}
-                </p>
-                {job.kind === "PREPARE_GRADE" && job.result && (
-                  <p className="mt-2 text-xs leading-6 text-slate-500">
-                    {job.result.processed ?? 0}/{job.result.total ?? 0} files
-                    processed · {job.result.subjects?.length ?? 0} subjects
-                    ready
-                    {job.result.failures?.length
-                      ? ` · ${job.result.failures.length} need attention`
+          {overview.data?.queue && (
+            <div className="border-b p-5">
+              <p className="mb-4 text-sm leading-6 text-slate-600">
+                Up to {overview.data.queue.concurrency} jobs run together.
+                Questions are prepared before recall cards; duplicate requests
+                reuse existing work. You can leave this page safely.
+              </p>
+              <div className="divide-y divide-slate-100">
+                {overview.data.queue.subjects.map((row) => {
+                  const total =
+                    row.queued + row.running + row.completed + row.failed;
+                  const percent = total
+                    ? Math.round((row.completed / total) * 100)
+                    : 0;
+                  return (
+                    <div
+                      key={`${row.grade}:${row.subject}`}
+                      className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_minmax(160px,1fr)] sm:items-center sm:gap-6"
+                    >
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          {row.subject}
+                        </h3>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          {row.grade} · {row.completed}/{total} jobs finished
+                          {row.running ? ` · ${row.running} processing` : ""}
+                          {row.queued ? ` · ${row.queued} waiting` : ""}
+                          {row.skipped
+                            ? ` · ${row.skipped} duplicates skipped`
+                            : ""}
+                        </p>
+                        {row.failed > 0 && (
+                          <p className="mt-1 text-xs text-red-700">
+                            {row.failed} need attention — see job details below.
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div
+                          role="progressbar"
+                          aria-label={`${row.grade} ${row.subject} generation progress`}
+                          aria-valuemin={0}
+                          aria-valuenow={row.completed}
+                          aria-valuemax={Math.max(1, total)}
+                          className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"
+                        >
+                          <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${percent}%` }} />
+                        </div>
+                        <span className="w-10 text-right text-xs tabular-nums text-slate-500">
+                          {percent}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          <details
+            open={!!overview.data?.jobs.some((job) => job.status === "FAILED")}
+          >
+            <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-slate-600">
+              Recent job details (latest 100)
+            </summary>
+            {(overview.data?.jobs ?? []).map((job) => (
+              <article
+                key={job.id}
+                className="flex flex-wrap justify-between gap-3 border-b p-5 text-sm"
+              >
+                <div>
+                  <strong>
+                    {[job.input.grade, job.input.subject]
+                      .filter(Boolean)
+                      .join(" · ") || "Curriculum processing"}
+                  </strong>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {jobLabels[job.kind] ?? job.kind} ·{" "}
+                    {job.input.topic ??
+                      (job.kind === "PREPARE_GRADE"
+                        ? "Available subjects"
+                        : "Source preparation")}{" "}
+                    ·{" "}
+                    {job.status === "COMPLETED"
+                      ? "Finished"
+                      : job.status === "SKIPPED"
+                        ? "Duplicate skipped"
+                        : job.status === "RUNNING"
+                          ? "Processing"
+                          : job.status === "PAUSED"
+                            ? "Paused"
+                            : job.status === "FAILED"
+                              ? "Needs attention"
+                              : "Queued"}
+                    {job.result?.count !== undefined
+                      ? ` · ${job.result.count} created`
                       : ""}
                   </p>
-                )}
-                {job.error && (
-                  <p
-                    role="alert"
-                    className="mt-2 max-w-xl text-xs text-red-700"
+                  {job.kind === "PREPARE_GRADE" && job.result && (
+                    <p className="mt-2 text-xs leading-6 text-slate-500">
+                      {job.result.processed ?? 0}/{job.result.total ?? 0} files
+                      processed · {job.result.subjects?.length ?? 0} subjects
+                      ready
+                      {job.result.failures?.length
+                        ? ` · ${job.result.failures.length} need attention`
+                        : ""}
+                    </p>
+                  )}
+                  {job.error && (
+                    <p
+                      role="alert"
+                      className="mt-2 max-w-xl text-xs text-red-700"
+                    >
+                      {job.error}
+                    </p>
+                  )}
+                </div>
+                {["FAILED", "PAUSED"].includes(job.status) && (
+                  <button
+                    disabled={retry.isPending}
+                    className={control}
+                    onClick={() => retry.mutate(job.id)}
                   >
-                    {job.error}
-                  </p>
+                    {job.status === "PAUSED" ? "Resume" : "Retry"}
+                  </button>
                 )}
-              </div>
-              {["FAILED", "PAUSED"].includes(job.status) && (
-                <button
-                  disabled={retry.isPending}
-                  className={control}
-                  onClick={() => retry.mutate(job.id)}
-                >
-                  {job.status === "PAUSED" ? "Resume" : "Retry"}
-                </button>
-              )}
-            </article>
-          ))}
+              </article>
+            ))}
+          </details>
           {!overview.data?.jobs.length && (
             <p className="p-10 text-sm text-slate-500">
               No generation jobs yet.

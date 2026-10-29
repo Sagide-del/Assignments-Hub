@@ -199,7 +199,9 @@ describe("Curriculum evidence and expected subjects", () => {
           .fn()
           .mockResolvedValue({ verified: false, scope: { verified: true } }),
       },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
       },
@@ -227,7 +229,9 @@ describe("Curriculum evidence and expected subjects", () => {
       questionBankSourceDocument: {
         findMany: jest.fn().mockResolvedValue([{ id: 1, role: "CURRICULUM" }]),
       },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
       },
@@ -264,12 +268,19 @@ describe("Curriculum evidence and expected subjects", () => {
       questionBankSourceDocument: {
         findMany: jest.fn().mockResolvedValue([{ id: 1, role: "CURRICULUM" }]),
       },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest
           .fn()
           .mockImplementation(({ data }) => Promise.resolve(data)),
       },
-      $transaction: jest.fn().mockImplementation((jobs) => Promise.all(jobs)),
+      $transaction: jest.fn().mockImplementation(function (
+        this: any,
+        jobs: any,
+      ) {
+        return typeof jobs === "function" ? jobs(this) : Promise.all(jobs);
+      }),
     };
     const bank = { generate: jest.fn().mockResolvedValue([{ id: 11 }]) };
     const s = service(p, { bank });
@@ -320,12 +331,19 @@ describe("Curriculum evidence and expected subjects", () => {
           { id: 2, role: "TEACHING" },
         ]),
       },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest
           .fn()
           .mockImplementation(({ data }) => Promise.resolve(data)),
       },
-      $transaction: jest.fn().mockImplementation((jobs) => Promise.all(jobs)),
+      $transaction: jest.fn().mockImplementation(function (
+        this: any,
+        jobs: any,
+      ) {
+        return typeof jobs === "function" ? jobs(this) : Promise.all(jobs);
+      }),
     };
     const jobs = await service(p).generate(
       { unitIds: [7], kind: "BOTH", count: 10 },
@@ -365,7 +383,9 @@ describe("Collection persistence and migration", () => {
       },
       contentCollection: { create: jest.fn().mockResolvedValue({ id: "c" }) },
       collectionAsset: { create: jest.fn().mockResolvedValue({ id: "a" }) },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
       },
@@ -540,7 +560,9 @@ describe("Private collection staging", () => {
         findUnique: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: "a" }),
       },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
       },

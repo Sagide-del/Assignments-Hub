@@ -292,16 +292,23 @@ describe("Automatic grade preparation", () => {
         }),
       },
       curriculumGradeReview: { findUnique: jest.fn().mockResolvedValue(null) },
+      $executeRaw: jest.fn(),
       contentLibraryJob: {
+        findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn().mockResolvedValue({ id: "preparation" }),
         create: jest.fn().mockImplementation(async (v) => v),
       },
       questionBankSourceDocument: {
         findMany: jest.fn().mockResolvedValue([{ id: 1, role: "CURRICULUM" }]),
       },
-      $transaction: jest
-        .fn()
-        .mockImplementation((values) => Promise.all(values)),
+      $transaction: jest.fn().mockImplementation(function (
+        this: any,
+        values: any,
+      ) {
+        return typeof values === "function"
+          ? values(this)
+          : Promise.all(values);
+      }),
     };
     const s = new CollectionService(
       p,
@@ -333,11 +340,26 @@ describe("Automatic grade preparation", () => {
     const p: any = {
       contentLibraryJob: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        findFirst: jest.fn().mockResolvedValue(job),
+        findFirst: jest
+          .fn()
+          .mockImplementation(async () =>
+            p.contentLibraryJob.update.mock.calls.length ? null : job,
+          ),
         update: jest.fn(),
       },
       user: { findUnique: jest.fn().mockResolvedValue(actor) },
     };
+    p.$executeRaw = jest.fn();
+    let claimed = false;
+    p.contentLibraryJob.updateMany.mockImplementation(
+      async ({ where }: any) => {
+        if (!where.id) return { count: 0 };
+        if (claimed) return { count: 0 };
+        claimed = true;
+        return { count: 1 };
+      },
+    );
+    p.$transaction = jest.fn().mockImplementation((fn: any) => fn(p));
     const collections = {
       process: jest.fn().mockResolvedValue({ readyUnitIds: [7] }),
     };
