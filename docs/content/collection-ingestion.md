@@ -87,3 +87,11 @@ Discovery now reads anchor links, PDF iframe/object/embed viewers, PDF.js/Google
 The guided workspace shows source links and errors. One saved grade-page HTML file can be submitted directly; its canonical KICD URL establishes relative-link resolution and grade context. The saved page does not remove the need for accessible linked documents. For files in a known grade directory, an unidentified subject can be proposed automatically during document classification; the admin can also edit its name. Ambiguous grades remain flagged.
 
 Google public sharing resource keys are retained. Only supported public file/folder/export endpoints are normalised, with exact allowed hosts, bounded downloads and public-IP checks for hosted fetches. No account credentials, cookies or access-control bypass are used. Public exports returning sign-in/error HTML fail explicitly; folder pages are never indexed as teaching content. The frontend deployment readiness check requires `embeddedCurriculumDiscovery` from the updated backend before uploading the frontend. No live KICD or hosted-file success is asserted by fixture tests.
+
+## Public Google download responses
+
+Hosted imports distinguish a PDF from a public confirmation page, explicit access restrictions and quota errors. Only literal GET confirmation forms/links for the same file ID and supported vendor download endpoints are followed, with bounded attempts and allowed parameters. No script execution, cookies, login, arbitrary form submission or access-control bypass is used. Response PDF filenames replace generic `uc` labels when available.
+
+Failed documents can be retried in batches from the guided workspace. The retry endpoint requeues only failed existing asset jobs, with an atomic status check, and reports already-retried/missing jobs as skipped. It does not create another collection. The frontend readiness gate requires `publicDownloadConfirmation` so these controls wait for the updated backend.
+
+See [the supplied framework assessment](framework-source-assessment.md) for what the 2017 and 2019 uploaded documents can establish. They are not automatically treated as detailed current grade designs.

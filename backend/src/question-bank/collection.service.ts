@@ -1,5 +1,6 @@
 import {
   HOSTED_CURRICULUM_HOSTS,
+  fetchHostedCurriculum,
   hostedCurriculumUrl,
   isHostedFolder,
   curriculumLinks,
@@ -349,6 +350,39 @@ export class CollectionService {
       });
     }
     return { collectionId: collection.id, count: sources.length };
+  }
+  async retryAssets(ids: string[], actor: AuthenticatedUser) {
+    return this.prisma.$transaction(async (tx) => {
+      let queued = 0;
+      for (const id of ids) {
+        const asset = await tx.collectionAsset.findFirst({
+          where: { id, status: "FAILED" },
+        });
+        if (!asset) continue;
+        const job = await tx.contentLibraryJob.findFirst({
+          where: {
+            status: "FAILED",
+            kind: {
+              in: ["INGEST_URL", "INGEST_FILE", "MAP_SOURCE", "INDEX_ASSET"],
+            },
+            input: { path: ["assetId"], equals: id },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!job) continue;
+        const changed = await tx.contentLibraryJob.updateMany({
+          where: { id: job.id, status: "FAILED" },
+          data: { status: "QUEUED", error: null, createdById: actor.id },
+        });
+        if (!changed.count) continue;
+        await tx.collectionAsset.updateMany({
+          where: { id, status: "FAILED" },
+          data: { status: "QUEUED", error: null },
+        });
+        queued++;
+      }
+      return { queued, skipped: ids.length - queued };
+    });
   }
   async upload(
     id: string,
@@ -730,9 +764,20 @@ export class CollectionService {
       let bytes: Buffer,
         origin = asset.origin;
       if (job.kind === "INGEST_URL") {
-        const response = await fetchCollection(asset.origin, this.hosts());
+        const response = HOSTED_CURRICULUM_HOSTS.includes(
+          new URL(asset.origin).hostname,
+        )
+          ? await fetchHostedCurriculum(asset.origin)
+          : await fetchCollection(asset.origin, this.hosts());
         bytes = response.bytes;
         origin = response.url;
+        if (response.fileName) {
+          await this.prisma.collectionAsset.update({
+            where: { id: asset.id },
+            data: { name: response.fileName },
+          });
+          asset.name = response.fileName;
+        }
         if (
           HOSTED_CURRICULUM_HOSTS.includes(new URL(asset.origin).hostname) &&
           !isHostedFolder(asset.origin) &&

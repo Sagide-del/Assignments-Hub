@@ -82,6 +82,12 @@ export class CollectionController {
   ) {
     return this.service.saveMapping(id, dto.mapping);
   }
+  @Post("assets/retry") retryAssets(
+    @Body() dto: AssetIdsDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.service.retryAssets(dto.ids, actor);
+  }
   @Post("assets/review") approve(
     @Body() dto: AssetIdsDto,
     @CurrentUser() actor: AuthenticatedUser,

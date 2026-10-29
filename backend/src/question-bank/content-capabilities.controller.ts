@@ -22,6 +22,7 @@ export class ContentCapabilitiesController {
         outcomeGrounding: true,
         officialCurriculumImport: true,
         embeddedCurriculumDiscovery: true,
+        publicDownloadConfirmation: true,
       };
     } catch {
       throw new ServiceUnavailableException(

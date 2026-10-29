@@ -26,6 +26,27 @@ const button =
 const primary =
   button.replace("bg-white", "bg-blue-700") + " border-blue-700 text-white";
 const grades = [6, 7, 8, 9, 10, 11, 12].map((n) => `Grade ${n}`);
+function originalDocumentLink(origin: string) {
+  try {
+    const u = new URL(origin);
+    if (u.protocol !== "https:") return null;
+    if (
+      u.hostname === "drive.google.com" &&
+      u.searchParams.get("id") &&
+      u.pathname === "/uc"
+    ) {
+      const id = u.searchParams.get("id")!;
+      if (!/^[A-Za-z0-9_-]{10,}$/.test(id)) return null;
+      const link = new URL(`https://drive.google.com/file/d/${id}/view`);
+      const key = u.searchParams.get("resourcekey");
+      if (key) link.searchParams.set("resourcekey", key);
+      return link.href;
+    }
+    return u.href;
+  } catch {
+    return null;
+  }
+}
 export function CreateContentWorkspace() {
   const [params, setParams] = useSearchParams();
   const grade = grades.includes(params.get("grade") ?? "")
@@ -129,6 +150,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const pending = assets.filter(
     (a) => !["DIRECTORY", "INDEXED"].includes(a.status),
   );
+  const failed = pending.filter((a) => a.status === "FAILED");
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ["curriculum-ingestion"] });
     void client.invalidateQueries({ queryKey: ["ingestion-documents"] });
@@ -143,6 +165,16 @@ function GradeContentFlow({ grade }: { grade: string }) {
           : "Could not complete this step. Please try again.",
       ),
     );
+  const retryFailed = useMutation({
+    mutationFn: () => ingestionApi.retry(failed.map((a) => a.id)),
+    onSuccess: (r) => {
+      setNotice(
+        `${r.queued} failed documents queued for another download attempt.${r.skipped ? ` ${r.skipped} were already retried or have no failed job.` : ""}`,
+      );
+      refresh();
+    },
+    onError: error,
+  });
   const canImport = (candidate: Candidate) =>
     candidate.grade === grade &&
     (!candidate.issue || candidate.issue.startsWith("Subject could"));
@@ -246,11 +278,16 @@ function GradeContentFlow({ grade }: { grade: string }) {
       if (!asset) return;
       await ingestionApi.mapping(asset.id, asset.mapping);
       await ingestionApi.approve([asset.id]);
+      return asset.mapping.role;
     },
-    onSuccess: () => {
+    onSuccess: (role) => {
       setAsset(null);
       setNotice(
-        "Document confirmed. Its learning outcomes are being saved below.",
+        role === "FRAMEWORK"
+          ? "Framework confirmed. Its subject proposals are being saved. Detailed grade-specific outcomes still need a reviewed subject design."
+          : role === "TEACHING"
+            ? "Teaching reference confirmed. It can support matching learning outcomes."
+            : "Document confirmed. Its learning outcomes are being saved below.",
       );
       refresh();
     },
@@ -620,47 +657,90 @@ function GradeContentFlow({ grade }: { grade: string }) {
                     When a document is ready, check its grade, subject and
                     extracted outcomes.
                   </p>
-                  {pending.map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="break-words text-sm font-medium">
-                          {a.name}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {a.status === "REVIEW"
-                            ? "Ready for your check"
-                            : a.status === "FAILED"
-                              ? "Could not process this document"
-                              : "Processing — check back shortly"}
-                        </p>
-                        {a.error && (
-                          <p className="mt-2 max-w-xl break-words text-xs text-amber-800">
-                            {a.error}
-                          </p>
-                        )}
-                      </div>
-                      {a.status === "REVIEW" && (
-                        <button
-                          className={button}
-                          disabled={openDocument.isPending}
-                          onClick={() => openDocument.mutate(a.id)}
-                        >
-                          Check document
-                        </button>
-                      )}
-                      {a.status === "FAILED" && (
-                        <Link
-                          className="text-sm text-blue-700 underline"
-                          to="?view=jobs"
-                        >
-                          View error & retry
-                        </Link>
-                      )}
+                  {failed.length > 0 && (
+                    <div className="space-y-3 rounded-lg bg-slate-50 p-4">
+                      <p className="text-sm leading-6">
+                        {failed.length} documents need another download attempt.
+                        Retry the existing jobs without finding or importing the
+                        curriculum again.
+                      </p>
+                      <button
+                        className={button}
+                        disabled={retryFailed.isPending}
+                        onClick={() => retryFailed.mutate()}
+                      >
+                        {retryFailed.isPending
+                          ? "Queuing retries…"
+                          : `Retry failed documents (${failed.length})`}
+                      </button>
                     </div>
-                  ))}
+                  )}
+                  <details
+                    open={
+                      !failed.length ||
+                      pending.some((a) => a.status === "REVIEW")
+                    }
+                  >
+                    <summary className="cursor-pointer text-sm text-slate-500">
+                      View {pending.length} documents and download details
+                    </summary>
+                    <div className="mt-3 space-y-3">
+                      {pending.map((a) => (
+                        <div
+                          key={a.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="break-words text-sm font-medium">
+                              {["uc", "download"].includes(a.name) &&
+                              a.origin.includes("drive.google")
+                                ? "Google Drive curriculum document"
+                                : a.name}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {a.status === "REVIEW"
+                                ? "Ready for your check"
+                                : a.status === "FAILED"
+                                  ? "Could not process this document"
+                                  : "Processing — check back shortly"}
+                            </p>
+                            {a.error && (
+                              <p className="mt-2 max-w-xl break-words text-xs text-amber-800">
+                                {a.error}
+                              </p>
+                            )}
+                          </div>
+                          {a.status === "REVIEW" && (
+                            <button
+                              className={button}
+                              disabled={openDocument.isPending}
+                              onClick={() => openDocument.mutate(a.id)}
+                            >
+                              Check document
+                            </button>
+                          )}
+                          {originalDocumentLink(a.origin) && (
+                            <a
+                              className="text-sm text-blue-700 underline"
+                              href={originalDocumentLink(a.origin)!}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Open original document
+                            </a>
+                          )}
+                          {a.status === "FAILED" && (
+                            <Link
+                              className="text-sm text-blue-700 underline"
+                              to="?view=jobs"
+                            >
+                              View error & retry
+                            </Link>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
               )}
               {asset && (
@@ -683,6 +763,13 @@ function GradeContentFlow({ grade }: { grade: string }) {
                       {asset.text}
                     </pre>
                   </details>
+                  {asset.mapping.role === "FRAMEWORK" && (
+                    <p className="rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                      This framework can propose subjects and broad learning
+                      goals. Saving it does not create verified grade-specific
+                      strands or unlock every subject for generation.
+                    </p>
+                  )}
                   <DocumentMappingEditor
                     value={asset.mapping}
                     onChange={(m) =>
@@ -704,7 +791,11 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   >
                     {index.isPending
                       ? "Saving…"
-                      : "Confirm document & save outcomes"}
+                      : asset.mapping.role === "FRAMEWORK"
+                        ? "Confirm framework & save subject structure"
+                        : asset.mapping.role === "TEACHING"
+                          ? "Confirm teaching reference"
+                          : "Confirm document & save outcomes"}
                   </button>
                 </div>
               )}

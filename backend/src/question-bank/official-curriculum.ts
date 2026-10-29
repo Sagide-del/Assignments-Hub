@@ -285,12 +285,180 @@ export function curriculumLinks(html: string, base: string) {
   }
   return links.slice(0, 240);
 }
+const fileId = (url: string) => {
+  const u = new URL(url);
+  return (
+    u.searchParams.get("id") ?? u.pathname.match(/\/d\/([A-Za-z0-9_-]+)/)?.[1]
+  );
+};
+const attributes = (tag: string) =>
+  Object.fromEntries(
+    [...tag.matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)].map(
+      (m) => [m[1].toLowerCase(), decode(m[2] ?? m[3] ?? m[4])],
+    ),
+  );
+/** A public download confirmation is not an account-authentication flow. */
+export function publicDownloadConfirmation(
+  html: string,
+  source: string,
+): string | undefined {
+  const expected = fileId(source);
+  const validate = (raw: string, values: Record<string, string> = {}) => {
+    try {
+      const u = new URL(raw, source);
+      if (
+        u.protocol !== "https:" ||
+        u.port ||
+        u.username ||
+        u.password ||
+        !(
+          (u.hostname === "drive.usercontent.google.com" &&
+            u.pathname === "/download") ||
+          (u.hostname === "drive.google.com" && u.pathname === "/uc")
+        )
+      )
+        return;
+      for (const [name, value] of Object.entries(values)) {
+        if (
+          ![
+            "id",
+            "export",
+            "confirm",
+            "uuid",
+            "resourcekey",
+            "authuser",
+          ].includes(name) ||
+          value.length > 512 ||
+          /[\r\n]/.test(value)
+        )
+          return;
+        if (name === "authuser" && value !== "0") return;
+        u.searchParams.set(name, value);
+      }
+      if (
+        u.searchParams.get("id") !== expected ||
+        u.searchParams.get("export") !== "download" ||
+        !u.searchParams.get("confirm")
+      )
+        return;
+      if (
+        [...u.searchParams.keys()].some(
+          (k) =>
+            ![
+              "id",
+              "export",
+              "confirm",
+              "uuid",
+              "resourcekey",
+              "authuser",
+            ].includes(k),
+        )
+      )
+        return;
+      if (
+        [...u.searchParams.entries()].some(
+          ([key, value]) =>
+            value.length > 512 ||
+            /[\r\n]/.test(value) ||
+            (key === "authuser" && value !== "0"),
+        )
+      )
+        return;
+      const key = new URL(source).searchParams.get("resourcekey");
+      if (key) u.searchParams.set("resourcekey", key);
+      return u.href;
+    } catch {
+      return;
+    }
+  };
+  const body = html
+    .slice(0, 512000)
+    .replace(/<script\b[\s\S]*?<\/script>/gi, "");
+  for (const form of body.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/gi)) {
+    const attrs = attributes(form[1]);
+    if ((attrs.method ?? "get").toLowerCase() !== "get" || !attrs.action)
+      continue;
+    const fields: Record<string, string> = {};
+    for (const input of form[2].matchAll(/<input\b[^>]*>/gi)) {
+      const field = attributes(input[0]);
+      if (field.name && field.type?.toLowerCase() !== "submit")
+        fields[field.name] = field.value ?? "";
+    }
+    const target = validate(attrs.action, fields);
+    if (target) return target;
+  }
+  for (const a of body.matchAll(/<a\b[^>]*>/gi)) {
+    const attrs = attributes(a[0]);
+    if (attrs.href) {
+      const target = validate(attrs.href);
+      if (target) return target;
+    }
+  }
+}
+function hostedFailure(html: string) {
+  const text = decode(
+    html.slice(0, 512000).replace(/<script\b[\s\S]*?<\/script>/gi, ""),
+  );
+  if (/too many users|download quota|quota exceeded|download limit/i.test(text))
+    return "Google Drive is temporarily limiting public downloads. Retry later or use another authorised copy.";
+  if (
+    /you need access|request access|you need permission|sign in to continue|access denied/i.test(
+      text,
+    )
+  )
+    return "Google Drive requires sign-in or sharing permission. Open the original document to check public access.";
+  return "Google Drive returned an HTML page instead of the PDF; public download confirmation or document access could not be completed. Open the original document for details.";
+}
+export async function fetchHostedCurriculum(
+  raw: string,
+  download: typeof fetchCollection = fetchCollection,
+) {
+  const canonical = hostedCurriculumUrl(raw);
+  let url = canonical;
+  const visited = new Set<string>();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (visited.has(url)) break;
+    visited.add(url);
+    const result = await download(url, HOSTED_CURRICULUM_HOSTS);
+    if (
+      isHostedFolder(canonical) ||
+      result.bytes.subarray(0, 5).toString() === "%PDF-"
+    )
+      return result;
+    const html = result.bytes.toString("utf8");
+    const confirmed = publicDownloadConfirmation(html, canonical);
+    if (confirmed && !visited.has(confirmed)) {
+      url = confirmed;
+      continue;
+    }
+    const message = hostedFailure(html);
+    // No cookies, credentials or auth redirects are followed. The alternative
+    // is the vendor's public binary-export endpoint for the same shared file.
+    if (
+      attempt === 0 &&
+      new URL(canonical).hostname === "drive.google.com" &&
+      !/requires sign-in|limiting public downloads/.test(message)
+    ) {
+      const direct = new URL("https://drive.usercontent.google.com/download");
+      direct.searchParams.set("id", fileId(canonical)!);
+      direct.searchParams.set("export", "download");
+      const key = new URL(canonical).searchParams.get("resourcekey");
+      if (key) direct.searchParams.set("resourcekey", key);
+      url = direct.href;
+      continue;
+    }
+    throw Error("The public document did not return a PDF. " + message);
+  }
+  throw Error(
+    "The public document did not return a PDF. Google Drive's public download confirmation repeated or exceeded the retry limit.",
+  );
+}
 export async function fetchOfficial(
   raw: string,
 ): Promise<{ bytes: Buffer; url: string; type: string }> {
   let url = curriculumResourceUrl(raw);
   if (HOSTED_CURRICULUM_HOSTS.includes(new URL(url).hostname))
-    return fetchCollection(url, HOSTED_CURRICULUM_HOSTS);
+    return fetchHostedCurriculum(url);
   for (let i = 0; i < 5; i++) {
     const response = await fetch(url, {
       redirect: "manual",
@@ -303,7 +471,7 @@ export async function fetchOfficial(
       if (!next) throw Error("Official source redirect has no target.");
       url = curriculumResourceUrl(next, url);
       if (HOSTED_CURRICULUM_HOSTS.includes(new URL(url).hostname))
-        return fetchCollection(url, HOSTED_CURRICULUM_HOSTS);
+        return fetchHostedCurriculum(url);
       continue;
     }
     if (!response.ok)

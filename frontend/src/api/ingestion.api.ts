@@ -136,6 +136,19 @@ export const ingestionApi = {
     api
       .patch(`/admin/content-ingestion/assets/${id}`, { mapping })
       .then((r) => r.data),
+  retry: async (ids: string[]) => {
+    let queued = 0,
+      skipped = 0;
+    for (let n = 0; n < ids.length; n += 100) {
+      const r = await api.post<{ queued: number; skipped: number }>(
+        "/admin/content-ingestion/assets/retry",
+        { ids: ids.slice(n, n + 100) },
+      );
+      queued += r.data.queued;
+      skipped += r.data.skipped;
+    }
+    return { queued, skipped };
+  },
   approve: async (ids: string[]) => {
     let queued = 0;
     for (let n = 0; n < ids.length; n += 100) {

@@ -16,7 +16,8 @@ for (let n = 1; n <= 24; n++) {
       !d.bulkCurriculum ||
       !d.collectionIngestion ||
       !d.outcomeGrounding ||
-      !d.embeddedCurriculumDiscovery
+      !d.embeddedCurriculumDiscovery ||
+      !d.publicDownloadConfirmation
     )
       throw Error("Backend not ready");
     console.log("PASS: central content library schema and APIs are ready");

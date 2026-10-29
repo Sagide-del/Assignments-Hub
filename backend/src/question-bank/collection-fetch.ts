@@ -37,10 +37,36 @@ export function collectionUrl(raw: string, hosts: string[], base?: string) {
   u.hash = "";
   return u.href;
 }
+export function remotePdfName(disposition: string | undefined) {
+  if (!disposition) return undefined;
+  let name = disposition
+    .match(/filename\*\s*=\s*(?:UTF-8'')?([^;]+)/i)?.[1]
+    ?.replace(/^["']|["']$/g, "");
+  if (name) {
+    try {
+      name = decodeURIComponent(name);
+    } catch {
+      return undefined;
+    }
+  } else
+    name = disposition
+      .match(/filename\s*=\s*(?:"([^"]+)"|([^;]+))/i)
+      ?.slice(1)
+      .find(Boolean)
+      ?.trim();
+  name = name
+    ?.replace(/\\/g, "/")
+    .split("/")
+    .pop()
+    ?.replace(/[\x00-\x1f<>]/g, "")
+    .trim()
+    .slice(0, 180);
+  return name && /\.pdf$/i.test(name) ? name : undefined;
+}
 export async function fetchCollection(
   raw: string,
   hosts: string[],
-): Promise<{ url: string; bytes: Buffer; type: string }> {
+): Promise<{ url: string; bytes: Buffer; type: string; fileName?: string }> {
   let url = collectionUrl(raw, hosts);
   for (let n = 0; n < 5; n++) {
     const u = new URL(url),
@@ -53,6 +79,7 @@ export async function fetchCollection(
       location?: string;
       bytes: Buffer;
       type: string;
+      fileName?: string;
     }>((resolve, reject) => {
       const req = request(
         u,
@@ -84,6 +111,7 @@ export async function fetchCollection(
               location: res.headers.location,
               bytes: Buffer.concat(chunks),
               type: res.headers["content-type"] ?? "",
+              fileName: remotePdfName(res.headers["content-disposition"]),
             }),
           );
           res.on("error", reject);
@@ -103,7 +131,12 @@ export async function fetchCollection(
     }
     if (result.status !== 200)
       throw Error(`Collection returned HTTP ${result.status}.`);
-    return { url, bytes: result.bytes, type: result.type };
+    return {
+      url,
+      bytes: result.bytes,
+      type: result.type,
+      ...(result.fileName ? { fileName: result.fileName } : {}),
+    };
   }
   throw Error("Too many collection redirects.");
 }
