@@ -9,6 +9,8 @@ export type QuestionBankBloomLevel =
   "REMEMBER" | "UNDERSTAND" | "APPLY" | "ANALYZE" | "EVALUATE" | "CREATE";
 
 export interface QuestionBankItem {
+  batchId?: number | null;
+  batch?: { id: number; createdAt: string } | null;
   publishedTo?: string[];
   curriculumUnitId?: number | null;
   curriculumSourceIds?: number[] | null;
@@ -113,6 +115,7 @@ export const questionBankAdminApi = {
     grade?: string;
     topic?: string;
     status?: QuestionBankStatus;
+    batchId?: number;
     skip?: number;
     take?: number;
   }) =>
@@ -157,7 +160,12 @@ export const questionBankAdminApi = {
       | { scope: "IDS"; ids: number[] }
       | {
           scope: "FILTER";
-          filters: { grade?: string; subject?: string; topic?: string };
+          filters: {
+            grade?: string;
+            subject?: string;
+            topic?: string;
+            batchId?: number;
+          };
           before: string;
           excludedIds?: number[];
         },
@@ -183,6 +191,12 @@ export const questionBankAdminApi = {
       .post<QuestionBankItem>(`/admin/question-bank/${id}/reject`, { notes })
       .then((response) => response.data),
 
+  batches: () =>
+    api
+      .get<{ id: number; createdAt: string; count: number }[]>(
+        "/admin/question-bank/batches",
+      )
+      .then((r) => r.data),
   publicationTargets: () =>
     api
       .get<{ id: number; name: string; code: string }[]>(
@@ -194,7 +208,12 @@ export const questionBankAdminApi = {
       | { scope: "IDS"; ids: number[] }
       | {
           scope: "FILTER";
-          filters: { grade?: string; subject?: string; topic?: string };
+          filters: {
+            grade?: string;
+            subject?: string;
+            topic?: string;
+            batchId?: number;
+          };
           before: string;
           excludedIds?: number[];
         }

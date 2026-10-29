@@ -17,6 +17,7 @@ import {
 } from "class-validator";
 
 export class QuestionApprovalFiltersDto {
+  @IsOptional() @IsInt() @Min(1) batchId?: number;
   @IsOptional() @IsString() @MaxLength(50) grade?: string;
   @IsOptional() @IsString() @MaxLength(120) subject?: string;
   @IsOptional() @IsString() @MaxLength(160) topic?: string;

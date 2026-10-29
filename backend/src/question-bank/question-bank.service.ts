@@ -263,6 +263,7 @@ export class QuestionBankService {
         "All generated questions duplicate existing content. Choose another curriculum topic.",
       );
     const batchId = generationId ?? randomUUID();
+    const batch = await this.generationBatch(batchId);
     await this.prisma.questionBank.createMany({
       data: questions.map((question) => ({
         curriculumUnitId: grounding?.unitId,
@@ -296,6 +297,7 @@ export class QuestionBankService {
           : undefined,
         status: QuestionBankStatus.GENERATED,
         generationBatchId: batchId,
+        batchId: batch.id,
         sourceFileName,
       })),
     });
@@ -322,6 +324,36 @@ export class QuestionBankService {
     });
   }
 
+  private async generationBatch(chunkKey: string) {
+    const key = chunkKey.replace(/:\d+$/, "");
+    return this.prisma.$transaction(async (tx) => {
+      // A retry or the next chunk reuses the same number without consuming
+      // another sequence value; simultaneous workers cannot create two runs.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`question-generation-batch:${key}`}))`;
+      const existing = await tx.questionGenerationBatch.findUnique({
+        where: { key },
+      });
+      return existing ?? tx.questionGenerationBatch.create({ data: { key } });
+    });
+  }
+
+  async listBatches(actor: AuthenticatedUser) {
+    this.assertPlatformAdmin(actor);
+    const rows = await this.prisma.questionGenerationBatch.findMany({
+      where: { questions: { some: { isGlobal: true } } },
+      orderBy: { id: "desc" },
+      select: {
+        id: true,
+        createdAt: true,
+        _count: { select: { questions: { where: { isGlobal: true } } } },
+      },
+    });
+    return rows.map(({ _count, ...batch }) => ({
+      ...batch,
+      count: _count.questions,
+    }));
+  }
+
   async listAdmin(actor: AuthenticatedUser, query: ListQuestionBankDto) {
     this.assertPlatformAdmin(actor);
     const skip = Math.max(query.skip ?? 0, 0);
@@ -339,6 +371,7 @@ export class QuestionBankService {
         skip,
         take,
         include: {
+          batch: { select: { id: true, createdAt: true } },
           usages: {
             where: {
               assignment: {
@@ -462,6 +495,7 @@ export class QuestionBankService {
   ): Prisma.QuestionBankWhereInput {
     return {
       isGlobal: true,
+      batchId: query.batchId,
       subject: query.subject
         ? { equals: query.subject, mode: "insensitive" }
         : undefined,
@@ -801,6 +835,9 @@ export class QuestionBankService {
         continue;
       }
       const key = JSON.stringify([
+        item.batchId ??
+          item.generationBatchId?.replace(/:\d+$/, "") ??
+          "legacy",
         normalizeGrade(item.grade) ?? item.grade,
         item.subject.trim().toLowerCase(),
         item.topic.trim().replace(/\s+/g, " ").toLowerCase(),
@@ -939,7 +976,8 @@ export class QuestionBankService {
                         `${dto.title ? `${dto.title} · ` : ""}${first.subject} · ${topic}`.slice(
                           0,
                           175,
-                        ) + ` · Batch ${batch}`,
+                        ) +
+                        ` · Batch ${first.batchId ?? batch}${pools.length > 1 ? ` · Set ${pools.indexOf(pool) + 1}` : ""}`,
                       description,
                       grade,
                       subject: first.subject,

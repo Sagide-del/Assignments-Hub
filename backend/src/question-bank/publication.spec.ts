@@ -303,6 +303,34 @@ describe("Explicit question-bank publication", () => {
     expect(f.assignments).toHaveLength(1);
     expect(f.assignments[0].schoolId).toBe(2);
   });
+  it("publishes two generations of the same topic into distinct numbered assignments", async () => {
+    const f = fixture([q(1, { batchId: 1 }), q(2, { batchId: 2 })]);
+    const result = await f.service.publishContent(
+      { scope: "IDS", ids: [1, 2], audience: "INDEPENDENT" },
+      actor,
+      "pub",
+    );
+    expect(result.assignmentsCreated).toBe(2);
+    expect(f.assignments.map((a) => a.title)).toEqual([
+      "Mathematics · Fractions · Batch 1",
+      "Mathematics · Fractions · Batch 2",
+    ]);
+    expect(f.assignments.map((a) => a.questions.create.length)).toEqual([1, 1]);
+  });
+  it("publishes only the selected saved batch when selecting across pages", async () => {
+    const f = fixture([q(1, { batchId: 1 }), q(2, { batchId: 2 })]);
+    await f.service.publishContent(
+      {
+        scope: "FILTER",
+        before: new Date().toISOString(),
+        filters: { batchId: 2 },
+        audience: "INDEPENDENT",
+      },
+      actor,
+      "pub",
+    );
+    expect(f.usages.map((u) => u.questionBankId)).toEqual([2]);
+  });
   it("keeps images, grading configuration and essay marking semantics", async () => {
     const f = fixture([
       q(1, {
@@ -409,14 +437,12 @@ describe("Publication job lifecycle", () => {
   it("allows retrying partial publication but refuses to rerun successful completed jobs", async () => {
     const p: any = {
       contentLibraryJob: {
-        findUnique: jest
-          .fn()
-          .mockResolvedValue({
-            id: "pub",
-            kind: "PUBLISH_CONTENT",
-            status: "COMPLETED",
-            result: { failures: [{ schoolId: 2, error: "Unavailable" }] },
-          }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: "pub",
+          kind: "PUBLISH_CONTENT",
+          status: "COMPLETED",
+          result: { failures: [{ schoolId: 2, error: "Unavailable" }] },
+        }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };

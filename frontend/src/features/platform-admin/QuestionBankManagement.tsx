@@ -51,6 +51,27 @@ export function QuestionBankManagement() {
         ? "create"
         : (params.get("view") ?? "questions"),
     client = useQueryClient();
+  const [batchFilter, setBatchFilter] = useState(
+    params.get("batch") ?? "LATEST",
+  );
+  const batches = useQuery({
+    queryKey: ["question-bank-batches"],
+    queryFn: questionBankAdminApi.batches,
+    enabled: view === "questions",
+  });
+  const batchId =
+    batchFilter === "LATEST"
+      ? batches.data?.[0]?.id
+      : batchFilter
+        ? Number(batchFilter)
+        : undefined;
+  const selectedBatch = batches.data?.find((b) => b.id === batchId);
+  const batchDate = (date: string) =>
+    new Intl.DateTimeFormat("en-KE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Africa/Nairobi",
+    }).format(new Date(date));
   const [grade, setGrade] = useState(params.get("grade") ?? ""),
     [subject, setSubject] = useState(""),
     [topic, setTopic] = useState(""),
@@ -111,7 +132,7 @@ export function QuestionBankManagement() {
     setAllApproved(null);
     setApprovalIssues([]);
     setSelected([]);
-  }, [grade, subject, topic, status]);
+  }, [grade, subject, topic, status, batchId]);
   useEffect(() => {
     const requestedGrade = params.get("grade");
     if (
@@ -136,7 +157,15 @@ export function QuestionBankManagement() {
         : false,
   });
   const list = useQuery({
-    queryKey: ["question-bank-admin", grade, subject, topic, status, page],
+    queryKey: [
+      "question-bank-admin",
+      grade,
+      subject,
+      topic,
+      status,
+      page,
+      batchId,
+    ],
     queryFn: () =>
       questionBankAdminApi.list({
         grade: grade || undefined,
@@ -145,13 +174,16 @@ export function QuestionBankManagement() {
         status: (status || undefined) as QuestionBankStatus | undefined,
         skip: page * 25,
         take: 25,
+        batchId,
       }),
-    enabled: view === "questions",
+    enabled:
+      view === "questions" && (batchFilter !== "LATEST" || batches.isSuccess),
   });
   useEffect(() => {
     if (
       !selectAllApprovedRequested ||
       status !== "APPROVED" ||
+      batchFilter !== "" ||
       grade ||
       subject ||
       topic ||
@@ -183,6 +215,7 @@ export function QuestionBankManagement() {
     );
   }, [
     selectAllApprovedRequested,
+    batchFilter,
     status,
     grade,
     subject,
@@ -196,6 +229,7 @@ export function QuestionBankManagement() {
     setNotice(apiErrorMessage(e, "The operation could not be completed."));
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ["question-bank-admin"] });
+    void client.invalidateQueries({ queryKey: ["question-bank-batches"] });
     void client.invalidateQueries({ queryKey: ["content-library"] });
   };
   const changeView = (value: string) => {
@@ -227,6 +261,7 @@ export function QuestionBankManagement() {
             before: allDrafts.before,
             excludedIds: allDrafts.excludedIds,
             filters: {
+              batchId,
               grade: grade || undefined,
               subject: subject || undefined,
               topic: topic || undefined,
@@ -280,6 +315,7 @@ export function QuestionBankManagement() {
               before: allApproved.before,
               excludedIds: allApproved.excludedIds,
               filters: {
+                batchId,
                 grade: grade || undefined,
                 subject: subject || undefined,
                 topic: topic || undefined,
@@ -1201,6 +1237,7 @@ export function QuestionBankManagement() {
                 onClick={() => {
                   setSelected([]);
                   setAllApproved(null);
+                  setBatchFilter("");
                   setGrade("");
                   setSubject("");
                   setTopic("");
@@ -1216,6 +1253,29 @@ export function QuestionBankManagement() {
               </button>
             </div>
             <div className="flex flex-wrap gap-3 border-b p-4">
+              <select
+                aria-label="Generation batch"
+                className={control + " min-w-0 max-w-full"}
+                value={batchFilter}
+                disabled={
+                  bulkApproval.isPending ||
+                  publish.isPending ||
+                  selectAllApprovedRequested
+                }
+                onChange={(e) => {
+                  setBatchFilter(e.target.value);
+                  setPage(0);
+                }}
+              >
+                <option value="LATEST">Latest batch</option>
+                <option value="">All saved batches</option>
+                {(batches.data ?? []).map((b) => (
+                  <option key={b.id} value={b.id}>
+                    Batch {b.id} · {batchDate(b.createdAt)} · {b.count}{" "}
+                    questions
+                  </option>
+                ))}
+              </select>
               <select
                 aria-label="Question grade"
                 disabled={
@@ -1307,6 +1367,27 @@ export function QuestionBankManagement() {
                 </button>
               )}
             </div>
+            {selectedBatch && (
+              <div className="border-b bg-slate-50 px-4 py-3 text-sm">
+                <strong>Batch {selectedBatch.id}</strong>
+                <span className="ml-2 text-xs text-slate-500">
+                  Generated {batchDate(selectedBatch.createdAt)} ·{" "}
+                  {selectedBatch.count} saved questions
+                </span>
+                <p className="mt-1 text-xs text-slate-500">
+                  Review and publish this batch separately. Previous batches
+                  remain saved.
+                </p>
+              </div>
+            )}
+            {batches.isError && (
+              <p role="alert" className="p-4 text-sm text-red-700">
+                Could not load saved batches.{" "}
+                <button className="underline" onClick={() => batches.refetch()}>
+                  Retry
+                </button>
+              </p>
+            )}
             {status === "GENERATED" && list.data?.selectionBefore && (
               <div className="space-y-3 border-b bg-slate-50/70 p-4">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -1617,6 +1698,12 @@ export function QuestionBankManagement() {
                             : ""}
                         </p>
                       )}
+                      {item.batch && (
+                        <p className="mt-2 text-xs text-slate-500">
+                          Batch {item.batch.id} ·{" "}
+                          {batchDate(item.batch.createdAt)}
+                        </p>
+                      )}
                       <p className="mt-3 text-sm font-medium leading-6">
                         {item.questionText}
                       </p>
@@ -1748,8 +1835,8 @@ export function QuestionBankManagement() {
                 </h3>
                 <p className="mt-1 text-xs leading-6 text-slate-500">
                   Assignments will be grouped by grade, subject and topic.
-                  Existing publications are skipped; learner submissions are
-                  kept.
+                  Generation batches stay separate. Existing publications are
+                  skipped; learner submissions are kept.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">

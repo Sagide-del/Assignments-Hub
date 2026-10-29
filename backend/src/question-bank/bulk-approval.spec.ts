@@ -80,6 +80,16 @@ function setup(initial: any[]) {
   return { p, data, audit, service };
 }
 describe("Bulk question approval", () => {
+  it("approves only the selected generation batch", async () => {
+    const f = setup([item(1, { batchId: 1 }), item(2, { batchId: 2 })]);
+    expect(
+      await f.service.bulkApprove(
+        { scope: "FILTER", before, filters: { batchId: 2 } },
+        actor,
+      ),
+    ).toMatchObject({ approved: 1 });
+    expect(f.data.map((q) => q.status)).toEqual(["GENERATED", "APPROVED"]);
+  });
   it("approves across pages while retaining the same completeness/visual validation", async () => {
     const { service, p, data, audit } = setup([
       ...Array.from({ length: 260 }, (_, i) => item(i + 1)),

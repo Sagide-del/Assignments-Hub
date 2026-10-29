@@ -2354,6 +2354,8 @@ model QuestionBank {
   // review screen can approve/reject a batch together. Not a foreign key —
   // just a correlation id (crypto.randomUUID()).
   generationBatchId String? @map("generation_batch_id")
+  batchId Int? @map("batch_id")
+  batch QuestionGenerationBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
   sourceFileName    String? @map("source_file_name")
 
   reviewedById Int?      @map("reviewed_by_id")
@@ -2377,6 +2379,7 @@ model QuestionBank {
   @@index([isGlobal, status, subject, grade])
   @@index([schoolId, status])
   @@index([generationBatchId])
+  @@index([batchId])
   @@index([sourceDocumentId])
   @@map("question_bank")
 }
@@ -2650,4 +2653,15 @@ model CollectionAsset {
  @@unique([collectionId,origin])
  @@index([status])
  @@map("collection_assets")
+}
+
+
+// Durable generation runs. Chunk retry keys remain on QuestionBank, while
+// all chunks from one generation job share this stable numbered batch.
+model QuestionGenerationBatch {
+  id Int @id @default(autoincrement())
+  key String @unique
+  createdAt DateTime @default(now())
+  questions QuestionBank[]
+  @@map("question_generation_batches")
 }

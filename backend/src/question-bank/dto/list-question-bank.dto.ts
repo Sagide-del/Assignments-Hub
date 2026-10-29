@@ -3,6 +3,8 @@ import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-
 import { QuestionBankStatus } from "@prisma/client";
 
 export class ListQuestionBankDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) batchId?: number;
+
   @IsOptional()
   @IsString()
   @MaxLength(120)
