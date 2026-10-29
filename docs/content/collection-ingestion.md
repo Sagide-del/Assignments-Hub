@@ -2,7 +2,7 @@
 
 Open **Platform Admin → Question Bank → Generate content** for the guided workspace. Choose one grade, then follow **Set up curriculum → Generate content → Review & publish**. A grade with checked outcomes opens at generation automatically. Main tabs are Questions, Create content, Generation jobs and Memory cards. School access and advanced tools remain available in a collapsed section.
 
-The guided setup discovers official links for the chosen grade, lets the administrator select and confirm subjects, saves the subject proposals and queues curriculum designs directly into the existing collection pipeline. Downloads/classification continue in background jobs. Review documents and quoted outcomes in the same workspace, confirm subject-list completeness, then generate. No textbook upload is required. Discovery errors and unfinished subjects remain visible; discovery is not a completeness certification.
+The primary guided action automatically prepares the available pinned GitHub/KICD source batch for the chosen grade. It validates and indexes available quoted outcomes without requiring individual document or outcome checks. Other source discovery and import tools remain available in collapsed sections. Downloads/classification continue in background jobs. Review documents and quoted outcomes in the same workspace, confirm subject-list completeness, then generate. No textbook upload is required. Discovery errors and unfinished subjects remain visible; discovery is not a completeness certification.
 
 The guided starter batch requests about 30 questions per ready subject/pathway entry plus recall cards. It uses up to six evenly spaced IDs from that subject’s ready outcome list, requesting at least five questions per selected outcome. This bounds the first-run output per subject; it does not prove all strands are covered. The preview shows the total requested before queuing. Per-subject queue failures are reported alongside successful job counts, without claiming failed subjects succeeded. The advanced workspace still allows generation across all ready outcomes.
 
@@ -54,7 +54,7 @@ The matrix shows expected subjects even when they have no resources. It separate
 
 An outcome can generate content only when:
 
-1. The grade's expected subject catalogue and subject scope have been reviewed.
+1. The grade’s expected inventory has been reviewed, or the specific unit is recorded in a completed automatic preparation for that grade and pinned revision. Automatic preparation does not certify complete inventory coverage.
 2. The learning outcome is reviewed, with a source quotation present in a reviewed curriculum design.
 3. Any optional teaching sources must be reviewed and match the exact grade and subject. A textbook is not required: reviewed curriculum evidence plus AI subject knowledge can generate drafts. The curriculum reference establishes alignment, not independent verification of AI facts or answers.
 
@@ -97,3 +97,5 @@ Failed documents can be retried in batches from the guided workspace. The retry 
 See [the supplied framework assessment](framework-source-assessment.md) for what the 2017 and 2019 uploaded documents can establish. They are not automatically treated as detailed current grade designs.
 
 The guided setup also offers a packaged [pinned GitHub curriculum source](github-curriculum-import.md). Its source audit and gap acknowledgement are preserved when a document is edited or indexed; it is an alternative intake route through the same review and generation pipeline.
+
+Automatic grade preparation pauses queued alternative Drive downloads for the chosen grade without deleting them. Paused work can be resumed from Generation jobs if needed. The main setup view prioritises pinned source status and shows source details, old downloads and manual corrections only on demand. Generated answer approval remains separate.

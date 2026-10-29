@@ -33,26 +33,34 @@ export function RepositorySourceReview({
           ? `${source.comparisons.reduce((n, c) => Math.max(n, c.matchedQuotes), 0)} outcome quotes matched available indexed KICD text; this is not a full-edition certification.`
           : "No indexed official copy was available for automatic text comparison."}
       </p>
-      {!!source.coverage.warnings.length && (
-        <div className="space-y-3 border-t pt-3">
-          <ul className="list-disc space-y-2 pl-4 text-xs leading-6 text-amber-800">
-            {source.coverage.warnings.slice(0, 8).map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-          <label className="flex items-start gap-3 text-xs leading-6">
-            <input
-              aria-label="Source limitations reviewed"
-              className="mt-1"
-              type="checkbox"
-              checked={acknowledged}
-              onChange={(e) => onAcknowledge(e.target.checked)}
-            />
-            I reviewed the source gaps. Index only the available outcomes; this
-            does not complete the syllabus.
-          </label>
-        </div>
+      {source.validationMode === "PINNED_SOURCE_AUTOMATED" && (
+        <p className="text-xs leading-6 text-blue-700">
+          Automatically validated against the pinned source. Known limitations
+          were accepted during grade preparation; this is not a certification of
+          full syllabus coverage.
+        </p>
       )}
+      {!!source.coverage.warnings.length &&
+        source.validationMode !== "PINNED_SOURCE_AUTOMATED" && (
+          <div className="space-y-3 border-t pt-3">
+            <ul className="list-disc space-y-2 pl-4 text-xs leading-6 text-amber-800">
+              {source.coverage.warnings.slice(0, 8).map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+            <label className="flex items-start gap-3 text-xs leading-6">
+              <input
+                aria-label="Source limitations reviewed"
+                className="mt-1"
+                type="checkbox"
+                checked={acknowledged}
+                onChange={(e) => onAcknowledge(e.target.checked)}
+              />
+              I reviewed the source gaps. Index only the available outcomes;
+              this does not complete the syllabus.
+            </label>
+          </div>
+        )}
     </section>
   );
 }

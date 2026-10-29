@@ -18,6 +18,7 @@ for (let n = 1; n <= 24; n++) {
       !d.outcomeGrounding ||
       !d.embeddedCurriculumDiscovery ||
       !d.publicDownloadConfirmation ||
+      !d.automaticGradePreparation ||
       d.repositoryCurriculumSnapshot !== "08760594f5390c70fd7b764abd0525f9bf2c4f69"
     )
       throw Error("Backend not ready");

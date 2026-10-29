@@ -398,10 +398,12 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
     const job = await this.prisma.contentLibraryJob.findUnique({
       where: { id },
     });
-    if (!job || job.status !== "FAILED")
-      throw new BadRequestException("Only failed jobs can be retried.");
+    if (!job || !["FAILED", "PAUSED"].includes(job.status))
+      throw new BadRequestException(
+        "Only failed or paused jobs can be retried.",
+      );
     const changed = await this.prisma.contentLibraryJob.updateMany({
-      where: { id, status: "FAILED" },
+      where: { id, status: job.status },
       data: { status: "QUEUED", error: null },
     });
     if (!changed.count)
@@ -422,10 +424,16 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
           error: "Worker interrupted. Review existing output, then retry.",
         },
       });
-      const job = await this.prisma.contentLibraryJob.findFirst({
-        where: { status: "QUEUED" },
+      const priority = await this.prisma.contentLibraryJob.findFirst({
+        where: { status: "QUEUED", kind: "PREPARE_GRADE" },
         orderBy: { createdAt: "asc" },
       });
+      const job =
+        priority ??
+        (await this.prisma.contentLibraryJob.findFirst({
+          where: { status: "QUEUED" },
+          orderBy: { createdAt: "asc" },
+        }));
       if (!job) return;
       const claimed = await this.prisma.contentLibraryJob.updateMany({
         where: { id: job.id, status: "QUEUED" },
@@ -463,6 +471,7 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
         if (
           [
             "MAP_SOURCE",
+            "PREPARE_GRADE",
             "INGEST_FILE",
             "INGEST_GITHUB",
             "INGEST_URL",

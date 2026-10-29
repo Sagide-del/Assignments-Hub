@@ -31,6 +31,17 @@ import { SchoolActivation } from "./SchoolActivation";
 import { QuestionBankLegacy } from "./QuestionBankLegacy";
 const control =
   "min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm";
+const jobLabels: Record<string, string> = {
+  PREPARE_GRADE: "Prepare grade curriculum",
+  INGEST_GITHUB: "Prepare saved curriculum",
+  INGEST_URL: "Import source",
+  INGEST_FILE: "Read uploaded file",
+  INDEX_ASSET: "Index curriculum",
+  OUTCOME_QUESTIONS: "Generate questions",
+  OUTCOME_CARDS: "Generate recall cards",
+  QUESTIONS: "Generate questions",
+  CARDS: "Generate recall cards",
+};
 const grades = [6, 7, 8, 9, 10, 11, 12].map((g) => `Grade ${g}`);
 export function QuestionBankManagement() {
   const [params, setParams] = useSearchParams(),
@@ -781,15 +792,40 @@ export function QuestionBankManagement() {
             >
               <div>
                 <strong>
-                  {job.input.grade} · {job.input.subject}
+                  {[job.input.grade, job.input.subject]
+                    .filter(Boolean)
+                    .join(" · ") || "Curriculum processing"}
                 </strong>
                 <p className="mt-1 text-xs text-slate-500">
-                  {job.kind} · {job.input.topic ?? "Official source import"} ·{" "}
-                  {job.status}
+                  {jobLabels[job.kind] ?? job.kind} ·{" "}
+                  {job.input.topic ??
+                    (job.kind === "PREPARE_GRADE"
+                      ? "Available subjects"
+                      : "Source preparation")}{" "}
+                  ·{" "}
+                  {job.status === "COMPLETED"
+                    ? "Finished"
+                    : job.status === "RUNNING"
+                      ? "Processing"
+                      : job.status === "PAUSED"
+                        ? "Paused"
+                        : job.status === "FAILED"
+                          ? "Needs attention"
+                          : "Queued"}
                   {job.result?.count !== undefined
                     ? ` · ${job.result.count} created`
                     : ""}
                 </p>
+                {job.kind === "PREPARE_GRADE" && job.result && (
+                  <p className="mt-2 text-xs leading-6 text-slate-500">
+                    {job.result.processed ?? 0}/{job.result.total ?? 0} files
+                    processed · {job.result.subjects?.length ?? 0} subjects
+                    ready
+                    {job.result.failures?.length
+                      ? ` · ${job.result.failures.length} need attention`
+                      : ""}
+                  </p>
+                )}
                 {job.error && (
                   <p
                     role="alert"
@@ -799,13 +835,13 @@ export function QuestionBankManagement() {
                   </p>
                 )}
               </div>
-              {job.status === "FAILED" && (
+              {["FAILED", "PAUSED"].includes(job.status) && (
                 <button
                   disabled={retry.isPending}
                   className={control}
                   onClick={() => retry.mutate(job.id)}
                 >
-                  Retry
+                  {job.status === "PAUSED" ? "Resume" : "Retry"}
                 </button>
               )}
             </article>

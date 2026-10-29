@@ -132,6 +132,109 @@ export class GitHubCurriculumService {
       { timeout: 30000 },
     );
   }
+  async prepareGrade(
+    dto: {
+      grade: string;
+      commit: string;
+      rightsConfirmed: true;
+      acceptSourceLimitations: true;
+    },
+    actor: AuthenticatedUser,
+  ) {
+    const files = manifest.files.filter((e) => e.grade === dto.grade);
+    if (
+      !files.length ||
+      dto.commit !== manifest.commit ||
+      !dto.acceptSourceLimitations ||
+      !dto.rightsConfirmed
+    )
+      throw new BadRequestException(
+        "Choose a supported grade and accept the available source limitations.",
+      );
+    await this.importDesigns(
+      {
+        grades: [dto.grade],
+        commit: dto.commit,
+        fileIds: files.map((f) => f.id),
+        rightsConfirmed: true,
+      },
+      actor,
+    );
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`prepare-grade:${dto.grade}`}))`;
+        const active = await tx.contentLibraryJob.findFirst({
+          where: {
+            kind: "PREPARE_GRADE",
+            status: { in: ["QUEUED", "RUNNING"] },
+            AND: [
+              { input: { path: ["grade"], equals: dto.grade } },
+              { input: { path: ["commit"], equals: manifest.commit } },
+            ],
+          },
+        });
+        if (active) return { id: active.id, resumed: true, pausedDownloads: 0 };
+        const assets = await tx.collectionAsset.findMany({
+          where: {
+            OR: [
+              { origin: { in: files.map((f) => f.sourceUrl) } },
+              {
+                origin: { startsWith: "https://drive.google.com/" },
+                collection: { grades: { array_contains: [dto.grade] } },
+              },
+            ],
+          },
+          select: { id: true, origin: true, status: true },
+        });
+        const id = randomUUID();
+        let pausedDownloads = 0;
+        for (const asset of assets) {
+          const drive = asset.origin.startsWith("https://drive.google.com/");
+          const changed = await tx.contentLibraryJob.updateMany({
+            where: {
+              kind: drive
+                ? "INGEST_URL"
+                : { in: ["INGEST_GITHUB", "INDEX_ASSET"] },
+              status: "QUEUED",
+              input: { path: ["assetId"], equals: asset.id },
+            },
+            data: {
+              status: "PAUSED",
+              error: drive
+                ? "Paused while the pinned curriculum snapshot is prepared. Resume only if you need this alternative source."
+                : "Handled by automatic grade preparation.",
+            },
+          });
+          if (drive) pausedDownloads += changed.count;
+          if (changed.count && asset.status === "QUEUED")
+            await tx.collectionAsset.updateMany({
+              where: { id: asset.id, status: "QUEUED" },
+              data: {
+                status: "PAUSED",
+                error: "Paused during automatic grade preparation.",
+              },
+            });
+        }
+        await tx.contentLibraryJob.create({
+          data: {
+            id,
+            kind: "PREPARE_GRADE",
+            createdById: actor.id,
+            input: {
+              grade: dto.grade,
+              commit: manifest.commit,
+              acceptSourceLimitations: true,
+            },
+          },
+        });
+        return { id, resumed: false, pausedDownloads };
+      },
+      { timeout: 30000 },
+    );
+  }
+  designsForGrade(grade: string) {
+    return manifest.files.filter((e) => e.grade === grade);
+  }
   async stage(asset: any, input: { sourceId: string; commit: string }) {
     const entry = manifest.files.find((e) => e.id === input.sourceId);
     if (

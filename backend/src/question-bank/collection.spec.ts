@@ -199,7 +199,10 @@ describe("Curriculum evidence and expected subjects", () => {
           .fn()
           .mockResolvedValue({ verified: false, scope: { verified: true } }),
       },
-      contentLibraryJob: { create: jest.fn() },
+      contentLibraryJob: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
     };
     const s = service(p);
     await expect(s.verifyGrades(["Grade 6"], { id: 1 } as any)).rejects.toThrow(
@@ -224,7 +227,10 @@ describe("Curriculum evidence and expected subjects", () => {
       questionBankSourceDocument: {
         findMany: jest.fn().mockResolvedValue([{ id: 1, role: "CURRICULUM" }]),
       },
-      contentLibraryJob: { create: jest.fn() },
+      contentLibraryJob: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
     };
     const s = service(p);
     await expect(
@@ -359,7 +365,10 @@ describe("Collection persistence and migration", () => {
       },
       contentCollection: { create: jest.fn().mockResolvedValue({ id: "c" }) },
       collectionAsset: { create: jest.fn().mockResolvedValue({ id: "a" }) },
-      contentLibraryJob: { create: jest.fn() },
+      contentLibraryJob: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
     };
     const storage = { uploadPrivate: jest.fn() };
     await service(p, { storage }).fromLibrary([9], { id: 1 } as any);
@@ -505,6 +514,9 @@ describe("Full collection review", () => {
       questionBank: { groupBy: jest.fn().mockResolvedValue([]) },
       mnemonicCard: { groupBy: jest.fn().mockResolvedValue([]) },
     };
+    Object.assign(p, {
+      contentLibraryJob: { findMany: jest.fn().mockResolvedValue([]) },
+    });
     const result = await service(p).overview();
     expect(result.scopes[0]).toMatchObject({
       subject: "English",
@@ -528,7 +540,10 @@ describe("Private collection staging", () => {
         findUnique: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: "a" }),
       },
-      contentLibraryJob: { create: jest.fn() },
+      contentLibraryJob: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
     };
     const storage = {
       uploadPrivate: jest

@@ -1,3 +1,4 @@
+import repositoryManifest from "./github-curriculum.manifest.json";
 import { GitHubCurriculumService } from "./github-curriculum.service";
 import {
   HOSTED_CURRICULUM_HOSTS,
@@ -79,6 +80,7 @@ export class CollectionService {
       questions,
       cards,
       collectionIndex,
+      preparations,
     ] = await Promise.all([
       this.prisma.curriculumScope.findMany({
         orderBy: [{ grade: "asc" }, { subject: "asc" }],
@@ -139,9 +141,30 @@ export class CollectionService {
         orderBy: { createdAt: "desc" },
         select: { id: true, name: true, _count: { select: { assets: true } } },
       }),
+      this.prisma.contentLibraryJob.findMany({
+        where: { kind: "PREPARE_GRADE" },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        select: {
+          id: true,
+          status: true,
+          input: true,
+          result: true,
+          error: true,
+        },
+      }),
     ]);
     const ids = (value: any) =>
       Array.isArray(value) ? (value.filter(Number.isInteger) as number[]) : [];
+    const batchUnits = new Set(
+      preparations
+        .filter(
+          (j) =>
+            j.status === "COMPLETED" &&
+            (j.input as any)?.commit === repositoryManifest.commit,
+        )
+        .flatMap((j) => ids((j.result as any)?.readyUnitIds)),
+    );
     const ready = (unit: (typeof units)[number]) =>
       unit.verified &&
       sources.some(
@@ -156,6 +179,7 @@ export class CollectionService {
     return {
       version: 1,
       gradeReviews: reviews,
+      preparations,
       collections,
       collectionIndex,
       sources: sources.map((s) => ({
@@ -180,6 +204,10 @@ export class CollectionService {
           verifiedOutcomes: us.filter((u) => u.verified).length,
           readyOutcomes: us.filter(ready).length,
           unitIds: us.filter(ready).map((u) => u.id),
+          snapshotReadyUnitIds: us
+            .filter(ready)
+            .filter((u) => batchUnits.has(u.id))
+            .map((u) => u.id),
           curriculumSources: sources.filter(
             (s) =>
               s.grade === scope.grade &&
@@ -731,7 +759,22 @@ export class CollectionService {
     const grade = await this.prisma.curriculumGradeReview.findUnique({
       where: { grade: unit.scope.grade },
     });
-    if (!grade?.verifiedAt)
+    const prepared = grade?.verifiedAt
+      ? true
+      : await this.prisma.contentLibraryJob.findFirst({
+          where: {
+            kind: "PREPARE_GRADE",
+            status: "COMPLETED",
+            AND: [
+              { input: { path: ["grade"], equals: unit.scope.grade } },
+              {
+                input: { path: ["commit"], equals: repositoryManifest.commit },
+              },
+              { result: { path: ["readyUnitIds"], array_contains: [id] } },
+            ],
+          },
+        });
+    if (!prepared)
       throw new BadRequestException(
         "Confirm the complete expected subject list for this grade before generation.",
       );
@@ -787,6 +830,8 @@ export class CollectionService {
     actor: AuthenticatedUser,
   ): Promise<any> {
     const input = job.input as any;
+    if (job.kind === "PREPARE_GRADE")
+      return this.prepareGradeContent(job, actor);
     if (job.kind.startsWith("OUTCOME_")) return this.produceOutcome(job, actor);
     const asset = await this.asset(input.assetId);
     try {
@@ -1034,6 +1079,190 @@ export class CollectionService {
     });
     return { assetId: asset.id, subjects: mapping.subjects.length, links };
   }
+  private async prepareGradeContent(
+    job: { id: string; input: any },
+    actor: AuthenticatedUser,
+  ) {
+    if (
+      !this.github ||
+      job.input.commit !== repositoryManifest.commit ||
+      job.input.acceptSourceLimitations !== true
+    )
+      throw Error(
+        "The grade preparation request does not match the authorised snapshot.",
+      );
+    const files = this.github.designsForGrade(job.input.grade);
+    if (!files.length) throw Error("No pinned designs for this grade.");
+    const readyUnitIds: number[] = [],
+      subjects: { subject: string; outcomes: number; sourceGaps: number }[] =
+        [],
+      failures: { subject: string; error: string }[] = [];
+    for (const file of files) {
+      let asset: any;
+      try {
+        asset = await this.prisma.collectionAsset.findFirst({
+          where: { origin: file.sourceUrl },
+          include: { collection: true },
+        });
+        if (!asset) throw Error("The source has not been staged.");
+        await this.github.stage(asset, {
+          sourceId: file.id,
+          commit: repositoryManifest.commit,
+        });
+        asset = await this.asset(asset.id);
+        const mapping = validateMapping(asset.mapping, asset.extractedText, [
+          file.grade,
+        ]);
+        const metadata = (asset.mapping as any)._source;
+        await this.prisma.collectionAsset.update({
+          where: { id: asset.id },
+          data: {
+            mapping: {
+              ...mapping,
+              _source: {
+                ...metadata,
+                limitationsReviewed: true,
+                validationMode: "PINNED_SOURCE_AUTOMATED",
+                batchAcceptedBy: actor.id,
+              },
+            } as any,
+            status: "INDEXING",
+          },
+        });
+        asset = await this.asset(asset.id);
+        await this.indexAsset(asset);
+        const scope = await this.prisma.curriculumScope.findUnique({
+          where: {
+            grade_subject_pathway: {
+              grade: file.grade,
+              subject: file.subject,
+              pathway: "",
+            },
+          },
+        });
+        if (!scope) throw Error("No matching subject was indexed.");
+        const expected = new Set(
+          mapping.subjects[0].units.map((u) =>
+            compact(`${u.strand}|${u.subStrand}|${u.outcome}`).toLowerCase(),
+          ),
+        );
+        const units = await this.prisma.curriculumOutcome.findMany({
+          where: { scopeId: scope.id },
+        });
+        const docs = await this.prisma.questionBankSourceDocument.findMany({
+          where: {
+            id: { in: [...new Set(units.map((u) => u.sourceDocumentId))] },
+            grade: file.grade,
+            subject: file.subject,
+            role: "CURRICULUM",
+            reviewed: true,
+          },
+          include: {
+            chunks: { select: { content: true }, orderBy: { ordinal: "asc" } },
+          },
+        });
+        const normalized = asset.extractedText
+          .replace(/\r\n/g, "\n")
+          .replace(/[ \t]+/g, " ")
+          .trim();
+        const expectedHash = createHash("sha256")
+          .update(normalized)
+          .digest("hex");
+        const nativeText = compact(asset.extractedText).toLowerCase();
+        const corpora = new Map(
+          docs.map((d) => [
+            d.id,
+            d.contentHash === expectedHash
+              ? nativeText
+              : compact(d.chunks.map((c) => c.content).join(" ")).toLowerCase(),
+          ]),
+        );
+        const accepted = units.filter(
+          (u) =>
+            expected.has(
+              compact(`${u.strand}|${u.subStrand}|${u.outcome}`).toLowerCase(),
+            ) &&
+            corpora
+              .get(u.sourceDocumentId)
+              ?.includes(compact(u.quote).toLowerCase()),
+        );
+        if (!accepted.length)
+          throw Error("No outcomes passed the source-quotation validation.");
+        const references =
+          await this.prisma.questionBankSourceDocument.findMany({
+            where: {
+              grade: file.grade,
+              subject: file.subject,
+              role: "TEACHING",
+              reviewed: true,
+            },
+            select: { id: true },
+          });
+        for (const unit of accepted) {
+          const retained = (unit.supportingSourceIds as number[]).filter((id) =>
+            references.some((r) => r.id === id),
+          );
+          if (retained.length !== (unit.supportingSourceIds as number[]).length)
+            await this.prisma.curriculumOutcome.update({
+              where: { id: unit.id },
+              data: { supportingSourceIds: retained },
+            });
+        }
+        await this.prisma.curriculumOutcome.updateMany({
+          where: { id: { in: accepted.map((u) => u.id) } },
+          data: { verified: true },
+        });
+        await this.prisma.curriculumScope.update({
+          where: { id: scope.id },
+          data: { verified: true },
+        });
+        readyUnitIds.push(...accepted.map((u) => u.id));
+        subjects.push({
+          subject: file.subject,
+          outcomes: accepted.length,
+          sourceGaps: metadata.coverage.warnings.length,
+        });
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Could not prepare this subject";
+        failures.push({ subject: file.subject, error: message });
+        if (asset)
+          await this.prisma.collectionAsset.update({
+            where: { id: asset.id },
+            data: { status: "FAILED", error: message.slice(0, 2000) },
+          });
+      }
+      await this.prisma.contentLibraryJob.update({
+        where: { id: job.id },
+        data: {
+          result: {
+            grade: job.input.grade,
+            commit: repositoryManifest.commit,
+            processed: subjects.length + failures.length,
+            total: files.length,
+            subjects,
+            failures,
+            readyUnitIds: [...new Set(readyUnitIds)],
+          } as any,
+        },
+      });
+    }
+    if (!readyUnitIds.length)
+      throw Error(
+        "No subjects could be prepared. Open the preparation errors for details.",
+      );
+    return {
+      grade: job.input.grade,
+      commit: repositoryManifest.commit,
+      processed: files.length,
+      total: files.length,
+      subjects,
+      failures,
+      readyUnitIds: [...new Set(readyUnitIds)],
+      validationMode: "PINNED_SOURCE_AUTOMATED",
+      inventoryComplete: false,
+    };
+  }
   private async indexAsset(asset: any) {
     this.assertSourceReview(asset.mapping);
     const mapping = validateMapping(
@@ -1109,24 +1338,55 @@ export class CollectionService {
           },
           select: { id: true },
         });
-        for (const unit of subject.units) {
-          const old = await this.prisma.curriculumOutcome.findFirst({
-            where: {
-              scopeId: scope.id,
-              strand: unit.strand,
-              subStrand: unit.subStrand,
-              outcome: unit.outcome,
-            },
+        if (
+          (asset.mapping as any)?._source?.validationMode ===
+          "PINNED_SOURCE_AUTOMATED"
+        ) {
+          const existingUnits = await this.prisma.curriculumOutcome.findMany({
+            where: { scopeId: scope.id },
+            select: { strand: true, subStrand: true, outcome: true },
           });
-          if (!old)
-            await this.prisma.curriculumOutcome.create({
-              data: {
-                ...unit,
+          const key = (u: {
+            strand: string;
+            subStrand: string;
+            outcome: string;
+          }) => JSON.stringify([u.strand, u.subStrand, u.outcome]);
+          const present = new Set(existingUnits.map(key));
+          const missing = subject.units.filter((u) => {
+            const k = key(u);
+            if (present.has(k)) return false;
+            present.add(k);
+            return true;
+          });
+          if (missing.length)
+            await this.prisma.curriculumOutcome.createMany({
+              data: missing.map((u) => ({
+                ...u,
                 scopeId: scope.id,
                 sourceDocumentId: source.id,
                 supportingSourceIds: teaching.map((s) => s.id),
+              })),
+            });
+        } else {
+          for (const unit of subject.units) {
+            const old = await this.prisma.curriculumOutcome.findFirst({
+              where: {
+                scopeId: scope.id,
+                strand: unit.strand,
+                subStrand: unit.subStrand,
+                outcome: unit.outcome,
               },
             });
+            if (!old)
+              await this.prisma.curriculumOutcome.create({
+                data: {
+                  ...unit,
+                  scopeId: scope.id,
+                  sourceDocumentId: source.id,
+                  supportingSourceIds: teaching.map((s) => s.id),
+                },
+              });
+          }
         }
       }
     }

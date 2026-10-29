@@ -37,6 +37,7 @@ export class ContentCapabilitiesController {
         officialCurriculumImport: true,
         embeddedCurriculumDiscovery: true,
         publicDownloadConfirmation: true,
+        automaticGradePreparation:true,
         repositoryCurriculumSnapshot: snapshotManifest.commit,
       };
     } catch {

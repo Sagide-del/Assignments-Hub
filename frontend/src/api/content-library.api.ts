@@ -10,7 +10,14 @@ export interface LibraryJob {
     count?: number;
     url?: string;
   };
-  result?: { count?: number; sourceId?: number };
+  result?: {
+    count?: number;
+    sourceId?: number;
+    processed?: number;
+    total?: number;
+    subjects?: { subject: string }[];
+    failures?: { subject: string; error: string }[];
+  };
   error?: string;
   createdAt: string;
 }

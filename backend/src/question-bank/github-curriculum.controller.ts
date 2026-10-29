@@ -31,12 +31,24 @@ export class ImportRepositoryCurriculumDto {
   @IsString() @MaxLength(40) commit: string;
   @Equals(true) rightsConfirmed: true;
 }
+export class PrepareRepositoryGradeDto {
+  @IsIn(CONTENT_GRADES) grade: string;
+  @IsString() @MaxLength(40) commit: string;
+  @Equals(true) rightsConfirmed: true;
+  @Equals(true) acceptSourceLimitations: true;
+}
 @Controller("admin/content-ingestion/github")
 @Roles(Role.PLATFORM_ADMIN)
 export class GitHubCurriculumController {
   constructor(private readonly service: GitHubCurriculumService) {}
   @Get() catalogue(@Query("grade") grade?: string) {
     return this.service.catalogue(grade);
+  }
+  @Post("prepare") prepare(
+    @Body() dto: PrepareRepositoryGradeDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.service.prepareGrade(dto, actor);
   }
   @Post("import") import(
     @Body() dto: ImportRepositoryCurriculumDto,

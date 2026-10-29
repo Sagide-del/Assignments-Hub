@@ -12,11 +12,13 @@ Runtime imports read the packaged snapshot, not Google Drive or raw-GitHub endpo
 
 ## Admin workflow
 
-Open **Question Bank → Create content**, choose a grade and use **Import Grade 7 curriculum snapshot** (or the selected grade). The preview lists available subjects, revisions, source links and extraction limitations. Confirm authorised source use. Imports are deduplicated against existing pinned source URLs and queued as `INGEST_GITHUB`; no content is indexed or published automatically.
+Open **Question Bank → Create content**, choose a grade and click **Prepare Grade 7 automatically** (or the selected grade). No document-by-document or outcome-by-outcome confirmation is required for this pinned source batch. The operation imports/reuses available source assets, pauses queued alternative Drive downloads for that grade, and queues a single durable `PREPARE_GRADE` job. Grade preparation receives priority over the old download backlog; running downloads are not interrupted and no work is deleted.
 
-Check each document's quoted outcomes. Files with known source gaps or extraction discrepancies require an explicit acknowledgement before indexing. Source metadata is preserved by the server when mappings are edited; a request cannot replace the pinned commit or erase the source audit. The advanced mapping editor supports the same acknowledgement.
+The worker verifies the pinned files, parses source tables, accepts recorded source limitations under the explicit batch action, indexes available outcomes in bulk, and checks every eligible outcome against matching source text. It records `PINNED_SOURCE_AUTOMATED`, the initiating administrator, eligible unit IDs, source gaps and per-subject failures. Partial failures do not prevent successfully prepared subjects from being used. Repeated preparation reuses source documents and exact matching outcomes.
 
-Then confirm the expected subject inventory and review the extracted outcomes using the existing workflow. Questions and recall cards are generated as drafts. Approval/publication and grade-scoped student allocation remain unchanged. Missing senior subjects and unreviewed materials are not filled with invented official outcomes.
+Preparation marks eligible available outcomes ready for generation. It does **not** certify a complete grade subject inventory or invent missing sections. A completed preparation job authorises only its recorded unit IDs for this grade and pinned revision, even if a full-grade inventory has not been attested. Other incomplete, unprepared inventories remain blocked. Subject-source details, manual corrections and alternative imports are collapsed by default.
+
+Saved progress appears in setup, which advances to generation when the requested preparation completes. Reloading retains eligibility. Generated questions and memory cards remain drafts and still require approval/publication before student delivery. The older individual review tools remain available for exceptions and non-snapshot sources.
 
 ## KICD alignment and extraction
 
@@ -30,4 +32,4 @@ The initial snapshot parses 80 sources into 6,351 available outcome statements. 
 
 ## Verification
 
-Backend tests cover extraction, quotations, hash and grade mismatch rejection, arithmetic preservation, Swahili headings, immutable manifest coverage, idempotent jobs, protected provenance and source-gap acknowledgement. A complete build fetches and audits all 80 real source files. Browser fixtures cover source preview/import, source-gap controls, subject/outcome review, generation, existing source recovery and narrow screens. These checks do not claim production database ingestion or live KICD-edition verification.
+Backend tests cover extraction, quotations, hash and grade mismatch rejection, arithmetic preservation, Swahili headings, immutable manifest coverage, idempotent jobs, protected provenance source-gap acknowledgement, automated batch preparation, queue priority, idempotent retries and prepared-unit eligibility without false whole-grade certification. A complete build fetches and audits all 80 real source files. Browser fixtures cover source preview/import, source-gap controls, subject/outcome review, generation, existing source recovery and narrow screens. These checks do not claim production database ingestion or live KICD-edition verification.

@@ -16,6 +16,8 @@ export interface RepositorySourceAudit {
   };
   comparisons: { sourceId: number; matchedQuotes: number }[];
   limitationsReviewed: boolean;
+  validationMode?: string;
+  batchAcceptedBy?: number;
 }
 export interface RepositoryDesignPreview {
   id: string;
@@ -45,6 +47,13 @@ export const githubCurriculumApi = {
           throw Error("Curriculum source list is unavailable.");
         return r.data;
       }),
+  prepare: (grade: string, commit: string) =>
+    api
+      .post<{ id: string; resumed: boolean; pausedDownloads: number }>(
+        "/admin/content-ingestion/github/prepare",
+        { grade, commit, rightsConfirmed: true, acceptSourceLimitations: true },
+      )
+      .then((r) => r.data),
   import: (grade: string, commit: string, fileIds: string[]) =>
     api
       .post<{ queued: number; skipped: number; collectionId: string | null }>(

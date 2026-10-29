@@ -249,12 +249,12 @@ export function CurriculumIngestion() {
   const data = query.data,
     scopes = (data?.scopes ?? []).filter((s) => grades.includes(s.grade)),
     ready = scopes
-      .filter(
-        (s) =>
-          s.verified &&
-          data?.gradeReviews.some((r) => r.grade === s.grade && r.verifiedAt),
-      )
-      .flatMap((s) => s.unitIds);
+      .filter((s) => s.verified)
+      .flatMap((s) =>
+        data?.gradeReviews.some((r) => r.grade === s.grade && r.verifiedAt)
+          ? s.unitIds
+          : (s.snapshotReadyUnitIds ?? []),
+      );
   const generate = useMutation({
     mutationFn: () =>
       ingestionApi.generate(ready, "BOTH", count, assessmentMode),

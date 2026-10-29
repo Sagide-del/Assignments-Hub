@@ -95,7 +95,6 @@ function GradeContentFlow({ grade }: { grade: string }) {
       [],
     );
   const [subjectEdits, setSubjectEdits] = useState<string[]>([]);
-  const [repositoryConfirmed, setRepositoryConfirmed] = useState(false);
   const [limitationsReviewed, setLimitationsReviewed] = useState(false);
   const [confirmed, setConfirmed] = useState(false),
     [catalogueChecked, setCatalogueChecked] = useState(false);
@@ -127,9 +126,33 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const gradeReviewed = !!data?.gradeReviews.some(
     (r) => r.grade === grade && r.verifiedAt,
   );
-  const ready = scopes.filter(
-    (s) => gradeReviewed && s.verified && s.unitIds.length,
-  );
+  const ready = scopes
+    .filter(
+      (s) =>
+        s.verified &&
+        (gradeReviewed ? s.unitIds.length : s.snapshotReadyUnitIds?.length),
+    )
+    .map((s) => ({
+      ...s,
+      unitIds: gradeReviewed ? s.unitIds : (s.snapshotReadyUnitIds ?? []),
+    }));
+  const preparation = data?.preparations?.find((j) => j.input.grade === grade);
+  const preparing =
+    !!preparation && ["QUEUED", "RUNNING"].includes(preparation.status);
+  const [advanceAfterPreparation, setAdvanceAfterPreparation] = useState(false);
+  useEffect(() => {
+    if (
+      advanceAfterPreparation &&
+      ready.length &&
+      preparation?.status === "COMPLETED"
+    ) {
+      setStep(2);
+      setAdvanceAfterPreparation(false);
+      setNotice(
+        "Your available curriculum is prepared. Generate starter questions and recall cards next.",
+      );
+    }
+  }, [advanceAfterPreparation, ready.length, preparation?.status]);
   const initialStepChosen = useRef(false);
   useEffect(() => {
     if (overview.data && !initialStepChosen.current) {
@@ -155,8 +178,16 @@ function GradeContentFlow({ grade }: { grade: string }) {
     : (data?.collections ?? [])
         .filter((c) => c.grades.includes(grade))
         .flatMap((c) => c.assets);
-  const pending = assets.filter(
-    (a) => !["DIRECTORY", "INDEXED"].includes(a.status),
+  const pinnedAssets = assets.filter((a) =>
+    a.origin.includes(
+      "github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/",
+    ),
+  );
+  const [showOtherSources, setShowOtherSources] = useState(false);
+  const activeAssets =
+    !showOtherSources && pinnedAssets.length ? pinnedAssets : assets;
+  const pending = activeAssets.filter(
+    (a) => !["DIRECTORY", "INDEXED", "PAUSED"].includes(a.status),
   );
   const failed = pending.filter((a) => a.status === "FAILED");
   const refresh = () => {
@@ -173,18 +204,14 @@ function GradeContentFlow({ grade }: { grade: string }) {
           : "Could not complete this step. Please try again.",
       ),
     );
-  const importRepository = useMutation({
+  const prepareRepository = useMutation({
     mutationFn: () =>
-      githubCurriculumApi.import(
-        grade,
-        repository.data!.commit,
-        repository.data!.files.map((f) => f.id),
-      ),
+      githubCurriculumApi.prepare(grade, repository.data!.commit),
     onSuccess: (r) => {
-      setRepositoryConfirmed(false);
       setNotice(
-        `${r.queued} curriculum files queued from the pinned snapshot; ${r.skipped} already added. Review the documents below. Source gaps remain visible.`,
+        `Automatic preparation ${r.resumed ? "is already running" : "queued"}. ${r.pausedDownloads} older download jobs paused. You can leave this page; progress is saved.`,
       );
+      setAdvanceAfterPreparation(true);
       refresh();
     },
     onError: error,
@@ -454,13 +481,10 @@ function GradeContentFlow({ grade }: { grade: string }) {
               </div>
               <section className="space-y-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
                 <div>
-                  <h4 className="font-semibold">
-                    Import saved KICD design transcriptions
-                  </h4>
+                  <h4 className="font-semibold">Prepare {grade} curriculum</h4>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Use the pinned GitHub curriculum snapshot already packaged
-                    with the server. No Google Drive downloads or individual PDF
-                    uploads are needed for these files.
+                    Prepare all available subjects in one background run. No
+                    individual PDF uploads or document checks are needed.
                   </p>
                 </div>
                 {repository.isLoading ? (
@@ -519,266 +543,330 @@ function GradeContentFlow({ grade }: { grade: string }) {
                       </ul>
                     </details>
                     <p className="text-xs leading-6 text-slate-600">
-                      These are third-party transcriptions, not a complete or
-                      independently verified current subject inventory.
-                      Senior-school coverage is limited. You will check the
-                      quoted outcomes before generation.
+                      The system checks and organises the available source
+                      content automatically. Missing subjects or sections stay
+                      flagged. Generated answers still need approval before
+                      publication.
                     </p>
-                    <label className="flex items-start gap-3 text-xs leading-6">
-                      <input
-                        className="mt-1"
-                        type="checkbox"
-                        aria-label="Repository source use confirmed"
-                        checked={repositoryConfirmed}
-                        onChange={(e) =>
-                          setRepositoryConfirmed(e.target.checked)
-                        }
-                      />
-                      I have reviewed the source information and am authorised
-                      to use these curriculum materials.
-                    </label>
                     <button
                       className={primary}
                       disabled={
-                        !repositoryConfirmed ||
                         !repository.data?.files.length ||
-                        importRepository.isPending
+                        prepareRepository.isPending ||
+                        preparing
                       }
-                      onClick={() => importRepository.mutate()}
+                      onClick={() => prepareRepository.mutate()}
                     >
-                      {importRepository.isPending
-                        ? "Queuing curriculum…"
-                        : `Import ${grade} curriculum snapshot`}
+                      {prepareRepository.isPending || preparing
+                        ? `Preparing ${grade}…`
+                        : `Prepare ${grade} automatically`}
                     </button>
                   </>
                 )}
               </section>
-              {!scopes.length &&
-                !pending.length &&
-                !candidates.length &&
-                !repository.data?.files.length && (
-                  <div className="rounded-lg bg-slate-50 p-5">
-                    <BookOpen size={25} className="mb-3 text-blue-700" />
-                    <h4 className="font-medium">Let’s find your curriculum</h4>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      We’ll look for the official {grade} designs. You won’t
-                      need to upload a PDF for each subject.
-                    </p>
-                  </div>
-                )}
-              <div className="flex flex-wrap gap-3">
-                <button
-                  className={button}
-                  disabled={discover.isPending || saveCurriculum.isPending}
-                  onClick={() => discover.mutate(undefined)}
+              {preparation && (
+                <section
+                  className="space-y-3 rounded-lg border bg-slate-50 p-4"
+                  aria-label="Grade preparation progress"
                 >
-                  {discover.isPending ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <BookOpen size={16} />
-                  )}{" "}
-                  {discover.isPending
-                    ? "Finding curriculum…"
-                    : `Find ${grade} curriculum`}
-                </button>
-                {sources.length > 0 && (
-                  <button
-                    className={button}
-                    disabled={reuse.isPending}
-                    onClick={() => reuse.mutate()}
-                  >
-                    Use {sources.length} saved sources
-                  </button>
-                )}
-                <button
-                  className={button}
-                  aria-label="Refresh curriculum"
-                  onClick={refresh}
-                >
-                  <RefreshCw size={16} />
-                </button>
-              </div>
-              {(discover.isError ||
-                (discovered && !candidates.some(canImport))) && (
-                <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-4">
-                  <h4 className="font-medium">
-                    Use the page you can open in your browser
+                  <h4 className="font-semibold">
+                    {grade} preparation ·{" "}
+                    {preparation.status === "COMPLETED"
+                      ? "Ready for generation"
+                      : preparation.status === "FAILED"
+                        ? "Needs attention"
+                        : preparing
+                          ? "In progress"
+                          : preparation.status}
                   </h4>
-                  <p className="text-sm leading-6 text-slate-600">
-                    Open the official {grade} page, save it as “Webpage, HTML
-                    only”, then select that single file here. We’ll extract its
-                    document links; you do not need to upload each subject PDF.
-                    Linked files must still be publicly accessible.
+                  <p className="text-sm">
+                    {preparation.result?.processed ?? 0}/
+                    {preparation.result?.total ??
+                      repository.data?.files.length ??
+                      0}{" "}
+                    subject files processed ·{" "}
+                    {preparation.result?.subjects?.length ?? 0} subjects ready
                   </p>
-                  <div className="flex flex-wrap gap-3">
-                    <a
-                      className={button}
-                      target="_blank"
-                      rel="noreferrer"
-                      href={`https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-${["six-designs", "seven-designs", "eight-designs", "nine-designs", "ten", "eleven", "twelve"][grades.indexOf(grade)]}/`}
-                    >
-                      Open official {grade} page
-                    </a>
-                    <button
-                      className={button}
-                      disabled={discover.isPending}
-                      onClick={() => savedPage.current?.click()}
-                    >
-                      Read saved KICD page
-                    </button>
-                  </div>
-                  <input
-                    ref={savedPage}
-                    aria-label="Saved KICD grade page"
-                    className="sr-only"
-                    type="file"
-                    accept=".html,text/html"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) discover.mutate(file);
-                      e.target.value = "";
-                    }}
-                  />
-                </div>
-              )}
-              {discovered && (
-                <>
-                  {!!exceptions.length && (
-                    <details className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-                      <summary className="cursor-pointer font-medium">
-                        Some curriculum links could not be resolved · view
-                        details
+                  {!!preparation.result?.subjects?.filter(
+                    (s) => s.sourceGaps > 0,
+                  ).length && (
+                    <p className="text-xs leading-6 text-amber-800">
+                      {
+                        preparation.result.subjects.filter(
+                          (s) => s.sourceGaps > 0,
+                        ).length
+                      }{" "}
+                      subjects have known source gaps. Available outcomes are
+                      usable; missing sections remain flagged.
+                    </p>
+                  )}
+                  {preparation.error && (
+                    <p className="text-sm text-amber-800">
+                      {preparation.error}
+                    </p>
+                  )}
+                  {!!preparation.result?.failures?.length && (
+                    <details>
+                      <summary className="cursor-pointer text-sm">
+                        View {preparation.result.failures.length} subject
+                        exceptions
                       </summary>
-                      <ul className="mt-3 space-y-3">
-                        {exceptions.map((e, i) => (
-                          <li key={i} className="space-y-1 text-xs leading-6">
-                            <p>{e.message}</p>
-                            <a
-                              className="break-all text-blue-700 underline"
-                              href={e.url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Open source page
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
+                      {preparation.result.failures.map((f, i) => (
+                        <p key={i} className="mt-2 text-xs leading-6">
+                          {f.subject}: {f.error}
+                        </p>
+                      ))}
                     </details>
                   )}
-                  {!!candidates.length && (
-                    <div className="space-y-4 rounded-lg border p-4">
-                      <h4 className="font-medium">
-                        Check the subjects we found
-                      </h4>
-                      <div className="max-h-72 space-y-2 overflow-y-auto">
-                        {candidates.map((c) => (
-                          <div
-                            key={c.url}
-                            className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm"
-                          >
-                            <input
-                              aria-label={`Import ${c.subject ?? c.title}`}
-                              type="checkbox"
-                              checked={picked.includes(c.url)}
-                              disabled={!canImport(c)}
-                              onChange={(e) =>
-                                setPicked((v) =>
-                                  e.target.checked
-                                    ? [...v, c.url]
-                                    : v.filter((url) => url !== c.url),
-                                )
-                              }
-                            />
-                            <span className="min-w-0">
-                              <strong className="block">
-                                {c.subject ?? c.title}
-                              </strong>
-                              <span className="block text-xs text-slate-500">
-                                {c.grade ?? "Grade needs checking"}
-                                {!c.subject && canImport(c)
-                                  ? " · Subject will be identified after download"
-                                  : c.issue
-                                    ? ` · ${c.issue}`
-                                    : ""}
-                              </span>
-                              {subjectEdits.includes(c.url) ? (
-                                <input
-                                  aria-label={`Subject name for ${c.title}`}
-                                  className="my-2 block min-h-10 w-full min-w-0 rounded-lg border p-2 text-sm"
-                                  placeholder="Optional: leave blank for automatic identification"
-                                  value={c.subject ?? ""}
-                                  onChange={(e) => {
-                                    const subject = e.target.value;
-                                    setCandidates((v) =>
-                                      v.map((x) =>
-                                        x.url === c.url
-                                          ? {
-                                              ...x,
-                                              subject,
-                                              issue:
-                                                x.issue?.startsWith(
-                                                  "Subject could",
-                                                ) && subject.trim()
-                                                  ? undefined
-                                                  : x.issue,
-                                            }
-                                          : x,
-                                      ),
-                                    );
-                                  }}
-                                />
-                              ) : (
-                                <button
-                                  className="mr-3 text-xs text-slate-500 underline"
-                                  onClick={() =>
-                                    setSubjectEdits((v) => [...v, c.url])
-                                  }
-                                >
-                                  Edit subject
-                                </button>
-                              )}
-                              <a
-                                href={c.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-xs text-blue-700 underline"
-                              >
-                                View source
-                              </a>
-                            </span>
-                          </div>
-                        ))}
+                  {ready.length > 0 && (
+                    <button className={primary} onClick={() => setStep(2)}>
+                      Continue to generation <ArrowRight size={16} />
+                    </button>
+                  )}
+                </section>
+              )}
+              <details className="rounded-lg border bg-white p-4">
+                <summary className="cursor-pointer text-sm font-medium text-slate-500">
+                  Other curriculum sources and advanced import
+                </summary>
+                <div className="mt-4 space-y-5">
+                  {!scopes.length &&
+                    !pending.length &&
+                    !candidates.length &&
+                    !repository.data?.files.length && (
+                      <div className="rounded-lg bg-slate-50 p-5">
+                        <BookOpen size={25} className="mb-3 text-blue-700" />
+                        <h4 className="font-medium">
+                          Let’s find your curriculum
+                        </h4>
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                          We’ll look for the official {grade} designs. You won’t
+                          need to upload a PDF for each subject.
+                        </p>
                       </div>
-                      <label className="flex items-start gap-3 text-sm leading-6">
-                        <input
-                          className="mt-1"
-                          type="checkbox"
-                          checked={confirmed}
-                          onChange={(e) => setConfirmed(e.target.checked)}
-                        />
-                        I checked that these are the intended curriculum
-                        documents and have permission to use them.
-                      </label>
+                    )}
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      className={button}
+                      disabled={discover.isPending || saveCurriculum.isPending}
+                      onClick={() => discover.mutate(undefined)}
+                    >
+                      {discover.isPending ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <BookOpen size={16} />
+                      )}{" "}
+                      {discover.isPending
+                        ? "Finding curriculum…"
+                        : `Find ${grade} curriculum`}
+                    </button>
+                    {sources.length > 0 && (
                       <button
-                        className={primary}
-                        disabled={
-                          !confirmed ||
-                          !picked.length ||
-                          saveCurriculum.isPending
-                        }
-                        onClick={() => saveCurriculum.mutate()}
+                        className={button}
+                        disabled={reuse.isPending}
+                        onClick={() => reuse.mutate()}
                       >
-                        {saveCurriculum.isPending
-                          ? "Saving curriculum…"
-                          : `Save ${picked.length} curriculum designs`}
+                        Use {sources.length} saved sources
                       </button>
+                    )}
+                    <button
+                      className={button}
+                      aria-label="Refresh curriculum"
+                      onClick={refresh}
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                  </div>
+                  {(discover.isError ||
+                    (discovered && !candidates.some(canImport))) && (
+                    <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                      <h4 className="font-medium">
+                        Use the page you can open in your browser
+                      </h4>
+                      <p className="text-sm leading-6 text-slate-600">
+                        Open the official {grade} page, save it as “Webpage,
+                        HTML only”, then select that single file here. We’ll
+                        extract its document links; you do not need to upload
+                        each subject PDF. Linked files must still be publicly
+                        accessible.
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <a
+                          className={button}
+                          target="_blank"
+                          rel="noreferrer"
+                          href={`https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-${["six-designs", "seven-designs", "eight-designs", "nine-designs", "ten", "eleven", "twelve"][grades.indexOf(grade)]}/`}
+                        >
+                          Open official {grade} page
+                        </a>
+                        <button
+                          className={button}
+                          disabled={discover.isPending}
+                          onClick={() => savedPage.current?.click()}
+                        >
+                          Read saved KICD page
+                        </button>
+                      </div>
+                      <input
+                        ref={savedPage}
+                        aria-label="Saved KICD grade page"
+                        className="sr-only"
+                        type="file"
+                        accept=".html,text/html"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) discover.mutate(file);
+                          e.target.value = "";
+                        }}
+                      />
                     </div>
                   )}
-                </>
-              )}
+                  {discovered && (
+                    <>
+                      {!!exceptions.length && (
+                        <details className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+                          <summary className="cursor-pointer font-medium">
+                            Some curriculum links could not be resolved · view
+                            details
+                          </summary>
+                          <ul className="mt-3 space-y-3">
+                            {exceptions.map((e, i) => (
+                              <li
+                                key={i}
+                                className="space-y-1 text-xs leading-6"
+                              >
+                                <p>{e.message}</p>
+                                <a
+                                  className="break-all text-blue-700 underline"
+                                  href={e.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Open source page
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                      {!!candidates.length && (
+                        <div className="space-y-4 rounded-lg border p-4">
+                          <h4 className="font-medium">
+                            Check the subjects we found
+                          </h4>
+                          <div className="max-h-72 space-y-2 overflow-y-auto">
+                            {candidates.map((c) => (
+                              <div
+                                key={c.url}
+                                className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm"
+                              >
+                                <input
+                                  aria-label={`Import ${c.subject ?? c.title}`}
+                                  type="checkbox"
+                                  checked={picked.includes(c.url)}
+                                  disabled={!canImport(c)}
+                                  onChange={(e) =>
+                                    setPicked((v) =>
+                                      e.target.checked
+                                        ? [...v, c.url]
+                                        : v.filter((url) => url !== c.url),
+                                    )
+                                  }
+                                />
+                                <span className="min-w-0">
+                                  <strong className="block">
+                                    {c.subject ?? c.title}
+                                  </strong>
+                                  <span className="block text-xs text-slate-500">
+                                    {c.grade ?? "Grade needs checking"}
+                                    {!c.subject && canImport(c)
+                                      ? " · Subject will be identified after download"
+                                      : c.issue
+                                        ? ` · ${c.issue}`
+                                        : ""}
+                                  </span>
+                                  {subjectEdits.includes(c.url) ? (
+                                    <input
+                                      aria-label={`Subject name for ${c.title}`}
+                                      className="my-2 block min-h-10 w-full min-w-0 rounded-lg border p-2 text-sm"
+                                      placeholder="Optional: leave blank for automatic identification"
+                                      value={c.subject ?? ""}
+                                      onChange={(e) => {
+                                        const subject = e.target.value;
+                                        setCandidates((v) =>
+                                          v.map((x) =>
+                                            x.url === c.url
+                                              ? {
+                                                  ...x,
+                                                  subject,
+                                                  issue:
+                                                    x.issue?.startsWith(
+                                                      "Subject could",
+                                                    ) && subject.trim()
+                                                      ? undefined
+                                                      : x.issue,
+                                                }
+                                              : x,
+                                          ),
+                                        );
+                                      }}
+                                    />
+                                  ) : (
+                                    <button
+                                      className="mr-3 text-xs text-slate-500 underline"
+                                      onClick={() =>
+                                        setSubjectEdits((v) => [...v, c.url])
+                                      }
+                                    >
+                                      Edit subject
+                                    </button>
+                                  )}
+                                  <a
+                                    href={c.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-blue-700 underline"
+                                  >
+                                    View source
+                                  </a>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <label className="flex items-start gap-3 text-sm leading-6">
+                            <input
+                              className="mt-1"
+                              type="checkbox"
+                              checked={confirmed}
+                              onChange={(e) => setConfirmed(e.target.checked)}
+                            />
+                            I checked that these are the intended curriculum
+                            documents and have permission to use them.
+                          </label>
+                          <button
+                            className={primary}
+                            disabled={
+                              !confirmed ||
+                              !picked.length ||
+                              saveCurriculum.isPending
+                            }
+                            onClick={() => saveCurriculum.mutate()}
+                          >
+                            {saveCurriculum.isPending
+                              ? "Saving curriculum…"
+                              : `Save ${picked.length} curriculum designs`}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </details>
               {!!pending.length && (
-                <div className="space-y-3 border-t pt-5">
+                <details className="space-y-3 border-t pt-5">
+                  <summary className="cursor-pointer text-sm font-medium">
+                    Source details and manual corrections ({pending.length})
+                  </summary>
                   <h4 className="font-medium">
                     Check your curriculum documents
                   </h4>
@@ -870,7 +958,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                       ))}
                     </div>
                   </details>
-                </div>
+                </details>
               )}
               {asset && (
                 <div
@@ -938,7 +1026,10 @@ function GradeContentFlow({ grade }: { grade: string }) {
                 </div>
               )}
               {!!scopes.length && (
-                <div className="space-y-4 border-t pt-5">
+                <details className="space-y-4 border-t pt-5" open={false}>
+                  <summary className="cursor-pointer text-sm font-medium">
+                    Available {grade} subjects ({scopes.length})
+                  </summary>
                   <h4 className="font-medium">Your {grade} subjects</h4>
                   <div className="divide-y rounded-lg border">
                     {scopes.map((s) => (
@@ -956,7 +1047,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                               ? "Curriculum document needed"
                               : !s.outcomeCount
                                 ? "Learning outcomes needed"
-                                : `${s.verifiedOutcomes}/${s.outcomeCount} outcomes checked`}
+                                : `${s.verifiedOutcomes}/${s.outcomeCount} outcomes validated`}
                           </p>
                         </div>
                         <button
@@ -972,29 +1063,32 @@ function GradeContentFlow({ grade }: { grade: string }) {
                       </div>
                     ))}
                   </div>
-                  {!gradeReviewed && (
-                    <div className="space-y-3">
-                      <label className="flex items-start gap-3 text-sm leading-6">
-                        <input
-                          className="mt-1"
-                          type="checkbox"
-                          checked={catalogueChecked}
-                          onChange={(e) =>
-                            setCatalogueChecked(e.target.checked)
-                          }
-                        />
-                        This is the complete subject list for {grade}, including
-                        applicable pathways and subject alternatives.
-                      </label>
-                      <button
-                        className={button}
-                        disabled={!catalogueChecked || verify.isPending}
-                        onClick={() => verify.mutate()}
-                      >
-                        Confirm subject list
-                      </button>
-                    </div>
-                  )}
+                  {!gradeReviewed &&
+                    !preparation &&
+                    !repository.data?.files.length && (
+                      <div className="space-y-3">
+                        <label className="flex items-start gap-3 text-sm leading-6">
+                          <input
+                            className="mt-1"
+                            type="checkbox"
+                            checked={catalogueChecked}
+                            onChange={(e) =>
+                              setCatalogueChecked(e.target.checked)
+                            }
+                          />
+                          This is the complete subject list for {grade},
+                          including applicable pathways and subject
+                          alternatives.
+                        </label>
+                        <button
+                          className={button}
+                          disabled={!catalogueChecked || verify.isPending}
+                          onClick={() => verify.mutate()}
+                        >
+                          Confirm subject list
+                        </button>
+                      </div>
+                    )}
                   <button
                     className={primary}
                     disabled={!ready.length}
@@ -1007,17 +1101,25 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   </button>
                   {!ready.length && (
                     <p className="text-sm leading-6 text-slate-500">
-                      To continue, confirm the subject list and check at least
-                      one subject’s learning outcomes.
+                      Use automatic preparation above to validate the available
+                      curriculum and continue.
                     </p>
                   )}
-                </div>
+                </details>
               )}
               <details className="border-t pt-4 text-sm">
                 <summary className="cursor-pointer text-slate-500">
                   More curriculum options
                 </summary>
                 <div className="mt-4 space-y-3">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={showOtherSources}
+                      onChange={(e) => setShowOtherSources(e.target.checked)}
+                    />
+                    Show alternative and old download attempts
+                  </label>
                   <p className="text-xs leading-6 text-slate-500">
                     Open older collections or use the advanced tools if official
                     discovery cannot reach your curriculum.
@@ -1087,15 +1189,14 @@ function GradeContentFlow({ grade }: { grade: string }) {
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   AI will create original questions, explanations and recall
-                  cards from the outcomes you checked. Start small to keep
-                  generation costs down.
+                  cards from validated outcomes. Start small to keep generation
+                  costs down.
                 </p>
               </div>
               {!ready.length ? (
                 <div className="rounded-lg bg-slate-50 p-4">
                   <p className="text-sm">
-                    No subjects are ready yet. Finish the curriculum check
-                    first.
+                    No subjects are ready yet. Prepare this grade to continue.
                   </p>
                   <button
                     className={button + " mt-3"}
@@ -1147,6 +1248,15 @@ function GradeContentFlow({ grade }: { grade: string }) {
                       before generating more to cover additional outcomes.
                     </p>
                   </div>
+                  {!!preparation?.result?.subjects?.filter(
+                    (s) => s.sourceGaps > 0,
+                  ).length && (
+                    <p className="text-xs leading-6 text-slate-500">
+                      Some source files are partial. Generation uses the
+                      validated outcomes that are available; missing sections
+                      remain flagged.
+                    </p>
+                  )}
                   {scopes.length > ready.length && (
                     <p className="text-sm text-amber-800">
                       {scopes.length - ready.length} subjects still need

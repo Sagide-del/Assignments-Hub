@@ -47,6 +47,7 @@ export interface ScopeCoverage {
   verifiedOutcomes: number;
   readyOutcomes: number;
   unitIds: number[];
+  snapshotReadyUnitIds?: number[];
   curriculumSources: number;
   teachingSources: number;
   draftQuestions: number;
@@ -72,6 +73,23 @@ export const ingestionApi = {
           _count: { assets: number };
         }[];
         gradeReviews: { grade: string; verifiedAt: string | null }[];
+        preparations?: {
+          id: string;
+          status: string;
+          error?: string | null;
+          input: { grade: string; commit: string };
+          result?: {
+            processed: number;
+            total: number;
+            subjects: {
+              subject: string;
+              outcomes: number;
+              sourceGaps: number;
+            }[];
+            failures: { subject: string; error: string }[];
+            readyUnitIds: number[];
+          };
+        }[];
         collections: {
           id: string;
           name: string;
