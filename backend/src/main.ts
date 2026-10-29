@@ -6,6 +6,7 @@ import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { configureBodyParsing } from "./common/http/configure-body-parsing";
 
 async function bootstrap() {
   // Retain the original bytes for signed payment webhooks. JSON parsing still
@@ -13,7 +14,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Larger editorial mappings are scoped to the admin ingestion API; payment webhook parsing remains unchanged.
-  app.use("/api/v1/admin/content-ingestion", express.json({ limit: "2mb" }));
+  configureBodyParsing(app);
 
   // CORS configuration
   const corsOrigin = process.env.CORS_ORIGIN
