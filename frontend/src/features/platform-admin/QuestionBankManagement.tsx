@@ -80,6 +80,8 @@ export function QuestionBankManagement() {
     count: number;
     excludedIds: number[];
   } | null>(null);
+  const [selectAllApprovedRequested, setSelectAllApprovedRequested] =
+    useState(false);
   const [allApproved, setAllApproved] = useState<{
     before: string;
     count: number;
@@ -146,6 +148,50 @@ export function QuestionBankManagement() {
       }),
     enabled: view === "questions",
   });
+  useEffect(() => {
+    if (
+      !selectAllApprovedRequested ||
+      status !== "APPROVED" ||
+      grade ||
+      subject ||
+      topic ||
+      page !== 0 ||
+      list.isFetching
+    )
+      return;
+    if (list.isError) {
+      setSelectAllApprovedRequested(false);
+      setNotice("Could not select approved questions. Please try again.");
+      return;
+    }
+    if (!list.data?.selectionBefore) return;
+    setSelected([]);
+    setAllApproved(
+      list.data.total
+        ? {
+            before: list.data.selectionBefore,
+            count: list.data.total,
+            excludedIds: [],
+          }
+        : null,
+    );
+    setSelectAllApprovedRequested(false);
+    setNotice(
+      list.data.total
+        ? `${list.data.total} approved questions selected across all grades, subjects and pages. Choose an audience and click Publish content.`
+        : "No approved questions are available yet. Approve questions first, then publish.",
+    );
+  }, [
+    selectAllApprovedRequested,
+    status,
+    grade,
+    subject,
+    topic,
+    page,
+    list.data,
+    list.isFetching,
+    list.isError,
+  ]);
   const error = (e: unknown) =>
     setNotice(apiErrorMessage(e, "The operation could not be completed."));
   const refresh = () => {
@@ -1136,10 +1182,47 @@ export function QuestionBankManagement() {
             ))}
           </div>
           <section className="rounded-xl border bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b p-4">
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold">Bulk publishing</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Select every approved question across all grades, subjects and
+                  pages, then choose who receives it.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                disabled={
+                  bulkApproval.isPending ||
+                  publish.isPending ||
+                  selectAllApprovedRequested
+                }
+                onClick={() => {
+                  setSelected([]);
+                  setAllApproved(null);
+                  setGrade("");
+                  setSubject("");
+                  setTopic("");
+                  setStatus("APPROVED");
+                  setPage(0);
+                  setSelectAllApprovedRequested(true);
+                }}
+              >
+                <Check size={16} aria-hidden="true" />
+                {selectAllApprovedRequested
+                  ? "Selecting approved questions…"
+                  : "Select all approved questions"}
+              </button>
+            </div>
             <div className="flex flex-wrap gap-3 border-b p-4">
               <select
                 aria-label="Question grade"
-                disabled={bulkApproval.isPending || publish.isPending}
+                disabled={
+                  bulkApproval.isPending ||
+                  publish.isPending ||
+                  selectAllApprovedRequested
+                }
                 className={control}
                 value={grade}
                 onChange={(e) => {
@@ -1155,7 +1238,11 @@ export function QuestionBankManagement() {
               </select>
               <select
                 aria-label="Question subject"
-                disabled={bulkApproval.isPending || publish.isPending}
+                disabled={
+                  bulkApproval.isPending ||
+                  publish.isPending ||
+                  selectAllApprovedRequested
+                }
                 className={control}
                 value={subject}
                 onChange={(e) => {
@@ -1171,7 +1258,11 @@ export function QuestionBankManagement() {
               </select>
               <input
                 aria-label="Filter question topic"
-                disabled={bulkApproval.isPending || publish.isPending}
+                disabled={
+                  bulkApproval.isPending ||
+                  publish.isPending ||
+                  selectAllApprovedRequested
+                }
                 className={control + " min-w-0 flex-1"}
                 placeholder="Find a topic"
                 value={topic}
@@ -1182,7 +1273,11 @@ export function QuestionBankManagement() {
               />
               <select
                 aria-label="Review status"
-                disabled={bulkApproval.isPending || publish.isPending}
+                disabled={
+                  bulkApproval.isPending ||
+                  publish.isPending ||
+                  selectAllApprovedRequested
+                }
                 className={control}
                 value={status}
                 onChange={(e) => {
@@ -1198,7 +1293,11 @@ export function QuestionBankManagement() {
               {status !== "APPROVED" && (
                 <button
                   className="text-sm font-medium text-blue-700 hover:underline"
-                  disabled={bulkApproval.isPending || publish.isPending}
+                  disabled={
+                    bulkApproval.isPending ||
+                    publish.isPending ||
+                    selectAllApprovedRequested
+                  }
                   onClick={() => {
                     setStatus("APPROVED");
                     setPage(0);
@@ -1306,7 +1405,11 @@ export function QuestionBankManagement() {
                       </button>
                       <button
                         className="text-slate-600 underline"
-                        disabled={bulkApproval.isPending || publish.isPending}
+                        disabled={
+                          bulkApproval.isPending ||
+                          publish.isPending ||
+                          selectAllApprovedRequested
+                        }
                         onClick={() => {
                           setDraftIds([]);
                           setAllDrafts(null);
@@ -1394,8 +1497,10 @@ export function QuestionBankManagement() {
                 >
                   Select all {list.data.total} matching approved questions
                 </button>
-                <span className="text-xs text-slate-500">
-                  Approval is complete. Choose where to publish these questions.
+                <span className="text-xs text-slate-500" aria-live="polite">
+                  {allApproved
+                    ? `${allApproved.count - allApproved.excludedIds.length} selected across all pages`
+                    : "Choose approved questions, then publish to your audience."}
                 </span>
               </div>
             )}
