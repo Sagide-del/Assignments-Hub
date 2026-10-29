@@ -181,6 +181,8 @@ function PaperWorkspace({
       setAnswers(paper.answers);
       client.setQueryData(["kjsea-attempt", userId, initial.id], paper);
       await client.invalidateQueries({ queryKey: ["kjsea-attempts"] });
+      if (initial.source === "PRACTICE")
+        await client.invalidateQueries({ queryKey: ["practice-batches"] });
       try {
         localStorage.removeItem(storageKey);
       } catch {
@@ -215,7 +217,7 @@ function PaperWorkspace({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "kjsea-mathematics-review.txt";
+    a.download = `${result.subject.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${result.source === "PRACTICE" ? "practice" : "mock"}-review.txt`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -233,11 +235,15 @@ function PaperWorkspace({
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <Link
-        to="/student/kjsea-mock-test"
+        to={
+          result.source === "PRACTICE"
+            ? "/student/my-assignments"
+            : "/student/kjsea-mock-test"
+        }
         className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-600"
       >
         <ArrowLeft className="h-4 w-4" />
-        KJSEA Mock Test
+        {result.source === "PRACTICE" ? "Subject practice" : "KJSEA Mock Test"}
       </Link>
       <header className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
@@ -247,7 +253,13 @@ function PaperWorkspace({
         <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">
-              {completed ? "Your mock review" : `Your ${result.subject} mock`}
+              {result.source === "PRACTICE"
+                ? completed
+                  ? "Your practice review"
+                  : `Your ${result.subject} practice`
+                : completed
+                  ? "Your mock review"
+                  : `Your ${result.subject} mock`}
             </h1>
             <p className="mt-2 text-sm text-slate-300">
               {completed
@@ -369,10 +381,16 @@ function PaperWorkspace({
               : "You answered every question correctly. Explain a method in your own words, then try a new paper with different values."}
           </p>
           <Link
-            to="/student/kjsea-mock-test"
+            to={
+              result.source === "PRACTICE"
+                ? "/student/my-assignments"
+                : "/student/kjsea-mock-test"
+            }
             className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-teal-800"
           >
-            Prepare another paper
+            {result.source === "PRACTICE"
+              ? "Choose your next 30-question batch"
+              : "Prepare another paper"}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </section>

@@ -19,7 +19,8 @@ const ALLOWED_TAGS = [
   'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'blockquote',
   'ul', 'ol', 'li', 'span', 'sub', 'sup', 'a', 'h1', 'h2', 'h3',
   // Tables (Quill table module output, if ever enabled)
-  'table', 'thead', 'tbody', 'tr', 'td', 'th',
+  'table', 'caption', 'thead', 'tbody', 'tr', 'td', 'th',
+  'svg','g','path','rect','text','line','circle','title','defs','marker',
   // Images / diagrams
   'img', 'figure', 'figcaption',
   // KaTeX's own rendered output (math + mhchem chemistry)
@@ -30,6 +31,7 @@ const ALLOWED_TAGS = [
 const ALLOWED_ATTR = [
   'class', 'style', 'href', 'target', 'rel',
   'src', 'alt', 'width', 'height',
+  'viewBox','d','x','y','x1','x2','y1','y2','cx','cy','r','rx','fill','stroke','stroke-width','font-size','text-anchor','role','aria-label','id','marker-end','markerWidth','markerHeight','refX','refY','orient',
   // KaTeX / diagram-pin positioning
   'data-value', 'data-label', 'aria-hidden', 'xmlns', 'encoding',
 ];

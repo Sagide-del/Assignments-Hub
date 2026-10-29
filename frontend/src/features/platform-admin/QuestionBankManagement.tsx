@@ -1,627 +1,957 @@
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  BookMarked,
+  Layers,
+  Brain,
+  School,
+  Clock,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  FileSearch,
+  RefreshCw,
+} from "lucide-react";
+import {
+  contentLibraryApi,
+  type Candidate,
+} from "../../api/content-library.api";
 import {
   questionBankAdminApi,
   type QuestionBankItem,
-  type QuestionBankQuestionType,
   type QuestionBankStatus,
-} from '../../api/question-bank.api';
-import { uploadsApi } from '../../api/uploads.api';
-import { apiErrorMessage } from '../../api/axios';
-import { EmptyState, MetricCard, PageHeader } from '../../components/ui/Saas';
-
-const STATUS_TABS: { label: string; value: QuestionBankStatus | 'ALL' }[] = [
-  { label: 'All', value: 'ALL' },
-  { label: 'Needs review', value: 'GENERATED' },
-  { label: 'Approved', value: 'APPROVED' },
-  { label: 'Rejected', value: 'REJECTED' },
-];
-
-// Only these are actually generatable today — QuestionBankService.generate
-// silently drops any other type from the batch (AI_GENERATABLE_QUESTION_TYPES
-// server-side), so offering Matching/Fill-in-the-Blank as live checkboxes
-// would look like a working option that quietly produces zero questions.
-const ENABLED_QUESTION_TYPES: { value: QuestionBankQuestionType; label: string }[] = [
-  { value: 'MULTIPLE_CHOICE', label: 'Multiple Choice' },
-  { value: 'TRUE_FALSE', label: 'True/False' },
-  { value: 'NUMERIC', label: 'Numeric' },
-  { value: 'SHORT_ANSWER', label: 'Short Answer' },
-];
-const UNSUPPORTED_QUESTION_TYPES = ['Matching', 'Fill in the Blank'];
-const DEFAULT_QUESTION_TYPES: QuestionBankQuestionType[] = [
-  'MULTIPLE_CHOICE',
-  'TRUE_FALSE',
-  'NUMERIC',
-  'SHORT_ANSWER',
-];
-
-const DIAGRAM_MAX_BYTES = 5 * 1024 * 1024;
-const DIAGRAM_ACCEPT = 'image/png,image/jpeg,image/gif,image/webp';
-
-function statusBadge(status: QuestionBankStatus) {
-  if (status === 'APPROVED') return 'bg-emerald-50 text-emerald-700';
-  if (status === 'REJECTED') return 'bg-red-50 text-red-700';
-  return 'bg-amber-50 text-amber-700';
-}
-
+} from "../../api/question-bank.api";
+import { apiErrorMessage } from "../../api/axios";
+import { RichContent } from "../../components/ui/RichContent";
+import { RecallCardsManager } from "./RecallCardsManager";
+import { SchoolActivation } from "./SchoolActivation";
+import { QuestionBankLegacy } from "./QuestionBankLegacy";
+const control =
+  "min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm";
+const grades = [7, 8, 9, 10, 11, 12].map((g) => `Grade ${g}`);
 export function QuestionBankManagement() {
-  const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<QuestionBankStatus | 'ALL'>('GENERATED');
-  const [subject, setSubject] = useState('');
-  const [grade, setGrade] = useState('');
-  const [topic, setTopic] = useState('');
-  const [questionCount, setQuestionCount] = useState(60);
-  const [difficulty, setDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD' | 'MIXED'>('MIXED');
-  const [inputType, setInputType] = useState<'PDF' | 'TEXT' | 'KNOWLEDGE'>('PDF');
-  const [sourceDocumentId, setSourceDocumentId] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [sourceText, setSourceText] = useState('');
-  const [questionTypes, setQuestionTypes] = useState<Set<QuestionBankQuestionType>>(
-    new Set(DEFAULT_QUESTION_TYPES),
-  );
-  const [autoTagTopic, setAutoTagTopic] = useState(false);
-  const [includeDiagramPlaceholders, setIncludeDiagramPlaceholders] = useState(false);
-  const [prioritizeHigherOrder, setPrioritizeHigherOrder] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [publishTitle, setPublishTitle] = useState('');
-  const [diagramUploadingFor, setDiagramUploadingFor] = useState<number | null>(null);
-
-  const listQuery = useQuery({
-    queryKey: ['question-bank-admin', statusFilter],
+  const [params, setParams] = useSearchParams(),
+    view = params.get("view") ?? "questions",
+    client = useQueryClient();
+  const [grade, setGrade] = useState(""),
+    [subject, setSubject] = useState(""),
+    [topic, setTopic] = useState(""),
+    [status, setStatus] = useState("GENERATED"),
+    [page, setPage] = useState(0),
+    [selected, setSelected] = useState<QuestionBankItem[]>([]),
+    [title, setTitle] = useState(""),
+    [notice, setNotice] = useState(""),
+    [editing, setEditing] = useState<QuestionBankItem | null>(null),
+    [legacy, setLegacy] = useState(false),
+    [sourceIds, setSourceIds] = useState<number[]>([]),
+    [count, setCount] = useState(30),
+    [generationTopic, setGenerationTopic] = useState(""),
+    [candidates, setCandidates] = useState<Candidate[]>([]),
+    [picked, setPicked] = useState<string[]>([]);
+  const overview = useQuery({
+    queryKey: ["content-library"],
+    queryFn: contentLibraryApi.overview,
+    refetchInterval: (q) =>
+      q.state.data?.jobs.some((j) => ["QUEUED", "RUNNING"].includes(j.status))
+        ? 4000
+        : false,
+  });
+  const list = useQuery({
+    queryKey: ["question-bank-admin", grade, subject, topic, status, page],
     queryFn: () =>
       questionBankAdminApi.list({
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
-        take: 100,
+        grade: grade || undefined,
+        subject: subject || undefined,
+        topic: topic || undefined,
+        status: (status || undefined) as QuestionBankStatus | undefined,
+        skip: page * 25,
+        take: 25,
       }),
+    enabled: view === "questions",
   });
-  const sourcesQuery = useQuery({
-    queryKey: ['question-bank-sources'],
-    queryFn: questionBankAdminApi.sources,
-  });
-
-  const generate = useMutation({
-    mutationFn: () => {
-      if (inputType === 'PDF' && !file) throw new Error('Choose a PDF file first');
-      if (inputType === 'TEXT' && sourceText.trim().length < 50) {
-        throw new Error('Paste at least 50 characters of source text');
-      }
-      if (inputType === 'KNOWLEDGE' && !sourceDocumentId) {
-        throw new Error('Choose a saved curriculum source');
-      }
-      return questionBankAdminApi.generate({
-        inputType,
-        file: inputType === 'PDF' ? (file as File) : undefined,
-        sourceText: inputType === 'TEXT' ? sourceText.trim() : undefined,
-        sourceDocumentId: inputType === 'KNOWLEDGE' ? Number(sourceDocumentId) : undefined,
-        subject,
-        grade,
-        topic,
-        questionCount,
-        difficulty,
-        questionTypes: Array.from(questionTypes),
-        autoTagTopic,
-        includeDiagramPlaceholders,
-        prioritizeHigherOrder,
-      });
+  const error = (e: unknown) =>
+    setNotice(apiErrorMessage(e, "The operation could not be completed."));
+  const refresh = () => {
+    void client.invalidateQueries({ queryKey: ["question-bank-admin"] });
+    void client.invalidateQueries({ queryKey: ["content-library"] });
+  };
+  const changeView = (value: string) => {
+    setParams({ view: value });
+    setLegacy(false);
+  };
+  const review = useMutation({
+    mutationFn: ({
+      id,
+      action,
+    }: {
+      id: number;
+      action: "approve" | "reject";
+    }) =>
+      action === "approve"
+        ? questionBankAdminApi.approve(id)
+        : questionBankAdminApi.reject(id),
+    onSuccess: () => {
+      refresh();
+      setSelected([]);
     },
-    onSuccess: (items) => {
-      setNotice(`Generated ${items.length} questions. Review them below before approving.`);
-      setError('');
-      setFile(null);
-      setSourceText('');
-      setStatusFilter('GENERATED');
-      void queryClient.invalidateQueries({ queryKey: ['question-bank-admin'] });
-      void queryClient.invalidateQueries({ queryKey: ['question-bank-sources'] });
+    onError: error,
+  });
+  const save = useMutation({
+    mutationFn: () =>
+      questionBankAdminApi.update(editing!.id, {
+        questionText: editing!.questionText,
+        options: editing!.options ?? undefined,
+        correctAnswer: editing!.correctAnswer ?? undefined,
+        explanation: editing!.explanation ?? undefined,
+        topic: editing!.topic,
+        points: editing!.points,
+        hint: editing!.hint ?? undefined,
+      }),
+    onSuccess: () => {
+      setEditing(null);
+      setSelected([]);
+      refresh();
+      setNotice("Changes saved. This question needs approval again.");
     },
-    onError: (err) => setError(apiErrorMessage(err, 'Could not generate questions')),
+    onError: error,
   });
-
-  const approve = useMutation({
-    mutationFn: (id: number) => questionBankAdminApi.approve(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['question-bank-admin'] }),
-    onError: (err) => setError(apiErrorMessage(err, 'Could not approve the question')),
-  });
-
-  const reject = useMutation({
-    mutationFn: (id: number) => questionBankAdminApi.reject(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['question-bank-admin'] }),
-    onError: (err) => setError(apiErrorMessage(err, 'Could not reject the question')),
-  });
-
-  const remove = useMutation({
-    mutationFn: (id: number) => questionBankAdminApi.remove(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['question-bank-admin'] }),
-    onError: (err) => setError(apiErrorMessage(err, 'Could not delete the question')),
-  });
-
-  const updateDiagram = useMutation({
-    mutationFn: (input: { id: number; diagramUrl: string; diagramAlt?: string }) =>
-      questionBankAdminApi.update(input.id, { diagramUrl: input.diagramUrl, diagramAlt: input.diagramAlt }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['question-bank-admin'] }),
-    onError: (err) => setError(apiErrorMessage(err, 'Could not save the diagram')),
-  });
-
   const publish = useMutation({
     mutationFn: () =>
       questionBankAdminApi.publish({
-        questionIds: Array.from(selected),
-        title: publishTitle,
+        questionIds: selected.map((q) => q.id),
+        title,
       }),
-    onSuccess: (result) => {
-      setNotice(`Published ${result.questionCount} questions as assignment #${result.assignmentId} for independent students.`);
-      setSelected(new Set());
-      setPublishTitle('');
-      void queryClient.invalidateQueries({ queryKey: ['question-bank-admin'] });
+    onSuccess: (r) => {
+      setNotice(
+        `Published assignment #${r.assignmentId} with ${r.questionCount} questions.`,
+      );
+      setSelected([]);
+      setTitle("");
+      refresh();
     },
-    onError: (err) => setError(apiErrorMessage(err, 'Could not publish to independent students')),
+    onError: error,
   });
-
-  const items = listQuery.data?.items ?? [];
-  const approvedCount = items.filter((item) => item.status === 'APPROVED').length;
-
-  function toggleSelected(id: number) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleQuestionType(type: QuestionBankQuestionType) {
-    setQuestionTypes((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      return next;
-    });
-  }
-
-  async function handleDiagramUpload(item: QuestionBankItem, uploadedFile: File) {
-    setError('');
-    if (uploadedFile.size > DIAGRAM_MAX_BYTES) {
-      setError('Diagram images must be 5MB or smaller');
-      return;
-    }
-    setDiagramUploadingFor(item.id);
-    try {
-      const result = await uploadsApi.uploadSingle(uploadedFile);
-      await updateDiagram.mutateAsync({ id: item.id, diagramUrl: result.url, diagramAlt: item.diagramAlt ?? undefined });
-    } catch (err) {
-      setError(apiErrorMessage(err, 'Diagram upload failed'));
-    } finally {
-      setDiagramUploadingFor(null);
-    }
-  }
-
-  function handleDiagramRemove(item: QuestionBankItem) {
-    updateDiagram.mutate({ id: item.id, diagramUrl: '', diagramAlt: '' });
-  }
-
-  const canGenerate =
-    !!subject &&
-    !!grade &&
-    !!topic &&
-    questionTypes.size > 0 &&
-    (inputType === 'PDF'
-      ? !!file
-      : inputType === 'TEXT'
-        ? sourceText.trim().length >= 50
-        : !!sourceDocumentId) &&
-    !generate.isPending;
-
+  const generation = useMutation({
+    mutationFn: (kind: "QUESTIONS" | "CARDS") =>
+      contentLibraryApi.generate(sourceIds, kind, count, generationTopic),
+    onSuccess: () => {
+      setNotice(
+        "Generation queued. You can leave this page; progress is saved.",
+      );
+      refresh();
+      changeView("jobs");
+    },
+    onError: error,
+  });
+  const discover = useMutation({
+    mutationFn: (file?: File) => contentLibraryApi.discover(file),
+    onSuccess: (r) => {
+      setCandidates(
+        r.candidates.map((c) => ({
+          ...c,
+          subject: c.title
+            .replace(/\.pdf$/i, "")
+            .replace(/[_-]/g, " ")
+            .replace(
+              /\b(?:grade|designs?|curriculum|20\d\d|7|8|9|10|11|12)\b/gi,
+              "",
+            )
+            .replace(/\s+/g, " ")
+            .trim(),
+        })),
+      );
+      setPicked([]);
+      setNotice(
+        r.errors.length
+          ? `${r.candidates.length} links found; ${r.errors.length} directory pages could not be retrieved. Review each mapping before import.`
+          : `${r.candidates.length} official PDF links found. Review grade and subject before import.`,
+      );
+    },
+    onError: error,
+  });
+  const importing = useMutation({
+    mutationFn: () =>
+      contentLibraryApi.imports(
+        candidates
+          .filter((c) => picked.includes(c.url))
+          .map((c) => ({
+            url: c.url,
+            subject: c.subject!.trim(),
+            grade: c.grade!,
+          })),
+      ),
+    onSuccess: () => {
+      setNotice("Official curriculum imports queued.");
+      setPicked([]);
+      refresh();
+      changeView("jobs");
+    },
+    onError: error,
+  });
+  const retry = useMutation({
+    mutationFn: contentLibraryApi.retry,
+    onSuccess: refresh,
+    onError: error,
+  });
+  const sources = overview.data?.sources ?? [],
+    coverage = overview.data?.coverage ?? [],
+    rows = list.data?.items ?? [],
+    subjects = [
+      ...new Set([
+        ...sources.map((s) => s.subject),
+        ...coverage.map((c) => c.subject),
+      ]),
+    ].sort();
+  const sameSelection =
+    !selected.length ||
+    selected.every(
+      (q) => q.grade === selected[0].grade && q.subject === selected[0].subject,
+    );
+  const tabs = [
+    ["questions", "Questions", BookMarked],
+    ["sources", "Curriculum sources", Layers],
+    ["jobs", "Generation jobs", Clock],
+    ["cards", "Memory cards", Brain],
+    ["schools", "School access", School],
+  ] as const;
   return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="Platform Admin" title="Question Bank Management" />
-
-      {error ? (
-        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
-          {error}
-        </div>
-      ) : null}
-      {notice ? (
-        <div className="rounded-2xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm font-medium text-[#33410a]">
-          {notice}
-        </div>
-      ) : null}
-
-      <section className="grid gap-4 sm:grid-cols-3">
-        <MetricCard label="Total questions" value={listQuery.data?.total ?? '-'} />
-        <MetricCard label="Approved (this filter)" value={approvedCount} />
-        <MetricCard label="Selected for publish" value={selected.size} />
-      </section>
-
-      <section className="rounded-[24px] border border-slate-200 bg-white p-6 space-y-5">
-        <h2 className="text-lg font-semibold text-[#101820]">Generate a new batch</h2>
-
+    <div className="space-y-5 pb-12 text-slate-800">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Source</p>
-          <div className="flex flex-wrap gap-2">
-            {(['PDF', 'TEXT', 'KNOWLEDGE'] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setInputType(type)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  inputType === type ? 'bg-[#101820] text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {type === 'PDF' ? 'PDF Upload' : type === 'TEXT' ? 'Text Paste' : 'Knowledge Library'}
-              </button>
-            ))}
-            {['URL/Link', 'Video Transcript'].map((label) => (
-              <button
-                key={label}
-                type="button"
-                disabled
-                title="Coming soon — needs a safe content fetcher / transcription service that doesn't exist yet"
-                className="cursor-not-allowed rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-400"
-              >
-                {label} (coming soon)
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input
-            type="text"
-            placeholder="Subject (e.g. Biology)"
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
-          />
-          <input
-            type="text"
-            placeholder="Grade (e.g. Grade 10)"
-            value={grade}
-            onChange={(event) => setGrade(event.target.value)}
-            className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm"
-          />
-          <input
-            type="text"
-            placeholder="Topic"
-            value={topic}
-            onChange={(event) => setTopic(event.target.value)}
-            className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm sm:col-span-2"
-          />
-        </div>
-
-        {inputType === 'PDF' ? (
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            className="min-h-11 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          />
-        ) : inputType === 'TEXT' ? (
-          <textarea
-            value={sourceText}
-            onChange={(event) => setSourceText(event.target.value)}
-            placeholder="Paste the source text to generate questions from (at least 50 characters)"
-            rows={6}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          />
-        ) : (
-          <select
-            value={sourceDocumentId}
-            onChange={(event) => {
-              const nextId = event.target.value;
-              setSourceDocumentId(nextId);
-              const source = sourcesQuery.data?.find((entry) => entry.id === Number(nextId));
-              if (source) {
-                setSubject(source.subject);
-                setGrade(source.grade);
-              }
-            }}
-            className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
-          >
-            <option value="">Select a saved curriculum source</option>
-            {(sourcesQuery.data ?? []).map((source) => (
-              <option key={source.id} value={source.id}>
-                {source.title} · {source.subject} · {source.grade}
-              </option>
-            ))}
-          </select>
-        )}
-
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Question types</p>
-          <div className="flex flex-wrap gap-2">
-            {ENABLED_QUESTION_TYPES.map((type) => (
-              <label
-                key={type.value}
-                className={`flex min-h-9 cursor-pointer items-center gap-2 rounded-full border px-3 text-xs font-semibold ${
-                  questionTypes.has(type.value)
-                    ? 'border-[#101820] bg-[#101820] text-white'
-                    : 'border-slate-200 bg-white text-slate-600'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={questionTypes.has(type.value)}
-                  onChange={() => toggleQuestionType(type.value)}
-                  className="sr-only"
-                />
-                {type.label}
-              </label>
-            ))}
-            {UNSUPPORTED_QUESTION_TYPES.map((label) => (
-              <span
-                key={label}
-                title="Not yet supported by AI generation — build these manually in the assignment editor instead"
-                className="flex min-h-9 cursor-not-allowed items-center rounded-full border border-slate-100 bg-slate-50 px-3 text-xs font-semibold text-slate-400"
-              >
-                {label} (not yet supported)
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Difficulty</p>
-            <select
-              value={difficulty}
-              onChange={(event) => setDifficulty(event.target.value as typeof difficulty)}
-              className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"
-            >
-              <option value="EASY">Easy</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HARD">Hard</option>
-              <option value="MIXED">Mixed</option>
-            </select>
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Question count: <span className="text-[#101820]">{questionCount}</span>
-            </p>
-            <input
-              type="range"
-              min={5}
-              max={100}
-              step={1}
-              value={questionCount}
-              onChange={(event) => setQuestionCount(Number(event.target.value))}
-              className="w-full accent-[#101820]"
-            />
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-            Bloom's Taxonomy / Higher-Order Thinking
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+            Content management · Grades 7–12
           </p>
-          <label className="flex min-h-9 w-fit cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600">
-            <input
-              type="checkbox"
-              checked={prioritizeHigherOrder}
-              onChange={(event) => setPrioritizeHigherOrder(event.target.checked)}
-            />
-            Prioritize Higher-Order Thinking questions (Analyze/Evaluate/Create)
-          </label>
-          <p className="mt-1.5 text-xs text-slate-400">
-            Every generated question is automatically classified with a Bloom's level for review filtering, regardless of this setting.
+          <h1 className="mt-2 text-2xl font-semibold">Question Bank</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            One reviewed repository for independent learners and subscribed
+            schools.
           </p>
         </div>
-
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Additional options</p>
-          <div className="flex flex-wrap gap-4">
-            <label
-              className="flex min-h-9 items-center gap-2 text-xs font-semibold text-slate-400"
-              title="Always included — every question stores its correct answer for the review queue and grading"
-            >
-              <input type="checkbox" checked disabled />
-              Include Answer Key
-            </label>
-            <label
-              className="flex min-h-9 items-center gap-2 text-xs font-semibold text-slate-400"
-              title="Always included — every question is generated with an explanation"
-            >
-              <input type="checkbox" checked disabled />
-              Include Feedback Explanations
-            </label>
-            <label className="flex min-h-9 cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600">
-              <input
-                type="checkbox"
-                checked={includeDiagramPlaceholders}
-                onChange={(event) => setIncludeDiagramPlaceholders(event.target.checked)}
-              />
-              Suggest Diagram Placeholders
-            </label>
-            <label className="flex min-h-9 cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600">
-              <input
-                type="checkbox"
-                checked={autoTagTopic}
-                onChange={(event) => setAutoTagTopic(event.target.checked)}
-              />
-              Auto-tag by Topic
-            </label>
-          </div>
-        </div>
-
         <button
-          type="button"
-          disabled={!canGenerate}
-          onClick={() => generate.mutate()}
-          className="min-h-11 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white disabled:opacity-40"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-medium text-white"
+          onClick={() => changeView("sources")}
         >
-          {generate.isPending ? 'Generating with OpenAI...' : 'Upload & generate'}
+          <Plus size={16} />
+          Generate content
         </button>
-      </section>
-
-      <section className="rounded-[24px] border border-slate-200 bg-white p-6 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-[#101820]">Review queue</h2>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setStatusFilter(tab.value)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  statusFilter === tab.value ? 'bg-[#101820] text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+      </header>
+      <nav
+        className="flex gap-1 overflow-x-auto border-b"
+        aria-label="Content library"
+      >
+        {tabs.map(([key, label, Icon]) => (
+          <button
+            key={key}
+            className={`inline-flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm ${view === key ? "border-blue-700 font-semibold text-blue-700" : "border-transparent text-slate-500"}`}
+            onClick={() => changeView(key)}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </nav>
+      {notice && (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-lg border bg-white p-4 text-sm"
+        >
+          <span>{notice}</span>
+          <button aria-label="Dismiss notice" onClick={() => setNotice("")}>
+            ×
+          </button>
         </div>
-
-        {items.length === 0 ? (
-          <EmptyState title="No questions in this filter yet" />
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {items.map((item: QuestionBankItem) => (
-              <div key={item.id} className="grid gap-3 py-4 sm:grid-cols-[auto_1fr_auto]">
+      )}
+      {overview.isError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-amber-200 p-4 text-sm"
+        >
+          Content library could not load. The backend may still be deploying.{" "}
+          <button className="underline" onClick={() => overview.refetch()}>
+            Retry
+          </button>
+        </p>
+      )}
+      {view === "schools" ? (
+        <SchoolActivation />
+      ) : view === "cards" ? (
+        <RecallCardsManager />
+      ) : view === "sources" ? (
+        <div className="space-y-5">
+          <section className="rounded-xl border bg-white p-5">
+            <div className="flex flex-wrap justify-between gap-3">
+              <div>
+                <h2 className="font-semibold">Curriculum coverage</h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  Choose verified grade-specific sources. Questions and memory
+                  cards are saved as drafts.
+                </p>
+              </div>
+              <button
+                onClick={() => setLegacy(!legacy)}
+                className="text-sm underline"
+              >
+                Upload a subject PDF or paste text
+              </button>
+            </div>
+            {legacy && (
+              <div className="mt-5">
+                <QuestionBankLegacy />
+              </div>
+            )}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <label className="text-xs">
+                Questions per source
                 <input
-                  type="checkbox"
-                  checked={selected.has(item.id)}
-                  disabled={item.status !== 'APPROVED'}
-                  onChange={() => toggleSelected(item.id)}
-                  className="mt-1 h-4 w-4 accent-[#101820]"
-                  title={item.status !== 'APPROVED' ? 'Only approved questions can be published' : 'Select for publishing'}
+                  aria-label="Generation count"
+                  type="number"
+                  min={5}
+                  max={100}
+                  className={control + " ml-2 w-20"}
+                  value={count}
+                  onChange={(e) => setCount(Number(e.target.value))}
                 />
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge(item.status)}`}>
-                      {item.status}
+              </label>
+              <input
+                aria-label="Generation topic"
+                className={control}
+                value={generationTopic}
+                onChange={(e) => setGenerationTopic(e.target.value)}
+                placeholder="All source topics, or focus on a topic"
+              />
+              <button
+                disabled={
+                  !sourceIds.length ||
+                  generation.isPending ||
+                  count < 5 ||
+                  count > 100
+                }
+                className={
+                  control + " bg-blue-700 text-blue-800 disabled:opacity-40"
+                }
+                onClick={() => generation.mutate("QUESTIONS")}
+              >
+                Generate questions · {sourceIds.length} sources
+              </button>
+              <button
+                disabled={!sourceIds.length || generation.isPending}
+                className={control + " disabled:opacity-40"}
+                onClick={() => generation.mutate("CARDS")}
+              >
+                Generate memory cards
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              Memory-card batches are capped at 12 per source for careful
+              review. Questions can be generated repeatedly to grow the rotating
+              pool.
+            </p>
+            <div className="mt-4 divide-y">
+              {sources.map((source) => {
+                const matching = coverage.filter(
+                  (c) =>
+                    c.grade === source.grade && c.subject === source.subject,
+                );
+                return (
+                  <label
+                    key={source.id}
+                    className="flex flex-wrap items-center gap-3 py-4 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={sourceIds.includes(source.id)}
+                      disabled={!grades.includes(source.grade)}
+                      onChange={(e) =>
+                        setSourceIds(
+                          e.target.checked
+                            ? [...sourceIds, source.id]
+                            : sourceIds.filter((id) => id !== source.id),
+                        )
+                      }
+                    />
+                    <span className="min-w-0 flex-1">
+                      <strong>
+                        {source.grade} · {source.subject}
+                      </strong>
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {source.title} · {source._count.chunks} indexed sections
+                      </span>
                     </span>
                     <span className="text-xs text-slate-500">
-                      {item.subject} · {item.grade} · {item.topic} · {item.questionType}
+                      {matching
+                        .filter((c) => c.status === "APPROVED")
+                        .reduce((n, c) => n + c._count._all, 0)}{" "}
+                      approved questions
                     </span>
-                    {item.bloomLevel ? (
-                      <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
-                        {item.bloomLevel}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-sm font-medium text-[#101820]">{item.questionText}</p>
-                  <p className="mt-1 text-xs text-slate-500">Answer: {item.correctAnswer}</p>
-
-                  <div className="mt-3 rounded-xl border border-slate-100 bg-[#F8FAFC] p-3">
-                    {item.diagramUrl ? (
-                      <div className="flex flex-wrap items-start gap-3">
-                        <img
-                          src={item.diagramUrl}
-                          alt={item.diagramAlt ?? 'Question diagram'}
-                          className="h-24 w-24 rounded-lg border border-slate-200 object-cover"
-                        />
-                        <div className="flex flex-col gap-2">
-                          <label className="cursor-pointer text-xs font-semibold text-sky-700 underline">
-                            {diagramUploadingFor === item.id ? 'Uploading...' : 'Replace'}
-                            <input
-                              type="file"
-                              accept={DIAGRAM_ACCEPT}
-                              className="hidden"
-                              disabled={diagramUploadingFor === item.id}
-                              onChange={(event) => {
-                                const picked = event.target.files?.[0];
-                                if (picked) void handleDiagramUpload(item, picked);
-                                event.target.value = '';
-                              }}
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => handleDiagramRemove(item)}
-                            className="text-xs font-semibold text-red-700"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700">
-                          {diagramUploadingFor === item.id ? 'Uploading...' : 'Upload Diagram'}
-                          <input
-                            type="file"
-                            accept={DIAGRAM_ACCEPT}
-                            className="hidden"
-                            disabled={diagramUploadingFor === item.id}
-                            onChange={(event) => {
-                              const picked = event.target.files?.[0];
-                              if (picked) void handleDiagramUpload(item, picked);
-                              event.target.value = '';
-                            }}
-                          />
-                        </label>
-                        {item.diagramAlt ? (
-                          <p className="mt-2 text-xs text-slate-500">Suggested diagram: {item.diagramAlt}</p>
-                        ) : null}
-                        <p className="mt-1 text-[11px] text-slate-400">PNG, JPEG, GIF, or WebP — max 5MB</p>
-                      </div>
-                    )}
+                  </label>
+                );
+              })}
+              {!sources.length && (
+                <p className="p-6 text-sm text-slate-500">
+                  Import official designs below, or upload your first subject
+                  source.
+                </p>
+              )}
+            </div>
+          </section>
+          <section className="space-y-4 rounded-xl border bg-white p-5">
+            <div>
+              <h2 className="font-semibold">Import official KICD designs</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Discover Grade 7–12 subject designs from KICD, then confirm each
+                grade and subject. The general framework alone is not a subject
+                source. External or inaccessible documents are not silently
+                invented.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                disabled={discover.isPending}
+                className={control}
+                onClick={() => discover.mutate(undefined)}
+              >
+                <FileSearch size={16} className="mr-2 inline" />
+                {discover.isPending
+                  ? "Discovering official links…"
+                  : "Discover KICD subjects"}
+              </button>
+              <label className={control + " cursor-pointer"}>
+                Use saved KICD HTML
+                <input
+                  aria-label="KICD directory HTML"
+                  className="sr-only"
+                  type="file"
+                  accept=".html,text/html"
+                  disabled={discover.isPending}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) discover.mutate(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <Link className={control} to="/platform/curriculum-library">
+                Framework & legacy curriculum tools
+              </Link>
+            </div>
+            <div className="max-h-[500px] space-y-3 overflow-y-auto">
+              {candidates.map((c, i) => (
+                <div
+                  key={c.url}
+                  className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[24px_140px_1fr]"
+                >
+                  <input
+                    aria-label={`Import ${c.title}`}
+                    type="checkbox"
+                    checked={picked.includes(c.url)}
+                    disabled={!c.grade || !c.subject?.trim()}
+                    onChange={(e) =>
+                      setPicked(
+                        e.target.checked
+                          ? [...picked, c.url]
+                          : picked.filter((url) => url !== c.url),
+                      )
+                    }
+                  />
+                  <select
+                    aria-label={`Grade for ${c.title}`}
+                    className={control}
+                    value={c.grade ?? ""}
+                    onChange={(e) =>
+                      setCandidates((cs) =>
+                        cs.map((v, j) =>
+                          j === i ? { ...v, grade: e.target.value } : v,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Choose grade</option>
+                    {grades.map((g) => (
+                      <option key={g}>{g}</option>
+                    ))}
+                  </select>
+                  <div>
+                    <input
+                      aria-label={`Subject for ${c.title}`}
+                      className={control + " w-full"}
+                      value={c.subject ?? ""}
+                      onChange={(e) =>
+                        setCandidates((cs) =>
+                          cs.map((v, j) =>
+                            j === i ? { ...v, subject: e.target.value } : v,
+                          ),
+                        )
+                      }
+                    />
+                    <a
+                      className="mt-2 block break-all text-xs text-blue-700"
+                      href={c.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {c.title}
+                    </a>
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  {item.status !== 'APPROVED' ? (
-                    <button
-                      type="button"
-                      disabled={approve.isPending}
-                      onClick={() => approve.mutate(item.id)}
-                      className="min-h-9 rounded-lg border border-emerald-300 px-3 text-xs font-semibold text-emerald-700 disabled:opacity-40"
-                    >
-                      Approve
-                    </button>
-                  ) : null}
-                  {item.status !== 'REJECTED' ? (
-                    <button
-                      type="button"
-                      disabled={reject.isPending}
-                      onClick={() => reject.mutate(item.id)}
-                      className="min-h-9 rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 disabled:opacity-40"
-                    >
-                      Reject
-                    </button>
-                  ) : null}
-                  {!item.publishedAssignmentId ? (
-                    <button
-                      type="button"
-                      disabled={remove.isPending}
-                      onClick={() => remove.mutate(item.id)}
-                      className="min-h-9 rounded-lg border border-red-300 px-3 text-xs font-semibold text-red-700 disabled:opacity-40"
-                    >
-                      Delete
-                    </button>
-                  ) : null}
-                </div>
+              ))}
+            </div>
+            {candidates.length > 0 && (
+              <button
+                className={control}
+                disabled={!picked.length || importing.isPending}
+                onClick={() => importing.mutate()}
+              >
+                Import {picked.length} reviewed sources
+              </button>
+            )}
+          </section>
+        </div>
+      ) : view === "jobs" ? (
+        <section className="overflow-hidden rounded-xl border bg-white">
+          <div className="flex justify-between border-b p-5">
+            <h2 className="font-semibold">Generation queue</h2>
+            <button onClick={refresh} className="text-sm">
+              <RefreshCw size={16} className="mr-2 inline" />
+              Refresh
+            </button>
+          </div>
+          {(overview.data?.jobs ?? []).map((job) => (
+            <article
+              key={job.id}
+              className="flex flex-wrap justify-between gap-3 border-b p-5 text-sm"
+            >
+              <div>
+                <strong>
+                  {job.input.grade} · {job.input.subject}
+                </strong>
+                <p className="mt-1 text-xs text-slate-500">
+                  {job.kind} · {job.input.topic ?? "Official source import"} ·{" "}
+                  {job.status}
+                  {job.result?.count !== undefined
+                    ? ` · ${job.result.count} created`
+                    : ""}
+                </p>
+                {job.error && (
+                  <p
+                    role="alert"
+                    className="mt-2 max-w-xl text-xs text-red-700"
+                  >
+                    {job.error}
+                  </p>
+                )}
+              </div>
+              {job.status === "FAILED" && (
+                <button
+                  disabled={retry.isPending}
+                  className={control}
+                  onClick={() => retry.mutate(job.id)}
+                >
+                  Retry
+                </button>
+              )}
+            </article>
+          ))}
+          {!overview.data?.jobs.length && (
+            <p className="p-10 text-sm text-slate-500">
+              No generation jobs yet.
+            </p>
+          )}
+        </section>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              [
+                "Saved questions",
+                coverage.reduce((n, c) => n + c._count._all, 0),
+              ],
+              [
+                "Ready for students",
+                coverage
+                  .filter((c) => c.status === "APPROVED")
+                  .reduce((n, c) => n + c._count._all, 0),
+              ],
+              [
+                "Needs review",
+                coverage
+                  .filter((c) => c.status === "GENERATED")
+                  .reduce((n, c) => n + c._count._all, 0),
+              ],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border bg-white p-4">
+                <p className="text-xs text-slate-500">{label}</p>
+                <p className="mt-2 text-2xl font-semibold">{value}</p>
               </div>
             ))}
           </div>
-        )}
-      </section>
-
-      <section className="rounded-[24px] border border-slate-200 bg-white p-6 space-y-3">
-        <h2 className="text-lg font-semibold text-[#101820]">Publish to independent students</h2>
-        <p className="text-sm text-slate-600">
-          Select approved questions above, name the assignment, and publish it directly to independent students.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <input
-            type="text"
-            placeholder="Assignment title"
-            value={publishTitle}
-            onChange={(event) => setPublishTitle(event.target.value)}
-            className="min-h-11 flex-1 rounded-xl border border-slate-200 px-3 text-sm"
-          />
-          <button
-            type="button"
-            disabled={!publishTitle || selected.size === 0 || publish.isPending}
-            onClick={() => publish.mutate()}
-            className="min-h-11 rounded-xl bg-[#101820] px-5 text-sm font-semibold text-white disabled:opacity-40"
+          <section className="rounded-xl border bg-white">
+            <div className="flex flex-wrap gap-3 border-b p-4">
+              <select
+                aria-label="Question grade"
+                className={control}
+                value={grade}
+                onChange={(e) => {
+                  setGrade(e.target.value);
+                  setPage(0);
+                  setSelected([]);
+                }}
+              >
+                <option value="">All grades</option>
+                {grades.map((g) => (
+                  <option key={g}>{g}</option>
+                ))}
+              </select>
+              <select
+                aria-label="Question subject"
+                className={control}
+                value={subject}
+                onChange={(e) => {
+                  setSubject(e.target.value);
+                  setPage(0);
+                  setSelected([]);
+                }}
+              >
+                <option value="">All subjects</option>
+                {subjects.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+              <input
+                aria-label="Filter question topic"
+                className={control + " min-w-0 flex-1"}
+                placeholder="Find a topic"
+                value={topic}
+                onChange={(e) => {
+                  setTopic(e.target.value);
+                  setPage(0);
+                }}
+              />
+              <select
+                aria-label="Review status"
+                className={control}
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(0);
+                }}
+              >
+                <option value="">All statuses</option>
+                <option value="GENERATED">Needs review</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+            <div
+              className="max-h-[70vh] overflow-y-auto"
+              aria-label="Question results"
+            >
+              {list.isLoading ? (
+                <p className="p-10">Loading questions…</p>
+              ) : list.isError ? (
+                <p role="alert" className="p-6">
+                  Could not load questions.{" "}
+                  <button onClick={() => list.refetch()}>Retry</button>
+                </p>
+              ) : rows.length ? (
+                rows.map((item) => (
+                  <article
+                    key={item.id}
+                    className="flex items-start gap-3 border-b p-5"
+                  >
+                    <input
+                      aria-label={`Select question ${item.id}`}
+                      className="mt-1"
+                      type="checkbox"
+                      disabled={item.status !== "APPROVED"}
+                      checked={selected.some((q) => q.id === item.id)}
+                      onChange={(e) =>
+                        setSelected(
+                          e.target.checked
+                            ? [...selected, item]
+                            : selected.filter((q) => q.id !== item.id),
+                        )
+                      }
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-slate-500">
+                        {item.grade} · {item.subject} · {item.topic}{" "}
+                        <span className="ml-2 rounded bg-slate-100 px-2 py-1">
+                          {item.status === "GENERATED"
+                            ? "Needs review"
+                            : item.status.toLowerCase()}
+                        </span>
+                      </p>
+                      <p className="mt-3 text-sm font-medium leading-6">
+                        {item.questionText}
+                      </p>
+                      <details className="mt-3 text-sm">
+                        <summary className="cursor-pointer text-blue-700">
+                          Preview question & answer
+                        </summary>
+                        <div className="mt-3 max-w-2xl space-y-3">
+                          {item.contentHtml && (
+                            <RichContent html={item.contentHtml} />
+                          )}{" "}
+                          {item.diagramUrl && (
+                            <img
+                              className="max-h-80 max-w-full object-contain"
+                              src={item.diagramUrl}
+                              alt={item.diagramAlt ?? "Question illustration"}
+                            />
+                          )}
+                          <ol className="space-y-2">
+                            {item.options?.map((o, i) => (
+                              <li
+                                key={i}
+                                className={`rounded-lg border p-3 ${o === item.correctAnswer ? "border-emerald-200 bg-emerald-50" : ""}`}
+                              >
+                                {String.fromCharCode(65 + i)}. {o}
+                              </li>
+                            ))}
+                          </ol>
+                          <p>
+                            <strong>Answer:</strong> {item.correctAnswer}
+                          </p>
+                          <p className="leading-7 text-slate-600">
+                            {item.explanation}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            Source {item.sourceDocumentId ?? "record"} ·{" "}
+                            {item.points} marks
+                          </p>
+                        </div>
+                      </details>
+                      <div className="mt-3 flex flex-wrap gap-4 text-xs">
+                        <button
+                          onClick={() =>
+                            setEditing({
+                              ...item,
+                              options: item.options ? [...item.options] : null,
+                            })
+                          }
+                          className="font-medium text-blue-700"
+                        >
+                          Edit & review
+                        </button>
+                        {item.status !== "APPROVED" && (
+                          <button
+                            disabled={review.isPending}
+                            onClick={() =>
+                              review.mutate({ id: item.id, action: "approve" })
+                            }
+                            className="inline-flex items-center gap-1 text-emerald-700"
+                          >
+                            <Check size={14} />
+                            Approve
+                          </button>
+                        )}
+                        {item.status !== "REJECTED" && (
+                          <button
+                            disabled={review.isPending}
+                            onClick={() =>
+                              review.mutate({ id: item.id, action: "reject" })
+                            }
+                          >
+                            Reject
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="p-10 text-center text-sm text-slate-500">
+                  No questions match these filters. Select curriculum sources to
+                  generate a batch.
+                </p>
+              )}
+            </div>
+            <footer className="flex items-center justify-between gap-3 p-4 text-xs text-slate-500">
+              <span>
+                {list.data?.total ?? 0} matching questions · Page {page + 1}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  aria-label="Previous question page"
+                  disabled={!page}
+                  onClick={() => setPage((p) => p - 1)}
+                  className={control + " disabled:opacity-30"}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  aria-label="Next question page"
+                  disabled={(page + 1) * 25 >= (list.data?.total ?? 0)}
+                  onClick={() => setPage((p) => p + 1)}
+                  className={control + " disabled:opacity-30"}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </footer>
+          </section>
+          {selected.length > 0 && (
+            <section className="sticky bottom-3 space-y-3 rounded-xl border bg-white p-4 shadow-lg">
+              <p className="text-sm font-semibold">
+                {selected.length} questions ·{" "}
+                {selected.reduce((n, q) => n + q.points, 0)} marks ·{" "}
+                {selected[0].grade} {selected[0].subject}
+              </p>
+              {!sameSelection && (
+                <p role="alert" className="text-sm text-red-700">
+                  Select one grade and subject per assignment.
+                </p>
+              )}
+              <div className="flex flex-wrap gap-3">
+                <input
+                  aria-label="Assignment title"
+                  placeholder="Assignment title"
+                  className={control + " min-w-0 flex-1"}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <button
+                  disabled={
+                    !sameSelection || !title.trim() || publish.isPending
+                  }
+                  className={control + " disabled:opacity-40"}
+                  onClick={() => publish.mutate()}
+                >
+                  Publish assignment
+                </button>
+                <button
+                  onClick={() => setSelected([])}
+                  className="text-xs underline"
+                >
+                  Clear
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                Independent practice uses approved questions automatically in
+                rotating batches of 30. Publishing an assignment is optional.
+              </p>
+            </section>
+          )}
+        </>
+      )}
+      {editing && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/40 p-4 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Edit bank question"
+        >
+          <form
+            className="mx-auto max-w-2xl space-y-4 rounded-xl bg-white p-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              save.mutate();
+            }}
           >
-            {publish.isPending ? 'Publishing...' : `Publish ${selected.size || ''} question(s)`}
-          </button>
+            <div className="flex justify-between">
+              <h2 className="font-semibold">Edit question · #{editing.id}</h2>
+              <button type="button" onClick={() => setEditing(null)}>
+                Close
+              </button>
+            </div>
+            <label className="block text-xs">
+              Question
+              <textarea
+                aria-label="Question text"
+                className={control + " mt-2 w-full"}
+                rows={4}
+                value={editing.questionText}
+                onChange={(e) =>
+                  setEditing({ ...editing, questionText: e.target.value })
+                }
+              />
+            </label>
+            {editing.options?.map((o, i) => (
+              <label className="block text-xs" key={i}>
+                Option {String.fromCharCode(65 + i)}
+                <input
+                  className={control + " mt-1 w-full"}
+                  value={o}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      options: editing.options!.map((v, j) =>
+                        j === i ? e.target.value : v,
+                      ),
+                    })
+                  }
+                />
+              </label>
+            ))}
+            <label className="block text-xs">
+              Correct answer
+              <input
+                className={control + " mt-1 w-full"}
+                value={editing.correctAnswer ?? ""}
+                onChange={(e) =>
+                  setEditing({ ...editing, correctAnswer: e.target.value })
+                }
+              />
+            </label>
+            <label className="block text-xs">
+              Explanation
+              <textarea
+                className={control + " mt-1 w-full"}
+                rows={4}
+                value={editing.explanation ?? ""}
+                onChange={(e) =>
+                  setEditing({ ...editing, explanation: e.target.value })
+                }
+              />
+            </label>
+            <label className="block text-xs">
+              Topic
+              <input
+                className={control + " mt-1 w-full"}
+                value={editing.topic}
+                onChange={(e) =>
+                  setEditing({ ...editing, topic: e.target.value })
+                }
+              />
+            </label>
+            <label className="block text-xs">
+              Marks
+              <input
+                className={control + " ml-2 w-24"}
+                type="number"
+                min={1}
+                max={1000}
+                value={editing.points}
+                onChange={(e) =>
+                  setEditing({ ...editing, points: Number(e.target.value) })
+                }
+              />
+            </label>
+            <button
+              disabled={save.isPending}
+              className="rounded-lg bg-blue-700 px-5 py-3 text-sm text-white"
+            >
+              Save for review
+            </button>
+          </form>
         </div>
-      </section>
+      )}
+      <details className="border-t pt-4 text-xs text-slate-500">
+        <summary className="cursor-pointer">Advanced & legacy tools</summary>
+        <div className="mt-3 flex flex-wrap gap-4">
+          <Link to="/platform/ai-management">AI settings</Link>
+          <Link to="/platform/independent-assignments">
+            Authored assignments
+          </Link>
+          <Link to="/platform/curriculum-library">
+            Legacy curriculum library
+          </Link>
+          <Link to="/platform/private-tutor">Tutor management</Link>
+        </div>
+      </details>
     </div>
   );
 }
-
 export default QuestionBankManagement;

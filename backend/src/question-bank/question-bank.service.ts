@@ -1,3 +1,5 @@
+import { renderQuestionVisual } from "./content-tools";
+import { normalizeGrade } from "../common/utils/grade.util";
 import {
   BadRequestException,
   ForbiddenException,
@@ -26,9 +28,9 @@ import { UpdateQuestionBankItemDto } from "./dto/update-question-bank-item.dto";
 import { ActivateSchoolDto } from "./dto/activate-school.dto";
 import { PublishQuestionBankDto } from "./dto/publish-question-bank.dto";
 import { SelectQuestionBankDto } from "./dto/select-question-bank.dto";
-import { RotateQuestionBankDto } from './dto/rotate-question-bank.dto';
-import { QuestionBankRetrievalService } from './question-bank-retrieval.service';
-import { DocumentOcrService } from '../document-processing/document-ocr.service';
+import { RotateQuestionBankDto } from "./dto/rotate-question-bank.dto";
+import { QuestionBankRetrievalService } from "./question-bank-retrieval.service";
+import { DocumentOcrService } from "../document-processing/document-ocr.service";
 import {
   QUESTION_BANK_MIN_ACCEPTABLE_RATIO,
   QUESTION_BANK_SOURCE_MAX_BYTES,
@@ -79,8 +81,15 @@ export class QuestionBankService {
     file: Express.Multer.File | undefined,
     dto: GenerateQuestionBankDto,
     actor: AuthenticatedUser,
+    generationId?: string,
   ) {
     this.assertPlatformAdmin(actor);
+    if (generationId) {
+      const existing = await this.prisma.questionBank.findMany({
+        where: { generationBatchId: generationId },
+      });
+      if (existing.length) return existing;
+    }
 
     const inputType = dto.inputType ?? "PDF";
     let text: string;
@@ -96,26 +105,36 @@ export class QuestionBankService {
           "Pasted text must be at least 50 characters",
         );
       }
-      text = dto.sourceText.trim().slice(0, QUESTION_BANK_SOURCE_TEXT_MAX_CHARACTERS);
+      text = dto.sourceText
+        .trim()
+        .slice(0, QUESTION_BANK_SOURCE_TEXT_MAX_CHARACTERS);
       sourceFileName = null;
       const source = await this.retrieval.storeSource({
         title: `${dto.subject} - ${dto.topic}`,
         subject: dto.subject,
         grade: dto.grade,
-        sourceType: 'TEXT',
+        sourceType: "TEXT",
         text,
         createdById: actor.id,
       });
       sourceDocumentId = source.id;
-    } else if (inputType === 'KNOWLEDGE') {
+    } else if (inputType === "KNOWLEDGE") {
       if (!dto.sourceDocumentId) {
-        throw new BadRequestException('Choose a knowledge source');
+        throw new BadRequestException("Choose a knowledge source");
       }
       sourceDocumentId = dto.sourceDocumentId;
       const retrieved = await this.retrieval.retrieveText(
         sourceDocumentId,
         `${dto.subject} ${dto.grade} ${dto.topic}`,
       );
+      if (
+        normalizeGrade(retrieved.source.grade) !== normalizeGrade(dto.grade) ||
+        retrieved.source.subject.trim().toLowerCase() !==
+          dto.subject.trim().toLowerCase()
+      )
+        throw new BadRequestException(
+          "Use the grade and subject assigned to this curriculum source.",
+        );
       sourceFileName = retrieved.source.fileName;
       text = retrieved.text;
     } else {
@@ -127,7 +146,7 @@ export class QuestionBankService {
         subject: dto.subject,
         grade: dto.grade,
         fileName: sourceFileName,
-        sourceType: 'PDF',
+        sourceType: "PDF",
         text,
         createdById: actor.id,
       });
@@ -136,7 +155,7 @@ export class QuestionBankService {
 
     // Retrieve only chunks relevant to this topic. For newly uploaded text
     // this also avoids repeatedly sending unrelated chapters to the model.
-    if (inputType !== 'KNOWLEDGE') {
+    if (inputType !== "KNOWLEDGE") {
       text = (
         await this.retrieval.retrieveText(
           sourceDocumentId,
@@ -145,19 +164,18 @@ export class QuestionBankService {
       ).text;
     }
 
-    const questionTypes =
-      dto.questionTypes?.length
-        ? dto.questionTypes
-        : Array.from(AI_GENERATABLE_QUESTION_TYPES).filter(
-            (type) => type !== QuestionType.ESSAY,
-          );
+    const questionTypes = dto.questionTypes?.length
+      ? dto.questionTypes
+      : Array.from(AI_GENERATABLE_QUESTION_TYPES).filter(
+          (type) => type !== QuestionType.ESSAY,
+        );
     const questionCount = dto.questionCount ?? 60;
     const difficulty = dto.difficulty ?? "MIXED";
     const autoTagTopic = dto.autoTagTopic ?? false;
     const includeDiagramPlaceholders = dto.includeDiagramPlaceholders ?? false;
     const prioritizeHigherOrder = dto.prioritizeHigherOrder ?? false;
 
-    const prompt = this.buildGenerationPrompt(
+    let prompt = this.buildGenerationPrompt(
       dto.subject,
       dto.grade,
       dto.topic,
@@ -168,16 +186,41 @@ export class QuestionBankService {
       { autoTagTopic, includeDiagramPlaceholders, prioritizeHigherOrder },
     );
 
+    const previous = await this.prisma.questionBank.findMany({
+      where: {
+        isGlobal: true,
+        subject: { equals: dto.subject, mode: "insensitive" },
+        grade: normalizeGrade(dto.grade) ?? dto.grade,
+        sourceDocumentId,
+      },
+      select: { questionText: true },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+    });
+    if (previous.length)
+      prompt +=
+        "\nAvoid repeating these existing questions:\n" +
+        JSON.stringify(
+          previous.slice(0, 150).map((q) => q.questionText.slice(0, 200)),
+        );
     const result = await this.providerRouter.generateAssignment(prompt, {
       userId: actor.id,
     });
-    const questions = this.normalizeQuestions(
+    let questions = this.normalizeQuestions(
       result.content,
       questionCount,
       questionTypes,
     );
 
-    const batchId = randomUUID();
+    const signature = (v: string) =>
+      v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+    const known = new Set(previous.map((q) => signature(q.questionText)));
+    questions = questions.filter((q) => !known.has(signature(q.questionText)));
+    if (!questions.length)
+      throw new BadRequestException(
+        "All generated questions duplicate existing content. Choose another curriculum topic.",
+      );
+    const batchId = generationId ?? randomUUID();
     await this.prisma.questionBank.createMany({
       data: questions.map((question) => ({
         source: QuestionBankSource.PLATFORM,
@@ -185,22 +228,26 @@ export class QuestionBankService {
         createdById: actor.id,
         sourceDocumentId,
         subject: dto.subject.trim(),
-        grade: dto.grade.trim(),
+        grade: normalizeGrade(dto.grade) ?? dto.grade.trim(),
         topic: (autoTagTopic && question.topic) || dto.topic.trim(),
         questionText: question.questionText,
         contentHtml: question.contentHtml,
         questionType: question.questionType,
-        options: question.options as unknown as Prisma.InputJsonValue | undefined,
+        options: question.options as unknown as
+          Prisma.InputJsonValue | undefined,
         correctAnswer: question.correctAnswer,
-        config: this.deriveConfig(question.questionType, question.correctAnswer) as
-          | Prisma.InputJsonValue
-          | undefined,
+        config: this.deriveConfig(
+          question.questionType,
+          question.correctAnswer,
+        ) as Prisma.InputJsonValue | undefined,
         explanation: question.explanation,
         points: question.points,
         hint: question.hint,
         difficulty,
         bloomLevel: question.bloomLevel,
-        diagramAlt: includeDiagramPlaceholders ? question.diagramAlt : undefined,
+        diagramAlt: includeDiagramPlaceholders
+          ? question.diagramAlt
+          : undefined,
         status: QuestionBankStatus.GENERATED,
         generationBatchId: batchId,
         sourceFileName,
@@ -238,8 +285,12 @@ export class QuestionBankService {
       subject: query.subject
         ? { equals: query.subject, mode: "insensitive" }
         : undefined,
-      grade: query.grade ? { equals: query.grade, mode: "insensitive" } : undefined,
-      topic: query.topic ? { contains: query.topic, mode: "insensitive" } : undefined,
+      grade: query.grade
+        ? { equals: query.grade, mode: "insensitive" }
+        : undefined,
+      topic: query.topic
+        ? { contains: query.topic, mode: "insensitive" }
+        : undefined,
       status: query.status,
     };
     const [items, total] = await this.prisma.$transaction([
@@ -264,10 +315,17 @@ export class QuestionBankService {
     return this.findOrThrow(id);
   }
 
-  async update(id: number, dto: UpdateQuestionBankItemDto, actor: AuthenticatedUser) {
+  async update(
+    id: number,
+    dto: UpdateQuestionBankItemDto,
+    actor: AuthenticatedUser,
+  ) {
     this.assertPlatformAdmin(actor);
     const item = await this.findOrThrow(id);
-    if (item.status === QuestionBankStatus.APPROVED && item.publishedAssignmentId) {
+    if (
+      item.status === QuestionBankStatus.APPROVED &&
+      item.publishedAssignmentId
+    ) {
       throw new BadRequestException(
         "This question has already been published and cannot be edited. Reject and regenerate instead.",
       );
@@ -284,8 +342,7 @@ export class QuestionBankService {
         // not correctAnswer, for NUMERIC/SHORT_ANSWER auto-grading).
         config: dto.correctAnswer
           ? (this.deriveConfig(item.questionType, dto.correctAnswer) as
-              | Prisma.InputJsonValue
-              | undefined)
+              Prisma.InputJsonValue | undefined)
           : undefined,
         explanation: dto.explanation,
         points: dto.points,
@@ -294,8 +351,10 @@ export class QuestionBankService {
         // Empty string clears the diagram; undefined (field omitted) leaves
         // it unchanged — Prisma's `update` only writes keys that are
         // actually present, so `undefined` here is correctly a no-op.
-        diagramUrl: dto.diagramUrl !== undefined ? dto.diagramUrl || null : undefined,
-        diagramAlt: dto.diagramAlt !== undefined ? dto.diagramAlt || null : undefined,
+        diagramUrl:
+          dto.diagramUrl !== undefined ? dto.diagramUrl || null : undefined,
+        diagramAlt:
+          dto.diagramAlt !== undefined ? dto.diagramAlt || null : undefined,
         // Editing content invalidates a prior approval — an admin must
         // re-approve, mirroring AiArtifactService.updateContent resetting
         // an edited artifact back to a pre-approval status.
@@ -321,6 +380,38 @@ export class QuestionBankService {
   async approve(id: number, actor: AuthenticatedUser) {
     this.assertPlatformAdmin(actor);
     const item = await this.findOrThrow(id);
+    if (
+      !item.questionText?.trim() ||
+      !item.correctAnswer?.trim() ||
+      !item.explanation?.trim()
+    )
+      throw new BadRequestException(
+        "A question, answer and explanation are required before approval.",
+      );
+    if (item.questionType === "MULTIPLE_CHOICE") {
+      const options = Array.isArray(item.options) ? item.options : [];
+      if (
+        options.length !== 4 ||
+        !options.every((o) => typeof o === "string" && o.trim()) ||
+        new Set(options.map((o) => String(o).trim().toLowerCase())).size !==
+          4 ||
+        options.filter((o) => String(o).trim() === item.correctAnswer!.trim())
+          .length !== 1
+      )
+        throw new BadRequestException(
+          "Provide four distinct options and one matching correct answer.",
+        );
+    }
+    if (
+      /(?:diagram|figure|graph|table) (?:below|above|shown|provided)/i.test(
+        item.questionText,
+      ) &&
+      !item.diagramUrl &&
+      !item.contentHtml
+    )
+      throw new BadRequestException(
+        "This question refers to a missing visual. Edit the question or regenerate it.",
+      );
     if (item.status === QuestionBankStatus.APPROVED) return item;
     const updated = await this.prisma.questionBank.update({
       where: { id },
@@ -339,7 +430,11 @@ export class QuestionBankService {
     return updated;
   }
 
-  async reject(id: number, notes: string | undefined, actor: AuthenticatedUser) {
+  async reject(
+    id: number,
+    notes: string | undefined,
+    actor: AuthenticatedUser,
+  ) {
     this.assertPlatformAdmin(actor);
     const item = await this.findOrThrow(id);
     if (item.publishedAssignmentId) {
@@ -414,7 +509,11 @@ export class QuestionBankService {
       metadata: { questionIds: dto.questionIds },
     });
 
-    return { assignmentId: assignment.id, assignment, questionCount: items.length };
+    return {
+      assignmentId: assignment.id,
+      assignment,
+      questionCount: items.length,
+    };
   }
 
   async activateSchool(dto: ActivateSchoolDto, actor: AuthenticatedUser) {
@@ -441,7 +540,9 @@ export class QuestionBankService {
     });
 
     void this.audit.record({
-      action: active ? "question_bank.school_activated" : "question_bank.school_deactivated",
+      action: active
+        ? "question_bank.school_activated"
+        : "question_bank.school_deactivated",
       schoolId: dto.schoolId,
       userId: actor.id,
       resource: `School:${dto.schoolId}`,
@@ -471,8 +572,12 @@ export class QuestionBankService {
       subject: query.subject
         ? { equals: query.subject, mode: "insensitive" }
         : undefined,
-      grade: query.grade ? { equals: query.grade, mode: "insensitive" } : undefined,
-      topic: query.topic ? { contains: query.topic, mode: "insensitive" } : undefined,
+      grade: query.grade
+        ? { equals: query.grade, mode: "insensitive" }
+        : undefined,
+      topic: query.topic
+        ? { contains: query.topic, mode: "insensitive" }
+        : undefined,
     };
     const [items, total] = await this.prisma.$transaction([
       this.prisma.questionBank.findMany({
@@ -528,7 +633,10 @@ export class QuestionBankService {
     return rows.map((row) => row.topic);
   }
 
-  async selectForAssignment(dto: SelectQuestionBankDto, actor: AuthenticatedUser) {
+  async selectForAssignment(
+    dto: SelectQuestionBankDto,
+    actor: AuthenticatedUser,
+  ) {
     await this.assertReadAccess(actor);
     const items = await this.prisma.questionBank.findMany({
       where: {
@@ -580,23 +688,26 @@ export class QuestionBankService {
     return assignment;
   }
 
-  async rotateForAssignment(dto: RotateQuestionBankDto, actor: AuthenticatedUser) {
+  async rotateForAssignment(
+    dto: RotateQuestionBankDto,
+    actor: AuthenticatedUser,
+  ) {
     await this.assertReadAccess(actor);
     const candidates = await this.prisma.questionBank.findMany({
       where: {
         isGlobal: true,
         status: QuestionBankStatus.APPROVED,
-        subject: { equals: dto.subject, mode: 'insensitive' },
-        grade: { equals: dto.grade, mode: 'insensitive' },
-        topic: { contains: dto.topic, mode: 'insensitive' },
-        ...(dto.difficulty && dto.difficulty !== 'MIXED'
+        subject: { equals: dto.subject, mode: "insensitive" },
+        grade: { equals: dto.grade, mode: "insensitive" },
+        topic: { contains: dto.topic, mode: "insensitive" },
+        ...(dto.difficulty && dto.difficulty !== "MIXED"
           ? { difficulty: dto.difficulty }
           : {}),
       },
       include: {
         usages: {
           where: { schoolId: actor.schoolId },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 1,
         },
         _count: { select: { usages: { where: { schoolId: actor.schoolId } } } },
@@ -608,25 +719,32 @@ export class QuestionBankService {
       );
     }
     const sortedCandidates = candidates.sort((a, b) => {
-        const usageDifference = a._count.usages - b._count.usages;
-        if (usageDifference !== 0) return usageDifference;
-        const aLast = a.usages[0]?.createdAt.getTime() ?? 0;
-        const bLast = b.usages[0]?.createdAt.getTime() ?? 0;
-        return aLast - bLast || a.id - b.id;
-      });
+      const usageDifference = a._count.usages - b._count.usages;
+      if (usageDifference !== 0) return usageDifference;
+      const aLast = a.usages[0]?.createdAt.getTime() ?? 0;
+      const bLast = b.usages[0]?.createdAt.getTime() ?? 0;
+      return aLast - bLast || a.id - b.id;
+    });
 
     let selected = sortedCandidates.slice(0, dto.questionCount);
     if (dto.uniquePerStudent) {
-      const requestedPoolSize = dto.poolSize
-        ?? Math.min(candidates.length, Math.max(dto.questionCount * 3, dto.questionCount + 2));
+      const requestedPoolSize =
+        dto.poolSize ??
+        Math.min(
+          candidates.length,
+          Math.max(dto.questionCount * 3, dto.questionCount + 2),
+        );
       if (requestedPoolSize <= dto.questionCount) {
         throw new BadRequestException(
-          'A unique learner pool must contain more questions than each learner receives.',
+          "A unique learner pool must contain more questions than each learner receives.",
         );
       }
       const byPoints = new Map<number, typeof sortedCandidates>();
       for (const candidate of sortedCandidates) {
-        byPoints.set(candidate.points, [...(byPoints.get(candidate.points) ?? []), candidate]);
+        byPoints.set(candidate.points, [
+          ...(byPoints.get(candidate.points) ?? []),
+          candidate,
+        ]);
       }
       const compatiblePool = Array.from(byPoints.values())
         .sort((left, right) => right.length - left.length)
@@ -683,7 +801,7 @@ export class QuestionBankService {
     const questionIds = selected.map((item) => item.id);
     await this.recordUsage(assignment.id, questionIds, actor);
     void this.audit.record({
-      action: 'question_bank.rotated',
+      action: "question_bank.rotated",
       schoolId: actor.schoolId,
       userId: actor.id,
       resource: `Assignment:${assignment.id}`,
@@ -743,6 +861,18 @@ export class QuestionBankService {
    */
   private async assertReadAccess(actor: AuthenticatedUser) {
     if (actor.role === Role.PLATFORM_ADMIN) return;
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { schoolId: actor.schoolId },
+      orderBy: { startedAt: "desc" },
+    });
+    if (
+      !subscription ||
+      subscription.status !== "ACTIVE" ||
+      (subscription.expiresAt && subscription.expiresAt <= new Date())
+    )
+      throw new ForbiddenException(
+        "An active school subscription is required for the Question Bank.",
+      );
     const access = await this.prisma.schoolQuestionBankAccess.findUnique({
       where: { schoolId: actor.schoolId },
     });
@@ -754,12 +884,32 @@ export class QuestionBankService {
   }
 
   private assertAllApproved(
-    items: { id: number; status: QuestionBankStatus; subject: string; grade: string }[],
+    items: {
+      id: number;
+      status: QuestionBankStatus;
+      subject: string;
+      grade: string;
+    }[],
     requestedIds: number[],
   ) {
     if (items.length !== requestedIds.length) {
-      throw new BadRequestException("One or more selected questions are invalid");
+      throw new BadRequestException(
+        "One or more selected questions are invalid",
+      );
     }
+    if (
+      items.length &&
+      items.some(
+        (item) =>
+          item.grade.trim().toLowerCase() !==
+            items[0].grade.trim().toLowerCase() ||
+          item.subject.trim().toLowerCase() !==
+            items[0].subject.trim().toLowerCase(),
+      )
+    )
+      throw new BadRequestException(
+        "Choose one grade and subject per assignment.",
+      );
     if (items.some((item) => item.status !== QuestionBankStatus.APPROVED)) {
       throw new BadRequestException(
         "Only approved questions can be selected or published",
@@ -788,7 +938,7 @@ export class QuestionBankService {
 
   private async extractText(buffer: Buffer): Promise<string> {
     const parser = new PDFParse({ data: buffer });
-    let text = '';
+    let text = "";
     try {
       const parsed = await parser.getText();
       text = parsed.text.trim();
@@ -854,6 +1004,7 @@ Requirements:
 8. SHORT_ANSWER must have a concise expected answer.
 9. Do not include student names, personal data, or invented citations.
 10. Do not repeat the same question twice.
+11. When a question requires a figure, include visual as structured JSON: {kind:"bars",caption,labels:[strings],values:[nonnegative numbers]}, {kind:"table",caption,headings:[strings],rows:[[strings]]}, {kind:"triangle",caption,base:number,height:number,unit:string}, or {kind:"cycle",caption,labels:[2 to 5 short stage names]}. Ensure figure values agree with the answer. Do not reference a missing figure or invent an external image URL. Omit visual if it does not help.
 ${extraRequirements.map((requirement, index) => `${11 + index}. ${requirement}`).join("\n")}
 
 Return only a JSON object: {"questions": [{
@@ -863,6 +1014,7 @@ Return only a JSON object: {"questions": [{
   "correctAnswer": "string",
   "explanation": "string",
   "points": 1,
+  "visual": "optional structured object described above",
   "hint": "optional string",
   "bloomLevel": "REMEMBER | UNDERSTAND | APPLY | ANALYZE | EVALUATE | CREATE"${options.autoTagTopic ? ',\n  "topic": "string"' : ""}${options.includeDiagramPlaceholders ? ',\n  "diagramSuggestion": "optional string"' : ""}
 }]}
@@ -880,10 +1032,13 @@ ${sourceText}
   ): NormalizedBankQuestion[] {
     const raw = Array.isArray(value)
       ? value
-      : this.isRecord(value) && Array.isArray((value as { questions?: unknown }).questions)
+      : this.isRecord(value) &&
+          Array.isArray((value as { questions?: unknown }).questions)
         ? (value as { questions: unknown[] }).questions
         : null;
-    const minAcceptable = Math.ceil(requestedCount * QUESTION_BANK_MIN_ACCEPTABLE_RATIO);
+    const minAcceptable = Math.ceil(
+      requestedCount * QUESTION_BANK_MIN_ACCEPTABLE_RATIO,
+    );
     if (!raw || raw.length < minAcceptable) {
       throw new BadRequestException(
         `AI returned ${raw?.length ?? 0} usable questions; expected at least ${minAcceptable}`,
@@ -920,10 +1075,14 @@ ${sourceText}
       if (questionType === QuestionType.MULTIPLE_CHOICE) {
         const candidate = Array.isArray(entry.options)
           ? entry.options
-              .filter((option): option is string => typeof option === "string" && Boolean(option.trim()))
+              .filter(
+                (option): option is string =>
+                  typeof option === "string" && Boolean(option.trim()),
+              )
               .map((option) => option.trim().slice(0, 1_000))
           : [];
-        if (candidate.length !== 4 || !candidate.includes(correctAnswer)) continue;
+        if (candidate.length !== 4 || !candidate.includes(correctAnswer))
+          continue;
         options = candidate;
       }
 
@@ -949,8 +1108,12 @@ ${sourceText}
           : 1;
 
       const bloomLevelRaw =
-        typeof entry.bloomLevel === "string" ? entry.bloomLevel.trim().toUpperCase() : "";
-      const bloomLevel = BLOOM_LEVELS.has(bloomLevelRaw) ? bloomLevelRaw : undefined;
+        typeof entry.bloomLevel === "string"
+          ? entry.bloomLevel.trim().toUpperCase()
+          : "";
+      const bloomLevel = BLOOM_LEVELS.has(bloomLevelRaw)
+        ? bloomLevelRaw
+        : undefined;
 
       seen.add(dedupeKey);
       normalized.push({
@@ -965,12 +1128,14 @@ ${sourceText}
             ? entry.hint.trim().slice(0, 1_000) || undefined
             : undefined,
         contentHtml:
-          typeof entry.contentHtml === "string"
+          renderQuestionVisual(entry.visual) ??
+          (typeof entry.contentHtml === "string"
             ? this.sanitizeGeneratedHtml(entry.contentHtml)
-            : undefined,
+            : undefined),
         topic: this.optionalString(entry.topic, 160) ?? undefined,
         bloomLevel,
-        diagramAlt: this.optionalString(entry.diagramSuggestion, 300) ?? undefined,
+        diagramAlt:
+          this.optionalString(entry.diagramSuggestion, 300) ?? undefined,
       });
     }
 
@@ -1000,15 +1165,24 @@ ${sourceText}
           `Numeric question has an invalid correct answer: "${correctAnswer.slice(0, 80)}"`,
         );
       }
-      return { numeric: { acceptedValue: numeric.value, ...(numeric.unit ? { unit: numeric.unit } : {}) } };
+      return {
+        numeric: {
+          acceptedValue: numeric.value,
+          ...(numeric.unit ? { unit: numeric.unit } : {}),
+        },
+      };
     }
     if (questionType === QuestionType.SHORT_ANSWER) {
-      return { shortAnswer: { keywords: [correctAnswer.trim()], passThreshold: 1 } };
+      return {
+        shortAnswer: { keywords: [correctAnswer.trim()], passThreshold: 1 },
+      };
     }
     return undefined;
   }
 
-  private parseNumericAnswer(value: string): { value: number; unit?: string } | null {
+  private parseNumericAnswer(
+    value: string,
+  ): { value: number; unit?: string } | null {
     const match = value
       .trim()
       .match(
@@ -1019,7 +1193,8 @@ ${sourceText}
     const denominator = match[2] === undefined ? null : Number(match[2]);
     if (
       !Number.isFinite(numerator) ||
-      (denominator !== null && (!Number.isFinite(denominator) || denominator === 0))
+      (denominator !== null &&
+        (!Number.isFinite(denominator) || denominator === 0))
     ) {
       return null;
     }

@@ -236,6 +236,8 @@ export interface Answer {
 }
 
 export interface MnemonicCard {
+  content?:import("../api/content-library.api").RecallContent|null;
+  sourceDocumentId?:number|null;
   id: number;
   title: string;
   subject: string;

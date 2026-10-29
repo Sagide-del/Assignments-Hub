@@ -1,25 +1,17 @@
-import { api } from './axios';
+import { api } from "./axios";
 
-export type QuestionBankStatus = 'GENERATED' | 'APPROVED' | 'REJECTED';
+export type QuestionBankStatus = "GENERATED" | "APPROVED" | "REJECTED";
 
 export type QuestionBankQuestionType =
-  | 'MULTIPLE_CHOICE'
-  | 'TRUE_FALSE'
-  | 'NUMERIC'
-  | 'SHORT_ANSWER'
-  | 'ESSAY';
+  "MULTIPLE_CHOICE" | "TRUE_FALSE" | "NUMERIC" | "SHORT_ANSWER" | "ESSAY";
 
 export type QuestionBankBloomLevel =
-  | 'REMEMBER'
-  | 'UNDERSTAND'
-  | 'APPLY'
-  | 'ANALYZE'
-  | 'EVALUATE'
-  | 'CREATE';
+  "REMEMBER" | "UNDERSTAND" | "APPLY" | "ANALYZE" | "EVALUATE" | "CREATE";
 
 export interface QuestionBankItem {
+  sourceDocumentId?: number | null;
   id: number;
-  source: 'PLATFORM' | 'SCHOOL';
+  source: "PLATFORM" | "SCHOOL";
   isGlobal: boolean;
   subject: string;
   grade: string;
@@ -58,7 +50,7 @@ export interface QuestionBankSourceDocument {
   subject: string;
   grade: string;
   fileName: string | null;
-  sourceType: 'PDF' | 'TEXT';
+  sourceType: "PDF" | "TEXT";
   createdAt: string;
   _count: { chunks: number; questions: number };
 }
@@ -66,7 +58,7 @@ export interface QuestionBankSourceDocument {
 export interface GenerateQuestionBankInput {
   // PDF is the default. TEXT uses `sourceText` instead of `file` — URL and
   // Video are not implemented yet (see QuestionGenerator's input selector).
-  inputType?: 'PDF' | 'TEXT' | 'KNOWLEDGE';
+  inputType?: "PDF" | "TEXT" | "KNOWLEDGE";
   sourceDocumentId?: number;
   file?: File;
   sourceText?: string;
@@ -83,28 +75,34 @@ export interface GenerateQuestionBankInput {
 
 function questionBankFormData(input: GenerateQuestionBankInput) {
   const body = new FormData();
-  if (input.file) body.append('file', input.file);
-  if (input.inputType) body.append('inputType', input.inputType);
-  if (input.sourceText) body.append('sourceText', input.sourceText);
-  if (input.sourceDocumentId) body.append('sourceDocumentId', String(input.sourceDocumentId));
-  body.append('subject', input.subject);
-  body.append('grade', input.grade);
-  body.append('topic', input.topic);
-  if (input.questionCount) body.append('questionCount', String(input.questionCount));
-  if (input.difficulty) body.append('difficulty', input.difficulty);
+  if (input.file) body.append("file", input.file);
+  if (input.inputType) body.append("inputType", input.inputType);
+  if (input.sourceText) body.append("sourceText", input.sourceText);
+  if (input.sourceDocumentId)
+    body.append("sourceDocumentId", String(input.sourceDocumentId));
+  body.append("subject", input.subject);
+  body.append("grade", input.grade);
+  body.append("topic", input.topic);
+  if (input.questionCount)
+    body.append("questionCount", String(input.questionCount));
+  if (input.difficulty) body.append("difficulty", input.difficulty);
   if (input.questionTypes?.length) {
-    body.append('questionTypes', JSON.stringify(input.questionTypes));
+    body.append("questionTypes", JSON.stringify(input.questionTypes));
   }
-  if (input.autoTagTopic) body.append('autoTagTopic', 'true');
-  if (input.includeDiagramPlaceholders) body.append('includeDiagramPlaceholders', 'true');
-  if (input.prioritizeHigherOrder) body.append('prioritizeHigherOrder', 'true');
+  if (input.autoTagTopic) body.append("autoTagTopic", "true");
+  if (input.includeDiagramPlaceholders)
+    body.append("includeDiagramPlaceholders", "true");
+  if (input.prioritizeHigherOrder) body.append("prioritizeHigherOrder", "true");
   return body;
 }
 
 export const questionBankAdminApi = {
   generate: (input: GenerateQuestionBankInput) =>
     api
-      .post<QuestionBankItem[]>('/admin/question-bank/generate', questionBankFormData(input))
+      .post<QuestionBankItem[]>(
+        "/admin/question-bank/generate",
+        questionBankFormData(input),
+      )
       .then((response) => response.data),
 
   list: (params?: {
@@ -116,10 +114,12 @@ export const questionBankAdminApi = {
     take?: number;
   }) =>
     api
-      .get<{ items: QuestionBankItem[]; total: number; skip: number; take: number }>(
-        '/admin/question-bank',
-        { params },
-      )
+      .get<{
+        items: QuestionBankItem[];
+        total: number;
+        skip: number;
+        take: number;
+      }>("/admin/question-bank", { params })
       .then((response) => response.data),
 
   update: (
@@ -127,44 +127,101 @@ export const questionBankAdminApi = {
     update: Partial<
       Pick<
         QuestionBankItem,
-        'questionText' | 'options' | 'correctAnswer' | 'explanation' | 'points' | 'hint' | 'topic' | 'diagramUrl' | 'diagramAlt'
+        | "questionText"
+        | "options"
+        | "correctAnswer"
+        | "explanation"
+        | "points"
+        | "hint"
+        | "topic"
+        | "diagramUrl"
+        | "diagramAlt"
       >
     >,
-  ) => api.put<QuestionBankItem>(`/admin/question-bank/${id}`, update).then((response) => response.data),
+  ) =>
+    api
+      .put<QuestionBankItem>(`/admin/question-bank/${id}`, update)
+      .then((response) => response.data),
 
   remove: (id: number) =>
-    api.delete<{ id: number; deleted: boolean }>(`/admin/question-bank/${id}`).then((response) => response.data),
+    api
+      .delete<{ id: number; deleted: boolean }>(`/admin/question-bank/${id}`)
+      .then((response) => response.data),
 
   approve: (id: number) =>
-    api.post<QuestionBankItem>(`/admin/question-bank/${id}/approve`).then((response) => response.data),
+    api
+      .post<QuestionBankItem>(`/admin/question-bank/${id}/approve`)
+      .then((response) => response.data),
 
   reject: (id: number, notes?: string) =>
-    api.post<QuestionBankItem>(`/admin/question-bank/${id}/reject`, { notes }).then((response) => response.data),
-
-  publish: (input: { questionIds: number[]; title: string; description?: string; dueDate?: string; isPublished?: boolean }) =>
     api
-      .post<{ assignmentId: number; questionCount: number }>('/admin/question-bank/publish', input)
+      .post<QuestionBankItem>(`/admin/question-bank/${id}/reject`, { notes })
+      .then((response) => response.data),
+
+  publish: (input: {
+    questionIds: number[];
+    title: string;
+    description?: string;
+    dueDate?: string;
+    isPublished?: boolean;
+  }) =>
+    api
+      .post<{ assignmentId: number; questionCount: number }>(
+        "/admin/question-bank/publish",
+        input,
+      )
       .then((response) => response.data),
 
   activateSchool: (input: { schoolId: number; active?: boolean }) =>
-    api.post<SchoolQuestionBankAccess>('/admin/question-bank/activate-school', input).then((response) => response.data),
+    api
+      .post<SchoolQuestionBankAccess>(
+        "/admin/question-bank/activate-school",
+        input,
+      )
+      .then((response) => response.data),
 
   listSchoolAccess: () =>
-    api.get<SchoolQuestionBankAccess[]>('/admin/question-bank/school-access/list').then((response) => response.data),
+    api
+      .get<SchoolQuestionBankAccess[]>(
+        "/admin/question-bank/school-access/list",
+      )
+      .then((response) => response.data),
 
   sources: () =>
-    api.get<QuestionBankSourceDocument[]>('/admin/question-bank/sources/list').then((response) => response.data),
+    api
+      .get<QuestionBankSourceDocument[]>("/admin/question-bank/sources/list")
+      .then((response) => response.data),
 };
 
 export const questionBankApi = {
-  browse: (params?: { subject?: string; grade?: string; topic?: string; skip?: number; take?: number }) =>
+  browse: (params?: {
+    subject?: string;
+    grade?: string;
+    topic?: string;
+    skip?: number;
+    take?: number;
+  }) =>
     api
-      .get<{ items: QuestionBankItem[]; total: number; skip: number; take: number }>('/question-bank', { params })
+      .get<{
+        items: QuestionBankItem[];
+        total: number;
+        skip: number;
+        take: number;
+      }>("/question-bank", { params })
       .then((response) => response.data),
 
-  subjects: () => api.get<string[]>('/question-bank/subjects').then((response) => response.data),
-  grades: () => api.get<string[]>('/question-bank/grades').then((response) => response.data),
-  topics: () => api.get<string[]>('/question-bank/topics').then((response) => response.data),
+  subjects: () =>
+    api
+      .get<string[]>("/question-bank/subjects")
+      .then((response) => response.data),
+  grades: () =>
+    api
+      .get<string[]>("/question-bank/grades")
+      .then((response) => response.data),
+  topics: () =>
+    api
+      .get<string[]>("/question-bank/topics")
+      .then((response) => response.data),
 
   select: (input: {
     questionIds: number[];
@@ -175,8 +232,9 @@ export const questionBankApi = {
     dueDate?: string;
     isPublished?: boolean;
     notifyParents?: boolean;
-    kind?: 'STANDARD' | 'KCSE_PAPER';
-  }) => api.post('/question-bank/select', input).then((response) => response.data),
+    kind?: "STANDARD" | "KCSE_PAPER";
+  }) =>
+    api.post("/question-bank/select", input).then((response) => response.data),
 
   rotate: (input: {
     title: string;
@@ -192,6 +250,7 @@ export const questionBankApi = {
     dueDate?: string;
     isPublished?: boolean;
     notifyParents?: boolean;
-    kind?: 'STANDARD' | 'KCSE_PAPER';
-  }) => api.post('/question-bank/rotate', input).then((response) => response.data),
+    kind?: "STANDARD" | "KCSE_PAPER";
+  }) =>
+    api.post("/question-bank/rotate", input).then((response) => response.data),
 };

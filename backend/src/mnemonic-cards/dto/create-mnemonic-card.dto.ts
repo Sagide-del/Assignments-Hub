@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsObject,
   IsInt,
   IsOptional,
   IsString,
@@ -8,9 +9,10 @@ import {
   MaxLength,
   Min,
   MinLength,
-} from 'class-validator';
+} from "class-validator";
 
 export class CreateMnemonicCardDto {
+  @IsOptional() @IsObject() content?: object;
   @IsString()
   @MinLength(2)
   @MaxLength(200)
@@ -38,13 +40,13 @@ export class CreateMnemonicCardDto {
 
   @IsString()
   @Matches(/^(?:\/uploads\/|https?:\/\/).+\.pdf(?:\?.*)?$/i, {
-    message: 'pdfUrl must reference a PDF upload',
+    message: "pdfUrl must reference a PDF upload",
   })
   pdfUrl: string;
 
   @IsString()
   @MaxLength(255)
-  @Matches(/\.pdf$/i, { message: 'fileName must end in .pdf' })
+  @Matches(/\.pdf$/i, { message: "fileName must end in .pdf" })
   fileName: string;
 
   @IsOptional()

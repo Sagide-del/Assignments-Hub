@@ -1,3 +1,5 @@
+import { schoolsApi } from "../../api/schools.api";
+import { PracticeBatches } from "./PracticeBatches";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams, useLocation } from "react-router-dom";
@@ -185,6 +187,11 @@ function AssignmentCard({
 }
 export function MyAssignmentsPage() {
   const user = useAuthStore((s) => s.user);
+  const school = useQuery({
+    queryKey: ["school", user?.schoolId],
+    queryFn: () => schoolsApi.findOne(user!.schoolId),
+    enabled: !!user?.schoolId,
+  });
   const [params, setParams] = useSearchParams();
   const subjectKey = params.get("subject") ?? "";
   const topicKey = subjectKey ? (params.get("topic") ?? "") : "";
@@ -296,6 +303,9 @@ export function MyAssignmentsPage() {
           </span>
         )}
       </header>
+      {!subjectKey &&
+        school.data?.code === "INDEPENDENT" &&
+        !user?.isIndependentTrial && <PracticeBatches />}
       <nav
         aria-label="Assignment breadcrumb"
         className="flex flex-wrap items-center gap-2 text-xs"

@@ -310,7 +310,8 @@ export class KjseaService {
     return this.get(id, actor);
   }
   async discard(id: string, actor: AuthenticatedUser) {
-    await this.owned(id, actor);
+    const attempt=await this.owned(id, actor);
+    if(attempt.source==="PRACTICE")throw new BadRequestException("Complete your current practice batch before receiving another.");
     const result = await this.prisma.kjseaMockAttempt.deleteMany({
       where: {
         id,

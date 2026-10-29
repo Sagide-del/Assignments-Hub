@@ -621,6 +621,8 @@ model SkillPayment {
 }
 
 model MnemonicCard {
+  content Json?
+  sourceDocumentId Int? @map("source_document_id")
   id           Int      @id @default(autoincrement())
   title        String
   subject      String
@@ -2565,4 +2567,18 @@ model IndependentTumaPayment {
 
   @@index([studentId, status])
   @@map("independent_tuma_payments")
+}
+
+model ContentLibraryJob {
+ id String @id @default(cuid())
+ kind String
+ status String @default("QUEUED")
+ input Json
+ result Json?
+ error String?
+ createdById Int @map("created_by_id")
+ createdAt DateTime @default(now()) @map("created_at")
+ updatedAt DateTime @updatedAt @map("updated_at")
+ @@index([status,createdAt])
+ @@map("content_library_jobs")
 }

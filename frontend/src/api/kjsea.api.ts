@@ -1,12 +1,12 @@
-import { api } from './axios';
+import { api } from "./axios";
 export type MockVisual =
-  | { kind: 'table'; caption: string; headings: string[]; rows: string[][] }
-  | { kind: 'rectangle'; width: number; height: number }
-  | { kind: 'triangle'; base: number; height: number }
-  | { kind: 'circle'; radius: number }
-  | { kind: 'angles'; known: number }
-  | { kind: 'point'; x: number; y: number }
-  | { kind: 'bars'; labels: string[]; values: number[] };
+  | { kind: "table"; caption: string; headings: string[]; rows: string[][] }
+  | { kind: "rectangle"; width: number; height: number }
+  | { kind: "triangle"; base: number; height: number }
+  | { kind: "circle"; radius: number }
+  | { kind: "angles"; known: number }
+  | { kind: "point"; x: number; y: number }
+  | { kind: "bars"; labels: string[]; values: number[] };
 export interface MockQuestion {
   contentHtml?: string;
   diagramUrl?: string;
@@ -23,10 +23,10 @@ export interface MockQuestion {
   explanation?: string;
 }
 export interface MockSubject {
-  contentKind?: 'VARIED' | 'STARTER' | 'BANK';
+  contentKind?: "VARIED" | "STARTER" | "BANK";
   id: string;
   subject: string;
-  source: 'GENERATED' | 'BANK';
+  source: "GENERATED" | "BANK";
   availableCount: number | null;
   questionCount: number;
   topicCount: number;
@@ -35,7 +35,7 @@ export interface MockSubject {
 }
 export interface MockSummary {
   subject: string;
-  source: 'GENERATED' | 'BANK';
+  source: "GENERATED" | "BANK" | "PRACTICE";
   coverage: {
     questionCount: number;
     topicCount: number;
@@ -43,7 +43,7 @@ export interface MockSummary {
     grades: string[];
   };
   id: string;
-  status: 'DRAFT' | 'SUBMITTED';
+  status: "DRAFT" | "SUBMITTED";
   score: number | null;
   timeLimitMinutes: number | null;
   createdAt: string;
@@ -51,7 +51,7 @@ export interface MockSummary {
   version: string;
   questionCount: number;
 }
-export interface MockAttempt extends Omit<MockSummary, 'questionCount'> {
+export interface MockAttempt extends Omit<MockSummary, "questionCount"> {
   deadline: string | null;
   serverNow: string;
   answers: Record<string, number>;
@@ -77,18 +77,21 @@ const payload = (answers: Record<string, number>) => ({
 });
 export const kjseaApi = {
   blueprint: () =>
-    api.get<MockBlueprint>('/kjsea/blueprint').then((r) => r.data),
-  list: () => api.get<MockSummary[]>('/kjsea/attempts').then((r) => r.data),
-  subjects: (grade?: string) => api.get<MockSubject[]>('/kjsea/subjects', { params: { grade } }).then((r) => r.data),
+    api.get<MockBlueprint>("/kjsea/blueprint").then((r) => r.data),
+  list: () => api.get<MockSummary[]>("/kjsea/attempts").then((r) => r.data),
+  subjects: (grade?: string) =>
+    api
+      .get<MockSubject[]>("/kjsea/subjects", { params: { grade } })
+      .then((r) => r.data),
   create: (
     timeLimitMinutes?: number,
-    subject = 'Mathematics',
-    source: 'GENERATED' | 'BANK' = 'GENERATED',
+    subject = "Mathematics",
+    source: "GENERATED" | "BANK" = "GENERATED",
     grade?: string,
   ) =>
     api
       .post<MockAttempt>(
-        '/kjsea/attempts',
+        "/kjsea/attempts",
         {
           timeLimitMinutes,
           subject,

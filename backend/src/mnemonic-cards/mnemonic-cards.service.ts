@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { Role } from '../common/enums/role.enum';
-import { normalizeGrade } from '../common/utils/grade.util';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateMnemonicCardDto } from './dto/create-mnemonic-card.dto';
-import { UpdateMnemonicCardDto } from './dto/update-mnemonic-card.dto';
+import { BadRequestException } from "@nestjs/common";
+import { validateRecall } from "../question-bank/content-tools";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { Role } from "../common/enums/role.enum";
+import { normalizeGrade } from "../common/utils/grade.util";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateMnemonicCardDto } from "./dto/create-mnemonic-card.dto";
+import { UpdateMnemonicCardDto } from "./dto/update-mnemonic-card.dto";
 
 @Injectable()
 export class MnemonicCardsService {
@@ -21,22 +23,39 @@ export class MnemonicCardsService {
           ? {
               isPublished: true,
               ...(actor.grade
-                ? { OR: [{ grade: null }, { grade: actor.grade }] }
-                : {}),
+                ? {
+                    OR: [
+                      { grade: null },
+                      {
+                        grade: {
+                          in: [
+                            actor.grade,
+                            normalizeGrade(actor.grade) ?? actor.grade,
+                          ],
+                        },
+                      },
+                    ],
+                  }
+                : { id: -1 }),
             }
           : {}),
         ...(filters.subject
-          ? { subject: { contains: filters.subject, mode: 'insensitive' as const } }
+          ? {
+              subject: {
+                contains: filters.subject,
+                mode: "insensitive" as const,
+              },
+            }
           : {}),
         ...(filters.topic
-          ? { topic: { contains: filters.topic, mode: 'insensitive' as const } }
+          ? { topic: { contains: filters.topic, mode: "insensitive" as const } }
           : {}),
       },
       orderBy: [
-        { displayOrder: 'asc' },
-        { subject: 'asc' },
-        { topic: 'asc' },
-        { title: 'asc' },
+        { displayOrder: "asc" },
+        { subject: "asc" },
+        { topic: "asc" },
+        { title: "asc" },
       ],
     });
   }
@@ -47,16 +66,30 @@ export class MnemonicCardsService {
         transaction.mnemonicCard.count(),
         transaction.mnemonicCard.count({ where: { isPublished: true } }),
       ]);
-      const subjects = await transaction.mnemonicCard.groupBy({ by: ['subject'] });
-      return { total, published, drafts: total - published, subjects: subjects.length };
+      const subjects = await transaction.mnemonicCard.groupBy({
+        by: ["subject"],
+      });
+      return {
+        total,
+        published,
+        drafts: total - published,
+        subjects: subjects.length,
+      };
     });
   }
 
   create(dto: CreateMnemonicCardDto) {
+    let content: any;
+    try {
+      if (dto.content) content = validateRecall(dto.content, []);
+    } catch (e) {
+      throw new BadRequestException("Invalid recall card content.");
+    }
     return this.prisma.mnemonicCard.create({
       data: {
         ...dto,
-        grade: dto.grade ? normalizeGrade(dto.grade) ?? dto.grade : null,
+        content,
+        grade: dto.grade ? (normalizeGrade(dto.grade) ?? dto.grade) : null,
         description: dto.description?.trim() || null,
       },
     });
@@ -64,18 +97,41 @@ export class MnemonicCardsService {
 
   async update(id: number, dto: UpdateMnemonicCardDto) {
     await this.assertExists(id);
+    const existing = await this.prisma.mnemonicCard.findUniqueOrThrow({
+      where: { id },
+    });
+    let content: ReturnType<typeof validateRecall> | undefined;
+    try {
+      if (dto.content)
+        content = validateRecall(
+          dto.content,
+          existing.sourceDocumentId ? [existing.sourceDocumentId] : [],
+        );
+      if (dto.isPublished && (existing.content || content))
+        validateRecall(
+          content ?? existing.content,
+          existing.sourceDocumentId ? [existing.sourceDocumentId] : [],
+        );
+    } catch (e) {
+      throw new BadRequestException(
+        e instanceof Error ? e.message : "Invalid recall content.",
+      );
+    }
     return this.prisma.mnemonicCard.update({
       where: { id },
       data: {
         ...dto,
+        content: content as any,
         grade:
           dto.grade !== undefined
             ? dto.grade
-              ? normalizeGrade(dto.grade) ?? dto.grade
+              ? (normalizeGrade(dto.grade) ?? dto.grade)
               : null
             : undefined,
         description:
-          dto.description !== undefined ? dto.description?.trim() || null : undefined,
+          dto.description !== undefined
+            ? dto.description?.trim() || null
+            : undefined,
       },
     });
   }
@@ -91,6 +147,6 @@ export class MnemonicCardsService {
       where: { id },
       select: { id: true },
     });
-    if (!card) throw new NotFoundException('Mnemonic card not found');
+    if (!card) throw new NotFoundException("Mnemonic card not found");
   }
 }

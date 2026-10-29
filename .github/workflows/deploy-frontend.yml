@@ -13,6 +13,8 @@ on:
       - 'backend/src/payment/**'
       - 'backend/src/auth/**'
       - 'backend/src/lab-sessions/**'
+      - 'backend/src/question-bank/**'
+      - 'backend/src/mnemonic-cards/**'
       - 'backend/prisma/schema.prisma'
       - 'backend/prisma/migrations/**'
       - 'scripts/deployment/**'
@@ -48,7 +50,8 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions && npm test -- --runInBand src/ai-content && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+          NODE_OPTIONS: --max-old-space-size=3072
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
       - name: Wait for assessment API capabilities
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
@@ -64,6 +67,9 @@ jobs:
       - name: Wait for username registration API
         working-directory: frontend
         run: node scripts/check-auth-api.mjs
+      - name: Wait for central content library
+        working-directory: frontend
+        run: node scripts/check-content-api.mjs
       - name: Connect to AWS without stored access keys
         uses: aws-actions/configure-aws-credentials@v4
         with:

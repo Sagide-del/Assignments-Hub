@@ -212,70 +212,16 @@ const schoolAdminNav = [
 
 
 const platformAdminNav = [
-  {
-    to: '/platform',
-    label: 'Dashboard',
-  },
-  {
-    to: '/platform/activity',
-    label: 'Live Activity',
-  },
-  {
-    to: '/platform/schools',
-    label: 'Schools',
-  },
-  {
-    to: '/platform/independent-students',
-    label: 'Independent Students',
-  },
-  {
-    to: '/platform/private-tutor',
-    label: 'Private Tutor',
-  },
-  {
-    to: '/platform/messages',
-    label: 'Tutor Messages',
-  },
-  {
-    to: '/platform/independent-assignments',
-    label: 'Independent Assignments',
-  },
-  {
-    to: '/platform/stem-content',
-    label: 'STEM Studio',
-  },
-  {
-    to: '/platform/skill-studio',
-    label: 'Skill Studio',
-  },
-  {
-    to: '/platform/mnemonic-cards',
-    label: 'Mnemonic Cards',
-  },
-  {
-    to: '/platform/resources',
-    label: 'Resource Marketplace',
-  },
-  {
-    to: '/platform/billing',
-    label: 'Billing',
-  },
-  {
-    to: '/platform/curriculum-library',
-    label: 'Curriculum Library',
-  },
-  {
-    to: '/platform/ai-management',
-    label: 'AI Management',
-  },
-  {
-    to: '/platform/question-bank',
-    label: 'Question Bank',
-  },
-  {
-    to: '/platform/question-bank/schools',
-    label: 'Question Bank Schools',
-  },
+ {to:'/platform',label:'Dashboard'},
+ {to:'/platform/question-bank',label:'Question Bank'},
+ {to:'/platform/schools',label:'Schools'},
+ {to:'/platform/independent-students',label:'Independent Students'},
+ {to:'/platform/stem-content',label:'STEM Studio'},
+ {to:'/platform/skill-studio',label:'Skill Studio'},
+ {to:'/platform/resources',label:'Resources'},
+ {to:'/platform/messages',label:'Messages'},
+ {to:'/platform/billing',label:'Billing'},
+ {to:'/platform/activity',label:'Live Activity'},
 ];
 
 
