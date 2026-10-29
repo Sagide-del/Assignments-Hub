@@ -1,3 +1,9 @@
+import {
+  HOSTED_CURRICULUM_HOSTS,
+  hostedCurriculumUrl,
+  isHostedFolder,
+  curriculumLinks,
+} from "./official-curriculum";
 import { learningDesign, recallDesign } from "./learning-design";
 import { normalizeGrade } from "../common/utils/grade.util";
 import { DocumentOcrService } from "../document-processing/document-ocr.service";
@@ -51,6 +57,7 @@ export class CollectionService {
         "www.kicd.ac.ke",
         "kcserevision.com",
         "www.kcserevision.com",
+        ...HOSTED_CURRICULUM_HOSTS,
         ...(this.config.get<string>("CONTENT_SOURCE_HOSTS") ?? "")
           .split(",")
           .map((s) => s.trim().toLowerCase())
@@ -236,7 +243,12 @@ export class CollectionService {
       throw new BadRequestException("Name this collection.");
     let urls: string[];
     try {
-      urls = (dto.urls ?? []).map((url) => collectionUrl(url, this.hosts()));
+      urls = (dto.urls ?? []).map((raw) => {
+        const url = HOSTED_CURRICULUM_HOSTS.includes(new URL(raw).hostname)
+          ? hostedCurriculumUrl(raw)
+          : raw;
+        return collectionUrl(url, this.hosts());
+      });
     } catch (e) {
       throw new BadRequestException(
         e instanceof Error ? e.message : "Invalid collection URL.",
@@ -722,22 +734,34 @@ export class CollectionService {
         bytes = response.bytes;
         origin = response.url;
         if (
+          HOSTED_CURRICULUM_HOSTS.includes(new URL(asset.origin).hostname) &&
+          !isHostedFolder(asset.origin) &&
+          bytes.subarray(0, 5).toString() !== "%PDF-"
+        )
+          throw Error(
+            "The public document did not return a PDF. It may require sign-in or sharing permission; private documents are not imported.",
+          );
+        if (
           !response.type.includes("pdf") &&
           bytes.subarray(0, 5).toString() !== "%PDF-"
         ) {
           const html = bytes.toString("utf8");
           let links = 0;
           if ((input.depth ?? 0) < 3) {
-            for (const m of html.matchAll(
-              /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>/gi,
-            )) {
+            const officialPage =
+              /^(?:www\.)?kicd\.ac\.ke$/.test(new URL(origin).hostname) ||
+              isHostedFolder(origin);
+            const targets = officialPage
+              ? curriculumLinks(html, origin).map((l) => l.url)
+              : [
+                  ...html.matchAll(
+                    /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>/gi,
+                  ),
+                ].map((m) => m[1].replace(/&amp;/g, "&"));
+            for (const target of targets) {
               if (links >= 60) break;
               try {
-                const url = collectionUrl(
-                  m[1].replace(/&amp;/g, "&"),
-                  this.hosts(),
-                  origin,
-                );
+                const url = collectionUrl(target, this.hosts(), origin);
                 const targetGrades = linkedGrades(url);
                 if (
                   targetGrades.length &&
@@ -752,6 +776,7 @@ export class CollectionService {
                 )
                   continue;
                 if (
+                  officialPage ||
                   /\.pdf(?:\?|$)/i.test(url) ||
                   /grade|revision|curriculum|notes|design|subject/i.test(url)
                 ) {
@@ -779,6 +804,10 @@ export class CollectionService {
             });
             return { links };
           }
+          if (isHostedFolder(asset.origin))
+            throw Error(
+              "The public folder contains no readable document links, or requires access. Its page is not curriculum content.",
+            );
           return await this.mapText(
             asset,
             text,

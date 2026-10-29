@@ -15,7 +15,8 @@ for (let n = 1; n <= 24; n++) {
       !d.gradeLevels?.includes(6) ||
       !d.bulkCurriculum ||
       !d.collectionIngestion ||
-      !d.outcomeGrounding
+      !d.outcomeGrounding ||
+      !d.embeddedCurriculumDiscovery
     )
       throw Error("Backend not ready");
     console.log("PASS: central content library schema and APIs are ready");

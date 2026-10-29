@@ -21,6 +21,7 @@ export class ContentCapabilitiesController {
         collectionIngestion: true,
         outcomeGrounding: true,
         officialCurriculumImport: true,
+        embeddedCurriculumDiscovery: true,
       };
     } catch {
       throw new ServiceUnavailableException(

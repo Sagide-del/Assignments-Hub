@@ -62,12 +62,16 @@ export function CreateContentWorkspace() {
 }
 function GradeContentFlow({ grade }: { grade: string }) {
   const client = useQueryClient();
+  const savedPage = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1),
     [notice, setNotice] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]),
     [picked, setPicked] = useState<string[]>([]);
   const [discovered, setDiscovered] = useState(false),
-    [exceptions, setExceptions] = useState<string[]>([]);
+    [exceptions, setExceptions] = useState<{ url: string; message: string }[]>(
+      [],
+    );
+  const [subjectEdits, setSubjectEdits] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false),
     [catalogueChecked, setCatalogueChecked] = useState(false);
   const [subject, setSubject] = useState("ALL"),
@@ -139,23 +143,31 @@ function GradeContentFlow({ grade }: { grade: string }) {
           : "Could not complete this step. Please try again.",
       ),
     );
+  const canImport = (candidate: Candidate) =>
+    candidate.grade === grade &&
+    (!candidate.issue || candidate.issue.startsWith("Subject could"));
   const discover = useMutation({
-    mutationFn: () => contentLibraryApi.discover(undefined, [grade]),
+    onMutate: () => {
+      setNotice("");
+      setExceptions([]);
+    },
+    mutationFn: (file?: File) => {
+      if (file && file.size > 1024 * 1024)
+        throw Error("Choose a saved KICD HTML page up to 1 MB.");
+      return contentLibraryApi.discover(file, [grade]);
+    },
     onSuccess: (r) => {
       const unique = [...new Map(r.candidates.map((c) => [c.url, c])).values()];
       setCandidates(unique);
-      setPicked(
-        unique
-          .filter((c) => c.grade === grade && c.subject && !c.issue)
-          .map((c) => c.url),
-      );
-      setExceptions(r.errors.map((e) => e.message));
+      setSubjectEdits([]);
+      setPicked(unique.filter(canImport).map((c) => c.url));
+      setExceptions(r.errors);
       setConfirmed(false);
       setDiscovered(true);
       setNotice(
         unique.length
           ? "Curriculum links found. Check the subjects below, then save them."
-          : "No usable curriculum links were found. Existing curriculum can still be used; source tools are available below.",
+          : "The live lookup could not resolve curriculum documents. Use the source links or saved-page option below; no subjects have been marked complete.",
       );
     },
     onError: error,
@@ -163,24 +175,27 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const saveCurriculum = useMutation({
     mutationFn: async () => {
       const selected = candidates.filter(
-        (c) =>
-          picked.includes(c.url) && c.grade === grade && c.subject && !c.issue,
+        (c) => picked.includes(c.url) && canImport(c),
       );
       if (!confirmed || !selected.length)
-        throw Error("Check the selected subjects and confirm their use first.");
+        throw Error(
+          "Check the selected document links and confirm their use first.",
+        );
       const rows =
         "Grade,Subject,Pathway\n" +
         [
           ...new Set(
-            selected.map(
-              (c) => `${grade},"${c.subject!.replace(/"/g, '""')}",`,
-            ),
+            selected
+              .filter((c) => c.subject?.trim())
+              .map((c) => `${grade},"${c.subject!.replace(/"/g, '""')}",`),
           ),
         ].join("\n");
-      await ingestionApi.catalogue(
-        rows,
-        `KICD official directory, checked ${new Date().toISOString().slice(0, 10)}. Subject inventory still requires completeness review.`,
-      );
+      if (selected.some((c) => c.subject?.trim())) {
+        await ingestionApi.catalogue(
+          rows,
+          `KICD official directory, checked ${new Date().toISOString().slice(0, 10)}. Subject inventory still requires completeness review.`,
+        );
+      }
       let collections = 0;
       for (let n = 0; n < selected.length; n += 30) {
         await ingestionApi.create({
@@ -196,6 +211,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
     onSuccess: () => {
       setCandidates([]);
       setPicked([]);
+      setDiscovered(false);
       setNotice(
         "Curriculum downloads started. They will appear below for a quick content check. You can leave this page while they process.",
       );
@@ -388,7 +404,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                 <button
                   className={scopes.length ? button : primary}
                   disabled={discover.isPending || saveCurriculum.isPending}
-                  onClick={() => discover.mutate()}
+                  onClick={() => discover.mutate(undefined)}
                 >
                   {discover.isPending ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -416,13 +432,73 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   <RefreshCw size={16} />
                 </button>
               </div>
+              {(discover.isError ||
+                (discovered && !candidates.some(canImport))) && (
+                <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                  <h4 className="font-medium">
+                    Use the page you can open in your browser
+                  </h4>
+                  <p className="text-sm leading-6 text-slate-600">
+                    Open the official {grade} page, save it as “Webpage, HTML
+                    only”, then select that single file here. We’ll extract its
+                    document links; you do not need to upload each subject PDF.
+                    Linked files must still be publicly accessible.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      className={button}
+                      target="_blank"
+                      rel="noreferrer"
+                      href={`https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-${["six-designs", "seven-designs", "eight-designs", "nine-designs", "ten", "eleven", "twelve"][grades.indexOf(grade)]}/`}
+                    >
+                      Open official {grade} page
+                    </a>
+                    <button
+                      className={button}
+                      disabled={discover.isPending}
+                      onClick={() => savedPage.current?.click()}
+                    >
+                      Read saved KICD page
+                    </button>
+                  </div>
+                  <input
+                    ref={savedPage}
+                    aria-label="Saved KICD grade page"
+                    className="sr-only"
+                    type="file"
+                    accept=".html,text/html"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) discover.mutate(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              )}
               {discovered && (
                 <>
                   {!!exceptions.length && (
-                    <p className="text-sm leading-6 text-amber-800">
-                      Some directory pages could not be reached. This result may
-                      be incomplete. {exceptions.join(" · ")}
-                    </p>
+                    <details className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+                      <summary className="cursor-pointer font-medium">
+                        Some curriculum links could not be resolved · view
+                        details
+                      </summary>
+                      <ul className="mt-3 space-y-3">
+                        {exceptions.map((e, i) => (
+                          <li key={i} className="space-y-1 text-xs leading-6">
+                            <p>{e.message}</p>
+                            <a
+                              className="break-all text-blue-700 underline"
+                              href={e.url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Open source page
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
                   )}
                   {!!candidates.length && (
                     <div className="space-y-4 rounded-lg border p-4">
@@ -431,7 +507,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                       </h4>
                       <div className="max-h-72 space-y-2 overflow-y-auto">
                         {candidates.map((c) => (
-                          <label
+                          <div
                             key={c.url}
                             className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm"
                           >
@@ -439,9 +515,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                               aria-label={`Import ${c.subject ?? c.title}`}
                               type="checkbox"
                               checked={picked.includes(c.url)}
-                              disabled={
-                                !!c.issue || c.grade !== grade || !c.subject
-                              }
+                              disabled={!canImport(c)}
                               onChange={(e) =>
                                 setPicked((v) =>
                                   e.target.checked
@@ -456,8 +530,48 @@ function GradeContentFlow({ grade }: { grade: string }) {
                               </strong>
                               <span className="block text-xs text-slate-500">
                                 {c.grade ?? "Grade needs checking"}
-                                {c.issue ? ` · ${c.issue}` : ""}
+                                {!c.subject && canImport(c)
+                                  ? " · Subject will be identified after download"
+                                  : c.issue
+                                    ? ` · ${c.issue}`
+                                    : ""}
                               </span>
+                              {subjectEdits.includes(c.url) ? (
+                                <input
+                                  aria-label={`Subject name for ${c.title}`}
+                                  className="my-2 block min-h-10 w-full min-w-0 rounded-lg border p-2 text-sm"
+                                  placeholder="Optional: leave blank for automatic identification"
+                                  value={c.subject ?? ""}
+                                  onChange={(e) => {
+                                    const subject = e.target.value;
+                                    setCandidates((v) =>
+                                      v.map((x) =>
+                                        x.url === c.url
+                                          ? {
+                                              ...x,
+                                              subject,
+                                              issue:
+                                                x.issue?.startsWith(
+                                                  "Subject could",
+                                                ) && subject.trim()
+                                                  ? undefined
+                                                  : x.issue,
+                                            }
+                                          : x,
+                                      ),
+                                    );
+                                  }}
+                                />
+                              ) : (
+                                <button
+                                  className="mr-3 text-xs text-slate-500 underline"
+                                  onClick={() =>
+                                    setSubjectEdits((v) => [...v, c.url])
+                                  }
+                                >
+                                  Edit subject
+                                </button>
+                              )}
                               <a
                                 href={c.url}
                                 target="_blank"
@@ -467,7 +581,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                                 View source
                               </a>
                             </span>
-                          </label>
+                          </div>
                         ))}
                       </div>
                       <label className="flex items-start gap-3 text-sm leading-6">
@@ -477,8 +591,8 @@ function GradeContentFlow({ grade }: { grade: string }) {
                           checked={confirmed}
                           onChange={(e) => setConfirmed(e.target.checked)}
                         />
-                        I checked the selected grade and subject names and have
-                        permission to use these designs.
+                        I checked that these are the intended curriculum
+                        documents and have permission to use them.
                       </label>
                       <button
                         className={primary}
