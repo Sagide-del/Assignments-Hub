@@ -13,7 +13,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Role } from "../common/enums/role.enum";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { ContentLibraryService } from "./content-library.service";
-import { ImportSourcesDto, LibraryGenerationDto } from "./content-library.dto";
+import {
+  ImportSourcesDto,
+  LibraryGenerationDto,
+  DiscoverCurriculumDto,
+} from "./content-library.dto";
 @Controller("admin/content-library")
 @Roles(Role.PLATFORM_ADMIN)
 export class ContentLibraryController {
@@ -25,8 +29,11 @@ export class ContentLibraryController {
   @UseInterceptors(
     FileInterceptor("file", { limits: { files: 1, fileSize: 1024 * 1024 } }),
   )
-  discover(@UploadedFile() file?: Express.Multer.File) {
-    return this.library.discover(file);
+  discover(
+    @Body() dto: DiscoverCurriculumDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.library.discover(file, dto.grades);
   }
   @Post("import") imports(
     @Body() dto: ImportSourcesDto,

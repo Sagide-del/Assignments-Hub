@@ -17,6 +17,9 @@ import {
   curriculumLinks,
   fetchOfficial,
   officialUrl,
+  CONTENT_GRADES,
+  detectedGrades,
+  suggestedSubject,
 } from "./official-curriculum";
 import { validateRecall } from "./content-tools";
 @Injectable()
@@ -52,9 +55,15 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
       }),
       this.retrieval.listSources(),
     ]);
-    return { version: 1, coverage, jobs, sources };
+    return { version: 2, coverage, jobs, sources };
   }
-  async discover(file?: Express.Multer.File) {
+  async discover(file?: Express.Multer.File, requestedGrades = CONTENT_GRADES) {
+    const wanted = new Set(requestedGrades);
+    if (
+      !wanted.size ||
+      requestedGrades.some((g) => !CONTENT_GRADES.includes(g))
+    )
+      throw new BadRequestException("Choose supported Grades 6–12.");
     let html: string,
       base = "https://kicd.ac.ke/cbc-materials/";
     if (file) {
@@ -72,66 +81,192 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
       base = page.url;
     }
     const links = curriculumLinks(html, base),
-      pages = links.filter((l) => !l.pdf && l.grade).slice(0, 6),
-      results = links.filter((l) => l.pdf),
-      errors: { url: string; message: string }[] = [];
-    for (const page of pages) {
-      try {
-        const r = await fetchOfficial(page.url);
-        results.push(
-          ...curriculumLinks(r.bytes.toString("utf8"), r.url)
-            .filter((l) => l.pdf)
-            .map((l) => ({ ...l, grade: l.grade ?? page.grade })),
-        );
-      } catch (e) {
+      errors: { url: string; message: string; grade?: string }[] = [];
+    const results: {
+      url: string;
+      title: string;
+      grade: string | null;
+      pdf: boolean;
+      issue?: string;
+    }[] = links.filter((l) => l.pdf && (!l.grade || wanted.has(l.grade)));
+    // Prefer each grade's mainstream design directory. Never silently substitute SNE designs.
+    const roots = [...wanted].flatMap((grade) => {
+      const page = links.find(
+        (l) =>
+          !l.pdf &&
+          l.grade === grade &&
+          !/\/(?:sne|hi-|vi-|pi-|diploma)/i.test(l.url),
+      );
+      if (!page) {
         errors.push({
-          url: page.url,
-          message:
-            e instanceof Error ? e.message : "Could not retrieve designs.",
+          url: base,
+          grade,
+          message: `No official directory found for ${grade}.`,
         });
+        return [];
       }
+      return [page];
+    });
+    const seen = new Set<string>();
+    let fetched = 0;
+    // Bounded traversal follows subject subpages as well as PDFs; two requests at a time.
+    let pending = roots.map((page) => ({ ...page, depth: 0 }));
+    while (pending.length && fetched < 42) {
+      const batch = pending.splice(0, 2).filter((page) => !seen.has(page.url));
+      for (const page of batch) seen.add(page.url);
+      fetched += batch.length;
+      await Promise.all(
+        batch.map(async (page) => {
+          try {
+            const response = await fetchOfficial(page.url);
+            const children = curriculumLinks(
+              response.bytes.toString("utf8"),
+              response.url,
+            );
+            for (const child of children) {
+              if (child.pdf) {
+                const grade = child.grade ?? page.grade;
+                if (grade && wanted.has(grade))
+                  results.push({
+                    ...child,
+                    grade,
+                    issue: child.ambiguous
+                      ? "This document mentions multiple grades; review the mapping."
+                      : child.grade && child.grade !== page.grade
+                        ? "PDF grade differs from the directory; review this mapping."
+                        : undefined,
+                  });
+              } else if (
+                page.depth < 2 &&
+                !seen.has(child.url) &&
+                (!child.grade || child.grade === page.grade) &&
+                child.url.startsWith(page.url.replace(/\/$/, "") + "/")
+              )
+                pending.push({
+                  ...child,
+                  grade: child.grade ?? page.grade,
+                  depth: page.depth + 1,
+                });
+            }
+          } catch (e) {
+            errors.push({
+              url: page.url,
+              grade: page.grade ?? undefined,
+              message:
+                e instanceof Error ? e.message : "Could not retrieve designs.",
+            });
+          }
+        }),
+      );
     }
+    if (pending.length)
+      errors.push({
+        url: base,
+        message:
+          "Discovery reached its page limit. Undiscovered links were not imported.",
+      });
     const unique = [...new Map(results.map((r) => [r.url, r])).values()];
-    return { candidates: unique, errors, reviewRequired: true };
+    const candidates = unique.map((candidate) => {
+      const subject = suggestedSubject(candidate.title, candidate.url);
+      return {
+        ...candidate,
+        subject,
+        issue:
+          candidate.issue ??
+          (!candidate.grade
+            ? "Confirm the grade."
+            : !subject
+              ? "Subject could not be identified reliably; enter it below."
+              : undefined),
+      };
+    });
+    for (const grade of wanted)
+      if (!candidates.some((c) => c.grade === grade))
+        errors.push({
+          url: roots.find((p) => p.grade === grade)?.url ?? base,
+          grade,
+          message: `No subject PDFs found for ${grade}. Review this grade's official directory.`,
+        });
+    return { candidates, errors, reviewRequired: true, grades: [...wanted] };
   }
   async imports(dto: ImportSourcesDto, actor: AuthenticatedUser) {
     for (const source of dto.sources) {
-      officialUrl(source.url);
+      source.url = officialUrl(source.url);
       if (!source.subject.trim())
         throw new BadRequestException("Review each subject name.");
     }
     return this.prisma.$transaction(
-      dto.sources.map((source) =>
-        this.prisma.contentLibraryJob.create({
-          data: { kind: "IMPORT", createdById: actor.id, input: source as any },
-        }),
-      ),
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('content-library-import'))`;
+        const documents = await tx.questionBankSourceDocument.findMany({
+          where: { fileName: { in: dto.sources.map((s) => s.url) } },
+        });
+        const pending = await tx.contentLibraryJob.findMany({
+          where: { kind: "IMPORT", status: { in: ["QUEUED", "RUNNING"] } },
+          select: { input: true },
+        });
+        const key = (s: {
+          url?: string;
+          fileName?: string | null;
+          grade: string;
+          subject: string;
+        }) =>
+          `${s.url ?? s.fileName}|${s.grade}|${s.subject.trim().toLowerCase()}`;
+        const known = new Set([
+          ...documents.map((d) => key(d)),
+          ...pending.map((j) => key(j.input as any)),
+        ]);
+        const jobs = [];
+        let skipped = 0;
+        for (const source of dto.sources) {
+          if (known.has(key(source))) {
+            skipped++;
+            continue;
+          }
+          known.add(key(source));
+          jobs.push(
+            await tx.contentLibraryJob.create({
+              data: {
+                kind: "IMPORT",
+                createdById: actor.id,
+                input: source as any,
+              },
+            }),
+          );
+        }
+        return { queued: jobs.length, skipped, jobs };
+      },
+      { timeout: 30000 },
     );
   }
+
   async generate(dto: LibraryGenerationDto, actor: AuthenticatedUser) {
     const sources = await this.prisma.questionBankSourceDocument.findMany({
       where: { id: { in: dto.sourceIds } },
     });
     if (
       sources.length !== dto.sourceIds.length ||
-      sources.some((s) => !/^Grade (7|8|9|10|11|12)$/.test(s.grade))
+      sources.some((s) => !/^Grade (6|7|8|9|10|11|12)$/.test(s.grade))
     )
-      throw new BadRequestException("Select verified Grade 7–12 sources.");
+      throw new BadRequestException("Select verified Grade 6–12 sources.");
     return this.prisma.$transaction(
-      sources.map((source) =>
-        this.prisma.contentLibraryJob.create({
-          data: {
-            kind: dto.kind,
-            createdById: actor.id,
-            input: {
-              sourceId: source.id,
-              grade: source.grade,
-              subject: source.subject,
-              topic: dto.topic?.trim() || "Curriculum coverage",
-              count: dto.count,
-            },
-          },
-        }),
+      sources.flatMap((source) =>
+        (dto.kind === "BOTH" ? ["QUESTIONS", "CARDS"] : [dto.kind]).map(
+          (kind) =>
+            this.prisma.contentLibraryJob.create({
+              data: {
+                kind,
+                createdById: actor.id,
+                input: {
+                  sourceId: source.id,
+                  grade: source.grade,
+                  subject: source.subject,
+                  topic: dto.topic?.trim() || "Curriculum coverage",
+                  count: dto.count,
+                },
+              },
+            }),
+        ),
       ),
     );
   }
@@ -212,12 +347,7 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
           } finally {
             await parser.destroy();
           }
-          const number = input.grade.split(" ")[1];
-          if (
-            !new RegExp(`grade\\s*${number}(?!\\d)`, "i").test(
-              text.slice(0, 18000),
-            )
-          )
+          if (!detectedGrades(text.slice(0, 18000)).includes(input.grade))
             throw Error(
               "The PDF does not confirm the selected grade. Review this mapping.",
             );

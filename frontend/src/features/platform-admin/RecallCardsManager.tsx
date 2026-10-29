@@ -254,7 +254,7 @@ export function RecallCardsManager() {
           onChange={(e) => setGrade(e.target.value)}
         >
           <option value="ALL">All grades</option>
-          {[7, 8, 9, 10, 11, 12].map((g) => (
+          {[6, 7, 8, 9, 10, 11, 12].map((g) => (
             <option key={g}>Grade {g}</option>
           ))}
         </select>

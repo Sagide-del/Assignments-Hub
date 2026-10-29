@@ -11,9 +11,11 @@ export class ContentCapabilitiesController {
         select: { content: true, sourceDocumentId: true },
       });
       return {
-        centralContentVersion: 1,
+        centralContentVersion: 2,
         practiceBatchSize: 30,
         nativeRecallCards: true,
+        gradeLevels: [6, 7, 8, 9, 10, 11, 12],
+        bulkCurriculum: true,
         officialCurriculumImport: true,
       };
     } catch {

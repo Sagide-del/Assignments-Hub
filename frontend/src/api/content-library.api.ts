@@ -34,6 +34,7 @@ export interface Candidate {
   grade: string | null;
   pdf: boolean;
   subject?: string;
+  issue?: string;
 }
 export const contentLibraryApi = {
   overview: () =>
@@ -45,21 +46,27 @@ export const contentLibraryApi = {
         sources: LibrarySource[];
       }>("/admin/content-library")
       .then((r) => r.data),
-  discover: (file?: File) => {
+  discover: (file?: File, grades?: string[]) => {
     const body = new FormData();
     if (file) body.append("file", file);
+    if (grades) body.append("grades", JSON.stringify(grades));
     return api
       .post<{
         candidates: Candidate[];
-        errors: { url: string; message: string }[];
+        errors: { url: string; message: string; grade?: string }[];
       }>("/admin/content-library/discover", body, { timeout: 180000 })
       .then((r) => r.data);
   },
   imports: (sources: { url: string; subject: string; grade: string }[]) =>
-    api.post("/admin/content-library/import", { sources }).then((r) => r.data),
+    api
+      .post<{ queued: number; skipped: number }>(
+        "/admin/content-library/import",
+        { sources },
+      )
+      .then((r) => r.data),
   generate: (
     sourceIds: number[],
-    kind: "QUESTIONS" | "CARDS",
+    kind: "QUESTIONS" | "CARDS" | "BOTH",
     count: number,
     topic?: string,
   ) =>

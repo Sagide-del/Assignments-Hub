@@ -25,12 +25,67 @@ export function officialUrl(
   url.hash = "";
   return url.href;
 }
+export const CONTENT_GRADES = [6, 7, 8, 9, 10, 11, 12].map((n) => `Grade ${n}`);
+export function detectedGrades(text: string): string[] {
+  const words = text.toLowerCase().replace(/[_-]/g, " ");
+  const names = ["six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+  return names.flatMap((name, i) =>
+    new RegExp(`grade\\s*(?:${i + 6}(?!\\d)|${name}(?![a-z]))`, "i").test(words)
+      ? [`Grade ${i + 6}`]
+      : [],
+  );
+}
+export function suggestedSubject(
+  title: string,
+  url: string,
+): string | undefined {
+  const words = (
+    title +
+    " " +
+    decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "")
+  )
+    .toLowerCase()
+    .replace(/[_&+-]/g, " ")
+    .replace(/\s+/g, " ");
+  const subjects: [RegExp, string][] = [
+    [/agriculture.*nutrition/, "Agriculture and Nutrition"],
+    [/science.*technology/, "Science and Technology"],
+    [/integrated science/, "Integrated Science"],
+    [/social studies/, "Social Studies"],
+    [/creative arts/, "Creative Arts"],
+    [/pre technical/, "Pre-Technical Studies"],
+    [/christian religious|\bcre\b/, "Christian Religious Education"],
+    [/islamic religious|\bire\b/, "Islamic Religious Education"],
+    [/hindu religious|\bhre\b/, "Hindu Religious Education"],
+    [/history.*citizenship/, "History and Citizenship"],
+    [/computer studies/, "Computer Studies"],
+    [/business studies/, "Business Studies"],
+    [/general science/, "General Science"],
+    [/mathematics|\bmaths\b/, "Mathematics"],
+    [/english/, "English"],
+    [/kiswahili/, "Kiswahili"],
+    [/biology/, "Biology"],
+    [/chemistry/, "Chemistry"],
+    [/physics/, "Physics"],
+    [/geography/, "Geography"],
+    [/agriculture/, "Agriculture"],
+    [/home science/, "Home Science"],
+    [/french/, "French"],
+    [/german/, "German"],
+    [/arabic/, "Arabic"],
+    [/mandarin/, "Mandarin"],
+    [/music/, "Music"],
+    [/sports/, "Sports and Recreation"],
+  ];
+  return subjects.find(([pattern]) => pattern.test(words))?.[1];
+}
 export function curriculumLinks(html: string, base: string) {
   const links: {
     url: string;
     title: string;
     grade: string | null;
     pdf: boolean;
+    ambiguous?: boolean;
   }[] = [];
   const seen = new Set<string>();
   for (const m of html.matchAll(
@@ -44,16 +99,11 @@ export function curriculumLinks(html: string, base: string) {
         decode(m[2]) ||
         decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "");
       const words = (url + " " + title).toLowerCase().replace(/[_-]/g, " ");
-      const numbers = ["seven", "eight", "nine", "ten", "eleven", "twelve"];
-      let grade: string | null = null;
-      for (let i = 0; i < 6; i++)
-        if (
-          new RegExp(`grade\\s*(?:${i + 7}(?!\\d)|${numbers[i]})`).test(words)
-        )
-          grade = `Grade ${i + 7}`;
+      const matches = detectedGrades(words);
+      const grade = matches.length === 1 ? matches[0] : null;
       const pdf = /\.pdf(?:\?|$)/i.test(url);
       if (pdf || (/curriculum.designs/.test(url) && grade))
-        links.push({ url, title, grade, pdf });
+        links.push({ url, title, grade, pdf, ambiguous: matches.length > 1 });
     } catch {
       /* External/unrelated links are not fetched. */
     }

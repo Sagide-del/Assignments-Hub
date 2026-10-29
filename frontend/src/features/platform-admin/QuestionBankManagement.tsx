@@ -30,7 +30,7 @@ import { SchoolActivation } from "./SchoolActivation";
 import { QuestionBankLegacy } from "./QuestionBankLegacy";
 const control =
   "min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm";
-const grades = [7, 8, 9, 10, 11, 12].map((g) => `Grade ${g}`);
+const grades = [6, 7, 8, 9, 10, 11, 12].map((g) => `Grade ${g}`);
 export function QuestionBankManagement() {
   const [params, setParams] = useSearchParams(),
     view = params.get("view") ?? "questions",
@@ -49,7 +49,13 @@ export function QuestionBankManagement() {
     [count, setCount] = useState(30),
     [generationTopic, setGenerationTopic] = useState(""),
     [candidates, setCandidates] = useState<Candidate[]>([]),
-    [picked, setPicked] = useState<string[]>([]);
+    [picked, setPicked] = useState<string[]>([]),
+    [targetGrades, setTargetGrades] = useState<string[]>(grades),
+    [sourceScope, setSourceScope] = useState<"ALL" | "SELECTED">("ALL"),
+    [mappingsReviewed, setMappingsReviewed] = useState(false),
+    [discoveryErrors, setDiscoveryErrors] = useState<
+      { url: string; message: string; grade?: string }[]
+    >([]);
   const overview = useQuery({
     queryKey: ["content-library"],
     queryFn: contentLibraryApi.overview,
@@ -134,8 +140,8 @@ export function QuestionBankManagement() {
     onError: error,
   });
   const generation = useMutation({
-    mutationFn: (kind: "QUESTIONS" | "CARDS") =>
-      contentLibraryApi.generate(sourceIds, kind, count, generationTopic),
+    mutationFn: (kind: "QUESTIONS" | "CARDS" | "BOTH") =>
+      contentLibraryApi.generate(generationIds, kind, count, generationTopic),
     onSuccess: () => {
       setNotice(
         "Generation queued. You can leave this page; progress is saved.",
@@ -146,22 +152,15 @@ export function QuestionBankManagement() {
     onError: error,
   });
   const discover = useMutation({
-    mutationFn: (file?: File) => contentLibraryApi.discover(file),
+    onMutate: () => {
+      setMappingsReviewed(false);
+      setPicked([]);
+    },
+    mutationFn: (file?: File) => contentLibraryApi.discover(file, targetGrades),
     onSuccess: (r) => {
-      setCandidates(
-        r.candidates.map((c) => ({
-          ...c,
-          subject: c.title
-            .replace(/\.pdf$/i, "")
-            .replace(/[_-]/g, " ")
-            .replace(
-              /\b(?:grade|designs?|curriculum|20\d\d|7|8|9|10|11|12)\b/gi,
-              "",
-            )
-            .replace(/\s+/g, " ")
-            .trim(),
-        })),
-      );
+      setCandidates(r.candidates);
+      setDiscoveryErrors(r.errors);
+      setMappingsReviewed(false);
       setPicked([]);
       setNotice(
         r.errors.length
@@ -172,18 +171,22 @@ export function QuestionBankManagement() {
     onError: error,
   });
   const importing = useMutation({
-    mutationFn: () =>
+    mutationFn: (all: boolean) =>
       contentLibraryApi.imports(
         candidates
-          .filter((c) => picked.includes(c.url))
+          .filter((c) =>
+            all ? isConfirmed(c) : picked.includes(c.url) && isConfirmed(c),
+          )
           .map((c) => ({
             url: c.url,
             subject: c.subject!.trim(),
             grade: c.grade!,
           })),
       ),
-    onSuccess: () => {
-      setNotice("Official curriculum imports queued.");
+    onSuccess: (r) => {
+      setNotice(
+        `${r.queued ?? 0} official curriculum imports queued; ${r.skipped ?? 0} already indexed or queued sources skipped.`,
+      );
       setPicked([]);
       refresh();
       changeView("jobs");
@@ -204,6 +207,18 @@ export function QuestionBankManagement() {
         ...coverage.map((c) => c.subject),
       ]),
     ].sort();
+  const eligibleSources = sources.filter((s) => targetGrades.includes(s.grade));
+  const generationIds =
+    sourceScope === "ALL"
+      ? eligibleSources.map((s) => s.id)
+      : sourceIds.filter((id) => eligibleSources.some((s) => s.id === id));
+  const isConfirmed = (c: Candidate) =>
+    !!c.grade &&
+    targetGrades.includes(c.grade) &&
+    !!c.subject?.trim() &&
+    c.subject.trim().length <= 120 &&
+    !c.issue;
+  const confirmedCandidates = candidates.filter(isConfirmed);
   const sameSelection =
     !selected.length ||
     selected.every(
@@ -221,7 +236,7 @@ export function QuestionBankManagement() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Content management · Grades 7–12
+            Content management · Grades 6–12
           </p>
           <h1 className="mt-2 text-2xl font-semibold">Question Bank</h1>
           <p className="mt-2 text-sm text-slate-500">
@@ -280,10 +295,300 @@ export function QuestionBankManagement() {
         <RecallCardsManager />
       ) : view === "sources" ? (
         <div className="space-y-5">
+          <section
+            className="space-y-4 rounded-xl border bg-white p-5"
+            aria-label="Bulk curriculum setup"
+          >
+            <div>
+              <h2 className="font-semibold">Set up curriculum across grades</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Choose your grades once. Discover their actual subjects, import
+                confirmed designs together, then generate across all indexed
+                sources. Individual PDF uploads are a fallback.
+              </p>
+            </div>
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label="Target curriculum grades"
+            >
+              <button
+                className={control}
+                disabled={discover.isPending}
+                onClick={() => {
+                  setTargetGrades(grades);
+                  setMappingsReviewed(false);
+                }}
+              >
+                Select all grades
+              </button>
+              {grades.map((g) => (
+                <label
+                  key={g}
+                  className={`${control} inline-flex items-center gap-2 ${targetGrades.includes(g) ? "border-blue-300 bg-blue-50" : ""}`}
+                >
+                  <input
+                    aria-label={`Include ${g}`}
+                    disabled={discover.isPending}
+                    type="checkbox"
+                    checked={targetGrades.includes(g)}
+                    onChange={(e) => {
+                      setTargetGrades((old) =>
+                        e.target.checked
+                          ? [...old, g]
+                          : old.filter((v) => v !== g),
+                      );
+                      setMappingsReviewed(false);
+                    }}
+                  />
+                  {g}
+                </label>
+              ))}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="text-slate-500">
+                  <tr>
+                    <th className="p-2">Grade</th>
+                    <th className="p-2">Subjects discovered / indexed</th>
+                    <th className="p-2">Indexed sources</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {targetGrades.map((g) => {
+                    const names = [
+                      ...new Set([
+                        ...sources
+                          .filter((s) => s.grade === g)
+                          .map((s) => s.subject),
+                        ...candidates
+                          .filter((c) => c.grade === g && c.subject)
+                          .map((c) => c.subject!),
+                      ]),
+                    ].sort();
+                    return (
+                      <tr key={g} className="border-t">
+                        <th className="whitespace-nowrap p-2">{g}</th>
+                        <td className="max-w-xl p-2 leading-6">
+                          {names.join(" · ") ||
+                            "Discover official designs to identify this grade’s subjects."}
+                        </td>
+                        <td className="p-2">
+                          {sources.filter((s) => s.grade === g).length}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section className="space-y-4 rounded-xl border bg-white p-5">
+            <div>
+              <h2 className="font-semibold">Import official KICD designs</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Discover Grade 6–12 subject designs from KICD, then confirm each
+                grade and subject. The general framework alone is not a subject
+                source. External or inaccessible documents are not silently
+                invented.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                disabled={discover.isPending || !targetGrades.length}
+                className={control}
+                onClick={() => discover.mutate(undefined)}
+              >
+                <FileSearch size={16} className="mr-2 inline" />
+                {discover.isPending
+                  ? "Discovering official links…"
+                  : "Discover KICD subjects"}
+              </button>
+              <label className={control + " cursor-pointer"}>
+                One saved KICD directory
+                <input
+                  aria-label="KICD directory HTML"
+                  className="sr-only"
+                  type="file"
+                  accept=".html,text/html"
+                  disabled={discover.isPending || !targetGrades.length}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) discover.mutate(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <Link className={control} to="/platform/curriculum-library">
+                Framework & legacy curriculum tools
+              </Link>
+            </div>
+            {discoveryErrors.length > 0 && (
+              <section
+                className="rounded-lg border border-amber-200 bg-amber-50 p-4"
+                aria-label="Curriculum discovery exceptions"
+              >
+                <h3 className="text-sm font-semibold">
+                  Exceptions to review · {discoveryErrors.length}
+                </h3>
+                <ul className="mt-2 space-y-2 text-xs leading-6">
+                  {discoveryErrors.map((e, i) => (
+                    <li key={i}>
+                      <strong>{e.grade ?? "Directory"}:</strong> {e.message}{" "}
+                      <a
+                        className="underline"
+                        target="_blank"
+                        rel="noreferrer"
+                        href={e.url}
+                      >
+                        Open official page
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {candidates.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 p-4">
+                <div>
+                  <p className="text-sm font-semibold">
+                    {confirmedCandidates.length} mapped designs ·{" "}
+                    {candidates.length - confirmedCandidates.length} need
+                    correction or are outside selected grades
+                  </p>
+                  <label className="mt-3 flex items-start gap-2 text-xs leading-6">
+                    <input
+                      className="mt-1"
+                      aria-label="Confirm bulk curriculum mappings"
+                      disabled={discover.isPending}
+                      type="checkbox"
+                      checked={mappingsReviewed}
+                      onChange={(e) => setMappingsReviewed(e.target.checked)}
+                    />
+                    I have reviewed the grade and subject mappings below.
+                  </label>
+                </div>
+                <button
+                  className={control + " disabled:opacity-40"}
+                  disabled={
+                    !confirmedCandidates.length ||
+                    !mappingsReviewed ||
+                    discover.isPending ||
+                    importing.isPending
+                  }
+                  onClick={() => importing.mutate(true)}
+                >
+                  Import all {confirmedCandidates.length} confirmed designs
+                </button>
+              </div>
+            )}
+            <div className="max-h-[500px] space-y-3 overflow-y-auto">
+              {candidates.map((c, i) => (
+                <div
+                  key={c.url}
+                  className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[24px_140px_1fr]"
+                >
+                  <input
+                    aria-label={`Import ${c.title}`}
+                    type="checkbox"
+                    checked={picked.includes(c.url)}
+                    disabled={discover.isPending || !isConfirmed(c)}
+                    onChange={(e) =>
+                      setPicked(
+                        e.target.checked
+                          ? [...picked, c.url]
+                          : picked.filter((url) => url !== c.url),
+                      )
+                    }
+                  />
+                  <select
+                    aria-label={`Grade for ${c.title}`}
+                    disabled={discover.isPending}
+                    className={control}
+                    value={c.grade ?? ""}
+                    onChange={(e) => {
+                      setMappingsReviewed(false);
+                      setCandidates((cs) =>
+                        cs.map((v, j) =>
+                          j === i ? { ...v, grade: e.target.value } : v,
+                        ),
+                      );
+                    }}
+                  >
+                    <option value="">Choose grade</option>
+                    {grades.map((g) => (
+                      <option key={g}>{g}</option>
+                    ))}
+                  </select>
+                  <div>
+                    <input
+                      aria-label={`Subject for ${c.title}`}
+                      disabled={discover.isPending}
+                      className={control + " w-full"}
+                      value={c.subject ?? ""}
+                      onChange={(e) => {
+                        setMappingsReviewed(false);
+                        setCandidates((cs) =>
+                          cs.map((v, j) =>
+                            j === i ? { ...v, subject: e.target.value } : v,
+                          ),
+                        );
+                      }}
+                    />
+                    <a
+                      className="mt-2 block break-all text-xs text-blue-700"
+                      href={c.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {c.title}
+                    </a>
+                    {c.issue && (
+                      <p className="mt-2 text-xs text-amber-800">
+                        {c.issue}{" "}
+                        <button
+                          className="underline"
+                          disabled={
+                            discover.isPending || !c.grade || !c.subject?.trim()
+                          }
+                          onClick={() => {
+                            setMappingsReviewed(false);
+                            setCandidates((cs) =>
+                              cs.map((v, j) =>
+                                j === i ? { ...v, issue: undefined } : v,
+                              ),
+                            );
+                          }}
+                        >
+                          Confirm corrected mapping
+                        </button>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {candidates.length > 0 && (
+              <button
+                className={control}
+                disabled={
+                  !picked.length ||
+                  discover.isPending ||
+                  importing.isPending ||
+                  !mappingsReviewed
+                }
+                onClick={() => importing.mutate(false)}
+              >
+                Import {picked.length} reviewed sources
+              </button>
+            )}
+          </section>
           <section className="rounded-xl border bg-white p-5">
             <div className="flex flex-wrap justify-between gap-3">
               <div>
-                <h2 className="font-semibold">Curriculum coverage</h2>
+                <h2 className="font-semibold">
+                  Generate from indexed curriculum
+                </h2>
                 <p className="mt-2 text-sm text-slate-500">
                   Choose verified grade-specific sources. Questions and memory
                   cards are saved as drafts.
@@ -301,6 +606,31 @@ export function QuestionBankManagement() {
                 <QuestionBankLegacy />
               </div>
             )}
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <label className="min-w-0 w-full text-sm sm:w-auto">
+                Generation scope{" "}
+                <select
+                  aria-label="Generation source scope"
+                  className={
+                    control +
+                    " mt-2 w-full min-w-0 max-w-full sm:ml-2 sm:mt-0 sm:w-auto"
+                  }
+                  value={sourceScope}
+                  onChange={(e) =>
+                    setSourceScope(e.target.value as "ALL" | "SELECTED")
+                  }
+                >
+                  <option value="ALL">
+                    All indexed sources in selected grades
+                  </option>
+                  <option value="SELECTED">Choose individual sources</option>
+                </select>
+              </label>
+              <span className="text-xs text-slate-500">
+                {generationIds.length} sources across {targetGrades.length}{" "}
+                selected grades
+              </span>
+            </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <label className="text-xs">
                 Questions per source
@@ -323,24 +653,36 @@ export function QuestionBankManagement() {
               />
               <button
                 disabled={
-                  !sourceIds.length ||
+                  !generationIds.length ||
                   generation.isPending ||
                   count < 5 ||
                   count > 100
                 }
-                className={
-                  control + " bg-blue-700 text-blue-800 disabled:opacity-40"
-                }
+                className={control + " text-blue-800 disabled:opacity-40"}
                 onClick={() => generation.mutate("QUESTIONS")}
               >
-                Generate questions · {sourceIds.length} sources
+                Generate questions · {generationIds.length} sources
               </button>
               <button
-                disabled={!sourceIds.length || generation.isPending}
+                disabled={!generationIds.length || generation.isPending}
                 className={control + " disabled:opacity-40"}
                 onClick={() => generation.mutate("CARDS")}
               >
                 Generate memory cards
+              </button>
+              <button
+                className={
+                  control + " bg-blue-700 text-white disabled:opacity-40"
+                }
+                disabled={
+                  !generationIds.length ||
+                  generation.isPending ||
+                  count < 5 ||
+                  count > 100
+                }
+                onClick={() => generation.mutate("BOTH")}
+              >
+                Generate questions & cards
               </button>
             </div>
             <p className="mt-3 text-xs text-slate-500">
@@ -348,8 +690,8 @@ export function QuestionBankManagement() {
               review. Questions can be generated repeatedly to grow the rotating
               pool.
             </p>
-            <div className="mt-4 divide-y">
-              {sources.map((source) => {
+            <div className="mt-4 max-h-[360px] divide-y overflow-y-auto">
+              {eligibleSources.map((source) => {
                 const matching = coverage.filter(
                   (c) =>
                     c.grade === source.grade && c.subject === source.subject,
@@ -361,15 +703,17 @@ export function QuestionBankManagement() {
                   >
                     <input
                       type="checkbox"
-                      checked={sourceIds.includes(source.id)}
+                      checked={generationIds.includes(source.id)}
                       disabled={!grades.includes(source.grade)}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const ids = generationIds;
+                        setSourceScope("SELECTED");
                         setSourceIds(
                           e.target.checked
-                            ? [...sourceIds, source.id]
-                            : sourceIds.filter((id) => id !== source.id),
-                        )
-                      }
+                            ? [...ids, source.id]
+                            : ids.filter((id) => id !== source.id),
+                        );
+                      }}
                     />
                     <span className="min-w-0 flex-1">
                       <strong>
@@ -395,117 +739,6 @@ export function QuestionBankManagement() {
                 </p>
               )}
             </div>
-          </section>
-          <section className="space-y-4 rounded-xl border bg-white p-5">
-            <div>
-              <h2 className="font-semibold">Import official KICD designs</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Discover Grade 7–12 subject designs from KICD, then confirm each
-                grade and subject. The general framework alone is not a subject
-                source. External or inaccessible documents are not silently
-                invented.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button
-                disabled={discover.isPending}
-                className={control}
-                onClick={() => discover.mutate(undefined)}
-              >
-                <FileSearch size={16} className="mr-2 inline" />
-                {discover.isPending
-                  ? "Discovering official links…"
-                  : "Discover KICD subjects"}
-              </button>
-              <label className={control + " cursor-pointer"}>
-                Use saved KICD HTML
-                <input
-                  aria-label="KICD directory HTML"
-                  className="sr-only"
-                  type="file"
-                  accept=".html,text/html"
-                  disabled={discover.isPending}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) discover.mutate(file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-              <Link className={control} to="/platform/curriculum-library">
-                Framework & legacy curriculum tools
-              </Link>
-            </div>
-            <div className="max-h-[500px] space-y-3 overflow-y-auto">
-              {candidates.map((c, i) => (
-                <div
-                  key={c.url}
-                  className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[24px_140px_1fr]"
-                >
-                  <input
-                    aria-label={`Import ${c.title}`}
-                    type="checkbox"
-                    checked={picked.includes(c.url)}
-                    disabled={!c.grade || !c.subject?.trim()}
-                    onChange={(e) =>
-                      setPicked(
-                        e.target.checked
-                          ? [...picked, c.url]
-                          : picked.filter((url) => url !== c.url),
-                      )
-                    }
-                  />
-                  <select
-                    aria-label={`Grade for ${c.title}`}
-                    className={control}
-                    value={c.grade ?? ""}
-                    onChange={(e) =>
-                      setCandidates((cs) =>
-                        cs.map((v, j) =>
-                          j === i ? { ...v, grade: e.target.value } : v,
-                        ),
-                      )
-                    }
-                  >
-                    <option value="">Choose grade</option>
-                    {grades.map((g) => (
-                      <option key={g}>{g}</option>
-                    ))}
-                  </select>
-                  <div>
-                    <input
-                      aria-label={`Subject for ${c.title}`}
-                      className={control + " w-full"}
-                      value={c.subject ?? ""}
-                      onChange={(e) =>
-                        setCandidates((cs) =>
-                          cs.map((v, j) =>
-                            j === i ? { ...v, subject: e.target.value } : v,
-                          ),
-                        )
-                      }
-                    />
-                    <a
-                      className="mt-2 block break-all text-xs text-blue-700"
-                      href={c.url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {c.title}
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {candidates.length > 0 && (
-              <button
-                className={control}
-                disabled={!picked.length || importing.isPending}
-                onClick={() => importing.mutate()}
-              >
-                Import {picked.length} reviewed sources
-              </button>
-            )}
           </section>
         </div>
       ) : view === "jobs" ? (

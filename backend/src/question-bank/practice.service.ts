@@ -23,9 +23,9 @@ export class PracticeService {
         "School students use assignments selected by their teachers.",
       );
     const grade = normalizeGrade(actor.grade ?? "");
-    if (!grade || !/^Grade (7|8|9|10|11|12)$/.test(grade))
+    if (!grade || !/^Grade (6|7|8|9|10|11|12)$/.test(grade))
       throw new BadRequestException(
-        "Set your Grade 7–12 profile before starting practice.",
+        "Set your Grade 6–12 profile before starting practice.",
       );
     return grade;
   }
