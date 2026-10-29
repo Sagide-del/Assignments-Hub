@@ -43,11 +43,25 @@ export class PracticeService {
       },
     });
     const pool = approvedChoices(rows);
-    const subjects = [...new Set(pool.map((q) => q.subject))]
-      .sort()
+    // Keep curriculum gaps visible instead of treating the existing pool as
+    // the complete subject list. Senior pathways and RE alternatives remain
+    // available; this list does not claim every option is compulsory.
+    const catalogue = await this.prisma.curriculumScope.findMany({
+      where: { grade, verified: true },
+      select: { subject: true },
+    });
+    const names = new Map<string, string>();
+    for (const item of [...catalogue, ...pool]) {
+      const name = item.subject.trim();
+      if (name) names.set(name.toLowerCase(), name);
+    }
+    const subjects = [...names.values()]
+      .sort((a, b) => a.localeCompare(b))
       .map((subject) => ({
         subject,
-        count: pool.filter((q) => q.subject === subject).length,
+        count: pool.filter(
+          (q) => q.subject.trim().toLowerCase() === subject.toLowerCase(),
+        ).length,
         batchSize: 30,
       }));
     const active = await this.prisma.kjseaMockAttempt.findMany({

@@ -32,7 +32,7 @@ export function PracticeBatches() {
           <p className="mt-1 text-xs leading-6 text-slate-500">
             30 reviewed questions per batch ·{" "}
             {query.data?.grade ?? "Your grade"} · unfinished batches resume
-            automatically
+            automatically. Subject options follow your grade catalogue.
           </p>
         </div>
       </div>
@@ -57,13 +57,13 @@ export function PracticeBatches() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {query.data.subjects.map((s) => {
             const active = query.data.active.find(
-              (a) => a.subject === s.subject,
+              (a) => a.subject.toLowerCase() === s.subject.toLowerCase(),
             );
             return (
               <button
                 key={s.subject}
-                disabled={s.count < 30 || start.isPending}
-                className="flex min-h-24 items-center justify-between gap-3 rounded-lg border p-4 text-left disabled:opacity-40"
+                disabled={(!active && s.count < 30) || start.isPending}
+                className="flex min-h-24 items-center justify-between gap-3 rounded-lg border p-4 text-left disabled:bg-slate-50 disabled:text-slate-500"
                 onClick={() => start.mutate(s.subject)}
               >
                 <span>
@@ -72,7 +72,9 @@ export function PracticeBatches() {
                     {active
                       ? "Continue your batch"
                       : s.count < 30
-                        ? `${s.count}/30 questions ready`
+                        ? s.count === 0
+                          ? "Content being prepared"
+                          : `${s.count}/30 questions ready`
                         : "Start next 30-question batch"}
                   </span>
                 </span>
