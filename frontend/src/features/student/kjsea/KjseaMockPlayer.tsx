@@ -1,3 +1,5 @@
+import { LanguagePaperPage } from "./LanguagePaperPage";
+import { languagePages } from "./language-paper-layout";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
@@ -123,6 +125,15 @@ function PaperWorkspace({
     Math.floor((now - Date.parse(result.createdAt)) / 1000),
   );
   const expired = remaining === 0 && !completed;
+  const languageMock =
+    result.source !== "PRACTICE" &&
+    /^(english|kiswahili)$/i.test(result.subject);
+  const paperLayout =
+    languageMock && result.questions.some((q) => q.passage || q.contentHtml);
+  const pages = paperLayout ? languagePages(result.questions) : [];
+  const currentPage = pages.find((p) => index >= p.first && index <= p.last);
+  const previousIndex = currentPage ? currentPage.first - 1 : index - 1;
+  const nextIndex = currentPage ? currentPage.last + 1 : index + 1;
   const question = result.questions[index];
   const answered = Object.keys(validAnswers(answers, result.questions)).length;
   useEffect(() => {
@@ -267,14 +278,24 @@ function PaperWorkspace({
         <ArrowLeft className="h-4 w-4" />
         {result.source === "PRACTICE" ? "My Assignments" : "KJSEA Mock Test"}
       </Link>
-      <header className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
+      <header
+        className={
+          paperLayout
+            ? "sticky top-0 z-20 rounded-xl bg-[#101820] p-4 text-white shadow-sm"
+            : "rounded-2xl bg-[#101820] p-5 text-white sm:p-7"
+        }
+      >
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
           {result.subject} ·{" "}
           {result.coverage?.grades?.join(", ") || "School revision"}
         </p>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+        <div
+          className={`${paperLayout ? "mt-1" : "mt-3"} flex flex-wrap items-center justify-between gap-4`}
+        >
           <div>
-            <h1 className="text-2xl font-semibold">
+            <h1
+              className={`${paperLayout ? "text-lg" : "text-2xl"} font-semibold`}
+            >
               {result.source === "PRACTICE"
                 ? completed
                   ? "Your practice review"
@@ -310,27 +331,33 @@ function PaperWorkspace({
             </button>
           )}
         </div>
-        <p className="mt-4 text-xs leading-6 text-slate-400">
+        <p
+          className={
+            paperLayout ? "sr-only" : "mt-4 text-xs leading-6 text-slate-400"
+          }
+        >
           Original Assignment Hub practice, not an official KNEC paper. Use the
           result to identify topics to revise.
         </p>
       </header>
-      <p className="text-xs leading-6 text-slate-500">
-        This paper: {result.questions.length} questions ·{" "}
-        {new Set(result.questions.map((q) => q.topicId)).size} topics ·{" "}
-        {
-          result.questions.filter(
-            (q) =>
-              q.visual ||
-              q.diagramUrl ||
-              /<(?:img|svg|table)\b/i.test(q.contentHtml ?? ""),
-          ).length
-        }{" "}
-        questions with a diagram or table.{" "}
-        {result.questions.length < 40
-          ? "Short practice set, not a full 40-question mock."
-          : ""}
-      </p>
+      {!paperLayout && (
+        <p className="text-xs leading-6 text-slate-500">
+          This paper: {result.questions.length} questions ·{" "}
+          {new Set(result.questions.map((q) => q.topicId)).size} topics ·{" "}
+          {
+            result.questions.filter(
+              (q) =>
+                q.visual ||
+                q.diagramUrl ||
+                /<(?:img|svg|table)\b/i.test(q.contentHtml ?? ""),
+            ).length
+          }{" "}
+          questions with a diagram or table.{" "}
+          {result.questions.length < 40
+            ? "Short practice set, not a full 40-question mock."
+            : ""}
+        </p>
+      )}
       {!completed && (
         <div
           className={`rounded-xl border p-3 text-xs leading-6 ${saveError ? "border-amber-300 bg-amber-50 text-amber-950" : "border-slate-200 bg-white text-slate-500"}`}
@@ -421,293 +448,346 @@ function PaperWorkspace({
           </Link>
         </section>
       )}
-      <div className="grid items-start gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="rounded-2xl border bg-white p-4">
-          <details
-            open={navigatorOpen}
-            onToggle={(e) => setNavigatorOpen(e.currentTarget.open)}
+      {languageMock && !paperLayout && (
+        <div
+          role="status"
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950"
+        >
+          This saved paper was created before the passage-based format.{" "}
+          <Link
+            to="/student/kjsea-mock-test"
+            className="font-semibold underline"
           >
-            <summary className="cursor-pointer text-sm font-semibold">
-              Question navigator · {index + 1}/{result.questions.length}
-            </summary>
-            <p className="mt-2 text-xs leading-6 text-slate-500">
-              {completed
-                ? "Green: correct · red: incorrect or unanswered."
-                : "Use the flag to mark a question to revisit. Flags stay in this open session."}
-            </p>
-            <nav
-              aria-label="Mock question navigator"
-              className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-5"
+            Generate a new {result.subject} paper
+          </Link>{" "}
+          to see its dialogue and shared passages. Your existing answers are
+          kept.
+        </div>
+      )}
+      <div
+        className={
+          paperLayout
+            ? "mx-auto max-w-[960px]"
+            : "grid items-start gap-5 lg:grid-cols-[240px_minmax(0,1fr)]"
+        }
+      >
+        {!paperLayout && (
+          <aside className="rounded-2xl border bg-white p-4">
+            <details
+              open={navigatorOpen}
+              onToggle={(e) => setNavigatorOpen(e.currentTarget.open)}
             >
-              {result.questions.map((q, i) => {
-                const done = answers[q.id] !== undefined;
-                const right =
-                  completed &&
-                  (q.awardedMarks ??
-                    (q.correctIndex === answers[q.id] ? (q.marks ?? 1) : 0)) ===
-                    (q.marks ?? 1);
-                return (
+              <summary className="cursor-pointer text-sm font-semibold">
+                Question navigator · {index + 1}/{result.questions.length}
+              </summary>
+              <p className="mt-2 text-xs leading-6 text-slate-500">
+                {completed
+                  ? "Green: correct · red: incorrect or unanswered."
+                  : "Use the flag to mark a question to revisit. Flags stay in this open session."}
+              </p>
+              <nav
+                aria-label="Mock question navigator"
+                className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-5"
+              >
+                {result.questions.map((q, i) => {
+                  const done = answers[q.id] !== undefined;
+                  const right =
+                    completed &&
+                    (q.awardedMarks ??
+                      (q.correctIndex === answers[q.id]
+                        ? (q.marks ?? 1)
+                        : 0)) === (q.marks ?? 1);
+                  return (
+                    <button
+                      type="button"
+                      key={q.id}
+                      onClick={() => go(i)}
+                      aria-current={i === index ? "step" : undefined}
+                      aria-label={`Question ${i + 1}, ${completed ? (q.manualSelfReview ? "self-review" : right ? "correct" : "incorrect or unanswered") : done ? "answered" : "unanswered"}${flags.includes(q.id) ? ", flagged" : ""}`}
+                      className={`relative min-h-10 rounded-lg border text-xs font-semibold ${i === index ? "ring-2 ring-teal-700 ring-offset-1 " : ""}${completed ? (q.manualSelfReview ? "border-slate-200 bg-slate-50 text-slate-700" : right ? "border-teal-200 bg-teal-50 text-teal-900" : "border-red-200 bg-red-50 text-red-800") : done ? "border-slate-700 bg-slate-800 text-white" : "bg-white text-slate-500"}`}
+                    >
+                      {i + 1}
+                      {flags.includes(q.id) && (
+                        <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </details>
+          </aside>
+        )}
+        <main className="min-w-0 space-y-4">
+          {paperLayout ? (
+            <LanguagePaperPage
+              paper={result}
+              index={index}
+              answers={answers}
+              completed={completed}
+              disabled={completed || finishing || expired}
+              flags={flags}
+              onAnswer={(id, option) =>
+                setAnswers((a) => ({ ...a, [id]: option }))
+              }
+              onFlag={(id) =>
+                setFlags((f) =>
+                  f.includes(id) ? f.filter((q) => q !== id) : [...f, id],
+                )
+              }
+              onPage={go}
+            />
+          ) : (
+            <section className="rounded-2xl border bg-white p-5 sm:p-7">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
+                  Question {index + 1} of {result.questions.length} ·{" "}
+                  {question.section ?? question.area} · {question.marks ?? 1}{" "}
+                  {(question.marks ?? 1) === 1 ? "mark" : "marks"}
+                </p>
+                {!completed && (
                   <button
                     type="button"
-                    key={q.id}
-                    onClick={() => go(i)}
-                    aria-current={i === index ? "step" : undefined}
-                    aria-label={`Question ${i + 1}, ${completed ? (q.manualSelfReview ? "self-review" : right ? "correct" : "incorrect or unanswered") : done ? "answered" : "unanswered"}${flags.includes(q.id) ? ", flagged" : ""}`}
-                    className={`relative min-h-10 rounded-lg border text-xs font-semibold ${i === index ? "ring-2 ring-teal-700 ring-offset-1 " : ""}${completed ? (q.manualSelfReview ? "border-slate-200 bg-slate-50 text-slate-700" : right ? "border-teal-200 bg-teal-50 text-teal-900" : "border-red-200 bg-red-50 text-red-800") : done ? "border-slate-700 bg-slate-800 text-white" : "bg-white text-slate-500"}`}
+                    onClick={() =>
+                      setFlags((f) =>
+                        f.includes(question.id)
+                          ? f.filter((id) => id !== question.id)
+                          : [...f, question.id],
+                      )
+                    }
+                    className="inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-slate-600"
                   >
-                    {i + 1}
-                    {flags.includes(q.id) && (
-                      <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    )}
+                    <Flag
+                      className={`h-4 w-4 ${flags.includes(question.id) ? "fill-amber-200 text-amber-700" : ""}`}
+                    />
+                    {flags.includes(question.id)
+                      ? "Flagged"
+                      : "Flag for review"}
                   </button>
-                );
-              })}
-            </nav>
-          </details>
-        </aside>
-        <main className="min-w-0 space-y-4">
-          <section className="rounded-2xl border bg-white p-5 sm:p-7">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
-                Question {index + 1} of {result.questions.length} ·{" "}
-                {question.section ?? question.area} · {question.marks ?? 1}{" "}
-                {(question.marks ?? 1) === 1 ? "mark" : "marks"}
-              </p>
-              {!completed && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFlags((f) =>
-                      f.includes(question.id)
-                        ? f.filter((id) => id !== question.id)
-                        : [...f, question.id],
-                    )
-                  }
-                  className="inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-slate-600"
-                >
-                  <Flag
-                    className={`h-4 w-4 ${flags.includes(question.id) ? "fill-amber-200 text-amber-700" : ""}`}
-                  />
-                  {flags.includes(question.id) ? "Flagged" : "Flag for review"}
-                </button>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">{question.topic}</p>
+              {question.passage && (
+                <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                  <h2 className="text-sm font-semibold">
+                    {question.passage.title}
+                  </h2>
+                  <p className="mt-3 whitespace-pre-line text-sm leading-8 text-slate-700">
+                    {question.passage.text}
+                  </p>
+                </article>
               )}
-            </div>
-            <p className="mt-2 text-xs text-slate-500">{question.topic}</p>
-            {question.passage && (
-              <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <h2 className="text-sm font-semibold">
-                  {question.passage.title}
-                </h2>
-                <p className="mt-3 whitespace-pre-line text-sm leading-8 text-slate-700">
-                  {question.passage.text}
-                </p>
-              </article>
-            )}
-            <fieldset className="mt-5 min-w-0">
-              <legend className="mb-5 block text-lg font-semibold leading-8">
-                {question.prompt}
-              </legend>
-              {question.contentHtml && (
-                <div className="mb-5">
-                  <RichContent html={question.contentHtml} />
-                </div>
-              )}
-              {question.diagramUrl && (
-                <figure className="mb-5 rounded-xl border p-3">
-                  <img
-                    key={question.id}
-                    src={resolveUploadUrl(question.diagramUrl)}
-                    alt={question.diagramAlt ?? "Question illustration"}
-                    className="mx-auto max-h-80 max-w-full object-contain"
-                  />
-                  {question.diagramAlt && (
-                    <figcaption className="mt-2 text-xs leading-6 text-slate-500">
-                      {question.diagramAlt}
-                    </figcaption>
-                  )}
-                </figure>
-              )}
-              {question.visual && (
-                <div className="mb-5">
-                  <MockVisual visual={question.visual} />
-                </div>
-              )}
-              {question.responseType === "STRUCTURED" ? (
-                <div className="space-y-5">
-                  {question.parts?.map((part) => (
-                    <label key={part.id} className="block text-sm leading-7">
-                      <span className="font-semibold">({part.id})</span>{" "}
-                      {part.prompt}
-                      <span className="ml-2 text-xs text-slate-500">
-                        {part.marks} mark
-                      </span>
+              <fieldset className="mt-5 min-w-0">
+                <legend className="mb-5 block text-lg font-semibold leading-8">
+                  {question.prompt}
+                </legend>
+                {question.contentHtml && (
+                  <div className="mb-5">
+                    <RichContent html={question.contentHtml} />
+                  </div>
+                )}
+                {question.diagramUrl && (
+                  <figure className="mb-5 rounded-xl border p-3">
+                    <img
+                      key={question.id}
+                      src={resolveUploadUrl(question.diagramUrl)}
+                      alt={question.diagramAlt ?? "Question illustration"}
+                      className="mx-auto max-h-80 max-w-full object-contain"
+                    />
+                    {question.diagramAlt && (
+                      <figcaption className="mt-2 text-xs leading-6 text-slate-500">
+                        {question.diagramAlt}
+                      </figcaption>
+                    )}
+                  </figure>
+                )}
+                {question.visual && (
+                  <div className="mb-5">
+                    <MockVisual visual={question.visual} />
+                  </div>
+                )}
+                {question.responseType === "STRUCTURED" ? (
+                  <div className="space-y-5">
+                    {question.parts?.map((part) => (
+                      <label key={part.id} className="block text-sm leading-7">
+                        <span className="font-semibold">({part.id})</span>{" "}
+                        {part.prompt}
+                        <span className="ml-2 text-xs text-slate-500">
+                          {part.marks} mark
+                        </span>
+                        <textarea
+                          rows={part.answerType === "TEXT" ? 6 : 1}
+                          aria-label={`Answer ${part.id}`}
+                          value={
+                            typeof answers[question.id] === "object"
+                              ? ((
+                                  answers[question.id] as Exclude<
+                                    MockAnswer,
+                                    number
+                                  >
+                                ).responses[part.id] ?? "")
+                              : ""
+                          }
+                          maxLength={
+                            question.manualSelfReview
+                              ? 5000
+                              : part.answerType === "TEXT"
+                                ? 2000
+                                : 160
+                          }
+                          disabled={completed || finishing || expired}
+                          onChange={(e) => {
+                            const prior = answers[question.id];
+                            setAnswers((a) => ({
+                              ...a,
+                              [question.id]: {
+                                responses: {
+                                  ...(typeof prior === "object"
+                                    ? prior.responses
+                                    : {}),
+                                  [part.id]: e.target.value,
+                                },
+                                working:
+                                  typeof prior === "object"
+                                    ? prior.working
+                                    : "",
+                              },
+                            }));
+                          }}
+                          className="mt-2 block min-h-12 w-full rounded-lg border border-slate-300 px-3 text-base"
+                          placeholder={
+                            part.answerType === "TEXT"
+                              ? "Write your response here."
+                              : "Enter a number, fraction or decimal"
+                          }
+                        />
+                        {completed && (
+                          <span className="mt-1 block text-sm text-teal-800">
+                            Model answer: {part.answer}
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                    <label className="block text-sm font-medium">
+                      Show your working
                       <textarea
-                        rows={part.answerType === "TEXT" ? 6 : 1}
-                        aria-label={`Answer ${part.id}`}
+                        aria-label="Show your working"
+                        rows={7}
+                        maxLength={5000}
+                        disabled={completed || finishing || expired}
                         value={
                           typeof answers[question.id] === "object"
-                            ? ((
+                            ? (
                                 answers[question.id] as Exclude<
                                   MockAnswer,
                                   number
                                 >
-                              ).responses[part.id] ?? "")
+                              ).working
                             : ""
                         }
-                        maxLength={
-                          question.manualSelfReview
-                            ? 5000
-                            : part.answerType === "TEXT"
-                              ? 2000
-                              : 160
-                        }
-                        disabled={completed || finishing || expired}
                         onChange={(e) => {
                           const prior = answers[question.id];
                           setAnswers((a) => ({
                             ...a,
                             [question.id]: {
-                              responses: {
-                                ...(typeof prior === "object"
+                              responses:
+                                typeof prior === "object"
                                   ? prior.responses
-                                  : {}),
-                                [part.id]: e.target.value,
-                              },
-                              working:
-                                typeof prior === "object" ? prior.working : "",
+                                  : {},
+                              working: e.target.value,
                             },
                           }));
                         }}
-                        className="mt-2 block min-h-12 w-full rounded-lg border border-slate-300 px-3 text-base"
-                        placeholder={
-                          part.answerType === "TEXT"
-                            ? "Write your response here."
-                            : "Enter a number, fraction or decimal"
-                        }
+                        className="mt-2 w-full resize-y rounded-lg border border-slate-300 p-4 font-mono text-sm font-normal leading-7"
+                        placeholder="Write calculations, steps and units here."
                       />
-                      {completed && (
-                        <span className="mt-1 block text-sm text-teal-800">
-                          Model answer: {part.answer}
-                        </span>
-                      )}
                     </label>
-                  ))}
-                  <label className="block text-sm font-medium">
-                    Show your working
-                    <textarea
-                      aria-label="Show your working"
-                      rows={7}
-                      maxLength={5000}
-                      disabled={completed || finishing || expired}
-                      value={
-                        typeof answers[question.id] === "object"
-                          ? (
-                              answers[question.id] as Exclude<
-                                MockAnswer,
-                                number
-                              >
-                            ).working
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const prior = answers[question.id];
-                        setAnswers((a) => ({
-                          ...a,
-                          [question.id]: {
-                            responses:
-                              typeof prior === "object" ? prior.responses : {},
-                            working: e.target.value,
-                          },
-                        }));
-                      }}
-                      className="mt-2 w-full resize-y rounded-lg border border-slate-300 p-4 font-mono text-sm font-normal leading-7"
-                      placeholder="Write calculations, steps and units here."
-                    />
-                  </label>
-                  <p className="text-xs leading-6 text-slate-500">
-                    {question.manualSelfReview
-                      ? "Your response is saved for self-review. Compare it with the model answer and explanation after submission; this writing task is not automatically graded."
-                      : "Each sub-part is marked separately. Working is saved for review; automatic marks come from the sub-part answers."}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {question.options.map((option, i) => (
-                    <label
-                      key={`${question.id}-${i}`}
-                      className={`flex min-h-12 items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${completed && i === question.correctIndex ? "border-teal-400 bg-teal-50" : answers[question.id] === i ? "border-slate-700 bg-slate-50" : "border-slate-200"}`}
-                    >
-                      <input
-                        type="radio"
-                        name={`mock-${question.id}`}
-                        checked={answers[question.id] === i}
-                        disabled={completed || finishing || expired}
-                        onChange={() =>
-                          setAnswers((a) => ({ ...a, [question.id]: i }))
-                        }
-                        className="mt-1 shrink-0 accent-teal-800"
-                      />
-                      <span className="font-semibold text-slate-500">
-                        {String.fromCharCode(65 + i)}.
-                      </span>
-                      <span className="min-w-0 break-words">{option}</span>
-                      {completed && i === question.correctIndex && (
-                        <CheckCircle2
-                          aria-label="Correct answer"
-                          className="ml-auto mt-1 h-4 w-4 shrink-0 text-teal-700"
+                    <p className="text-xs leading-6 text-slate-500">
+                      {question.manualSelfReview
+                        ? "Your response is saved for self-review. Compare it with the model answer and explanation after submission; this writing task is not automatically graded."
+                        : "Each sub-part is marked separately. Working is saved for review; automatic marks come from the sub-part answers."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {question.options.map((option, i) => (
+                      <label
+                        key={`${question.id}-${i}`}
+                        className={`flex min-h-12 items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${completed && i === question.correctIndex ? "border-teal-400 bg-teal-50" : answers[question.id] === i ? "border-slate-700 bg-slate-50" : "border-slate-200"}`}
+                      >
+                        <input
+                          type="radio"
+                          name={`mock-${question.id}`}
+                          checked={answers[question.id] === i}
+                          disabled={completed || finishing || expired}
+                          onChange={() =>
+                            setAnswers((a) => ({ ...a, [question.id]: i }))
+                          }
+                          className="mt-1 shrink-0 accent-teal-800"
                         />
-                      )}
-                    </label>
-                  ))}
+                        <span className="font-semibold text-slate-500">
+                          {String.fromCharCode(65 + i)}.
+                        </span>
+                        <span className="min-w-0 break-words">{option}</span>
+                        {completed && i === question.correctIndex && (
+                          <CheckCircle2
+                            aria-label="Correct answer"
+                            className="ml-auto mt-1 h-4 w-4 shrink-0 text-teal-700"
+                          />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
+              {completed && (
+                <div
+                  className={`mt-5 rounded-xl p-4 ${correct ? "bg-teal-50" : "bg-amber-50"}`}
+                >
+                  <h2 className="flex items-center gap-2 text-sm font-semibold">
+                    {correct ? (
+                      <CheckCircle2 className="h-4 w-4 text-teal-700" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-amber-800" />
+                    )}
+                    {question.manualSelfReview
+                      ? "Compare with the model answer"
+                      : correct
+                        ? "Correct"
+                        : answers[question.id] === undefined
+                          ? "Not answered"
+                          : "Let’s work through it"}
+                  </h2>
+                  <p className="mt-3 text-sm leading-7">
+                    {question.explanation}
+                  </p>
+                  {!question.manualSelfReview && (
+                    <p className="mt-2 text-sm font-semibold">
+                      {question.awardedMarks ??
+                        (correct ? (question.marks ?? 1) : 0)}{" "}
+                      / {question.marks ?? 1} marks
+                    </p>
+                  )}
                 </div>
               )}
-            </fieldset>
-            {completed && (
-              <div
-                className={`mt-5 rounded-xl p-4 ${correct ? "bg-teal-50" : "bg-amber-50"}`}
-              >
-                <h2 className="flex items-center gap-2 text-sm font-semibold">
-                  {correct ? (
-                    <CheckCircle2 className="h-4 w-4 text-teal-700" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-amber-800" />
-                  )}
-                  {question.manualSelfReview
-                    ? "Compare with the model answer"
-                    : correct
-                      ? "Correct"
-                      : answers[question.id] === undefined
-                        ? "Not answered"
-                        : "Let’s work through it"}
-                </h2>
-                <p className="mt-3 text-sm leading-7">{question.explanation}</p>
-                {!question.manualSelfReview && (
-                  <p className="mt-2 text-sm font-semibold">
-                    {question.awardedMarks ??
-                      (correct ? (question.marks ?? 1) : 0)}{" "}
-                    / {question.marks ?? 1} marks
-                  </p>
-                )}
-              </div>
-            )}
-          </section>
+            </section>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
-              disabled={index === 0}
-              onClick={() => go(index - 1)}
+              disabled={previousIndex < 0}
+              onClick={() => go(previousIndex)}
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border bg-white px-4 text-sm font-semibold disabled:opacity-30"
             >
               <ArrowLeft className="h-4 w-4" />
-              Previous
+              {paperLayout ? "Previous page" : "Previous"}
             </button>
-            {index < result.questions.length - 1 ? (
+            {nextIndex < result.questions.length ? (
               <button
                 type="button"
-                onClick={() => go(index + 1)}
+                onClick={() => go(nextIndex)}
                 className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white"
               >
-                Next question
+                {paperLayout ? "Next page" : "Next question"}
                 <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
