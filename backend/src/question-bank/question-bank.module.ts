@@ -1,3 +1,5 @@
+import { GitHubCurriculumService } from "./github-curriculum.service";
+import { GitHubCurriculumController } from "./github-curriculum.controller";
 import { CollectionService } from "./collection.service";
 import { CollectionController } from "./collection.controller";
 import { UploadsModule } from "../uploads/uploads.module";
@@ -25,6 +27,7 @@ import { DocumentOcrModule } from "../document-processing/document-ocr.module";
   imports: [UploadsModule, AiModule, AssignmentsModule, DocumentOcrModule],
   controllers: [
     CollectionController,
+    GitHubCurriculumController,
     ContentCapabilitiesController,
     PracticeController,
     ContentLibraryController,
@@ -33,6 +36,7 @@ import { DocumentOcrModule } from "../document-processing/document-ocr.module";
   ],
   providers: [
     CollectionService,
+    GitHubCurriculumService,
     PracticeService,
     ContentLibraryService,
     QuestionBankService,

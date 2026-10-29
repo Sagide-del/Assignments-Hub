@@ -6,6 +6,7 @@ export interface MappingUnit {
   quote: string;
 }
 export interface Mapping {
+  _source?: import("./github-curriculum.api").RepositorySourceAudit;
   role: "CURRICULUM" | "TEACHING" | "FRAMEWORK";
   note: string;
   subjects: {
@@ -132,9 +133,16 @@ export const ingestionApi = {
         `/admin/content-ingestion/assets/${id}`,
       )
       .then((r) => r.data),
-  mapping: (id: string, mapping: Mapping) =>
+  mapping: (
+    id: string,
+    mapping: Mapping,
+    sourceLimitationsReviewed?: boolean,
+  ) =>
     api
-      .patch(`/admin/content-ingestion/assets/${id}`, { mapping })
+      .patch(`/admin/content-ingestion/assets/${id}`, {
+        mapping,
+        sourceLimitationsReviewed,
+      })
       .then((r) => r.data),
   retry: async (ids: string[]) => {
     let queued = 0,

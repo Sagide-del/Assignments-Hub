@@ -1,3 +1,6 @@
+import { readFile } from "fs/promises";
+import { resolve } from "path";
+import snapshotManifest from "./github-curriculum.manifest.json";
 import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
 import { Public } from "../common/decorators/public.decorator";
 import { PrismaService } from "../prisma/prisma.service";
@@ -12,6 +15,17 @@ export class ContentCapabilitiesController {
       });
       await this.prisma.curriculumScope.count();
       await this.prisma.collectionAsset.count();
+      const snapshot = JSON.parse(
+        await readFile(
+          resolve(process.cwd(), "dist/curriculum-data/snapshot.json"),
+          "utf8",
+        ),
+      );
+      if (
+        snapshot.commit !== snapshotManifest.commit ||
+        snapshot.files.length !== snapshotManifest.files.length
+      )
+        throw Error("Curriculum snapshot is not ready");
       return {
         centralContentVersion: 3,
         practiceBatchSize: 30,
@@ -23,6 +37,7 @@ export class ContentCapabilitiesController {
         officialCurriculumImport: true,
         embeddedCurriculumDiscovery: true,
         publicDownloadConfirmation: true,
+        repositoryCurriculumSnapshot: snapshotManifest.commit,
       };
     } catch {
       throw new ServiceUnavailableException(

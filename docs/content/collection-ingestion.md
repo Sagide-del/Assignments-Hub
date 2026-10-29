@@ -95,3 +95,5 @@ Hosted imports distinguish a PDF from a public confirmation page, explicit acces
 Failed documents can be retried in batches from the guided workspace. The retry endpoint requeues only failed existing asset jobs, with an atomic status check, and reports already-retried/missing jobs as skipped. It does not create another collection. The frontend readiness gate requires `publicDownloadConfirmation` so these controls wait for the updated backend.
 
 See [the supplied framework assessment](framework-source-assessment.md) for what the 2017 and 2019 uploaded documents can establish. They are not automatically treated as detailed current grade designs.
+
+The guided setup also offers a packaged [pinned GitHub curriculum source](github-curriculum-import.md). Its source audit and gap acknowledgement are preserved when a document is edited or indexed; it is an alternative intake route through the same review and generation pipeline.

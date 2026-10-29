@@ -17,7 +17,8 @@ for (let n = 1; n <= 24; n++) {
       !d.collectionIngestion ||
       !d.outcomeGrounding ||
       !d.embeddedCurriculumDiscovery ||
-      !d.publicDownloadConfirmation
+      !d.publicDownloadConfirmation ||
+      d.repositoryCurriculumSnapshot !== "08760594f5390c70fd7b764abd0525f9bf2c4f69"
     )
       throw Error("Backend not ready");
     console.log("PASS: central content library schema and APIs are ready");

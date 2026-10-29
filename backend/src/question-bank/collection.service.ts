@@ -1,3 +1,4 @@
+import { GitHubCurriculumService } from "./github-curriculum.service";
 import {
   HOSTED_CURRICULUM_HOSTS,
   fetchHostedCurriculum,
@@ -12,6 +13,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createHash } from "crypto";
@@ -50,6 +52,7 @@ export class CollectionService {
     private readonly bank: QuestionBankService,
     private readonly config: ConfigService,
     private readonly ocr: DocumentOcrService,
+    @Optional() private readonly github?: GitHubCurriculumService,
   ) {}
   private hosts() {
     return [
@@ -363,7 +366,13 @@ export class CollectionService {
           where: {
             status: "FAILED",
             kind: {
-              in: ["INGEST_URL", "INGEST_FILE", "MAP_SOURCE", "INDEX_ASSET"],
+              in: [
+                "INGEST_URL",
+                "INGEST_FILE",
+                "MAP_SOURCE",
+                "INDEX_ASSET",
+                "INGEST_GITHUB",
+              ],
             },
             input: { path: ["assetId"], equals: id },
           },
@@ -490,7 +499,11 @@ export class CollectionService {
     if (!asset) throw new NotFoundException("Document not found.");
     return asset;
   }
-  async saveMapping(id: string, mapping: unknown) {
+  async saveMapping(
+    id: string,
+    mapping: unknown,
+    limitationsReviewed?: boolean,
+  ) {
     const asset = await this.asset(id);
     if (["INDEXED", "INDEXING"].includes(asset.status))
       throw new BadRequestException("This document is already indexed.");
@@ -508,8 +521,33 @@ export class CollectionService {
     }
     return this.prisma.collectionAsset.update({
       where: { id },
-      data: { mapping: validated as any, status: "REVIEW", error: null },
+      data: {
+        mapping: {
+          ...validated,
+          ...((asset.mapping as any)?._source
+            ? {
+                _source: {
+                  ...(asset.mapping as any)._source,
+                  limitationsReviewed:
+                    limitationsReviewed ??
+                    (asset.mapping as any)._source.limitationsReviewed,
+                },
+              }
+            : {}),
+        } as any,
+        status: "REVIEW",
+        error: null,
+      },
     });
+  }
+  private assertSourceReview(mapping: any) {
+    if (
+      mapping?._source?.coverage?.warnings?.length &&
+      !mapping._source.limitationsReviewed
+    )
+      throw new BadRequestException(
+        "This source transcription has gaps or extraction discrepancies. Review and acknowledge its limitations before indexing the available outcomes.",
+      );
   }
   async approve(ids: string[], actor: AuthenticatedUser) {
     const assets = await this.prisma.collectionAsset.findMany({
@@ -523,6 +561,7 @@ export class CollectionService {
         throw new BadRequestException(
           "Select documents awaiting mapping review.",
         );
+      this.assertSourceReview(asset.mapping);
       try {
         validateMapping(
           asset.mapping,
@@ -751,6 +790,11 @@ export class CollectionService {
     if (job.kind.startsWith("OUTCOME_")) return this.produceOutcome(job, actor);
     const asset = await this.asset(input.assetId);
     try {
+      if (job.kind === "INGEST_GITHUB") {
+        if (!this.github)
+          throw Error("Repository curriculum worker is unavailable.");
+        return await this.github.stage(asset, input);
+      }
       if (job.kind === "INDEX_ASSET") return await this.indexAsset(asset);
       if (job.kind === "MAP_SOURCE")
         return await this.mapText(
@@ -991,6 +1035,7 @@ export class CollectionService {
     return { assetId: asset.id, subjects: mapping.subjects.length, links };
   }
   private async indexAsset(asset: any) {
+    this.assertSourceReview(asset.mapping);
     const mapping = validateMapping(
       asset.mapping,
       asset.extractedText ?? "",
@@ -1068,7 +1113,6 @@ export class CollectionService {
           const old = await this.prisma.curriculumOutcome.findFirst({
             where: {
               scopeId: scope.id,
-              sourceDocumentId: source.id,
               strand: unit.strand,
               subStrand: unit.subStrand,
               outcome: unit.outcome,

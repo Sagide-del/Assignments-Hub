@@ -464,6 +464,7 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
           [
             "MAP_SOURCE",
             "INGEST_FILE",
+            "INGEST_GITHUB",
             "INGEST_URL",
             "INDEX_ASSET",
             "OUTCOME_QUESTIONS",

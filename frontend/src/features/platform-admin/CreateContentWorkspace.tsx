@@ -1,3 +1,5 @@
+import { githubCurriculumApi } from "../../api/github-curriculum.api";
+import { RepositorySourceReview } from "./RepositorySourceReview";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -93,6 +95,8 @@ function GradeContentFlow({ grade }: { grade: string }) {
       [],
     );
   const [subjectEdits, setSubjectEdits] = useState<string[]>([]);
+  const [repositoryConfirmed, setRepositoryConfirmed] = useState(false);
+  const [limitationsReviewed, setLimitationsReviewed] = useState(false);
   const [confirmed, setConfirmed] = useState(false),
     [catalogueChecked, setCatalogueChecked] = useState(false);
   const [subject, setSubject] = useState("ALL"),
@@ -142,6 +146,10 @@ function GradeContentFlow({ grade }: { grade: string }) {
     enabled: !!collection,
     refetchInterval: 4000,
   });
+  const repository = useQuery({
+    queryKey: ["github-curriculum", grade],
+    queryFn: () => githubCurriculumApi.catalogue(grade),
+  });
   const assets = collection
     ? (documents.data?.items ?? [])
     : (data?.collections ?? [])
@@ -165,6 +173,22 @@ function GradeContentFlow({ grade }: { grade: string }) {
           : "Could not complete this step. Please try again.",
       ),
     );
+  const importRepository = useMutation({
+    mutationFn: () =>
+      githubCurriculumApi.import(
+        grade,
+        repository.data!.commit,
+        repository.data!.files.map((f) => f.id),
+      ),
+    onSuccess: (r) => {
+      setRepositoryConfirmed(false);
+      setNotice(
+        `${r.queued} curriculum files queued from the pinned snapshot; ${r.skipped} already added. Review the documents below. Source gaps remain visible.`,
+      );
+      refresh();
+    },
+    onError: error,
+  });
   const retryFailed = useMutation({
     mutationFn: () => ingestionApi.retry(failed.map((a) => a.id)),
     onSuccess: (r) => {
@@ -264,6 +288,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const openDocument = useMutation({
     mutationFn: ingestionApi.asset,
     onSuccess: (d) => {
+      setLimitationsReviewed(d.mapping?._source?.limitationsReviewed ?? false);
       setAsset({
         id: d.id,
         name: d.name,
@@ -276,7 +301,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const index = useMutation({
     mutationFn: async () => {
       if (!asset) return;
-      await ingestionApi.mapping(asset.id, asset.mapping);
+      await ingestionApi.mapping(asset.id, asset.mapping, limitationsReviewed);
       await ingestionApi.approve([asset.id]);
       return asset.mapping.role;
     },
@@ -427,19 +452,123 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   only need to set this up once, then review occasional updates.
                 </p>
               </div>
-              {!scopes.length && !pending.length && !candidates.length && (
-                <div className="rounded-lg bg-slate-50 p-5">
-                  <BookOpen size={25} className="mb-3 text-blue-700" />
-                  <h4 className="font-medium">Let’s find your curriculum</h4>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    We’ll look for the official {grade} designs. You won’t need
-                    to upload a PDF for each subject.
+              <section className="space-y-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <div>
+                  <h4 className="font-semibold">
+                    Import saved KICD design transcriptions
+                  </h4>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Use the pinned GitHub curriculum snapshot already packaged
+                    with the server. No Google Drive downloads or individual PDF
+                    uploads are needed for these files.
                   </p>
                 </div>
-              )}
+                {repository.isLoading ? (
+                  <p className="text-sm">Loading source list…</p>
+                ) : repository.isError ? (
+                  <p role="alert" className="text-sm">
+                    The source snapshot is not ready yet.{" "}
+                    <button
+                      className="underline"
+                      onClick={() => repository.refetch()}
+                    >
+                      Retry source list
+                    </button>
+                  </p>
+                ) : (
+                  <>
+                    <details>
+                      <summary className="cursor-pointer text-sm font-medium">
+                        Review {repository.data?.files.length ?? 0} available{" "}
+                        {grade} subject files
+                      </summary>
+                      <ul className="mt-3 divide-y rounded-lg border bg-white">
+                        {repository.data?.files.map((f) => (
+                          <li
+                            key={f.id}
+                            className="space-y-1 p-3 text-xs leading-6"
+                          >
+                            <strong>{f.subject}</strong>
+                            <p>
+                              Source revision {f.revision} ·{" "}
+                              {f.extraction.error
+                                ? "Extraction needs repair"
+                                : `${f.extraction.outcomes} available outcome statements`}
+                              {f.extraction.coverage?.warnings.length
+                                ? " · Source gaps/discrepancies flagged"
+                                : ""}
+                            </p>
+                            <div className="flex flex-wrap gap-3 text-blue-700 underline">
+                              <a
+                                href={f.sourceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Source
+                              </a>
+                              <a
+                                href={f.officialDirectory}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                KICD directory
+                              </a>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                    <p className="text-xs leading-6 text-slate-600">
+                      These are third-party transcriptions, not a complete or
+                      independently verified current subject inventory.
+                      Senior-school coverage is limited. You will check the
+                      quoted outcomes before generation.
+                    </p>
+                    <label className="flex items-start gap-3 text-xs leading-6">
+                      <input
+                        className="mt-1"
+                        type="checkbox"
+                        aria-label="Repository source use confirmed"
+                        checked={repositoryConfirmed}
+                        onChange={(e) =>
+                          setRepositoryConfirmed(e.target.checked)
+                        }
+                      />
+                      I have reviewed the source information and am authorised
+                      to use these curriculum materials.
+                    </label>
+                    <button
+                      className={primary}
+                      disabled={
+                        !repositoryConfirmed ||
+                        !repository.data?.files.length ||
+                        importRepository.isPending
+                      }
+                      onClick={() => importRepository.mutate()}
+                    >
+                      {importRepository.isPending
+                        ? "Queuing curriculum…"
+                        : `Import ${grade} curriculum snapshot`}
+                    </button>
+                  </>
+                )}
+              </section>
+              {!scopes.length &&
+                !pending.length &&
+                !candidates.length &&
+                !repository.data?.files.length && (
+                  <div className="rounded-lg bg-slate-50 p-5">
+                    <BookOpen size={25} className="mb-3 text-blue-700" />
+                    <h4 className="font-medium">Let’s find your curriculum</h4>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      We’ll look for the official {grade} designs. You won’t
+                      need to upload a PDF for each subject.
+                    </p>
+                  </div>
+                )}
               <div className="flex flex-wrap gap-3">
                 <button
-                  className={scopes.length ? button : primary}
+                  className={button}
                   disabled={discover.isPending || saveCurriculum.isPending}
                   onClick={() => discover.mutate(undefined)}
                 >
@@ -770,6 +899,11 @@ function GradeContentFlow({ grade }: { grade: string }) {
                       strands or unlock every subject for generation.
                     </p>
                   )}
+                  <RepositorySourceReview
+                    source={asset.mapping._source}
+                    acknowledged={limitationsReviewed}
+                    onAcknowledge={setLimitationsReviewed}
+                  />
                   <DocumentMappingEditor
                     value={asset.mapping}
                     onChange={(m) =>
@@ -786,7 +920,11 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   )}
                   <button
                     className={primary}
-                    disabled={index.isPending}
+                    disabled={
+                      index.isPending ||
+                      (!!asset.mapping._source?.coverage.warnings.length &&
+                        !limitationsReviewed)
+                    }
                     onClick={() => index.mutate()}
                   >
                     {index.isPending

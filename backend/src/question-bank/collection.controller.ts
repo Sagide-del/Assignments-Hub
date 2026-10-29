@@ -80,7 +80,11 @@ export class CollectionController {
     @Param("id") id: string,
     @Body() dto: AssetReviewDto,
   ) {
-    return this.service.saveMapping(id, dto.mapping);
+    return this.service.saveMapping(
+      id,
+      dto.mapping,
+      dto.sourceLimitationsReviewed,
+    );
   }
   @Post("assets/retry") retryAssets(
     @Body() dto: AssetIdsDto,

@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "postinstall": "prisma generate",
-    "build": "nest build",
+    "build": "nest build && node scripts/prepare-curriculum-source.mjs",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

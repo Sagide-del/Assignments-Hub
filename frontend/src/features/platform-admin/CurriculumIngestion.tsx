@@ -1,3 +1,4 @@
+import { RepositorySourceReview } from "./RepositorySourceReview";
 import { DocumentMappingEditor } from "./DocumentMappingEditor";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -48,6 +49,7 @@ export function CurriculumIngestion() {
       subjects: [],
     }),
     [excerpt, setExcerpt] = useState(""),
+    [limitationsReviewed, setLimitationsReviewed] = useState(false),
     [count, setCount] = useState(30),
     [assessmentMode, setAssessmentMode] = useState<"PRACTICE" | "WRITTEN">(
       "PRACTICE",
@@ -219,7 +221,8 @@ export function CurriculumIngestion() {
     onError: error,
   });
   const saveMapping = useMutation({
-    mutationFn: () => ingestionApi.mapping(asset!.id, mapping),
+    mutationFn: () =>
+      ingestionApi.mapping(asset!.id, mapping, limitationsReviewed),
     onSuccess: () => {
       setAsset(null);
       setNotice("Mapping saved. Select the document to index it after review.");
@@ -278,6 +281,7 @@ export function CurriculumIngestion() {
       const d = await ingestionApi.asset(a.id);
       saveMapping.reset();
       setAsset(a);
+      setLimitationsReviewed(d.mapping?._source?.limitationsReviewed ?? false);
       setMapping(d.mapping ?? { role: "TEACHING", note: "", subjects: [] });
       setExcerpt(d.extractedText);
     } catch (e) {
@@ -931,6 +935,11 @@ export function CurriculumIngestion() {
                 {excerpt}
               </pre>
             </details>
+            <RepositorySourceReview
+              source={mapping._source}
+              acknowledged={limitationsReviewed}
+              onAcknowledge={setLimitationsReviewed}
+            />
             <DocumentMappingEditor value={mapping} onChange={setMapping} />
             <button
               className={control}

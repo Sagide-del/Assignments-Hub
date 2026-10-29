@@ -30,6 +30,7 @@ export class CreateCollectionDto {
   urls?: string[];
 }
 export class AssetReviewDto {
+  @IsOptional() @IsBoolean() sourceLimitationsReviewed?: boolean;
   @IsOptional()
   @IsIn(["AUTO", "CURRICULUM", "TEACHING", "FRAMEWORK"])
   role?: string;

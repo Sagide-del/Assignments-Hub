@@ -1,0 +1,806 @@
+{
+  "repository": "Vincent-mutwiri/KICD-Curriculum-Designs",
+  "commit": "08760594f5390c70fd7b764abd0525f9bf2c4f69",
+  "files": [
+    {
+      "id": "c479ae8ac6046e3f8751",
+      "grade": "Grade 6",
+      "subject": "Agriculture",
+      "path": "Grade_6/AGRICULTURE Grade 6 30.07.2024.md",
+      "sha256": "e2328c51529e14b4487516ebba7f6eb85132809d446f5465eb5fe49294ab7f30",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/AGRICULTURE%20Grade%206%2030.07.2024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "1878aab90e45d78c4cfe",
+      "grade": "Grade 6",
+      "subject": "Christian Religious Education",
+      "path": "Grade_6/CRE GRADE 6 DESIGN - Revised.md",
+      "sha256": "5d84935429bedc3446f2dff9af2bd0da608846c500bdb7cc4b181e9e451eb762",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/CRE%20GRADE%206%20DESIGN%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "83683afab6376b2fb33d",
+      "grade": "Grade 6",
+      "subject": "Creative Arts",
+      "path": "Grade_6/Creative Arts Curriculum designs - Revised.md",
+      "sha256": "4b6d789e7427d005711b86d2dea5252113590027ffc9869894073f9ccafced5b",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/Creative%20Arts%20Curriculum%20designs%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "3fc540ed32cf1ddfcca9",
+      "grade": "Grade 6",
+      "subject": "English",
+      "path": "Grade_6/ENGLISH GRADE 6 UPDATED - Revised Sept.md",
+      "sha256": "7ac194bd3cb8fe63865e8dff66451525ef03af432e4d3a38c293039a02dcfdaa",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/ENGLISH%20GRADE%206%20UPDATED%20-%20Revised%20Sept.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "7e08b685ee93c40d2a9e",
+      "grade": "Grade 6",
+      "subject": "Indigenous Languages",
+      "path": "Grade_6/FINAL - GRADE 6 INDIGENOUS LANGUAGE - Revised Oct.md",
+      "sha256": "70e6f4f618ecb4aa94c14524ccdb0a580058af8b716d8b47b59954aa44074afe",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/FINAL%20-%20GRADE%206%20INDIGENOUS%20LANGUAGE%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "e99f6c25b8e4c772302a",
+      "grade": "Grade 6",
+      "subject": "Arabic",
+      "path": "Grade_6/FINAL ARABIC GRADE 6 CURRICULUM DESIGN - Revised.md",
+      "sha256": "d0d37abd2d71aca17db1e0ab8e6b426dcbda28e7cb2aa27bd0bb292477d4da06",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/FINAL%20ARABIC%20GRADE%206%20CURRICULUM%20DESIGN%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "02a1279c571aeef3a8b1",
+      "grade": "Grade 6",
+      "subject": "French",
+      "path": "Grade_6/FRENCH GRADE 6 - Revised.md",
+      "sha256": "826744ebe173fdfb1e47135e231cc7c97068dab279199577ceaae232cf61d026",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/FRENCH%20GRADE%206%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "010478f41f6fd2923c3a",
+      "grade": "Grade 6",
+      "subject": "German",
+      "path": "Grade_6/German Grade 6 Edited -FIN.md",
+      "sha256": "0a0a3742f5a376ccdea7e5d9f6abbf2b816d3235dd25e1916e00c599c99ea3b1",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/German%20Grade%206%20Edited%20-FIN.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "c79db29aaef2376deab3",
+      "grade": "Grade 6",
+      "subject": "Mathematics",
+      "path": "Grade_6/Grade 6 Mathematics - Revised.md",
+      "sha256": "550f53617dfe30b73ce5939f98df6b31f6efa015e3fba678da990a60e0aba4e9",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/Grade%206%20Mathematics%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "ea0a184b871858a0796f",
+      "grade": "Grade 6",
+      "subject": "Science and Technology",
+      "path": "Grade_6/Grade 6 Science and Tech - Revised.md",
+      "sha256": "99ced70f7adb1d35b6059b3b128c41eb5a6a09eadf6f6c4ca6be135a52ba3bff",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/Grade%206%20Science%20and%20Tech%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "89cd56a23b4aa3d4ac48",
+      "grade": "Grade 6",
+      "subject": "Social Studies",
+      "path": "Grade_6/Grade 6 Social studies - Revised Oct.md",
+      "sha256": "6ffee552e6f2c4b161e149138982b0280b35286ed26452aefd94dcdd4df79bb5",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/Grade%206%20Social%20studies%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "5b258c8febbaa37117ee",
+      "grade": "Grade 6",
+      "subject": "Hindu Religious Education",
+      "path": "Grade_6/HRE GRADE 6 - Revised.md",
+      "sha256": "93c2d7c7d21658a7d886a67948974c149f3f62626ed9248f8104378ae00722c7",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/HRE%20GRADE%206%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "6d476c4fd0a12fde60fc",
+      "grade": "Grade 6",
+      "subject": "Islamic Religious Education",
+      "path": "Grade_6/IRE GRADE 6 CURRICULUM DESIGNS - Revised.md",
+      "sha256": "d6c3f6002cbd92b6b35dece3981199ee3983b25d3031bddde4b8c7db75c3bf15",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/IRE%20GRADE%206%20CURRICULUM%20DESIGNS%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "b484b480f6bfedcfba09",
+      "grade": "Grade 6",
+      "subject": "Kiswahili",
+      "path": "Grade_6/LATEST 6.8.2024 KISWAHILI GRADE 6 - Revised.md",
+      "sha256": "2d0b92f2306efc9898a191e2a6464afd0b3950d1d2b193f80206326c8f43b447",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/LATEST%206.8.2024%20KISWAHILI%20GRADE%206%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "e902d09076deab055453",
+      "grade": "Grade 6",
+      "subject": "Mandarin",
+      "path": "Grade_6/Mandarin Grade 6 - Revised.md",
+      "sha256": "2d58f7398173e54d675bfdfcf561bc75cb73cf72dbf56997e7a04f7990b667ae",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_6/Mandarin%20Grade%206%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/"
+    },
+    {
+      "id": "03158501ed7c8a819783",
+      "grade": "Grade 7",
+      "subject": "Agriculture",
+      "path": "Grade_7/Agriculture Grade7 1.8.2024 -Proofread.md",
+      "sha256": "d4d8d9a668cf808f630c03eac088a81906d46ed1783d34dcd2a1820a113fad8c",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Agriculture%20Grade7%201.8.2024%20-Proofread.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "b5b91f1edd99408e3f0c",
+      "grade": "Grade 7",
+      "subject": "Christian Religious Education",
+      "path": "Grade_7/CRE Grade 7 - Revised.md",
+      "sha256": "174ad856dc06fd6101c30593832de92202291af59614d2107039ef62fa28be2e",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/CRE%20Grade%207%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "eb81b5ef828036e1cba9",
+      "grade": "Grade 7",
+      "subject": "Creative Arts",
+      "path": "Grade_7/Creative Arts & Sports Grade 7 - Revised.md",
+      "sha256": "c72d68d820c7188cf0df164ea7969eebb619bed1684f24b92004e89f5f8f60cb",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Creative%20Arts%20%26%20Sports%20Grade%207%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "f7ec5e872e7b7be03c0f",
+      "grade": "Grade 7",
+      "subject": "English",
+      "path": "Grade_7/English Grade 7 - REVISED - OCT.md",
+      "sha256": "1f267cb7abff4774213aa2bf096c40502314ff7190cef6325ebd7f77df6b384c",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/English%20Grade%207%20-%20REVISED%20-%20OCT.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "3c6ce74417cecc8c9d1b",
+      "grade": "Grade 7",
+      "subject": "Arabic",
+      "path": "Grade_7/FINAL ARABIC GRADE 7 CURRICULUM DESIGN.md",
+      "sha256": "216d08060f8ece5e4af09282c498cce04ff826390d2d3fc06ddbf205e7e98513",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/FINAL%20ARABIC%20GRADE%207%20CURRICULUM%20DESIGN.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "d238f2cb48d81b487d79",
+      "grade": "Grade 7",
+      "subject": "French",
+      "path": "Grade_7/French Grade 7 - July 2024.md",
+      "sha256": "ddb5499231f24824831318419065a96a58ccbb56a5f4ae3043fd74a1db1dd1fc",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/French%20Grade%207%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "53649193b971861fd724",
+      "grade": "Grade 7",
+      "subject": "German",
+      "path": "Grade_7/German Grade 7 - July 2024.md",
+      "sha256": "b51c2f2186423025568b352728f503e5c1609f2e1592b52beeab8cc81b68e6fc",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/German%20Grade%207%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "e4b8728d5b8c32572635",
+      "grade": "Grade 7",
+      "subject": "Hindu Religious Education",
+      "path": "Grade_7/HRE Grade 7 - July 2024 - Fin.md",
+      "sha256": "744197dd9491c627bbfea54132476a2d57ca8efd9c800eb294b74160ce117a83",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/HRE%20Grade%207%20-%20July%202024%20-%20Fin.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "d24999ed9d17ebb1e5f6",
+      "grade": "Grade 7",
+      "subject": "Indigenous Languages",
+      "path": "Grade_7/Indigenous Languages Grade 7 - Revised.md",
+      "sha256": "5e1cc49160b7558951df200577b4831a4ca679b48d4ea42ebd54de95ce05bfba",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Indigenous%20Languages%20Grade%207%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "6a5c06aaa72d18047c7f",
+      "grade": "Grade 7",
+      "subject": "Integrated Science",
+      "path": "Grade_7/Integrated Science Grade 7 - July 2024.md",
+      "sha256": "661a426621be318aac27fdf26370b0cfe2fdd1eb177da5d51a16c618f374d463",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Integrated%20Science%20Grade%207%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "58f3a31a940222fcb54f",
+      "grade": "Grade 7",
+      "subject": "Islamic Religious Education",
+      "path": "Grade_7/Islamic Religious Education Grade 7 - July 2024.md",
+      "sha256": "27715b8817bbbc6c901cc95cddd2b958dbfcf1ae753c4d59983d42a709459b9c",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Islamic%20Religious%20Education%20Grade%207%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "36562744775e294707f1",
+      "grade": "Grade 7",
+      "subject": "Kiswahili",
+      "path": "Grade_7/Kiswahili Grade 7 - July 2024 - Revised Oct.md",
+      "sha256": "7884bc5c0cf05cfa8421052f5428d0dd74bbfa21d2f2016e7f372b53556add24",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Kiswahili%20Grade%207%20-%20July%202024%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "59a6e1afae3c24a12259",
+      "grade": "Grade 7",
+      "subject": "Mandarin",
+      "path": "Grade_7/Mandarin Grade 7 2024 - Revised Oct.md",
+      "sha256": "3c59900b09e9743a09728e5abe3a88ede09c3eed7fae5bf10186b17ccbbf5818",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Mandarin%20Grade%207%202024%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "0451ef2e20adc0061b61",
+      "grade": "Grade 7",
+      "subject": "Mathematics",
+      "path": "Grade_7/Mathematics Grade 7 - July 2024 - Revised.md",
+      "sha256": "3ef53c26b70a2be4ed780845ee64345006f6edace9169c1ff52c83771df0053d",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Mathematics%20Grade%207%20-%20July%202024%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "51c4d0d4ab6036bd4052",
+      "grade": "Grade 7",
+      "subject": "Pre-Technical Studies",
+      "path": "Grade_7/Pre-Technical Studies Grade 7 - July 2024 - Revised.md",
+      "sha256": "6016d6f92dcbc66226034eba6d655a80befece0654221d36619e05bb741cfe4a",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Pre-Technical%20Studies%20Grade%207%20-%20July%202024%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "131157d7c7fec3c0e65a",
+      "grade": "Grade 7",
+      "subject": "Social Studies",
+      "path": "Grade_7/Social Studies Grade 7 - Revised.md",
+      "sha256": "ef7b36f3991cf6c658c28c305dfc0e5780f11b6050e358cdcfb013bc8c30a47f",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_7/Social%20Studies%20Grade%207%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-seven-designs/"
+    },
+    {
+      "id": "54ea3ac44e8194771b10",
+      "grade": "Grade 8",
+      "subject": "Agriculture",
+      "path": "Grade_8/Agriculture Grade8 1.8.2024 - Proofread.md",
+      "sha256": "9cd8ac4587e66179baf96f1ac8fd4fe880ec3ad9a4e6b6574564ecb418a9c271",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Agriculture%20Grade8%201.8.2024%20-%20Proofread.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "4927ac8f53d210370afc",
+      "grade": "Grade 8",
+      "subject": "Christian Religious Education",
+      "path": "Grade_8/CRE Grade 8 - Revised.md",
+      "sha256": "12542715f35c02a51d070435067ffa5457e2670c165e1feed7db5b006ca84d60",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/CRE%20Grade%208%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "26ef2b0050d1e5f9b15a",
+      "grade": "Grade 8",
+      "subject": "Creative Arts",
+      "path": "Grade_8/Creative Arts & Sports Grade 8 - Revised.md",
+      "sha256": "1d1951032600e39d336f7d44393cf96274857f062fbe485d15476682f3cd7127",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Creative%20Arts%20%26%20Sports%20Grade%208%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "c9eb45cd4f89be294214",
+      "grade": "Grade 8",
+      "subject": "English",
+      "path": "Grade_8/English Grade 8 - Revised Oct.md",
+      "sha256": "3d413dbf7d968e579e367bc3cc7fb5f4d4467fec67fa0b746582332dbaf549b8",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/English%20Grade%208%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "eb0b17536034f4aba903",
+      "grade": "Grade 8",
+      "subject": "Arabic",
+      "path": "Grade_8/FINAL ARABIC GRADE 8 CURRICULUM DESIGN.md",
+      "sha256": "fe0a6a310248b6c7b36810ef47528cf9dcda4e79768547403a41c6d912c02a8a",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/FINAL%20ARABIC%20GRADE%208%20CURRICULUM%20DESIGN.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "92eff085ac328bc0933c",
+      "grade": "Grade 8",
+      "subject": "French",
+      "path": "Grade_8/French Grade 8 - July 2024.md",
+      "sha256": "45ffbeda73cbf063dbe656f530bfa470a44471834d751a3ffbe23fe72e8cef9e",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/French%20Grade%208%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "b14b720a33dc6b609849",
+      "grade": "Grade 8",
+      "subject": "German",
+      "path": "Grade_8/German Grade 8 - July 2024.md",
+      "sha256": "f694bf44ed69ccb0d6a44ae7a0d778d194453526631f54729d1319bb68847dd2",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/German%20Grade%208%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "27464d77a79882a544c8",
+      "grade": "Grade 8",
+      "subject": "Hindu Religious Education",
+      "path": "Grade_8/HRE Grade 8 - July 2024 - Fin.md",
+      "sha256": "84fe7dec14eeb776388f393717c00ca71c6f7bfcbca72eaa1030944ab82ab4cd",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/HRE%20Grade%208%20-%20July%202024%20-%20Fin.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "fdf7a3b28cea1ec94d0c",
+      "grade": "Grade 8",
+      "subject": "Indigenous Languages",
+      "path": "Grade_8/Indigenous Languages Grade 8 Design - Revised.md",
+      "sha256": "973d3ce593339dc692bbfa21b29e0529d975b01eeb87b76cfaf04707faee3d86",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Indigenous%20Languages%20Grade%208%20Design%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "a03b940a9bb7daf982b6",
+      "grade": "Grade 8",
+      "subject": "Integrated Science",
+      "path": "Grade_8/Integrated Science Grade 8 - July 2024.md",
+      "sha256": "563f8373c01bb65ad9b1e7add36d50697065f58722c23e13c9714c6e4a57e97a",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Integrated%20Science%20Grade%208%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "ed704ed3c3725273de63",
+      "grade": "Grade 8",
+      "subject": "Islamic Religious Education",
+      "path": "Grade_8/Islamic Religious Education Grade 8 - July 2024.md",
+      "sha256": "7ce5dbc5a3efa8efaf278c47ac5fd2840c4a428e3794a2ae80231731fb3b6112",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Islamic%20Religious%20Education%20Grade%208%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "5bae61c3a12c1cc6f1cf",
+      "grade": "Grade 8",
+      "subject": "Kiswahili",
+      "path": "Grade_8/Kiswahili Grade 8 - July 2024 - Revised Oct.md",
+      "sha256": "70fde1b2e718deb5ddcf67ae66c8cbb923becc03330fa68ec053998549ac6a67",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Kiswahili%20Grade%208%20-%20July%202024%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "b0fffce72b1a2def1f05",
+      "grade": "Grade 8",
+      "subject": "Mandarin",
+      "path": "Grade_8/Mandarin Grade 8 Design - July 2024 - Revised.md",
+      "sha256": "02605cd9468fe254a244d63ed6c3b6cbab9c7d74d4cb775a986f328a95b9191c",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Mandarin%20Grade%208%20Design%20-%20July%202024%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "462b9045179d089c7ae7",
+      "grade": "Grade 8",
+      "subject": "Mathematics",
+      "path": "Grade_8/Mathematics Grade 8 - July 2024.md",
+      "sha256": "96d7a3c4b834ad7fbc7e881b9947642ff965e698e310a0745af3bfcd2b3f0829",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Mathematics%20Grade%208%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "3c45d3df7cb1d3f5e459",
+      "grade": "Grade 8",
+      "subject": "Pre-Technical Studies",
+      "path": "Grade_8/Pre-Technical Studies Grade 8 - July 2024 - Revised.md",
+      "sha256": "2fcf53abaa2b0ebf9c23666475e9cb7b80213997d9d8006f99c4c3cab1ffbb40",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Pre-Technical%20Studies%20Grade%208%20-%20July%202024%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "79919c2d356fe81cc4d4",
+      "grade": "Grade 8",
+      "subject": "Social Studies",
+      "path": "Grade_8/Social Studies Grade 8 - Revised.md",
+      "sha256": "760467421cecc525fda46526ad73b8f098530364c7833d691a9f6bd0f5a2ffc6",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_8/Social%20Studies%20Grade%208%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eight-designs/"
+    },
+    {
+      "id": "1cf2f03a6b9c269dcd85",
+      "grade": "Grade 9",
+      "subject": "Agriculture",
+      "path": "Grade_9/Agriculture Grade9 1.8.2024 -Proofread.md",
+      "sha256": "a1eb3e45271434d9bade275bbb6ac50a99589f0103ab388447bce158a3b1f0e9",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Agriculture%20Grade9%201.8.2024%20-Proofread.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "c04a5e8d318f0852e209",
+      "grade": "Grade 9",
+      "subject": "Christian Religious Education",
+      "path": "Grade_9/CRE Grade 9 - Revised.md",
+      "sha256": "b73334835632c01602db040492c4552c48dd77c0d949e091e8e7a8df1d7616ec",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/CRE%20Grade%209%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "cd0545f9099ab909c7aa",
+      "grade": "Grade 9",
+      "subject": "Creative Arts",
+      "path": "Grade_9/Creative Arts & Sports Grade 9 - Revised.md",
+      "sha256": "696615189738bfae1ee4513852db2f9a5af7b2349ea8a1a913c1156c52aa9507",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Creative%20Arts%20%26%20Sports%20Grade%209%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "012cd0b17977b9594e1b",
+      "grade": "Grade 9",
+      "subject": "English",
+      "path": "Grade_9/English Grade 9 - Revised Oct.md",
+      "sha256": "9abc0768598b98b6b19ea83b1fb8ac6273382ee315a94103737f4301de3b3b8a",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/English%20Grade%209%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "98ee1db333d1f0491ea0",
+      "grade": "Grade 9",
+      "subject": "Arabic",
+      "path": "Grade_9/FINAL ARABIC GRADE 9 CURRICULUM DESIGN.md",
+      "sha256": "6c44e362d4411e6219575df76a2c6555355a00ef9acae2224a9b0b56ad6541bf",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/FINAL%20ARABIC%20GRADE%209%20CURRICULUM%20DESIGN.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "748c992fa7f92d85911a",
+      "grade": "Grade 9",
+      "subject": "French",
+      "path": "Grade_9/French Grade 9 - July 2024.md",
+      "sha256": "efdf6fa2a3e8532923011b18fc74fbd6211bd16e18639eb0ec1568533f83702f",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/French%20Grade%209%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "03038a6d598f8644ea9f",
+      "grade": "Grade 9",
+      "subject": "German",
+      "path": "Grade_9/German Grade 9  - July 2024.md",
+      "sha256": "89704f56437d3017d0c988501b9df0f90072f2ed3d612922358c8bdbaaee50eb",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/German%20Grade%209%20%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "341daa234803fd754930",
+      "grade": "Grade 9",
+      "subject": "Hindu Religious Education",
+      "path": "Grade_9/HRE Grade 9 - July 2024 - Fin.md",
+      "sha256": "96aaa7c527847f8fec4b6b329bd730f754e3dbd45153a49c3a030764bc9b5397",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/HRE%20Grade%209%20-%20July%202024%20-%20Fin.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "852eca5741534be1ebcf",
+      "grade": "Grade 9",
+      "subject": "Indigenous Languages",
+      "path": "Grade_9/Indigenous Languages Grade 9 - Revised.md",
+      "sha256": "a67b06b114362d3a656e444bed08df80362c6f8ba366ec45d106c91193023790",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Indigenous%20Languages%20Grade%209%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "489497c8e49927d4d090",
+      "grade": "Grade 9",
+      "subject": "Integrated Science",
+      "path": "Grade_9/Integrated Science Grade 9 - July 2024.md",
+      "sha256": "0d6a250b83d229055377f40ee9471fd7b2cfe023e9953b2e12cfffd00ffc546a",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Integrated%20Science%20Grade%209%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "1ac2a4e7625eb3afe6cb",
+      "grade": "Grade 9",
+      "subject": "Islamic Religious Education",
+      "path": "Grade_9/Islamic Religious Education Grade 9 - July 2024.md",
+      "sha256": "37b3e9820bc82aeaaece5e9d67573558ee015a5897989664ce30f9e205bad35f",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Islamic%20Religious%20Education%20Grade%209%20-%20July%202024.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "65adf666dc2d232d6e7f",
+      "grade": "Grade 9",
+      "subject": "Kiswahili",
+      "path": "Grade_9/Kiswahili Gredi 9 -2024 - Revised Oct.md",
+      "sha256": "a13add2b77c56655aa6d36f4fdc30aa6874ec5d85ee6696983340bb04c7202b2",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Kiswahili%20Gredi%209%20-2024%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "10e667629076c5b118a1",
+      "grade": "Grade 9",
+      "subject": "Mandarin",
+      "path": "Grade_9/Mandarin Grade 9 2024 - Revised Oct.md",
+      "sha256": "8e4f66a9c59cdf551e4bb4f719b6d0735702d6964cc5a1c8b9d521d0b254e62d",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Mandarin%20Grade%209%202024%20-%20Revised%20Oct.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "d466572888fff94c1ebf",
+      "grade": "Grade 9",
+      "subject": "Mathematics",
+      "path": "Grade_9/Mathematics Grade 9 - July 2024 - Revised.md",
+      "sha256": "5c803a011182cfd682d39399d9697e48204ff3f10e467633bc52dff52221a492",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Mathematics%20Grade%209%20-%20July%202024%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "cfbff18cf070af627bfa",
+      "grade": "Grade 9",
+      "subject": "Pre-Technical Studies",
+      "path": "Grade_9/Pre-Technical Studies Grade 9 - July 2024 - Revised.md",
+      "sha256": "980c0c30c9cebcda624161330b9544e53bb51b07aa08cedb434783af0fa0dbc1",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Pre-Technical%20Studies%20Grade%209%20-%20July%202024%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "3556dcaf84b81969b20a",
+      "grade": "Grade 9",
+      "subject": "Social Studies",
+      "path": "Grade_9/Social Studies Grade 9 - Revised.md",
+      "sha256": "36f6d1560289e003f96676b439cd69de8531bccf5877a7334ebfc23e4c7b33c6",
+      "revision": "2024",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_9/Social%20Studies%20Grade%209%20-%20Revised.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/"
+    },
+    {
+      "id": "23ece009ab6b519e05ed",
+      "grade": "Grade 10",
+      "subject": "Agriculture",
+      "path": "Grade_10/Agriculture Grade 10 - July 2025.md",
+      "sha256": "89116489057c89e1c7c04a9d2b1fe2aa71048d4f8f25176fac2ab12c366531fe",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_10/Agriculture%20Grade%2010%20-%20July%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-ten/"
+    },
+    {
+      "id": "fc42d24d1e96b9441f1d",
+      "grade": "Grade 10",
+      "subject": "Arabic",
+      "path": "Grade_10/Arabic Grade 10 - July 2025.md",
+      "sha256": "5221263cac5e828d33910b5a3a984ed31bf94629498d2c765a958b234a43f17c",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_10/Arabic%20Grade%2010%20-%20July%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-ten/"
+    },
+    {
+      "id": "204c4c5e3b4fc40759c4",
+      "grade": "Grade 10",
+      "subject": "Aviation",
+      "path": "Grade_10/Aviation Grade 10 - July 2025.md",
+      "sha256": "a33b117fcb88fbcc8ce19e9573b7498c5496d31cba573d286f04f8d32b9fc52d",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_10/Aviation%20Grade%2010%20-%20July%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-ten/"
+    },
+    {
+      "id": "00b65079bbd3fae3b1a4",
+      "grade": "Grade 10",
+      "subject": "Biology",
+      "path": "Grade_10/Biology Grade 10 - July 2025.md",
+      "sha256": "3cd5794386e9f6104d76a0189374d3bf490519dc69cb4f5a7cf9027babdc77eb",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_10/Biology%20Grade%2010%20-%20July%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-ten/"
+    },
+    {
+      "id": "45860ae50664a13f38fc",
+      "grade": "Grade 10",
+      "subject": "Business Studies",
+      "path": "Grade_10/Business Studies Grade 10 - July 2025.md",
+      "sha256": "e81daca87bfc522d55230c77f66bda77325521ccb207f91aa175f9c03ef4129a",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_10/Business%20Studies%20Grade%2010%20-%20July%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-ten/"
+    },
+    {
+      "id": "a4bc3a7b7ba3fd3532e1",
+      "grade": "Grade 10",
+      "subject": "Christian Religious Education",
+      "path": "Grade_10/Christian Religious Education Grade 10  - June 2025.md",
+      "sha256": "2a9fadb7cfca383d5c3048f9166c93449628aad85c0b159fe99a94d24d340d58",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_10/Christian%20Religious%20Education%20Grade%2010%20%20-%20June%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-ten/"
+    },
+    {
+      "id": "1b210976bcf39c22c6f4",
+      "grade": "Grade 10",
+      "subject": "English",
+      "path": "Grade_10/English Grade 10 - July 2025.md",
+      "sha256": "7313e6081cf0010497fae22de2c9f44c5ca9766736857ecfe77c688380f617fb",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_10/English%20Grade%2010%20-%20July%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-ten/"
+    },
+    {
+      "id": "8a09e8aa621be893dc5c",
+      "grade": "Grade 11",
+      "subject": "Agriculture",
+      "path": "Grade_11/Agriculture Grade 11 - October 2025.md",
+      "sha256": "b95223bb8904824a8ef64d704f1556e9afb15c7e0b66f4183005839a3f20ca44",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/Agriculture%20Grade%2011%20-%20October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "9c86c2bce2a6d9546523",
+      "grade": "Grade 11",
+      "subject": "Arabic",
+      "path": "Grade_11/Arabic Grade 11- October 2025.md",
+      "sha256": "311976a603e2505bac4767874a48f0a381309c2991a28f6870194496ca6efb10",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/Arabic%20Grade%2011-%20October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "6377e82a60fb64e9543b",
+      "grade": "Grade 11",
+      "subject": "Aviation",
+      "path": "Grade_11/Aviation Grade 11 - October 2025.md",
+      "sha256": "dabd145fe26a06df2e9537bfea510d0b613a141e7a5423cffd61e3b648b87d31",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/Aviation%20Grade%2011%20-%20October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "f7006f73cd4079edd9db",
+      "grade": "Grade 11",
+      "subject": "Biology",
+      "path": "Grade_11/Biology Grade 11 - October 2025.md",
+      "sha256": "51feab5c4983b555cbd145fd18b77fc45191f99372772627648c110f723ff952",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/Biology%20Grade%2011%20-%20October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "62db2725e3739a7676cf",
+      "grade": "Grade 11",
+      "subject": "Business Studies",
+      "path": "Grade_11/Business Studies Grade 11 -October 2025.md",
+      "sha256": "6893a77d1e4af57b52b9f03fa0617ae78ffabef968ba928af8f667869b8670d5",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/Business%20Studies%20Grade%2011%20-October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "89b6b71229f206efd20c",
+      "grade": "Grade 11",
+      "subject": "Christian Religious Education",
+      "path": "Grade_11/CRE Grade 11 - October 2025.md",
+      "sha256": "1be1e9c8dfa73a1fd48866e8a27c7345b1a68b56f9dcdf735dbeba2d85da0b73",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/CRE%20Grade%2011%20-%20October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "9c4b7b4cbb72a9c5ee13",
+      "grade": "Grade 11",
+      "subject": "English",
+      "path": "Grade_11/English Grade 11 - October 2025.md",
+      "sha256": "fe1cedc7427397113ad626e835fe42356d76a6eaf5e77c259fa317e705bd4c4d",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/English%20Grade%2011%20-%20October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "fed4442fd3ef985aba6f",
+      "grade": "Grade 11",
+      "subject": "Fine Arts",
+      "path": "Grade_11/Fine Arts Grade 11 - October 2025.md",
+      "sha256": "07e1306dd0034253b287c302634180f04788f080eef653e8146b2a392f0e107f",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_11/Fine%20Arts%20Grade%2011%20-%20October%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-eleven/"
+    },
+    {
+      "id": "05d603df3a919fc7ffd8",
+      "grade": "Grade 12",
+      "subject": "Fasihi ya Kiswahili",
+      "path": "Grade_12/Fasihi ya Kiswahili Grade 12- Juni 2025.md",
+      "sha256": "442713a1fce6f2bdd509d260badaba833577ae8eca27b92fa071ec1740ff417e",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_12/Fasihi%20ya%20Kiswahili%20Grade%2012-%20Juni%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-twelve/"
+    },
+    {
+      "id": "2bc05fd8347cb2ea6ea0",
+      "grade": "Grade 12",
+      "subject": "Literature in English",
+      "path": "Grade_12/LITERATURE GRADE 12 - JUNE 2025.md",
+      "sha256": "85aeacd11cb0d28a020dfbe615fe03f7fb4402e7f415381a4774794372375585",
+      "revision": "2025",
+      "sourceUrl": "https://github.com/Vincent-mutwiri/KICD-Curriculum-Designs/blob/08760594f5390c70fd7b764abd0525f9bf2c4f69/Grade_12/LITERATURE%20GRADE%2012%20-%20JUNE%202025.md",
+      "officialDirectory": "https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-twelve/"
+    }
+  ]
+}
