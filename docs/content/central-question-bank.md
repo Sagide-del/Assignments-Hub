@@ -1,14 +1,14 @@
 # Central content workspace
 
-The admin Question Bank is the main shared repository. Its tabs are Questions, Curriculum sources, Generation jobs, Memory cards and School access. The sidebar keeps ten primary destinations; the former AI, curriculum, PDF-card, tutor and authored-assignment routes remain accessible through contextual or advanced links. Existing authored assignments and legacy PDF cards are preserved.
+The admin Question Bank is the main shared repository. Its primary tabs are Questions, Create content, Generation jobs and Memory cards. School access and source/collection tools are in the collapsed Advanced tools & school access section. The sidebar keeps ten primary destinations; the former AI, curriculum, PDF-card, tutor and authored-assignment routes remain accessible through contextual or advanced links. Existing authored assignments and legacy PDF cards are preserved.
 
 ## Populate Grades 6–12
 
-1. Open **Question Bank → Curriculum sources**.
-2. Discover official KICD subjects, or upload the saved KICD HTML directory. Discovery reads links, not executable HTML. It follows all seven grade design directories with bounded nested-subject traversal and lists official PDF candidates, with suggested subjects and a separate exceptions list. Only HTTPS KICD hosts and same-host redirects are accepted; responses have time/size limits.
-3. Review each candidate's grade and subject, then import selected PDFs. The importer confirms the grade in extracted PDF text before indexing. Inaccessible, externally hosted or unconfirmed documents produce explicit failures. A general framework is not relabelled as a subject design. The legacy curriculum library remains available for framework/extraction workflows.
-4. Select indexed sources across grades and subjects, choose a question count and optionally a topic focus, then queue questions or memory cards. Requests use the source's actual grade and subject. Draft questions remain in the central bank for review; generation does not publish or unlock a school automatically.
-5. Review answers, explanations, options and visuals. Edit before approval. Questions with missing referenced figures or invalid MCQ options cannot be approved. An assignment selection must belong to one grade and subject.
+1. Open **Question Bank → Generate content**, then choose a grade.
+2. Follow **Set up curriculum**: discover official designs, confirm the selected links, check document mappings, verify the expected subject list and review quoted learning outcomes. Existing indexed sources can be reused without original PDFs. Missing/inaccessible material remains visible.
+3. Continue to **Generate content**. Select all ready subjects or one subject. The starter preview shows the requested total before any generation starts. Notes and books are optional; reviewed curriculum defines scope while AI creates original draft questions and explanations.
+4. Follow **Review & publish** to inspect that grade’s draft questions, generation progress and memory cards. Answer checks, explanations and visuals still need review. Approved valid MCQs automatically feed independent practice once 30 are available; cards have a separate publication action. School teachers retain subscribed-bank selection controls.
+5. Open **Advanced tools & school access** for collection uploads, curriculum corrections, older official-source tools and school activation. Existing authored assignments and legacy PDF cards are preserved.
 
 Question jobs run in 15-question chunks using stable generation IDs. Completed chunks survive retries and avoid repeated generation. Exact normalized question duplicates in the source pool are excluded. Provider output may contain fewer usable questions than requested; the job shows the actual count. The current retrieval window and extracted-text size limits remain in effect, so one generation request is not a certification of complete syllabus coverage.
 

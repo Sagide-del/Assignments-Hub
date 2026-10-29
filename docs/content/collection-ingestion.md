@@ -1,6 +1,12 @@
 # Curriculum Coverage & Ingestion
 
-Open **Platform Admin → Question Bank → Curriculum ingestion**. The main Generate content button opens this workspace. The existing question library, subscribed-school access, independent practice and legacy generation/source tools remain available.
+Open **Platform Admin → Question Bank → Generate content** for the guided workspace. Choose one grade, then follow **Set up curriculum → Generate content → Review & publish**. A grade with checked outcomes opens at generation automatically. Main tabs are Questions, Create content, Generation jobs and Memory cards. School access and advanced tools remain available in a collapsed section.
+
+The guided setup discovers official links for the chosen grade, lets the administrator select and confirm subjects, saves the subject proposals and queues curriculum designs directly into the existing collection pipeline. Downloads/classification continue in background jobs. Review documents and quoted outcomes in the same workspace, confirm subject-list completeness, then generate. No textbook upload is required. Discovery errors and unfinished subjects remain visible; discovery is not a completeness certification.
+
+The guided starter batch requests about 30 questions per ready subject/pathway entry plus recall cards. It uses up to six evenly spaced IDs from that subject’s ready outcome list, requesting at least five questions per selected outcome. This bounds the first-run output per subject; it does not prove all strands are covered. The preview shows the total requested before queuing. Per-subject queue failures are reported alongside successful job counts, without claiming failed subjects succeeded. The advanced workspace still allows generation across all ready outcomes.
+
+Review questions through a grade-filtered link; publish cards separately. The existing question library, subscribed-school access and independent practice remain available. **Advanced tools & school access → Collection uploads & curriculum corrections** opens the full collection workspace documented below.
 
 ## Intake whole collections
 

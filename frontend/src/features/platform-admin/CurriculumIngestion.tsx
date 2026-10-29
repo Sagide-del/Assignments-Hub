@@ -957,11 +957,13 @@ export function CurriculumIngestion() {
     </div>
   );
 }
-function OutcomeEditor({
+export function OutcomeEditor({
+  backLabel = "Coverage matrix",
   scope,
   sources,
   onBack,
 }: {
+  backLabel?: string;
   scope: ScopeCoverage;
   sources: import("../../api/ingestion.api").SourceReference[];
   onBack: () => void;
@@ -1018,7 +1020,7 @@ function OutcomeEditor({
         onClick={onBack}
       >
         <ArrowLeft size={16} />
-        Coverage matrix
+        {backLabel}
       </button>
       <h2 className="text-xl font-semibold">
         {scope.grade} · {scope.subject}

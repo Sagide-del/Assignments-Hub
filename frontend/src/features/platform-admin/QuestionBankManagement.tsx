@@ -1,19 +1,19 @@
+import { CreateContentWorkspace } from "./CreateContentWorkspace";
 import { CurriculumIngestion } from "./CurriculumIngestion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BookMarked,
   Layers,
   Brain,
-  School,
   Clock,
   Plus,
   ChevronLeft,
   ChevronRight,
   Check,
-  FileSearch,
   RefreshCw,
+  FileSearch,
 } from "lucide-react";
 import {
   contentLibraryApi,
@@ -34,9 +34,12 @@ const control =
 const grades = [6, 7, 8, 9, 10, 11, 12].map((g) => `Grade ${g}`);
 export function QuestionBankManagement() {
   const [params, setParams] = useSearchParams(),
-    view = params.get("view") ?? "questions",
+    view =
+      params.get("view") === "coverage"
+        ? "create"
+        : (params.get("view") ?? "questions"),
     client = useQueryClient();
-  const [grade, setGrade] = useState(""),
+  const [grade, setGrade] = useState(params.get("grade") ?? ""),
     [subject, setSubject] = useState(""),
     [topic, setTopic] = useState(""),
     [status, setStatus] = useState("GENERATED"),
@@ -57,6 +60,21 @@ export function QuestionBankManagement() {
     [discoveryErrors, setDiscoveryErrors] = useState<
       { url: string; message: string; grade?: string }[]
     >([]);
+  useEffect(() => {
+    const requestedGrade = params.get("grade");
+    if (
+      view === "questions" &&
+      requestedGrade &&
+      grades.includes(requestedGrade)
+    ) {
+      setGrade(requestedGrade);
+      setSubject("");
+      setTopic("");
+      setStatus("GENERATED");
+      setPage(0);
+      setSelected([]);
+    }
+  }, [params, view]);
   const overview = useQuery({
     queryKey: ["content-library"],
     queryFn: contentLibraryApi.overview,
@@ -227,11 +245,9 @@ export function QuestionBankManagement() {
     );
   const tabs = [
     ["questions", "Questions", BookMarked],
-    ["coverage", "Curriculum ingestion", Layers],
-    ["sources", "Official source tools", FileSearch],
+    ["create", "Create content", Layers],
     ["jobs", "Generation jobs", Clock],
     ["cards", "Memory cards", Brain],
-    ["schools", "School access", School],
   ] as const;
   return (
     <div className="space-y-5 pb-12 text-slate-800">
@@ -246,13 +262,15 @@ export function QuestionBankManagement() {
             schools.
           </p>
         </div>
-        <button
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-medium text-white"
-          onClick={() => changeView("coverage")}
-        >
-          <Plus size={16} />
-          Generate content
-        </button>
+        {view !== "create" && (
+          <button
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-medium text-white"
+            onClick={() => changeView("create")}
+          >
+            <Plus size={16} />
+            Generate content
+          </button>
+        )}
       </header>
       <nav
         className="flex gap-1 overflow-x-auto border-b"
@@ -291,7 +309,9 @@ export function QuestionBankManagement() {
           </button>
         </p>
       )}
-      {view === "coverage" ? (
+      {view === "create" ? (
+        <CreateContentWorkspace />
+      ) : view === "collections" ? (
         <CurriculumIngestion />
       ) : view === "schools" ? (
         <SchoolActivation />
@@ -1183,8 +1203,17 @@ export function QuestionBankManagement() {
         </div>
       )}
       <details className="border-t pt-4 text-xs text-slate-500">
-        <summary className="cursor-pointer">Advanced & legacy tools</summary>
+        <summary className="cursor-pointer">
+          Advanced tools & school access
+        </summary>
         <div className="mt-3 flex flex-wrap gap-4">
+          <button onClick={() => changeView("collections")}>
+            Collection uploads & curriculum corrections
+          </button>
+          <button onClick={() => changeView("sources")}>
+            Official source tools
+          </button>
+          <button onClick={() => changeView("schools")}>School access</button>
           <Link to="/platform/ai-management">AI settings</Link>
           <Link to="/platform/independent-assignments">
             Authored assignments
