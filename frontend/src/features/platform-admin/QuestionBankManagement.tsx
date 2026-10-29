@@ -487,6 +487,193 @@ export function QuestionBankManagement() {
           </button>
         ))}
       </nav>
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-white p-4">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold">Bulk publishing</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Select every approved question across all grades, subjects and
+            pages, then choose who receives it.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          disabled={
+            bulkApproval.isPending ||
+            publish.isPending ||
+            selectAllApprovedRequested
+          }
+          onClick={() => {
+            setParams({ view: "questions" });
+            setSelected([]);
+            setAllApproved(null);
+            setBatchFilter("");
+            setGrade("");
+            setSubject("");
+            setTopic("");
+            setStatus("APPROVED");
+            setPage(0);
+            setSelectAllApprovedRequested(true);
+          }}
+        >
+          <Check size={16} aria-hidden="true" />
+          {selectAllApprovedRequested
+            ? "Selecting approved questions…"
+            : "Select all approved questions"}
+        </button>
+      </div>
+      {(selected.length > 0 || allApproved) && (
+        <section
+          className="space-y-4 rounded-xl border border-blue-200 bg-white p-5"
+          aria-label="Publish selected content"
+        >
+          <div>
+            <h3 className="font-semibold">
+              Publish{" "}
+              {allApproved
+                ? allApproved.count - allApproved.excludedIds.length
+                : selected.length}{" "}
+              approved questions
+            </h3>
+            <p className="mt-1 text-xs leading-6 text-slate-500">
+              Assignments will be grouped by grade, subject and topic.
+              Generation batches stay separate. Existing publications are
+              skipped; learner submissions are kept.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block min-w-0 text-xs font-medium">
+              Publish to
+              <select
+                aria-label="Publish audience"
+                className={control + " mt-2 w-full min-w-0"}
+                value={publishAudience}
+                disabled={publish.isPending}
+                onChange={(e) =>
+                  setPublishAudience(e.target.value as typeof publishAudience)
+                }
+              >
+                <option value="INDEPENDENT">Individual learners</option>
+                <option value="SCHOOLS">Schools</option>
+                <option value="BOTH">Individuals and schools</option>
+              </select>
+            </label>
+            <label className="block min-w-0 text-xs font-medium">
+              Assignment title prefix (optional)
+              <input
+                aria-label="Assignment title prefix"
+                className={control + " mt-2 w-full min-w-0"}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Automatic subject and topic titles"
+                maxLength={160}
+                disabled={publish.isPending}
+              />
+            </label>
+          </div>
+          {publishAudience !== "INDEPENDENT" && (
+            <div className="rounded-lg border border-slate-200 p-4">
+              <label className="block min-w-0 text-xs font-medium">
+                School audience
+                <select
+                  aria-label="School audience"
+                  value={publishSchoolScope}
+                  onChange={(e) =>
+                    setPublishSchoolScope(e.target.value as "ALL" | "SELECTED")
+                  }
+                  className={control + " mt-2 w-full min-w-0"}
+                  disabled={publish.isPending}
+                >
+                  <option value="ALL">
+                    All subscribed schools with bank access
+                  </option>
+                  <option value="SELECTED">Choose schools</option>
+                </select>
+              </label>
+              {publicationTargets.isPending ? (
+                <p className="mt-3 text-sm">Loading eligible schools…</p>
+              ) : publicationTargets.isError ? (
+                <p role="alert" className="mt-3 text-sm text-red-700">
+                  Could not load schools.{" "}
+                  <button
+                    onClick={() => publicationTargets.refetch()}
+                    className="underline"
+                  >
+                    Retry
+                  </button>
+                </p>
+              ) : !publicationTargets.data?.length ? (
+                <p className="mt-3 text-sm text-amber-800">
+                  No subscribed schools have active Question Bank access yet.
+                </p>
+              ) : publishSchoolScope === "SELECTED" ? (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {publicationTargets.data.map((s) => (
+                    <label
+                      key={s.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={publishSchoolIds.includes(s.id)}
+                        disabled={publish.isPending}
+                        onChange={(e) =>
+                          setPublishSchoolIds((ids) =>
+                            e.target.checked
+                              ? [...ids, s.id]
+                              : ids.filter((id) => id !== s.id),
+                          )
+                        }
+                      />
+                      {s.name}{" "}
+                      <span className="text-xs text-slate-500">{s.code}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-slate-500">
+                  {publicationTargets.data.length} eligible schools. Learners
+                  receive only assignments for their grade.
+                </p>
+              )}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              className="min-h-11 rounded-lg bg-blue-700 px-5 text-sm font-semibold text-white disabled:opacity-40"
+              disabled={
+                publish.isPending ||
+                (allApproved
+                  ? allApproved.count - allApproved.excludedIds.length <= 0
+                  : !selected.length) ||
+                (publishAudience !== "INDEPENDENT" &&
+                  (publicationTargets.isFetching ||
+                    publicationTargets.isError ||
+                    !publicationTargets.data?.length ||
+                    (publishSchoolScope === "SELECTED" &&
+                      !publishSchoolIds.length)))
+              }
+              onClick={() => publish.mutate()}
+            >
+              {publish.isPending ? "Queuing publication…" : "Publish content"}
+            </button>
+            <button
+              disabled={publish.isPending}
+              className="text-sm text-slate-600 underline"
+              onClick={() => {
+                setSelected([]);
+                setAllApproved(null);
+              }}
+            >
+              Clear selection
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">
+            Published assignments appear in My Assignments for the chosen
+            audience. Approval alone does not publish content.
+          </p>
+        </section>
+      )}
       {notice && (
         <div
           role="status"
@@ -1218,40 +1405,6 @@ export function QuestionBankManagement() {
             ))}
           </div>
           <section className="rounded-xl border bg-white">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b p-4">
-              <div className="min-w-0">
-                <h2 className="text-sm font-semibold">Bulk publishing</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Select every approved question across all grades, subjects and
-                  pages, then choose who receives it.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-                disabled={
-                  bulkApproval.isPending ||
-                  publish.isPending ||
-                  selectAllApprovedRequested
-                }
-                onClick={() => {
-                  setSelected([]);
-                  setAllApproved(null);
-                  setBatchFilter("");
-                  setGrade("");
-                  setSubject("");
-                  setTopic("");
-                  setStatus("APPROVED");
-                  setPage(0);
-                  setSelectAllApprovedRequested(true);
-                }}
-              >
-                <Check size={16} aria-hidden="true" />
-                {selectAllApprovedRequested
-                  ? "Selecting approved questions…"
-                  : "Select all approved questions"}
-              </button>
-            </div>
             <div className="flex flex-wrap gap-3 border-b p-4">
               <select
                 aria-label="Generation batch"
@@ -1820,167 +1973,6 @@ export function QuestionBankManagement() {
               </div>
             </footer>
           </section>
-          {(selected.length > 0 || allApproved) && (
-            <section
-              className="sticky bottom-3 space-y-4 rounded-xl border border-blue-200 bg-white p-5 shadow-lg"
-              aria-label="Publish selected content"
-            >
-              <div>
-                <h3 className="font-semibold">
-                  Publish{" "}
-                  {allApproved
-                    ? allApproved.count - allApproved.excludedIds.length
-                    : selected.length}{" "}
-                  approved questions
-                </h3>
-                <p className="mt-1 text-xs leading-6 text-slate-500">
-                  Assignments will be grouped by grade, subject and topic.
-                  Generation batches stay separate. Existing publications are
-                  skipped; learner submissions are kept.
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block min-w-0 text-xs font-medium">
-                  Publish to
-                  <select
-                    aria-label="Publish audience"
-                    className={control + " mt-2 w-full min-w-0"}
-                    value={publishAudience}
-                    disabled={publish.isPending}
-                    onChange={(e) =>
-                      setPublishAudience(
-                        e.target.value as typeof publishAudience,
-                      )
-                    }
-                  >
-                    <option value="INDEPENDENT">Individual learners</option>
-                    <option value="SCHOOLS">Schools</option>
-                    <option value="BOTH">Individuals and schools</option>
-                  </select>
-                </label>
-                <label className="block min-w-0 text-xs font-medium">
-                  Assignment title prefix (optional)
-                  <input
-                    aria-label="Assignment title prefix"
-                    className={control + " mt-2 w-full min-w-0"}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Automatic subject and topic titles"
-                    maxLength={160}
-                    disabled={publish.isPending}
-                  />
-                </label>
-              </div>
-              {publishAudience !== "INDEPENDENT" && (
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <label className="block min-w-0 text-xs font-medium">
-                    School audience
-                    <select
-                      aria-label="School audience"
-                      value={publishSchoolScope}
-                      onChange={(e) =>
-                        setPublishSchoolScope(
-                          e.target.value as "ALL" | "SELECTED",
-                        )
-                      }
-                      className={control + " mt-2 w-full min-w-0"}
-                      disabled={publish.isPending}
-                    >
-                      <option value="ALL">
-                        All subscribed schools with bank access
-                      </option>
-                      <option value="SELECTED">Choose schools</option>
-                    </select>
-                  </label>
-                  {publicationTargets.isPending ? (
-                    <p className="mt-3 text-sm">Loading eligible schools…</p>
-                  ) : publicationTargets.isError ? (
-                    <p role="alert" className="mt-3 text-sm text-red-700">
-                      Could not load schools.{" "}
-                      <button
-                        onClick={() => publicationTargets.refetch()}
-                        className="underline"
-                      >
-                        Retry
-                      </button>
-                    </p>
-                  ) : !publicationTargets.data?.length ? (
-                    <p className="mt-3 text-sm text-amber-800">
-                      No subscribed schools have active Question Bank access
-                      yet.
-                    </p>
-                  ) : publishSchoolScope === "SELECTED" ? (
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {publicationTargets.data.map((s) => (
-                        <label
-                          key={s.id}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={publishSchoolIds.includes(s.id)}
-                            disabled={publish.isPending}
-                            onChange={(e) =>
-                              setPublishSchoolIds((ids) =>
-                                e.target.checked
-                                  ? [...ids, s.id]
-                                  : ids.filter((id) => id !== s.id),
-                              )
-                            }
-                          />
-                          {s.name}{" "}
-                          <span className="text-xs text-slate-500">
-                            {s.code}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-xs text-slate-500">
-                      {publicationTargets.data.length} eligible schools.
-                      Learners receive only assignments for their grade.
-                    </p>
-                  )}
-                </div>
-              )}
-              <div className="flex flex-wrap items-center gap-4">
-                <button
-                  className="min-h-11 rounded-lg bg-blue-700 px-5 text-sm font-semibold text-white disabled:opacity-40"
-                  disabled={
-                    publish.isPending ||
-                    (allApproved
-                      ? allApproved.count - allApproved.excludedIds.length <= 0
-                      : !selected.length) ||
-                    (publishAudience !== "INDEPENDENT" &&
-                      (publicationTargets.isFetching ||
-                        publicationTargets.isError ||
-                        !publicationTargets.data?.length ||
-                        (publishSchoolScope === "SELECTED" &&
-                          !publishSchoolIds.length)))
-                  }
-                  onClick={() => publish.mutate()}
-                >
-                  {publish.isPending
-                    ? "Queuing publication…"
-                    : "Publish content"}
-                </button>
-                <button
-                  disabled={publish.isPending}
-                  className="text-sm text-slate-600 underline"
-                  onClick={() => {
-                    setSelected([]);
-                    setAllApproved(null);
-                  }}
-                >
-                  Clear selection
-                </button>
-              </div>
-              <p className="text-xs text-slate-500">
-                Published assignments appear in My Assignments for the chosen
-                audience. Approval alone does not publish content.
-              </p>
-            </section>
-          )}
         </>
       )}
       {editing && (
