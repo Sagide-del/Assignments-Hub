@@ -278,6 +278,7 @@ export const router = createBrowserRouter([
           },
           {path:'/student/kjsea-mock-test',element:<KjseaMockTestPage/>},
           {path:'/student/kjsea-mock-test/:id',element:<KjseaMockPlayerPage/>},
+          {path:'/student/assignments/practice/:id',element:<KjseaMockPlayerPage/>},
           {
             path: '/student/mnemonic-cards',
             element: <MnemonicCardsPage />,

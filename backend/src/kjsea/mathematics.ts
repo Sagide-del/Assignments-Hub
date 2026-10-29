@@ -9,6 +9,12 @@ export type Visual =
   | { kind: "point"; x: number; y: number }
   | { kind: "bars"; labels: string[]; values: number[] };
 export interface MockQuestion {
+  manualSelfReview?: boolean;
+  section?: string;
+  marks?: number;
+  responseType?: "CHOICE" | "STRUCTURED";
+  parts?: import("./exam-paper").StructuredPart[];
+  passage?: { title: string; text: string };
   contentHtml?: string;
   diagramUrl?: string;
   diagramAlt?: string;
@@ -793,7 +799,10 @@ export function gradeTopics(grade: string) {
   return TOPICS.filter(
     (t) =>
       grade === "Grade 9" ||
-      (grade === "Grade 7" ? FOUNDATION_TOPICS : EXTENSION_TOPICS).has(t.id),
+      (grade === "Grade 6" || grade === "Grade 7"
+        ? FOUNDATION_TOPICS
+        : EXTENSION_TOPICS
+      ).has(t.id),
   );
 }
 export function generateGradePaper(

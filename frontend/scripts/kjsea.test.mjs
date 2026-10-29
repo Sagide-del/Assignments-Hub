@@ -60,3 +60,11 @@ test('review exports include visual data, explanations and unanswered items', ()
   assert.ok(text.includes('2 × 4 = 8 cm².'));
   assert.ok(text.includes('not an official KNEC paper'));
 });
+test('structured backups retain working and valid parts, with weighted mark feedback', () => {
+  const q = { id:'q-21', topic:'Area', area:'Measurement', prompt:'Find the area.', responseType:'STRUCTURED', marks:4, parts:[{id:'a',prompt:'Area',answer:'12',marks:1}], options:[], awardedMarks:1, explanation:'Area = length × width.' };
+  const answer={responses:{a:'12',forged:'ignore'},working:'3 × 4 = 12'};
+  assert.deepEqual(validAnswers({'q-21':answer},[q]),{'q-21':{responses:{a:'12'},working:'3 × 4 = 12'}});
+  assert.deepEqual(resultAreas({questions:[q],answers:{'q-21':answer}}),[{area:'Measurement',correct:1,total:4}]);
+  const text=resultText({questions:[q],answers:{'q-21':answer},score:1,totalMarks:4});
+  assert.ok(text.includes('Score: 1/4'));assert.ok(text.includes('Model answer: 12'));assert.ok(text.includes('Working: 3 × 4 = 12'));
+});

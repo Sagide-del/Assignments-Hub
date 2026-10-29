@@ -1,8 +1,12 @@
-import { schoolsApi } from "../../api/schools.api";
-import { PracticeBatches } from "./PracticeBatches";
+import { api, apiErrorMessage } from "../../api/axios";
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useSearchParams, useLocation } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  Link,
+  useSearchParams,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -82,19 +86,26 @@ function GroupProgress({
   items: Assignment[];
   submissions: Map<number, Submission>;
 }) {
-  const submitted = items.filter((a) =>
+  const fixed = items.filter((a) => !a.bankPractice);
+  if (!fixed.length)
+    return (
+      <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
+        Reviewed topic practice · up to 30 questions per batch
+      </p>
+    );
+  const submitted = fixed.filter((a) =>
     ["SUBMITTED", "RESULTS_AVAILABLE"].includes(
       assignmentState(submissions.get(a.id)),
     ),
   ).length;
-  const active = items.filter(
+  const active = fixed.filter(
     (a) => assignmentState(submissions.get(a.id)) === "IN_PROGRESS",
   ).length;
   return (
     <div className="mt-5 border-t border-slate-100 pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
         <span>
-          {submitted} of {items.length} submitted
+          {submitted} of {fixed.length} submitted
         </span>
         {active > 0 && (
           <span className="text-blue-700">{active} in progress</span>
@@ -104,14 +115,14 @@ function GroupProgress({
         role="progressbar"
         aria-label="Assignments submitted"
         aria-valuemin={0}
-        aria-valuemax={items.length}
+        aria-valuemax={fixed.length}
         aria-valuenow={submitted}
         className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100"
       >
         <div
           className="h-full rounded-full bg-blue-600"
           style={{
-            width: `${items.length ? (submitted / items.length) * 100 : 0}%`,
+            width: `${fixed.length ? (submitted / fixed.length) * 100 : 0}%`,
           }}
         />
       </div>
@@ -125,6 +136,17 @@ function AssignmentCard({
   assignment: Assignment;
   submission?: Submission;
 }) {
+  const navigate = useNavigate();
+  const practice = useMutation({
+    mutationFn: () =>
+      api
+        .post<{ id: string }>("/practice", {
+          subject: assignment.bankPractice!.subject,
+          topic: assignment.bankPractice!.topic,
+        })
+        .then((r) => r.data),
+    onSuccess: (r) => navigate(`/student/assignments/practice/${r.id}`),
+  });
   const location = useLocation();
   const state = assignmentState(submission),
     meta = STATE_META[state];
@@ -172,26 +194,61 @@ function AssignmentCard({
             </p>
           )}
         </div>
-        <Link
-          to={`/student/assignments/${assignment.id}`}
-          state={{ assignmentCatalogue: location.pathname + location.search }}
-          aria-label={`${meta.action}: ${assignment.title}`}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white hover:bg-slate-800 sm:w-auto"
-        >
-          {meta.action}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
+        {assignment.bankPractice ? (
+          <div>
+            <button
+              disabled={practice.isPending}
+              onClick={() =>
+                assignment.bankPractice?.activeId
+                  ? navigate(
+                      `/student/assignments/practice/${assignment.bankPractice.activeId}`,
+                    )
+                  : practice.mutate()
+              }
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {practice.isPending
+                ? "Opening…"
+                : assignment.bankPractice.activeId
+                  ? "Continue assignment"
+                  : "Start topic practice"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            {assignment.bankPractice.latestResultId && (
+              <Link
+                to={`/student/assignments/practice/${assignment.bankPractice.latestResultId}`}
+                className="mt-3 block text-xs font-medium text-blue-700 underline"
+              >
+                View last review · {assignment.bankPractice.completedBatches}{" "}
+                completed batches
+              </Link>
+            )}
+            {practice.isError && (
+              <p role="alert" className="mt-2 max-w-sm text-xs text-red-700">
+                {apiErrorMessage(
+                  practice.error,
+                  "Could not open topic practice.",
+                )}
+              </p>
+            )}
+          </div>
+        ) : (
+          <Link
+            to={`/student/assignments/${assignment.id}`}
+            state={{ assignmentCatalogue: location.pathname + location.search }}
+            aria-label={`${meta.action}: ${assignment.title}`}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white hover:bg-slate-800 sm:w-auto"
+          >
+            {meta.action}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        )}
       </div>
     </article>
   );
 }
 export function MyAssignmentsPage() {
   const user = useAuthStore((s) => s.user);
-  const school = useQuery({
-    queryKey: ["school", user?.schoolId],
-    queryFn: () => schoolsApi.findOne(user!.schoolId),
-    enabled: !!user?.schoolId,
-  });
   const [params, setParams] = useSearchParams();
   const subjectKey = params.get("subject") ?? "";
   const topicKey = subjectKey ? (params.get("topic") ?? "") : "";
@@ -218,10 +275,76 @@ export function MyAssignmentsPage() {
     queryFn: () => submissionsApi.findAll(),
     enabled: !!user?.id,
   });
-  const assignments = useMemo(
-    () => (assignmentsQuery.data ?? []).filter((a) => a.isPublished),
-    [assignmentsQuery.data],
-  );
+  const practiceQuery = useQuery({
+    queryKey: ["practice-batches", user?.id, user?.grade],
+    queryFn: () =>
+      api
+        .get<{
+          grade: string;
+          subjects: {
+            subject: string;
+            topics: { topic: string; count: number }[];
+          }[];
+          active: {
+            id: string;
+            subject: string;
+            coverage?: { topic?: string };
+          }[];
+          completed?: {
+            id: string;
+            subject: string;
+            coverage?: { topic?: string };
+          }[];
+        }>("/practice")
+        .then((r) => r.data),
+    enabled: !!user?.id && !user.isIndependentTrial,
+    retry: false,
+  });
+  const assignments = useMemo(() => {
+    const bank: Assignment[] = (practiceQuery.data?.subjects ?? [])
+      .flatMap((s) =>
+        (s.topics ?? [])
+          .filter((t) => t.count > 0)
+          .map((t) => ({
+            id: 0,
+            title: `${t.topic} · Topic practice`,
+            subject: s.subject,
+            topic: t.topic,
+            grade: practiceQuery.data!.grade,
+            schoolId: user!.schoolId,
+            isPublished: true,
+            createdAt: "2020-01-01T00:00:00Z",
+            type: "AUTO_MARKED",
+
+            _count: { questions: Math.min(30, t.count), submissions: 0 },
+            bankPractice: {
+              subject: s.subject,
+              topic: t.topic,
+              latestResultId: practiceQuery.data?.completed?.find(
+                (a) =>
+                  a.subject.toLowerCase() === s.subject.toLowerCase() &&
+                  a.coverage?.topic === t.topic,
+              )?.id,
+              completedBatches:
+                practiceQuery.data?.completed?.filter(
+                  (a) =>
+                    a.subject.toLowerCase() === s.subject.toLowerCase() &&
+                    a.coverage?.topic === t.topic,
+                ).length ?? 0,
+              activeId: practiceQuery.data?.active.find(
+                (a) =>
+                  a.subject.toLowerCase() === s.subject.toLowerCase() &&
+                  a.coverage?.topic === t.topic,
+              )?.id,
+            },
+          })),
+      )
+      .map((a, i) => ({ ...a, id: -(i + 1) }));
+    return [
+      ...(assignmentsQuery.data ?? []).filter((a) => a.isPublished),
+      ...bank,
+    ];
+  }, [assignmentsQuery.data, practiceQuery.data, user?.schoolId]);
   const submissions = useMemo(() => {
     const map = new Map<number, Submission>();
     for (const row of submissionsQuery.data ?? [])
@@ -252,7 +375,10 @@ export function MyAssignmentsPage() {
   const matchingTopic = matchingSubject?.topics.find(
     (t) => t.key === catalogueKey(topicKey),
   );
-  const loading = assignmentsQuery.isPending || submissionsQuery.isPending;
+  const loading =
+    assignmentsQuery.isPending ||
+    submissionsQuery.isPending ||
+    (practiceQuery.isPending && practiceQuery.fetchStatus !== "idle");
   const error = assignmentsQuery.isError || submissionsQuery.isError;
   const hasFilters = !!search || state !== "ALL";
   function navigate(subject = "", topic = "") {
@@ -303,9 +429,6 @@ export function MyAssignmentsPage() {
           </span>
         )}
       </header>
-      {!subjectKey &&
-        school.data?.code === "INDEPENDENT" &&
-        !user?.isIndependentTrial && <PracticeBatches />}
       <nav
         aria-label="Assignment breadcrumb"
         className="flex flex-wrap items-center gap-2 text-xs"

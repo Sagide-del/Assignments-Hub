@@ -57,7 +57,7 @@ export function KjseaMockTestPage() {
   const navigate = useNavigate();
   const profileGrade = user?.grade
     ?.trim()
-    .match(/^(?:grade\s*)?(7|8|9|10|11|12)$/i)?.[1];
+    .match(/^(?:grade\s*)?(6|7|8|9|10|11|12)$/i)?.[1];
   const [grade, setGrade] = useState(`Grade ${profileGrade ?? "9"}`);
   const [subjectId, setSubjectId] = useState("generated-mathematics");
   const subjects = useQuery({
@@ -66,7 +66,9 @@ export function KjseaMockTestPage() {
     enabled: !!user && !user.isIndependentTrial,
   });
   const selected =
-    subjects.data?.find((s) => s.id === subjectId) ?? subjects.data?.[0];
+    subjects.data?.find((s) => s.id === subjectId) ??
+    subjects.data?.find((s) => s.fullPaperReady !== false) ??
+    subjects.data?.[0];
   const junior = Number(grade.split(" ")[1]) <= 9;
   const title = "KJSEA Mock Test";
   const missingSubjects = (junior ? JUNIOR_SUBJECTS : SENIOR_SUBJECTS).filter(
@@ -75,7 +77,7 @@ export function KjseaMockTestPage() {
         (item) => subjectKey(item.subject) === subjectKey(name),
       ),
   );
-  const [mode, setMode] = useState("untimed");
+  const [mode, setMode] = useState("FULL");
   const [discardId, setDiscardId] = useState<string | null>(null);
   const config = useQuery({
     queryKey: ["kjsea-blueprint"],
@@ -89,7 +91,7 @@ export function KjseaMockTestPage() {
   const generate = useMutation({
     mutationFn: () =>
       kjseaApi.create(
-        mode === "untimed" ? undefined : Number(mode),
+        mode === "FULL" ? (selected?.durationMinutes ?? 120) : Number(mode),
         selected?.subject ?? "Mathematics",
         selected?.source ?? "GENERATED",
         grade,
@@ -129,7 +131,8 @@ export function KjseaMockTestPage() {
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-2 text-sm text-slate-500">
-            Practice by grade and subject. Review every answer.
+            Sit a timed paper. Answers save as you go; hand in for marks, an
+            estimated performance level (EE1–BE2), and every answer explained.
           </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs font-medium text-slate-600">
@@ -142,7 +145,7 @@ export function KjseaMockTestPage() {
         aria-label="Generate a mock test"
       >
         <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-7">
-          <h2 className="text-lg font-semibold">Create a practice paper</h2>
+          <h2 className="text-lg font-semibold">Create a timed mock exam</h2>
           <p className="mt-1 text-sm text-slate-500">
             Choose your grade, subject and timing.
           </p>
@@ -162,6 +165,7 @@ export function KjseaMockTestPage() {
                 className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-normal"
               >
                 {[
+                  "Grade 6",
                   "Grade 7",
                   "Grade 8",
                   "Grade 9",
@@ -182,10 +186,10 @@ export function KjseaMockTestPage() {
                 onChange={(e) => setMode(e.target.value)}
                 className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-normal"
               >
-                <option value="untimed">Untimed practice</option>
-                <option value="30">30 minutes</option>
-                <option value="60">60 minutes</option>
-                <option value="90">90 minutes</option>
+                <option value="FULL">
+                  Full paper · {selected?.durationMinutes ?? 120} minutes
+                </option>
+                <option value="70">Timed drill · 1 hour 10 minutes</option>
               </select>
             </label>
           </div>
@@ -209,13 +213,17 @@ export function KjseaMockTestPage() {
               <option>Loading subjects…</option>
             ) : (
               subjects.data?.map((item) => (
-                <option key={item.id} value={item.id}>
+                <option
+                  key={item.id}
+                  value={item.id}
+                  disabled={item.fullPaperReady === false}
+                >
                   {item.subject}
-                  {item.source === "BANK"
-                    ? " · reviewed bank"
-                    : item.contentKind === "STARTER"
-                      ? " · topic practice"
-                      : " · varied questions"}
+                  {item.fullPaperReady === false
+                    ? " · full paper not ready"
+                    : item.source === "BANK"
+                      ? " · reviewed paper"
+                      : " · full paper"}
                 </option>
               ))
             )}
@@ -249,9 +257,16 @@ export function KjseaMockTestPage() {
                 <strong className="font-semibold text-slate-900">
                   {selected.topicCount}
                 </strong>{" "}
-                topics
+                topics in the pool
               </span>
-              <span>{grade} only</span>
+              <span>{selected.totalMarks ?? selected.questionCount} marks</span>
+              <span>
+                {grade === "Grade 9" &&
+                selected.source === "GENERATED" &&
+                selected.subject === "Mathematics"
+                  ? "Grades 7–9 coverage"
+                  : grade}
+              </span>
             </div>
           )}
           {selected && selected.questionCount < 40 && (
@@ -269,9 +284,8 @@ export function KjseaMockTestPage() {
           )}
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             <p className="max-w-xs text-xs leading-5 text-slate-500">
-              {mode === "untimed"
-                ? "Your answers save automatically. Return whenever you’re ready."
-                : "The timer starts at generation and continues when you leave."}
+              The clock starts when the paper is generated and continues if you
+              leave. Your answers save automatically.
             </p>
             <button
               type="button"
@@ -280,6 +294,7 @@ export function KjseaMockTestPage() {
                 subjects.isFetching ||
                 subjects.isError ||
                 !selected ||
+                selected.fullPaperReady === false ||
                 config.isPending ||
                 config.isError
               }
@@ -312,8 +327,36 @@ export function KjseaMockTestPage() {
                 ? `Questions come only from the reviewed ${grade} ${selected.subject} pool. Recent questions are avoided where possible.`
                 : selected?.contentKind === "STARTER"
                   ? `Original ${grade} ${selected.subject} questions covering selected topics. Question and answer order vary; the same questions can recur.`
-                  : `Original ${grade} ${selected?.subject ?? "subject"} questions with varied values and order. Topic templates can repeat.`}
+                  : selected.subject === "Mathematics"
+                    ? "A 100-mark paper with multiple-choice and structured sections. Grade 9 revision draws on Grades 7–9. Values vary between papers; context templates can recur."
+                    : "An original passage-based language paper: dialogue, cloze, comprehension, informational reading, poetry and language use. Shared passages stay beside their questions."}
           </p>
+          {selected?.sections?.length ? (
+            <div className="mt-4 space-y-2 text-sm text-slate-600">
+              {selected.sections.map((section) => (
+                <p key={section}>{section}</p>
+              ))}
+            </div>
+          ) : null}
+          {selected?.subject === "Mathematics" &&
+            selected.source === "GENERATED" && (
+              <div className="mt-5 space-y-2 border-t border-slate-200 pt-4 text-xs leading-6 text-slate-600">
+                <p className="font-semibold">100-mark practice allocation</p>
+                <p>
+                  Measurement 32 · Geometry 24 · Numbers 21 · Algebra 14 · Data
+                  & probability 9.
+                </p>
+                {grade === "Grade 9" && (
+                  <p>
+                    Grade 7: 18 marks · Grade 8: 32 marks · Grade 9: 50 marks.
+                  </p>
+                )}
+                <p>
+                  Section B has separately marked sub-parts and a saved working
+                  area.
+                </p>
+              </div>
+            )}
           <details className="mt-5 border-t border-slate-200 pt-4">
             <summary className="cursor-pointer text-xs font-medium text-slate-700">
               Coverage and sources
@@ -330,9 +373,9 @@ export function KjseaMockTestPage() {
               Subject availability
             </h3>
             <p className="mt-2 text-xs leading-6 text-slate-500">
-              Built-in practice sets and every reviewed question-bank subject
-              for {grade} appear in the selector. Content from other grades is
-              excluded.
+              Topic practice is under My Assignments. A bank-based mock needs at
+              least 40 reviewed questions. Short topic sets are not presented as
+              full papers.
             </p>
           </div>
         </aside>
@@ -407,7 +450,7 @@ export function KjseaMockTestPage() {
                       <span className="inline-flex items-center gap-1">
                         <ChartNoAxesCombined className="h-3.5 w-3.5" />
                         {a.status === "SUBMITTED"
-                          ? `${a.score ?? 0}/${a.questionCount}`
+                          ? `${a.score ?? 0}/${a.coverage?.totalMarks ?? a.questionCount} marks`
                           : "In progress"}
                       </span>
                     </div>

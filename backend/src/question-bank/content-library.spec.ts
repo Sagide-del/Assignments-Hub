@@ -197,6 +197,8 @@ describe("Independent practice allocation", () => {
       "At least 30",
     );
     const school = setup();
+    (school.prisma as any).subscription={findFirst:jest.fn().mockResolvedValue(null)};
+    (school.prisma as any).schoolQuestionBankAccess={findUnique:jest.fn().mockResolvedValue(null)};
     school.prisma.school.findUnique.mockResolvedValue({ code: "SCHOOL" });
     await expect(school.service.start("Mathematics", actor)).rejects.toThrow(
       "teachers",

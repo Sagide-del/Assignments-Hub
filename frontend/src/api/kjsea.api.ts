@@ -7,7 +7,22 @@ export type MockVisual =
   | { kind: "angles"; known: number }
   | { kind: "point"; x: number; y: number }
   | { kind: "bars"; labels: string[]; values: number[] };
+export type MockAnswer =
+  number | { responses: Record<string, string>; working: string };
 export interface MockQuestion {
+  manualSelfReview?: boolean;
+  section?: string;
+  marks?: number;
+  responseType?: "CHOICE" | "STRUCTURED";
+  passage?: { title: string; text: string };
+  parts?: {
+    id: string;
+    prompt: string;
+    marks: number;
+    answer?: string;
+    answerType?: "NUMERIC" | "TEXT";
+  }[];
+  awardedMarks?: number;
   contentHtml?: string;
   diagramUrl?: string;
   diagramAlt?: string;
@@ -28,6 +43,10 @@ export interface MockSubject {
   subject: string;
   source: "GENERATED" | "BANK";
   availableCount: number | null;
+  fullPaperReady?: boolean;
+  totalMarks?: number;
+  durationMinutes?: number;
+  sections?: string[];
   questionCount: number;
   topicCount: number;
   visualCount: number | null;
@@ -37,6 +56,8 @@ export interface MockSummary {
   subject: string;
   source: "GENERATED" | "BANK" | "PRACTICE";
   coverage: {
+    topic?: string;
+    totalMarks?: number;
     questionCount: number;
     topicCount: number;
     visualCount: number;
@@ -52,9 +73,17 @@ export interface MockSummary {
   questionCount: number;
 }
 export interface MockAttempt extends Omit<MockSummary, "questionCount"> {
+  totalMarks?: number;
+  performance?: {
+    code: string;
+    label: string;
+    percent: number;
+    points: number;
+    practiceEstimate: true;
+  } | null;
   deadline: string | null;
   serverNow: string;
-  answers: Record<string, number>;
+  answers: Record<string, MockAnswer>;
   questions: MockQuestion[];
 }
 export interface MockBlueprint {
@@ -69,11 +98,12 @@ export interface MockBlueprint {
   topics: { id: string; name: string; area: string; visual: boolean }[];
   sourceNote: string;
 }
-const payload = (answers: Record<string, number>) => ({
-  answers: Object.entries(answers).map(([questionId, option]) => ({
-    questionId,
-    option,
-  })),
+const payload = (answers: Record<string, MockAnswer>) => ({
+  answers: Object.entries(answers).map(([questionId, answer]) =>
+    typeof answer === "number"
+      ? { questionId, option: answer }
+      : { questionId, responses: answer.responses, working: answer.working },
+  ),
 });
 export const kjseaApi = {
   blueprint: () =>
@@ -105,7 +135,7 @@ export const kjseaApi = {
     api
       .get<MockAttempt>(`/kjsea/attempts/${encodeURIComponent(id)}`)
       .then((r) => r.data),
-  save: (id: string, answers: Record<string, number>) =>
+  save: (id: string, answers: Record<string, MockAnswer>) =>
     api
       .patch<MockAttempt>(
         `/kjsea/attempts/${encodeURIComponent(id)}`,
@@ -113,7 +143,7 @@ export const kjseaApi = {
         { timeout: 15000 },
       )
       .then((r) => r.data),
-  submit: (id: string, answers: Record<string, number>) =>
+  submit: (id: string, answers: Record<string, MockAnswer>) =>
     api
       .post<MockAttempt>(
         `/kjsea/attempts/${encodeURIComponent(id)}/submit`,

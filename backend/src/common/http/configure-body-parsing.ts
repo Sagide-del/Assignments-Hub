@@ -11,4 +11,11 @@ export function configureBodyParsing(app: INestApplication) {
   ) {
     return curriculumParser(req, res, next);
   });
+  const examParser = json({ limit: '512kb' });
+  app.use('/api/v1/kjsea/attempts', function examAnswerJsonBody(
+    req: Request, res: Response, next: NextFunction,
+  ) {
+    return examParser(req, res, next);
+  });
+
 }

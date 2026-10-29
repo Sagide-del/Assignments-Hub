@@ -8,7 +8,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { normalizeGrade } from "../common/utils/grade.util";
-import { approvedChoices, bankPaper } from "../kjsea/question-pool";
+import { approvedPractice, practicePaper } from "./practice-questions";
 import { rankPractice } from "./content-tools";
 @Injectable()
 export class PracticeService {
@@ -18,10 +18,25 @@ export class PracticeService {
       where: { id: actor.schoolId },
       select: { code: true },
     });
-    if (school?.code !== "INDEPENDENT")
-      throw new ForbiddenException(
-        "School students use assignments selected by their teachers.",
-      );
+    if (school?.code !== "INDEPENDENT") {
+      const [subscription, access] = await Promise.all([
+        this.prisma.subscription.findFirst({
+          where: { schoolId: actor.schoolId },
+          orderBy: { startedAt: "desc" },
+        }),
+        this.prisma.schoolQuestionBankAccess.findUnique({
+          where: { schoolId: actor.schoolId },
+        }),
+      ]);
+      if (
+        subscription?.status !== "ACTIVE" ||
+        (subscription.expiresAt && subscription.expiresAt <= new Date()) ||
+        !access?.active
+      )
+        throw new ForbiddenException(
+          "School students use assignments selected by their teachers unless school Question Bank access is active.",
+        );
+    }
     const grade = normalizeGrade(actor.grade ?? "");
     if (!grade || !/^Grade (6|7|8|9|10|11|12)$/.test(grade))
       throw new BadRequestException(
@@ -39,10 +54,18 @@ export class PracticeService {
           in: [grade, grade.replace(" ", ""), grade.split(" ")[1]],
           mode: "insensitive",
         },
-        questionType: "MULTIPLE_CHOICE",
+        questionType: {
+          in: [
+            "MULTIPLE_CHOICE",
+            "TRUE_FALSE",
+            "NUMERIC",
+            "SHORT_ANSWER",
+            "ESSAY",
+          ],
+        },
       },
     });
-    const pool = approvedChoices(rows);
+    const pool = approvedPractice(rows);
     // Keep curriculum gaps visible instead of treating the existing pool as
     // the complete subject list. Senior pathways and RE alternatives remain
     // available; this list does not claim every option is compulsory.
@@ -63,6 +86,24 @@ export class PracticeService {
           (q) => q.subject.trim().toLowerCase() === subject.toLowerCase(),
         ).length,
         batchSize: 30,
+        topics: [
+          ...new Set(
+            pool
+              .filter(
+                (q) => q.subject.trim().toLowerCase() === subject.toLowerCase(),
+              )
+              .map((q) => q.topic.trim() || "General practice"),
+          ),
+        ]
+          .sort()
+          .map((topic) => ({
+            topic,
+            count: pool.filter(
+              (q) =>
+                q.subject.trim().toLowerCase() === subject.toLowerCase() &&
+                (q.topic.trim() || "General practice") === topic,
+            ).length,
+          })),
       }));
     const active = await this.prisma.kjseaMockAttempt.findMany({
       where: {
@@ -72,20 +113,34 @@ export class PracticeService {
         status: "DRAFT",
         coverage: { path: ["grade"], equals: grade },
       },
-      select: { id: true, subject: true, createdAt: true },
+      select: { id: true, subject: true, createdAt: true, coverage: true },
     });
-    return { grade, subjects, active };
+    const completed = await this.prisma.kjseaMockAttempt.findMany({
+      where: {
+        studentId: actor.id,
+        schoolId: actor.schoolId,
+        source: "PRACTICE",
+        status: "SUBMITTED",
+        coverage: { path: ["grade"], equals: grade },
+      },
+      select: { id: true, subject: true, coverage: true, completedAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return { grade, subjects, active, completed };
   }
-  async start(subject: string, actor: AuthenticatedUser) {
+  async start(subject: string, actor: AuthenticatedUser, topic?: string) {
     const grade = await this.grade(actor),
       name = subject.trim();
     if (!name || name.length > 120)
       throw new BadRequestException("Choose a subject.");
+    const selectedTopic = topic?.trim();
+    if (topic !== undefined && (!selectedTopic || selectedTopic.length > 160))
+      throw new BadRequestException("Choose a valid topic.");
     const seed = randomInt(1, 2147483647);
     return this.prisma.$transaction(
       async (tx) => {
         // One allocator for this grade/subject across all instances. Serialises students as well as duplicate clicks.
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`practice:${grade}:${name.toLowerCase()}`}))`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`practice:${grade}:${name.toLowerCase()}:${selectedTopic?.toLowerCase() ?? "*"}`}))`;
         const current = await tx.kjseaMockAttempt.findFirst({
           where: {
             studentId: actor.id,
@@ -93,6 +148,13 @@ export class PracticeService {
             source: "PRACTICE",
             status: "DRAFT",
             subject: { equals: name, mode: "insensitive" },
+            ...(selectedTopic
+              ? {
+                  AND: [
+                    { coverage: { path: ["topic"], equals: selectedTopic } },
+                  ],
+                }
+              : {}),
             coverage: { path: ["grade"], equals: grade },
           },
         });
@@ -106,14 +168,25 @@ export class PracticeService {
                 mode: "insensitive",
               },
               subject: { equals: name, mode: "insensitive" },
-              questionType: "MULTIPLE_CHOICE",
+              questionType: {
+                in: [
+                  "MULTIPLE_CHOICE",
+                  "TRUE_FALSE",
+                  "NUMERIC",
+                  "SHORT_ANSWER",
+                  "ESSAY",
+                ],
+              },
+              ...(selectedTopic
+                ? { topic: { equals: selectedTopic, mode: "insensitive" } }
+                : {}),
             },
             orderBy: { id: "asc" },
           }),
-          pool = approvedChoices(rows);
-        if (pool.length < 30)
+          pool = approvedPractice(rows);
+        if (pool.length < (selectedTopic ? 1 : 30))
           throw new BadRequestException(
-            `This subject has ${pool.length} approved practice questions. At least 30 are required.`,
+            `This subject has ${pool.length} approved practice questions. ${selectedTopic ? "Questions are being prepared for this topic." : "At least 30 are required."}`,
           );
         const history = await tx.kjseaMockAttempt.findMany({
           where: {
@@ -135,7 +208,7 @@ export class PracticeService {
           select: { questions: true },
         });
         const chosen = rankPractice(pool, history, active, seed),
-          questions = bankPaper(chosen, seed, new Set());
+          questions = practicePaper(chosen, seed);
         const seen = new Set(
           history.flatMap((a) =>
             (a.questions as any[]).map((q) => q.sourceQuestionId),
@@ -151,8 +224,9 @@ export class PracticeService {
             subject: pool[0].subject,
             coverage: {
               grade,
+              ...(selectedTopic ? { topic: selectedTopic } : {}),
               grades: [grade],
-              questionCount: 30,
+              questionCount: questions.length,
               topicCount: new Set(questions.map((q) => q.topic)).size,
               visualCount: questions.filter(
                 (q) => q.contentHtml || q.diagramUrl,

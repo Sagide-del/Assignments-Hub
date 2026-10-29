@@ -20,6 +20,9 @@ class ParsingProbeController {
   @Post('admin/content-ingestion/probe')
   ingestion(@Body() body: { text: string }) { return { length: body.text.length }; }
 
+  @Post('kjsea/attempts/probe')
+  exam(@Body() body: { text: string }) { return { length: body.text.length }; }
+
   @Post('payment/webhook/probe')
   webhook(@Req() req: RawBodyRequest<Request>) {
     return { body: req.body, raw: req.rawBody?.toString('utf8') };
@@ -74,5 +77,11 @@ describe('Production JSON parser configuration', () => {
     expect(curriculum.status).toBe(201);
     expect(await curriculum.json()).toEqual({ length: body.text.length });
     expect((await post('payment/webhook/probe', body)).status).toBe(413);
+  });  it('accepts saved working beyond the default JSON limit without changing webhook parsing', async () => {
+    const response = await post('kjsea/attempts/probe', { text: 'a'.repeat(300 * 1024) });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ length: 300 * 1024 });
+    expect((await post('kjsea/attempts/probe', { text: 'a'.repeat(513 * 1024) })).status).toBe(413);
   });
+
 });

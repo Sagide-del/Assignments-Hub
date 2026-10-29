@@ -25,8 +25,8 @@ describe("Grade-wide practice catalogue", () => {
     } as any);
     expect(result.grade).toBe("Grade 7");
     expect(result.subjects).toEqual([
-      { subject: "Kiswahili", count: 0, batchSize: 30 },
-      { subject: "Social Studies", count: 0, batchSize: 30 },
+      { subject: "Kiswahili", count: 0, batchSize: 30, topics: [] },
+      { subject: "Social Studies", count: 0, batchSize: 30, topics: [] },
     ]);
     expect(prisma.curriculumScope.findMany).toHaveBeenCalledWith({
       where: { grade: "Grade 7", verified: true },

@@ -48,6 +48,7 @@ export interface School {
 }
 
 export interface Assignment {
+  bankPractice?: { subject: string; topic: string; activeId?: string; latestResultId?: string; completedBatches?: number };
   topic?: string | null;
   id: number;
   title: string;

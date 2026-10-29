@@ -13,7 +13,11 @@ import {
   XCircle,
 } from "lucide-react";
 import { apiErrorMessage } from "../../../api/axios";
-import { kjseaApi, type MockAttempt } from "../../../api/kjsea.api";
+import {
+  kjseaApi,
+  type MockAttempt,
+  type MockAnswer,
+} from "../../../api/kjsea.api";
 import { useAuthStore } from "../../../store/auth.store";
 import { RichContent } from "../../../components/ui/RichContent";
 import { resolveUploadUrl } from "../../../api/uploads.api";
@@ -77,7 +81,7 @@ function PaperWorkspace({
   const [result, setResult] = useState(initial);
   const completed = result.status === "SUBMITTED";
   const storageKey = mockDraftKey(userId, initial.id);
-  const [answers, setAnswers] = useState<Record<string, number>>(() => {
+  const [answers, setAnswers] = useState<Record<string, MockAnswer>>(() => {
     if (initial.status === "SUBMITTED") return initial.answers;
     try {
       return {
@@ -126,7 +130,7 @@ function PaperWorkspace({
     const timer = setInterval(() => setTick(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [completed]);
-  function save(snapshot: Record<string, number>, version: number) {
+  function save(snapshot: Record<string, MockAnswer>, version: number) {
     setSaveError(false);
     setSaveStatus("Saving answers…");
     chain.current = chain.current
@@ -221,13 +225,31 @@ function PaperWorkspace({
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  const correct = completed && question.correctIndex === answers[question.id];
+  const selfReviewCount = result.questions.filter(
+    (q) => q.manualSelfReview,
+  ).length;
+  const autoMaximum = result.questions
+    .filter((q) => !q.manualSelfReview)
+    .reduce((n, q) => n + (q.marks ?? 1), 0);
+  const correct =
+    completed &&
+    (question.awardedMarks ??
+      (question.correctIndex === answers[question.id]
+        ? (question.marks ?? 1)
+        : 0)) === (question.marks ?? 1);
   const areas = completed ? resultAreas(result) : [];
   const gaps = completed
     ? [
         ...new Set(
           result.questions
-            .filter((q) => q.correctIndex !== result.answers[q.id])
+            .filter(
+              (q) =>
+                !q.manualSelfReview &&
+                (q.awardedMarks ??
+                  (q.correctIndex === result.answers[q.id]
+                    ? (q.marks ?? 1)
+                    : 0)) < (q.marks ?? 1),
+            )
             .map((q) => q.topic),
         ),
       ]
@@ -243,7 +265,7 @@ function PaperWorkspace({
         className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-600"
       >
         <ArrowLeft className="h-4 w-4" />
-        {result.source === "PRACTICE" ? "Subject practice" : "KJSEA Mock Test"}
+        {result.source === "PRACTICE" ? "My Assignments" : "KJSEA Mock Test"}
       </Link>
       <header className="rounded-2xl bg-[#101820] p-5 text-white sm:p-7">
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-200">
@@ -263,8 +285,10 @@ function PaperWorkspace({
             </h1>
             <p className="mt-2 text-sm text-slate-300">
               {completed
-                ? `${result.score ?? 0}/${result.questions.length} correct · ${Math.round(((result.score ?? 0) / result.questions.length) * 100)}%`
-                : `${answered}/${result.questions.length} answered · one mark per question`}
+                ? selfReviewCount
+                  ? `${autoMaximum ? `${result.score ?? 0}/${autoMaximum} automatically marked · ` : ""}${selfReviewCount} written responses for self-review`
+                  : `${result.score ?? 0}/${result.totalMarks ?? result.questions.length} marks${result.performance ? ` · ${result.performance.percent}% · Practice level ${result.performance.code} (${result.performance.label})` : ""}`
+                : `${answered}/${result.questions.length} answered · ${result.totalMarks ?? result.questions.length} marks`}
             </p>
           </div>
           {!completed && (
@@ -378,7 +402,9 @@ function PaperWorkspace({
           <p className="mt-4 text-sm leading-7 text-slate-600">
             {gaps.length
               ? `Topics to revisit: ${gaps.join(" · ")}. Review an explanation, correct an example, then try another paper.`
-              : "You answered every question correctly. Explain a method in your own words, then try a new paper with different values."}
+              : selfReviewCount
+                ? "Compare your written responses with the model answers, then rewrite one response using what you learned."
+                : "You answered every question correctly. Explain a method in your own words, then try a new paper with different values."}
           </p>
           <Link
             to={
@@ -415,15 +441,19 @@ function PaperWorkspace({
             >
               {result.questions.map((q, i) => {
                 const done = answers[q.id] !== undefined;
-                const right = completed && q.correctIndex === answers[q.id];
+                const right =
+                  completed &&
+                  (q.awardedMarks ??
+                    (q.correctIndex === answers[q.id] ? (q.marks ?? 1) : 0)) ===
+                    (q.marks ?? 1);
                 return (
                   <button
                     type="button"
                     key={q.id}
                     onClick={() => go(i)}
                     aria-current={i === index ? "step" : undefined}
-                    aria-label={`Question ${i + 1}, ${completed ? (right ? "correct" : "incorrect or unanswered") : done ? "answered" : "unanswered"}${flags.includes(q.id) ? ", flagged" : ""}`}
-                    className={`relative min-h-10 rounded-lg border text-xs font-semibold ${i === index ? "ring-2 ring-teal-700 ring-offset-1 " : ""}${completed ? (right ? "border-teal-200 bg-teal-50 text-teal-900" : "border-red-200 bg-red-50 text-red-800") : done ? "border-slate-700 bg-slate-800 text-white" : "bg-white text-slate-500"}`}
+                    aria-label={`Question ${i + 1}, ${completed ? (q.manualSelfReview ? "self-review" : right ? "correct" : "incorrect or unanswered") : done ? "answered" : "unanswered"}${flags.includes(q.id) ? ", flagged" : ""}`}
+                    className={`relative min-h-10 rounded-lg border text-xs font-semibold ${i === index ? "ring-2 ring-teal-700 ring-offset-1 " : ""}${completed ? (q.manualSelfReview ? "border-slate-200 bg-slate-50 text-slate-700" : right ? "border-teal-200 bg-teal-50 text-teal-900" : "border-red-200 bg-red-50 text-red-800") : done ? "border-slate-700 bg-slate-800 text-white" : "bg-white text-slate-500"}`}
                   >
                     {i + 1}
                     {flags.includes(q.id) && (
@@ -440,7 +470,8 @@ function PaperWorkspace({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
                 Question {index + 1} of {result.questions.length} ·{" "}
-                {question.area}
+                {question.section ?? question.area} · {question.marks ?? 1}{" "}
+                {(question.marks ?? 1) === 1 ? "mark" : "marks"}
               </p>
               {!completed && (
                 <button
@@ -462,6 +493,16 @@ function PaperWorkspace({
               )}
             </div>
             <p className="mt-2 text-xs text-slate-500">{question.topic}</p>
+            {question.passage && (
+              <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                <h2 className="text-sm font-semibold">
+                  {question.passage.title}
+                </h2>
+                <p className="mt-3 whitespace-pre-line text-sm leading-8 text-slate-700">
+                  {question.passage.text}
+                </p>
+              </article>
+            )}
             <fieldset className="mt-5 min-w-0">
               <legend className="mb-5 block text-lg font-semibold leading-8">
                 {question.prompt}
@@ -491,35 +532,135 @@ function PaperWorkspace({
                   <MockVisual visual={question.visual} />
                 </div>
               )}
-              <div className="space-y-3">
-                {question.options.map((option, i) => (
-                  <label
-                    key={`${question.id}-${i}`}
-                    className={`flex min-h-12 items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${completed && i === question.correctIndex ? "border-teal-400 bg-teal-50" : answers[question.id] === i ? "border-slate-700 bg-slate-50" : "border-slate-200"}`}
-                  >
-                    <input
-                      type="radio"
-                      name={`mock-${question.id}`}
-                      checked={answers[question.id] === i}
-                      disabled={completed || finishing || expired}
-                      onChange={() =>
-                        setAnswers((a) => ({ ...a, [question.id]: i }))
-                      }
-                      className="mt-1 shrink-0 accent-teal-800"
-                    />
-                    <span className="font-semibold text-slate-500">
-                      {String.fromCharCode(65 + i)}.
-                    </span>
-                    <span className="min-w-0 break-words">{option}</span>
-                    {completed && i === question.correctIndex && (
-                      <CheckCircle2
-                        aria-label="Correct answer"
-                        className="ml-auto mt-1 h-4 w-4 shrink-0 text-teal-700"
+              {question.responseType === "STRUCTURED" ? (
+                <div className="space-y-5">
+                  {question.parts?.map((part) => (
+                    <label key={part.id} className="block text-sm leading-7">
+                      <span className="font-semibold">({part.id})</span>{" "}
+                      {part.prompt}
+                      <span className="ml-2 text-xs text-slate-500">
+                        {part.marks} mark
+                      </span>
+                      <textarea
+                        rows={part.answerType === "TEXT" ? 6 : 1}
+                        aria-label={`Answer ${part.id}`}
+                        value={
+                          typeof answers[question.id] === "object"
+                            ? ((
+                                answers[question.id] as Exclude<
+                                  MockAnswer,
+                                  number
+                                >
+                              ).responses[part.id] ?? "")
+                            : ""
+                        }
+                        maxLength={
+                          question.manualSelfReview
+                            ? 5000
+                            : part.answerType === "TEXT"
+                              ? 2000
+                              : 160
+                        }
+                        disabled={completed || finishing || expired}
+                        onChange={(e) => {
+                          const prior = answers[question.id];
+                          setAnswers((a) => ({
+                            ...a,
+                            [question.id]: {
+                              responses: {
+                                ...(typeof prior === "object"
+                                  ? prior.responses
+                                  : {}),
+                                [part.id]: e.target.value,
+                              },
+                              working:
+                                typeof prior === "object" ? prior.working : "",
+                            },
+                          }));
+                        }}
+                        className="mt-2 block min-h-12 w-full rounded-lg border border-slate-300 px-3 text-base"
+                        placeholder={
+                          part.answerType === "TEXT"
+                            ? "Write your response here."
+                            : "Enter a number, fraction or decimal"
+                        }
                       />
-                    )}
+                      {completed && (
+                        <span className="mt-1 block text-sm text-teal-800">
+                          Model answer: {part.answer}
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                  <label className="block text-sm font-medium">
+                    Show your working
+                    <textarea
+                      aria-label="Show your working"
+                      rows={7}
+                      maxLength={5000}
+                      disabled={completed || finishing || expired}
+                      value={
+                        typeof answers[question.id] === "object"
+                          ? (
+                              answers[question.id] as Exclude<
+                                MockAnswer,
+                                number
+                              >
+                            ).working
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const prior = answers[question.id];
+                        setAnswers((a) => ({
+                          ...a,
+                          [question.id]: {
+                            responses:
+                              typeof prior === "object" ? prior.responses : {},
+                            working: e.target.value,
+                          },
+                        }));
+                      }}
+                      className="mt-2 w-full resize-y rounded-lg border border-slate-300 p-4 font-mono text-sm font-normal leading-7"
+                      placeholder="Write calculations, steps and units here."
+                    />
                   </label>
-                ))}
-              </div>
+                  <p className="text-xs leading-6 text-slate-500">
+                    {question.manualSelfReview
+                      ? "Your response is saved for self-review. Compare it with the model answer and explanation after submission; this writing task is not automatically graded."
+                      : "Each sub-part is marked separately. Working is saved for review; automatic marks come from the sub-part answers."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {question.options.map((option, i) => (
+                    <label
+                      key={`${question.id}-${i}`}
+                      className={`flex min-h-12 items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${completed && i === question.correctIndex ? "border-teal-400 bg-teal-50" : answers[question.id] === i ? "border-slate-700 bg-slate-50" : "border-slate-200"}`}
+                    >
+                      <input
+                        type="radio"
+                        name={`mock-${question.id}`}
+                        checked={answers[question.id] === i}
+                        disabled={completed || finishing || expired}
+                        onChange={() =>
+                          setAnswers((a) => ({ ...a, [question.id]: i }))
+                        }
+                        className="mt-1 shrink-0 accent-teal-800"
+                      />
+                      <span className="font-semibold text-slate-500">
+                        {String.fromCharCode(65 + i)}.
+                      </span>
+                      <span className="min-w-0 break-words">{option}</span>
+                      {completed && i === question.correctIndex && (
+                        <CheckCircle2
+                          aria-label="Correct answer"
+                          className="ml-auto mt-1 h-4 w-4 shrink-0 text-teal-700"
+                        />
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
             </fieldset>
             {completed && (
               <div
@@ -531,13 +672,22 @@ function PaperWorkspace({
                   ) : (
                     <XCircle className="h-4 w-4 text-amber-800" />
                   )}
-                  {correct
-                    ? "Correct"
-                    : answers[question.id] === undefined
-                      ? "Not answered"
-                      : "Let’s work through it"}
+                  {question.manualSelfReview
+                    ? "Compare with the model answer"
+                    : correct
+                      ? "Correct"
+                      : answers[question.id] === undefined
+                        ? "Not answered"
+                        : "Let’s work through it"}
                 </h2>
                 <p className="mt-3 text-sm leading-7">{question.explanation}</p>
+                {!question.manualSelfReview && (
+                  <p className="mt-2 text-sm font-semibold">
+                    {question.awardedMarks ??
+                      (correct ? (question.marks ?? 1) : 0)}{" "}
+                    / {question.marks ?? 1} marks
+                  </p>
+                )}
               </div>
             )}
           </section>

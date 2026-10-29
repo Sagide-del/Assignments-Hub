@@ -204,8 +204,8 @@ describe("Subject catalogue and bank-backed generation", () => {
     expect(subjects.map((s) => s.subject)).toEqual([
       "Mathematics",
       "English",
-      "Integrated Science",
       "Kiswahili",
+      "Integrated Science",
     ]);
     expect(questionBank.findMany.mock.calls[0][0].where).toMatchObject({
       isGlobal: true,
@@ -215,7 +215,7 @@ describe("Subject catalogue and bank-backed generation", () => {
       questionType: "MULTIPLE_CHOICE",
     });
     expect(subjects.find((s) => s.subject === "English")?.questionCount).toBe(
-      1,
+      40,
     );
   });
   it("snapshots an approved subject without relabelling senior or other-subject content", async () => {
@@ -223,26 +223,35 @@ describe("Subject catalogue and bank-backed generation", () => {
     const questionBank = {
       findMany: jest
         .fn()
-        .mockResolvedValue([bankRow(1, "English"), bankRow(2, "Kiswahili")]),
+        .mockResolvedValue([
+          ...Array.from({ length: 40 }, (_, i) => ({
+            ...bankRow(i + 1, "Integrated Science"),
+            topic: `Topic ${i % 3}`,
+          })),
+          bankRow(100, "Kiswahili"),
+        ]),
     };
     const service = new KjseaService({
       kjseaMockAttempt: model,
       questionBank,
     } as any);
     const paper = await service.create(
-      { source: "BANK", subject: "English" },
+      { source: "BANK", subject: "Integrated Science" },
       actor,
     );
-    expect(paper.subject).toBe("English");
-    expect(paper.questions).toHaveLength(1);
+    expect(paper.subject).toBe("Integrated Science");
+    expect(paper.questions).toHaveLength(40);
     expect(paper.questions[0]).not.toHaveProperty("correctIndex");
     expect(paper.questions[0].sourceGrade).toBe("Grade 9");
-    expect(paper.coverage).toMatchObject({ questionCount: 1, topicCount: 1 });
+    expect(paper.coverage).toMatchObject({ questionCount: 40, topicCount: 3 });
   });
   it("does not silently generate a mathematics paper for another subject", async () => {
     const { service } = setup();
     await expect(
-      service.create({ source: "GENERATED", subject: "English" }, actor),
+      service.create(
+        { source: "GENERATED", subject: "Unconfigured Subject" },
+        actor,
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
@@ -285,10 +294,13 @@ describe("Single-grade paper boundaries", () => {
       "7",
     ]);
     const paper = await service.create(
-      { source: "BANK", subject: "English" },
+      { source: "GENERATED", subject: "English" },
       student,
     );
-    expect(paper.questions.map((q) => q.sourceGrade)).toEqual(["Grade 7"]);
+    expect(paper.questions).toHaveLength(40);
+    expect(paper.questions.every((q) => q.sourceGrade === "Grade 7")).toBe(
+      true,
+    );
     expect(paper.coverage).toMatchObject({
       grade: "Grade 7",
       grades: ["Grade 7"],
@@ -317,7 +329,7 @@ describe("Single-grade paper boundaries", () => {
 });
 
 describe("Senior school mock papers", () => {
-  it("defaults Good Sam to Grade 11 with usable subjects even when the reviewed bank is empty", async () => {
+  it("keeps Good Sam in Grade 11 but does not mislabel short topic starters as full papers", async () => {
     const { model } = setup();
     const questionBank = { findMany: jest.fn().mockResolvedValue([]) };
     const service = new KjseaService({
@@ -347,6 +359,7 @@ describe("Senior school mock papers", () => {
       "Grade11",
       "11",
     ]);
+    expect(subjects.every((s) => s.fullPaperReady === false)).toBe(true);
     for (const subject of [
       "Mathematics",
       "Physics",
@@ -354,17 +367,9 @@ describe("Senior school mock papers", () => {
       "English",
       "Kiswahili",
     ]) {
-      const paper = await service.create({ subject }, sam);
-      expect(paper.subject).toBe(subject);
-      expect(paper.coverage).toMatchObject({
-        grade: "Grade 11",
-        grades: ["Grade 11"],
-      });
-      expect(paper.questions.every((q) => q.sourceGrade === "Grade 11")).toBe(
-        true,
+      await expect(service.create({ subject }, sam)).rejects.toThrow(
+        "not a full mock",
       );
-      expect(paper.questions[0]).not.toHaveProperty("correctIndex");
-      expect(paper.questions[0]).not.toHaveProperty("explanation");
     }
   });
   it("handles two-digit bank grades without accidentally querying or selecting Grade 1", async () => {
@@ -385,7 +390,10 @@ describe("Senior school mock papers", () => {
         .fn()
         .mockResolvedValue([
           row(1, "Grade 1"),
-          row(2, "Grade 11"),
+          ...Array.from({ length: 40 }, (_, i) => ({
+            ...row(i + 2, "Grade 11"),
+            topic: `Topic ${i % 3}`,
+          })),
           row(3, "Grade 12"),
         ]),
     };
@@ -397,7 +405,10 @@ describe("Senior school mock papers", () => {
       { subject: "Literature in English", source: "BANK" },
       { ...actor, grade: "Grade 11" },
     );
-    expect(paper.questions.map((q) => q.sourceGrade)).toEqual(["Grade 11"]);
+    expect(paper.questions).toHaveLength(40);
+    expect(paper.questions.every((q) => q.sourceGrade === "Grade 11")).toBe(
+      true,
+    );
     const subjects = await service.subjects({ ...actor, grade: "Grade 12" });
     expect(subjects).toHaveLength(1);
     expect(subjects[0]).toMatchObject({
