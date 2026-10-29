@@ -1,3 +1,4 @@
+import { BulkApproveQuestionBankDto } from "./dto/bulk-approve-question-bank.dto";
 import {
   Body,
   Controller,
@@ -91,6 +92,13 @@ export class QuestionBankAdminController {
   @AuditAction("question_bank.delete")
   remove(@Param("id", ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
     return this.questionBank.remove(id, actor);
+  }
+
+  @Post("bulk-approve")
+  @ApiOperation({ summary: "Approve selected drafts or all matching drafts across pages" })
+  @AuditAction("question_bank.bulk_approve")
+  bulkApprove(@Body() dto: BulkApproveQuestionBankDto, @CurrentUser() actor: AuthenticatedUser) {
+    return this.questionBank.bulkApprove(dto, actor);
   }
 
   @Post(":id/approve")

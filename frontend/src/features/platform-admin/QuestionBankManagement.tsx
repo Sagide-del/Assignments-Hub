@@ -71,6 +71,21 @@ export function QuestionBankManagement() {
     [discoveryErrors, setDiscoveryErrors] = useState<
       { url: string; message: string; grade?: string }[]
     >([]);
+  const [draftIds, setDraftIds] = useState<number[]>([]);
+  const [allDrafts, setAllDrafts] = useState<{
+    before: string;
+    count: number;
+    excludedIds: number[];
+  } | null>(null);
+  const [approvalIssues, setApprovalIssues] = useState<
+    { id: number; reason: string }[]
+  >([]);
+  useEffect(() => {
+    setDraftIds([]);
+    setAllDrafts(null);
+    setApprovalIssues([]);
+    setSelected([]);
+  }, [grade, subject, topic, status]);
   useEffect(() => {
     const requestedGrade = params.get("grade");
     if (
@@ -133,6 +148,39 @@ export function QuestionBankManagement() {
       setSelected([]);
     },
     onError: error,
+  });
+  const bulkApproval = useMutation({
+    mutationFn: () =>
+      allDrafts
+        ? questionBankAdminApi.bulkApprove({
+            scope: "FILTER",
+            before: allDrafts.before,
+            excludedIds: allDrafts.excludedIds,
+            filters: {
+              grade: grade || undefined,
+              subject: subject || undefined,
+              topic: topic || undefined,
+            },
+          })
+        : questionBankAdminApi.bulkApprove({ scope: "IDS", ids: draftIds }),
+    onSuccess: (result) => {
+      const expected = allDrafts
+        ? allDrafts.count - allDrafts.excludedIds.length
+        : draftIds.length;
+      const skipped = Math.max(
+        result.changed,
+        expected - result.approved - result.invalid,
+      );
+      setNotice(
+        `${result.approved} questions approved${result.invalid ? ` · ${result.invalid} need correction` : ""}${skipped ? ` · ${skipped} changed or no longer eligible and were skipped` : ""}. Approved questions are available for student practice.`,
+      );
+      setDraftIds([]);
+      setAllDrafts(null);
+      setPage(0);
+      setApprovalIssues(result.issues);
+    },
+    onError: error,
+    onSettled: refresh,
   });
   const save = useMutation({
     mutationFn: () =>
@@ -239,6 +287,12 @@ export function QuestionBankManagement() {
         ...coverage.map((c) => c.subject),
       ]),
     ].sort();
+  const draftInSnapshot = (item: QuestionBankItem) =>
+    !allDrafts ||
+    new Date(item.createdAt).getTime() <= new Date(allDrafts.before).getTime();
+  const draftPage = rows.filter(
+    (item) => item.status === "GENERATED" && draftInSnapshot(item),
+  );
   const eligibleSources = sources.filter((s) => targetGrades.includes(s.grade));
   const generationIds =
     sourceScope === "ALL"
@@ -833,7 +887,10 @@ export function QuestionBankManagement() {
                           aria-valuemax={Math.max(1, total)}
                           className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"
                         >
-                          <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${percent}%` }} />
+                          <div
+                            className="h-full rounded-full bg-blue-600 transition-all"
+                            style={{ width: `${percent}%` }}
+                          />
                         </div>
                         <span className="w-10 text-right text-xs tabular-nums text-slate-500">
                           {percent}%
@@ -952,6 +1009,7 @@ export function QuestionBankManagement() {
             <div className="flex flex-wrap gap-3 border-b p-4">
               <select
                 aria-label="Question grade"
+                disabled={bulkApproval.isPending}
                 className={control}
                 value={grade}
                 onChange={(e) => {
@@ -967,6 +1025,7 @@ export function QuestionBankManagement() {
               </select>
               <select
                 aria-label="Question subject"
+                disabled={bulkApproval.isPending}
                 className={control}
                 value={subject}
                 onChange={(e) => {
@@ -982,6 +1041,7 @@ export function QuestionBankManagement() {
               </select>
               <input
                 aria-label="Filter question topic"
+                disabled={bulkApproval.isPending}
                 className={control + " min-w-0 flex-1"}
                 placeholder="Find a topic"
                 value={topic}
@@ -992,6 +1052,7 @@ export function QuestionBankManagement() {
               />
               <select
                 aria-label="Review status"
+                disabled={bulkApproval.isPending}
                 className={control}
                 value={status}
                 onChange={(e) => {
@@ -1005,6 +1066,138 @@ export function QuestionBankManagement() {
                 <option value="REJECTED">Rejected</option>
               </select>
             </div>
+            {status === "GENERATED" && list.data?.selectionBefore && (
+              <div className="space-y-3 border-b bg-slate-50/70 p-4">
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      aria-label="Select this page of drafts"
+                      disabled={
+                        bulkApproval.isPending ||
+                        !draftPage.length ||
+                        list.isFetching
+                      }
+                      checked={
+                        !!draftPage.length &&
+                        draftPage.every((q) =>
+                          allDrafts
+                            ? !allDrafts.excludedIds.includes(q.id)
+                            : draftIds.includes(q.id),
+                        )
+                      }
+                      onChange={(e) => {
+                        if (allDrafts) {
+                          setAllDrafts({
+                            ...allDrafts,
+                            excludedIds: e.target.checked
+                              ? allDrafts.excludedIds.filter(
+                                  (id) => !draftPage.some((q) => q.id === id),
+                                )
+                              : [
+                                  ...new Set([
+                                    ...allDrafts.excludedIds,
+                                    ...draftPage.map((q) => q.id),
+                                  ]),
+                                ],
+                          });
+                          return;
+                        }
+                        setDraftIds(
+                          e.target.checked
+                            ? [
+                                ...new Set([
+                                  ...draftIds,
+                                  ...draftPage.map((q) => q.id),
+                                ]),
+                              ]
+                            : draftIds.filter(
+                                (id) => !draftPage.some((q) => q.id === id),
+                              ),
+                        );
+                      }}
+                    />
+                    Select this page
+                  </label>
+                  <button
+                    type="button"
+                    className="text-blue-700 hover:underline disabled:opacity-40"
+                    disabled={
+                      bulkApproval.isPending ||
+                      list.isFetching ||
+                      !list.data?.total ||
+                      !list.data.selectionBefore
+                    }
+                    onClick={() => {
+                      setDraftIds([]);
+                      setAllDrafts({
+                        before: list.data!.selectionBefore,
+                        count: list.data!.total,
+                        excludedIds: [],
+                      });
+                    }}
+                  >
+                    Select all {list.data?.total ?? 0} matching drafts
+                  </button>
+                  {(allDrafts || draftIds.length > 0) && (
+                    <>
+                      <span className="font-medium">
+                        {allDrafts
+                          ? allDrafts.count - allDrafts.excludedIds.length
+                          : draftIds.length}{" "}
+                        selected{allDrafts ? " across all pages" : ""}
+                      </span>
+                      <button
+                        className="rounded-lg bg-blue-700 px-4 py-2 font-medium text-white disabled:opacity-40"
+                        disabled={
+                          bulkApproval.isPending ||
+                          (allDrafts
+                            ? allDrafts.count - allDrafts.excludedIds.length <=
+                              0
+                            : !draftIds.length)
+                        }
+                        onClick={() => bulkApproval.mutate()}
+                      >
+                        {bulkApproval.isPending
+                          ? "Approving…"
+                          : `Approve selected (${allDrafts ? allDrafts.count - allDrafts.excludedIds.length : draftIds.length})`}
+                      </button>
+                      <button
+                        className="text-slate-600 underline"
+                        disabled={bulkApproval.isPending}
+                        onClick={() => {
+                          setDraftIds([]);
+                          setAllDrafts(null);
+                        }}
+                      >
+                        Clear selection
+                      </button>
+                    </>
+                  )}
+                </div>
+                <p className="text-xs leading-5 text-slate-500">
+                  Approval makes questions available for student practice.
+                  Incomplete questions and missing visuals stay in review.
+                  Select all includes the matching drafts already saved when
+                  selected.
+                </p>
+              </div>
+            )}
+            {approvalIssues.length > 0 && (
+              <details className="border-b p-4">
+                <summary className="cursor-pointer text-sm font-medium text-amber-800">
+                  Questions needing correction ({approvalIssues.length}
+                  {approvalIssues.length === 100 ? "+" : ""})
+                </summary>
+                <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                  {approvalIssues.map((issue) => (
+                    <li key={issue.id}>
+                      Question #{issue.id}: {issue.reason}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
             <div
               className="max-h-[70vh] overflow-y-auto"
               aria-label="Question results"
@@ -1026,15 +1219,46 @@ export function QuestionBankManagement() {
                       aria-label={`Select question ${item.id}`}
                       className="mt-1"
                       type="checkbox"
-                      disabled={item.status !== "APPROVED"}
-                      checked={selected.some((q) => q.id === item.id)}
-                      onChange={(e) =>
-                        setSelected(
-                          e.target.checked
-                            ? [...selected, item]
-                            : selected.filter((q) => q.id !== item.id),
-                        )
+                      disabled={
+                        bulkApproval.isPending ||
+                        (item.status === "GENERATED" &&
+                          !draftInSnapshot(item)) ||
+                        (item.status !== "APPROVED" &&
+                          (item.status !== "GENERATED" ||
+                            status !== "GENERATED"))
                       }
+                      checked={
+                        item.status === "GENERATED"
+                          ? allDrafts
+                            ? draftInSnapshot(item) &&
+                              !allDrafts.excludedIds.includes(item.id)
+                            : draftIds.includes(item.id)
+                          : selected.some((q) => q.id === item.id)
+                      }
+                      onChange={(e) => {
+                        if (item.status === "GENERATED") {
+                          if (allDrafts)
+                            setAllDrafts({
+                              ...allDrafts,
+                              excludedIds: e.target.checked
+                                ? allDrafts.excludedIds.filter(
+                                    (id) => id !== item.id,
+                                  )
+                                : [...allDrafts.excludedIds, item.id],
+                            });
+                          else
+                            setDraftIds(
+                              e.target.checked
+                                ? [...draftIds, item.id]
+                                : draftIds.filter((id) => id !== item.id),
+                            );
+                        } else
+                          setSelected(
+                            e.target.checked
+                              ? [...selected, item]
+                              : selected.filter((q) => q.id !== item.id),
+                          );
+                      }}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-slate-500">

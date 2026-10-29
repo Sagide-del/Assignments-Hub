@@ -1,3 +1,7 @@
+import {
+  BulkApproveQuestionBankDto,
+  QuestionApprovalFiltersDto,
+} from "./dto/bulk-approve-question-bank.dto";
 import { renderQuestionVisual } from "./content-tools";
 import { normalizeGrade } from "../common/utils/grade.util";
 import {
@@ -320,18 +324,11 @@ export class QuestionBankService {
     this.assertPlatformAdmin(actor);
     const skip = Math.max(query.skip ?? 0, 0);
     const take = Math.min(Math.max(query.take ?? 25, 1), 100);
+    const selectionBefore = new Date();
     const where: Prisma.QuestionBankWhereInput = {
-      isGlobal: true,
-      subject: query.subject
-        ? { equals: query.subject, mode: "insensitive" }
-        : undefined,
-      grade: query.grade
-        ? { equals: query.grade, mode: "insensitive" }
-        : undefined,
-      topic: query.topic
-        ? { contains: query.topic, mode: "insensitive" }
-        : undefined,
+      ...this.adminQuestionFilters(query),
       status: query.status,
+      createdAt: { lte: selectionBefore },
     };
     const [items, total] = await this.prisma.$transaction([
       this.prisma.questionBank.findMany({
@@ -342,7 +339,13 @@ export class QuestionBankService {
       }),
       this.prisma.questionBank.count({ where }),
     ]);
-    return { items, total, skip, take };
+    return {
+      items,
+      total,
+      skip,
+      take,
+      selectionBefore: selectionBefore.toISOString(),
+    };
   }
 
   async listSources(actor: AuthenticatedUser) {
@@ -417,9 +420,31 @@ export class QuestionBankService {
     return { id, deleted: true };
   }
 
-  async approve(id: number, actor: AuthenticatedUser) {
-    this.assertPlatformAdmin(actor);
-    const item = await this.findOrThrow(id);
+  private adminQuestionFilters(
+    query: QuestionApprovalFiltersDto,
+  ): Prisma.QuestionBankWhereInput {
+    return {
+      isGlobal: true,
+      subject: query.subject
+        ? { equals: query.subject, mode: "insensitive" }
+        : undefined,
+      grade: query.grade
+        ? { equals: query.grade, mode: "insensitive" }
+        : undefined,
+      topic: query.topic
+        ? { contains: query.topic, mode: "insensitive" }
+        : undefined,
+    };
+  }
+  private assertApprovable(item: {
+    questionText: string;
+    correctAnswer: string | null;
+    explanation: string | null;
+    questionType: string;
+    options: unknown;
+    diagramUrl: string | null;
+    contentHtml: string | null;
+  }) {
     if (
       !item.questionText?.trim() ||
       !item.correctAnswer?.trim() ||
@@ -452,6 +477,113 @@ export class QuestionBankService {
       throw new BadRequestException(
         "This question refers to a missing visual. Edit the question or regenerate it.",
       );
+  }
+  async bulkApprove(dto: BulkApproveQuestionBankDto, actor: AuthenticatedUser) {
+    this.assertPlatformAdmin(actor);
+    if (dto.scope === "IDS" && !dto.ids?.length)
+      throw new BadRequestException("Select questions to approve.");
+    if (dto.scope === "FILTER" && (!dto.filters || !dto.before))
+      throw new BadRequestException(
+        "Select matching questions again before approving.",
+      );
+    const before = new Date(
+      Math.min(
+        Date.now(),
+        dto.before ? new Date(dto.before).getTime() : Date.now(),
+      ),
+    );
+    if (!Number.isFinite(before.getTime()))
+      throw new BadRequestException("Invalid selection date.");
+    const where: Prisma.QuestionBankWhereInput = {
+      ...this.adminQuestionFilters(dto.scope === "FILTER" ? dto.filters! : {}),
+      ...(dto.scope === "IDS"
+        ? { id: { in: dto.ids } }
+        : { id: { notIn: dto.excludedIds ?? [] } }),
+      status: QuestionBankStatus.GENERATED,
+      createdAt: { lte: before },
+      updatedAt: { lte: before },
+    };
+    let cursor = 0,
+      approved = 0,
+      invalid = 0,
+      changed = 0,
+      examined = 0;
+    const issues: { id: number; reason: string }[] = [];
+    while (true) {
+      const items = await this.prisma.questionBank.findMany({
+        where: { AND: [where, { id: { gt: cursor } }] },
+        orderBy: { id: "asc" },
+        take: 250,
+      });
+      if (!items.length) break;
+      cursor = items[items.length - 1].id;
+      examined += items.length;
+      const valid = [];
+      for (const item of items) {
+        try {
+          this.assertApprovable(item);
+          valid.push(item);
+        } catch (e) {
+          invalid++;
+          if (issues.length < 100)
+            issues.push({
+              id: item.id,
+              reason:
+                e instanceof Error ? e.message : "Question needs correction.",
+            });
+        }
+      }
+      if (valid.length) {
+        const result = await this.prisma.questionBank.updateMany({
+          where: {
+            AND: [
+              where,
+              {
+                OR: valid.map((item) => ({
+                  id: item.id,
+                  updatedAt: item.updatedAt,
+                })),
+              },
+            ],
+          },
+          data: {
+            status: QuestionBankStatus.APPROVED,
+            reviewedById: actor.id,
+            reviewedAt: new Date(),
+          },
+        });
+        approved += result.count;
+        changed += valid.length - result.count;
+      }
+    }
+    void this.audit.record({
+      action: "question_bank.bulk_approved",
+      schoolId: actor.schoolId,
+      userId: actor.id,
+      metadata: {
+        scope: dto.scope,
+        filters: dto.filters ?? {},
+        before: before.toISOString(),
+        approved,
+        invalid,
+        changed,
+        examined,
+      },
+    });
+    return {
+      approved,
+      invalid,
+      changed,
+      examined,
+      issues,
+      moreIssues: invalid > issues.length,
+    };
+  }
+
+  async approve(id: number, actor: AuthenticatedUser) {
+    this.assertPlatformAdmin(actor);
+    const item = await this.findOrThrow(id);
+    this.assertApprovable(item);
     if (item.status === QuestionBankStatus.APPROVED) return item;
     const updated = await this.prisma.questionBank.update({
       where: { id },

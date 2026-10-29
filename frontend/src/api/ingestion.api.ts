@@ -48,6 +48,8 @@ export interface ScopeCoverage {
   readyOutcomes: number;
   unitIds: number[];
   snapshotReadyUnitIds?: number[];
+  nextPracticeUnitIds?: number[];
+  nextWrittenUnitIds?: number[];
   curriculumSources: number;
   teachingSources: number;
   draftQuestions: number;

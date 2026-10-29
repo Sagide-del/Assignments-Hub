@@ -82,11 +82,13 @@ export class CollectionService {
       cards,
       collectionIndex,
       preparations,
+      generationJobs,
     ] = await Promise.all([
       this.prisma.curriculumScope.findMany({
         orderBy: [{ grade: "asc" }, { subject: "asc" }],
       }),
       this.prisma.curriculumOutcome.findMany({
+        orderBy: { id: "asc" },
         select: {
           id: true,
           scopeId: true,
@@ -129,7 +131,7 @@ export class CollectionService {
         },
       }),
       this.prisma.questionBank.groupBy({
-        by: ["curriculumUnitId", "status"],
+        by: ["curriculumUnitId", "status", "questionType"],
         where: { curriculumUnitId: { not: null } },
         _count: { _all: true },
       }),
@@ -154,6 +156,13 @@ export class CollectionService {
           error: true,
         },
       }),
+      this.prisma.contentLibraryJob.findMany({
+        where: {
+          kind: "OUTCOME_QUESTIONS",
+          status: { in: ["QUEUED", "RUNNING"] },
+        },
+        select: { input: true },
+      }),
     ]);
     const ids = (value: any) =>
       Array.isArray(value) ? (value.filter(Number.isInteger) as number[]) : [];
@@ -177,6 +186,30 @@ export class CollectionService {
       ids(unit.supportingSourceIds).every((id) =>
         sources.some((s) => s.id === id && s.reviewed && s.role === "TEACHING"),
       );
+    const usedPractice = new Set(
+      questions
+        .filter(
+          (q) =>
+            q.status !== "REJECTED" && q.questionType === "MULTIPLE_CHOICE",
+        )
+        .map((q) => q.curriculumUnitId),
+    );
+    const usedWritten = new Set(
+      questions
+        .filter(
+          (q) =>
+            q.status !== "REJECTED" &&
+            ["SHORT_ANSWER", "ESSAY"].includes(q.questionType),
+        )
+        .map((q) => q.curriculumUnitId),
+    );
+    for (const job of generationJobs) {
+      const input = job.input as any;
+      if (Number.isInteger(input?.unitId))
+        (input.assessmentMode === "WRITTEN" ? usedWritten : usedPractice).add(
+          input.unitId,
+        );
+    }
     return {
       version: 1,
       gradeReviews: reviews,
@@ -205,6 +238,14 @@ export class CollectionService {
           verifiedOutcomes: us.filter((u) => u.verified).length,
           readyOutcomes: us.filter(ready).length,
           unitIds: us.filter(ready).map((u) => u.id),
+          nextPracticeUnitIds: us
+            .filter(ready)
+            .filter((u) => !usedPractice.has(u.id))
+            .map((u) => u.id),
+          nextWrittenUnitIds: us
+            .filter(ready)
+            .filter((u) => !usedWritten.has(u.id))
+            .map((u) => u.id),
           snapshotReadyUnitIds: us
             .filter(ready)
             .filter((u) => batchUnits.has(u.id))

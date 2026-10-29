@@ -121,6 +121,7 @@ export const questionBankAdminApi = {
         total: number;
         skip: number;
         take: number;
+        selectionBefore: string;
       }>("/admin/question-bank", { params })
       .then((response) => response.data),
 
@@ -149,6 +150,27 @@ export const questionBankAdminApi = {
     api
       .delete<{ id: number; deleted: boolean }>(`/admin/question-bank/${id}`)
       .then((response) => response.data),
+
+  bulkApprove: (
+    input:
+      | { scope: "IDS"; ids: number[] }
+      | {
+          scope: "FILTER";
+          filters: { grade?: string; subject?: string; topic?: string };
+          before: string;
+          excludedIds?: number[];
+        },
+  ) =>
+    api
+      .post<{
+        approved: number;
+        invalid: number;
+        changed: number;
+        examined: number;
+        issues: { id: number; reason: string }[];
+        moreIssues: boolean;
+      }>("/admin/question-bank/bulk-approve", input)
+      .then((r) => r.data),
 
   approve: (id: number) =>
     api

@@ -98,8 +98,13 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const [limitationsReviewed, setLimitationsReviewed] = useState(false);
   const [confirmed, setConfirmed] = useState(false),
     [catalogueChecked, setCatalogueChecked] = useState(false);
-  const [subject, setSubject] = useState("ALL"),
+  const [subject, setSubject] = useState("NEW"),
     [written, setWritten] = useState(false);
+  const [generationSubjects, setGenerationSubjects] = useState<number[]>([]);
+  useEffect(() => {
+    setSubject("NEW");
+    setGenerationSubjects([]);
+  }, [grade]);
   const [scope, setScope] = useState<ScopeCoverage | null>(null);
   const [collection, setCollection] = useState(""),
     [page, setPage] = useState(0);
@@ -356,24 +361,42 @@ function GradeContentFlow({ grade }: { grade: string }) {
     },
     onError: error,
   });
-  const selectedScopes = ready.filter(
-    (s) => subject === "ALL" || String(s.id) === subject,
-  );
-  const plans = selectedScopes.map((s) => {
-    // A small starter set spreads selection across the ready outcomes, keeping
-    // first-run cost bounded. This does not claim every strand is covered.
-    const ids = [...new Set(s.unitIds)],
-      size = Math.min(6, ids.length);
-    const chosen = Array.from(
-      { length: size },
-      (_, i) => ids[Math.floor((i * ids.length) / size)],
-    );
+  const available = ready.map((s) => {
+    const remaining = written ? s.nextWrittenUnitIds : s.nextPracticeUnitIds;
+    const nextIds = remaining
+      ? s.unitIds.filter((id) => remaining.includes(id))
+      : s.unitIds;
     return {
-      scope: s,
-      ids: chosen,
-      count: Math.max(5, Math.ceil(30 / chosen.length)),
+      ...s,
+      nextIds,
+      isNew:
+        nextIds.length === s.unitIds.length &&
+        (remaining !== undefined ||
+          s.draftQuestions + s.approvedQuestions === 0),
     };
   });
+  const selectedScopes = available.filter((s) =>
+    subject === "NEW"
+      ? s.isNew
+      : subject === "ALL" || generationSubjects.includes(s.id),
+  );
+  const plans = selectedScopes
+    .filter((s) => s.nextIds.length > 0)
+    .map((s) => {
+      // Spread each new batch across outcomes that have neither saved questions
+      // nor an active generation job for this assessment mode.
+      const ids = [...new Set(s.nextIds)].sort((a, b) => a - b);
+      const size = Math.min(6, ids.length);
+      const chosen = Array.from(
+        { length: size },
+        (_, i) => ids[Math.floor((i * ids.length) / size)],
+      );
+      return {
+        scope: s,
+        ids: chosen,
+        count: Math.max(5, Math.ceil(30 / chosen.length)),
+      };
+    });
   const generate = useMutation({
     mutationFn: async () => {
       let queued = 0;
@@ -1187,7 +1210,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
             <section className="space-y-5 rounded-xl border bg-white p-5 sm:p-6">
               <div>
                 <h3 className="text-lg font-semibold">
-                  Generate {grade} starter content
+                  Generate {grade} content
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   AI will create original questions, explanations and recall
@@ -1213,26 +1236,73 @@ function GradeContentFlow({ grade }: { grade: string }) {
                     Generate for
                     <select
                       aria-label="Generation subject"
+                      disabled={generate.isPending}
                       className={button + " mt-2 w-full min-w-0"}
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
                     >
-                      <option value="ALL">
-                        All ready subjects ({ready.length})
+                      <option value="NEW">
+                        New subjects only (
+                        {available.filter((s) => s.isNew).length})
                       </option>
-                      {ready.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.subject}
-                          {s.pathway ? ` · ${s.pathway}` : ""}
-                        </option>
-                      ))}
+                      <option value="ALL">
+                        Next batch for all ready subjects ({ready.length})
+                      </option>
+                      <option value="CHOOSE">Choose subjects</option>
                     </select>
                   </label>
+                  {subject === "CHOOSE" && (
+                    <fieldset className="rounded-lg border border-slate-200 p-4">
+                      <legend className="px-1 text-xs font-medium">
+                        Subjects for this batch
+                      </legend>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {available.map((s) => (
+                          <label
+                            key={s.id}
+                            className="flex items-start gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-1"
+                              checked={generationSubjects.includes(s.id)}
+                              disabled={generate.isPending || !s.nextIds.length}
+                              onChange={(e) =>
+                                setGenerationSubjects((ids) =>
+                                  e.target.checked
+                                    ? [...ids, s.id]
+                                    : ids.filter((id) => id !== s.id),
+                                )
+                              }
+                            />
+                            <span>
+                              {s.subject}
+                              <span className="mt-1 block text-xs text-slate-500">
+                                {s.nextIds.length
+                                  ? `${s.nextIds.length} unused outcomes${s.isNew ? " · new subject" : ""}`
+                                  : "All available outcomes already used or queued"}
+                              </span>
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
+                  {!plans.length && (
+                    <p className="rounded-lg bg-blue-50 p-4 text-sm leading-6 text-blue-900">
+                      {subject === "NEW"
+                        ? "These subjects already have saved or queued questions. Choose subjects, or select the next batch for all ready subjects, to cover additional outcomes."
+                        : subject === "CHOOSE" && !generationSubjects.length
+                          ? "Select the subjects you want to generate."
+                          : "No unused validated outcomes remain in this selection. Failed jobs can be retried from Generation jobs."}
+                    </p>
+                  )}
                   <label className="flex items-start gap-3 text-sm">
                     <input
                       className="mt-1"
                       type="checkbox"
                       checked={written}
+                      disabled={generate.isPending}
                       onChange={(e) => setWritten(e.target.checked)}
                     />
                     Create written-response tasks instead of multiple-choice
@@ -1246,8 +1316,9 @@ function GradeContentFlow({ grade }: { grade: string }) {
                     <p>
                       Across {plans.length} subjects and{" "}
                       {plans.reduce((n, p) => n + p.ids.length, 0)} selected
-                      outcomes, plus recall cards. Review this starter set
-                      before generating more to cover additional outcomes.
+                      outcomes, plus recall cards. Existing saved or queued
+                      outcomes are skipped. Each new batch covers additional
+                      available outcomes.
                     </p>
                   </div>
                   {!!preparation?.result?.subjects?.filter(
@@ -1267,7 +1338,9 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   )}
                   <button
                     className={primary}
-                    disabled={generate.isPending || !plans.length}
+                    disabled={
+                      generate.isPending || !plans.length || overview.isFetching
+                    }
                     onClick={() => generate.mutate()}
                   >
                     {generate.isPending ? (
@@ -1277,7 +1350,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                     )}{" "}
                     {generate.isPending
                       ? "Queuing content…"
-                      : "Generate starter content"}
+                      : "Generate new batch"}
                   </button>
                   <p className="text-xs leading-6 text-slate-500">
                     Content is saved as drafts. You decide what students receive
