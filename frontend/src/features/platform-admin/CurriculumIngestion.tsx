@@ -48,7 +48,10 @@ export function CurriculumIngestion() {
       subjects: [],
     }),
     [excerpt, setExcerpt] = useState(""),
-    [count, setCount] = useState(10),
+    [count, setCount] = useState(30),
+    [assessmentMode, setAssessmentMode] = useState<"PRACTICE" | "WRITTEN">(
+      "PRACTICE",
+    ),
     [focusCollection, setFocusCollection] = useState(""),
     [documentPage, setDocumentPage] = useState(0);
   const query = useQuery({
@@ -250,7 +253,8 @@ export function CurriculumIngestion() {
       )
       .flatMap((s) => s.unitIds);
   const generate = useMutation({
-    mutationFn: () => ingestionApi.generate(ready, "BOTH", count),
+    mutationFn: () =>
+      ingestionApi.generate(ready, "BOTH", count, assessmentMode),
     onSuccess: () => {
       setNotice(
         "Outcome-based question and recall-card jobs queued as drafts. Open Generation jobs to monitor them.",
@@ -845,10 +849,10 @@ export function CurriculumIngestion() {
               Generate from evidence-ready outcomes
             </h3>
             <p className="mt-2 text-sm leading-7 text-slate-500">
-              {ready.length} outcomes pass catalogue, curriculum and
-              teaching-reference checks. Draft content is linked to its outcome
-              and source document IDs. Missing material is a gap, not permission
-              to invent.
+              {ready.length} outcomes have reviewed curriculum evidence. AI
+              generates original questions and recall cards within that scope;
+              notes and books are optional. Answers still require review before
+              publication. Curriculum-aligned does not mean KICD-approved.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <label className="text-xs">
@@ -862,6 +866,24 @@ export function CurriculumIngestion() {
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
                 />
+              </label>
+              <label className="flex w-full min-w-0 flex-col gap-2 text-xs sm:w-auto">
+                Assessment format
+                <select
+                  aria-label="Assessment format"
+                  className={control + " w-full min-w-0 max-w-full sm:w-auto"}
+                  value={assessmentMode}
+                  onChange={(e) =>
+                    setAssessmentMode(e.target.value as "PRACTICE" | "WRITTEN")
+                  }
+                >
+                  <option value="PRACTICE">
+                    Multiple-choice practice pool
+                  </option>
+                  <option value="WRITTEN">
+                    Written response / composition (reviewed marking)
+                  </option>
+                </select>
               </label>
               <button
                 disabled={
@@ -1039,19 +1061,16 @@ function OutcomeEditor({
           </label>
           <button
             className={control + " mt-3"}
-            disabled={
-              !reviewed ||
-              save.isPending ||
-              units.some((u) => !u.supportingSourceIds.length)
-            }
+            disabled={!reviewed || save.isPending}
             onClick={() => save.mutate(units.map((u) => u.id))}
           >
             Confirm all {units.length} reviewed outcomes
           </button>
           {!teaching.length && (
             <p className="mt-3 text-xs text-amber-800">
-              Missing teaching material. Ingest notes, a textbook or revision
-              references for this grade and subject.
+              Curriculum-led AI generation is available without a textbook.
+              Teaching references are optional; review the generated answers
+              before publishing.
             </p>
           )}
         </section>
@@ -1100,7 +1119,7 @@ function OutcomeEditor({
           </p>
           <fieldset className="space-y-2 border-t pt-4">
             <legend className="text-xs font-semibold">
-              Supporting teaching references
+              Supporting teaching references (optional)
             </legend>
             {teaching.map((s) => (
               <label
@@ -1133,7 +1152,7 @@ function OutcomeEditor({
           </fieldset>
           <button
             className={control}
-            disabled={save.isPending || !unit.supportingSourceIds.length}
+            disabled={save.isPending}
             onClick={() => save.mutate([unit.id])}
           >
             <BookOpen size={15} className="mr-2 inline" />

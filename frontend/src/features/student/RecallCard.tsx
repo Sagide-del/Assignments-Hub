@@ -79,7 +79,7 @@ export function RecallCard({ card }: { card: MnemonicCard }) {
               className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs"
               onClick={() => {
                 setRating(
-                  "Recalled. Revisit this concept later to strengthen your memory.",
+                  "Recalled. Try again tomorrow, then after 3, 7 and 14 days. Explain the idea and apply it to a new example.",
                 );
                 setRevealed(false);
                 setChecked([]);

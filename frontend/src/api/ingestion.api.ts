@@ -182,6 +182,7 @@ export const ingestionApi = {
     unitIds: number[],
     kind: "QUESTIONS" | "CARDS" | "BOTH",
     count: number,
+    assessmentMode: "PRACTICE" | "WRITTEN" = "PRACTICE",
   ) => {
     let queued = 0;
     for (let n = 0; n < unitIds.length; n += 200) {
@@ -189,6 +190,7 @@ export const ingestionApi = {
         unitIds: unitIds.slice(n, n + 200),
         kind,
         count,
+        assessmentMode,
       });
       queued += r.data.length;
     }

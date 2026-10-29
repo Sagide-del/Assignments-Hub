@@ -50,9 +50,9 @@ An outcome can generate content only when:
 
 1. The grade's expected subject catalogue and subject scope have been reviewed.
 2. The learning outcome is reviewed, with a source quotation present in a reviewed curriculum design.
-3. At least one reviewed teaching source matches the exact grade and subject.
+3. Any optional teaching sources must be reviewed and match the exact grade and subject. A textbook is not required: reviewed curriculum evidence plus AI subject knowledge can generate drafts. The curriculum reference establishes alignment, not independent verification of AI facts or answers.
 
-Generation jobs recheck these conditions when they run. They generate questions and/or native recall cards into drafts, retaining curriculum outcome IDs and source-document IDs. Question jobs use the existing validated question generator in resumable 15-question chunks. Approved questions continue to feed rotating 30-question practice batches. This release does not auto-approve AI content or certify that a learner has mastered a practical competency.
+Generation jobs recheck these conditions when they run. They generate original questions and/or native recall cards into drafts, retaining curriculum outcome IDs and source-document IDs. Question jobs use the existing validated question generator in resumable 15-question chunks. Approved questions continue to feed rotating 30-question practice batches. This release does not auto-approve AI content or certify that a learner has mastered a practical competency.
 
 ## Operations and checks
 
@@ -65,3 +65,11 @@ Verification includes schema validation/builds; ZIP bounds and path handling; ho
 Independent student practice includes every subject in the reviewed catalogue for the student's profile grade, including subjects with no approved questions yet. Missing pools show “Content being prepared”; pools below 30 remain unavailable for a new batch. Existing unfinished attempts can still resume. Senior pathway and religious-education alternatives are available options, not a statement that every student must take every alternative.
 
 For a grade-wide rollout: propose and review the official subject inventory, collect permitted online teaching material or uploaded/licensed books, review mappings and outcomes, then generate across the ready outcomes in Coverage & generation. Questions are stored centrally as drafts. Review and approve them in the question library; approved multiple-choice questions automatically enter the matching grade/subject practice pool. No separate student copy or manual assignment upload is required for independent practice. School teachers retain their existing subscribed-bank selection workflow. A missing source or inaccessible website remains a coverage gap; this workflow cannot obtain inaccessible books or guarantee complete subject coverage without reviewed source material.
+
+## Curriculum-led assessment and retention design
+
+Default generation creates 30 MCQs per selected outcome; this is a requested target, not a promise of 30 approved items. Partial/failed jobs and pending review remain visible. All reviewed subjects in Grades 6–12 use the same outcome-linked pipeline; no content is claimed to exist merely because a subject is listed. Supporting notes/books are optional. The separate Written response / composition format generates short answers and essays for reviewed teacher assignments, not auto-marked practice.
+
+The English blueprint was informed by the user-supplied five-page Grade 6 Jesma 006 sample: dialogue cloze, passage comprehension and inference, vocabulary in context, connected cloze, grammar and a separate composition. No sample passages, questions or publisher branding are reproduced. Each generated passage-dependent item contains its own original passage because practice shuffles individual questions. The blueprint adapts language and reasoning to Grades 6, 7–9 and 10–12, while the actual reviewed outcome determines which components apply. It is not a claim of an official exam format.
+
+Across subjects the generation instructions emphasise varied retrieval, understanding and application, misconception-based distractors, independent answer checking and explanations that teach reasoning. Recall cards request retrieval, misconception and transfer checks. The learner UI suggests revisiting after 1, 3, 7 and 14 days; this is study guidance, not persisted scheduling or a retention guarantee. These prompt instructions do not constitute factual verification or guarantee novelty against the entire internet. Existing validation, duplicate checks and manual approval remain necessary.

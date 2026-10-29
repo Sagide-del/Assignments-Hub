@@ -238,6 +238,62 @@ describe("Curriculum evidence and expected subjects", () => {
     ).rejects.toThrow("teaching");
     expect(p.contentLibraryJob.create).not.toHaveBeenCalled();
   });
+  it("generates from reviewed curriculum alone without inventing a teaching source", async () => {
+    const unit = {
+      id: 7,
+      verified: true,
+      sourceDocumentId: 1,
+      supportingSourceIds: [],
+      subStrand: "Reading",
+      strand: "Reading",
+      outcome: "Infer meaning from a passage",
+      quote: "Infer meaning from a passage",
+      scope: { verified: true, grade: "Grade 6", subject: "English" },
+    };
+    const p = {
+      curriculumOutcome: { findUnique: jest.fn().mockResolvedValue(unit) },
+      curriculumGradeReview: {
+        findUnique: jest.fn().mockResolvedValue({ verifiedAt: new Date() }),
+      },
+      questionBankSourceDocument: {
+        findMany: jest.fn().mockResolvedValue([{ id: 1, role: "CURRICULUM" }]),
+      },
+      contentLibraryJob: {
+        create: jest
+          .fn()
+          .mockImplementation(({ data }) => Promise.resolve(data)),
+      },
+      $transaction: jest.fn().mockImplementation((jobs) => Promise.all(jobs)),
+    };
+    const bank = { generate: jest.fn().mockResolvedValue([{ id: 11 }]) };
+    const s = service(p, { bank });
+    const jobs = await s.generate(
+      { unitIds: [7], kind: "QUESTIONS", count: 5, assessmentMode: "WRITTEN" },
+      { id: 1 } as any,
+    );
+    expect((jobs[0].input as any).assessmentMode).toBe("WRITTEN");
+    await s.process(
+      { id: "job", kind: "OUTCOME_QUESTIONS", input: jobs[0].input },
+      { id: 1 } as any,
+    );
+    const args = bank.generate.mock.calls[0];
+    expect(args[1]).toMatchObject({
+      sourceDocumentId: 1,
+      questionTypes: ["SHORT_ANSWER", "ESSAY"],
+    });
+    expect(args[4]).toMatchObject({
+      supportingSourceIds: [],
+      curriculumSourceId: 1,
+    });
+    expect(args[4].designInstructions).toContain("ENGLISH DESIGN");
+    expect(args[4].designInstructions).toContain("rubric");
+    p.questionBankSourceDocument.findMany.mockResolvedValue([]);
+    await expect(
+      s.generate({ unitIds: [7], kind: "QUESTIONS", count: 5 }, {
+        id: 1,
+      } as any),
+    ).rejects.toThrow("curriculum");
+  });
   it("queues outcome-linked jobs only with reviewed grade/subject evidence", async () => {
     const unit = {
       id: 7,

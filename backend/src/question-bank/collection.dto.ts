@@ -68,6 +68,8 @@ export class OutcomeReviewDto {
   @IsBoolean() verified: boolean;
 }
 export class OutcomeGenerationDto {
+  @IsOptional() @IsIn(["PRACTICE", "WRITTEN"]) assessmentMode?:
+    "PRACTICE" | "WRITTEN";
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(200)

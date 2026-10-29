@@ -956,8 +956,8 @@ export function QuestionBankManagement() {
                           </p>
                           {item.curriculumUnitId && (
                             <p className="text-xs text-blue-700">
-                              Curriculum outcome #{item.curriculumUnitId} ·
-                              source documents{" "}
+                              AI-generated · curriculum outcome #
+                              {item.curriculumUnitId} · source documents{" "}
                               {item.curriculumSourceIds?.join(", ")}
                             </p>
                           )}
