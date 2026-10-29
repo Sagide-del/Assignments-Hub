@@ -371,7 +371,7 @@ describe("Automatic grade preparation", () => {
       collections as any,
     ).work();
     expect(p.contentLibraryJob.findFirst.mock.calls[0][0].where).toMatchObject({
-      kind: "PREPARE_GRADE",
+      kind: { in: ["PREPARE_GRADE", "PUBLISH_CONTENT"] },
       status: "QUEUED",
     });
     expect(collections.process).toHaveBeenCalledWith(job, actor);

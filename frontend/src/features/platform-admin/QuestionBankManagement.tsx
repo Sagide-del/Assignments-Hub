@@ -33,6 +33,7 @@ const control =
   "min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm";
 const jobLabels: Record<string, string> = {
   PREPARE_GRADE: "Prepare grade curriculum",
+  PUBLISH_CONTENT: "Publish content",
   INGEST_GITHUB: "Prepare saved curriculum",
   INGEST_URL: "Import source",
   INGEST_FILE: "Read uploaded file",
@@ -53,7 +54,9 @@ export function QuestionBankManagement() {
   const [grade, setGrade] = useState(params.get("grade") ?? ""),
     [subject, setSubject] = useState(""),
     [topic, setTopic] = useState(""),
-    [status, setStatus] = useState("GENERATED"),
+    [status, setStatus] = useState(
+      params.get("status") === "APPROVED" ? "APPROVED" : "GENERATED",
+    ),
     [page, setPage] = useState(0),
     [selected, setSelected] = useState<QuestionBankItem[]>([]),
     [title, setTitle] = useState(""),
@@ -77,12 +80,33 @@ export function QuestionBankManagement() {
     count: number;
     excludedIds: number[];
   } | null>(null);
+  const [allApproved, setAllApproved] = useState<{
+    before: string;
+    count: number;
+    excludedIds: number[];
+  } | null>(null);
+  const [publishAudience, setPublishAudience] = useState<
+    "INDEPENDENT" | "SCHOOLS" | "BOTH"
+  >("INDEPENDENT");
+  const [publishSchoolScope, setPublishSchoolScope] = useState<
+    "ALL" | "SELECTED"
+  >("ALL");
+  const [publishSchoolIds, setPublishSchoolIds] = useState<number[]>([]);
+  const publicationTargets = useQuery({
+    queryKey: ["question-bank-publication-targets"],
+    queryFn: questionBankAdminApi.publicationTargets,
+    enabled:
+      view === "questions" &&
+      publishAudience !== "INDEPENDENT" &&
+      (selected.length > 0 || !!allApproved),
+  });
   const [approvalIssues, setApprovalIssues] = useState<
     { id: number; reason: string }[]
   >([]);
   useEffect(() => {
     setDraftIds([]);
     setAllDrafts(null);
+    setAllApproved(null);
     setApprovalIssues([]);
     setSelected([]);
   }, [grade, subject, topic, status]);
@@ -96,7 +120,7 @@ export function QuestionBankManagement() {
       setGrade(requestedGrade);
       setSubject("");
       setTopic("");
-      setStatus("GENERATED");
+      setStatus(params.get("status") === "APPROVED" ? "APPROVED" : "GENERATED");
       setPage(0);
       setSelected([]);
     }
@@ -172,7 +196,7 @@ export function QuestionBankManagement() {
         expected - result.approved - result.invalid,
       );
       setNotice(
-        `${result.approved} questions approved${result.invalid ? ` · ${result.invalid} need correction` : ""}${skipped ? ` · ${skipped} changed or no longer eligible and were skipped` : ""}. Approved questions are available for student practice.`,
+        `${result.approved} questions approved${result.invalid ? ` · ${result.invalid} need correction` : ""}${skipped ? ` · ${skipped} changed or no longer eligible and were skipped` : ""}. Approved questions are ready to publish to individual learners or schools.`,
       );
       setDraftIds([]);
       setAllDrafts(null);
@@ -203,17 +227,39 @@ export function QuestionBankManagement() {
   });
   const publish = useMutation({
     mutationFn: () =>
-      questionBankAdminApi.publish({
-        questionIds: selected.map((q) => q.id),
-        title,
+      questionBankAdminApi.publishContent({
+        ...(allApproved
+          ? {
+              scope: "FILTER" as const,
+              before: allApproved.before,
+              excludedIds: allApproved.excludedIds,
+              filters: {
+                grade: grade || undefined,
+                subject: subject || undefined,
+                topic: topic || undefined,
+              },
+            }
+          : { scope: "IDS" as const, ids: selected.map((q) => q.id) }),
+        audience: publishAudience,
+        ...(publishAudience !== "INDEPENDENT"
+          ? {
+              schoolScope: publishSchoolScope,
+              ...(publishSchoolScope === "SELECTED"
+                ? { schoolIds: publishSchoolIds }
+                : {}),
+            }
+          : {}),
+        ...(title.trim() ? { title: title.trim() } : {}),
       }),
     onSuccess: (r) => {
       setNotice(
-        `Published assignment #${r.assignmentId} with ${r.questionCount} questions.`,
+        `Publication queued${r.independent ? " for individual learners" : ""}${r.schoolCount ? ` for ${r.schoolCount} schools` : ""}. It will create assignments by grade, subject and topic. Follow the publishing job below.`,
       );
       setSelected([]);
+      setAllApproved(null);
       setTitle("");
       refresh();
+      changeView("jobs");
     },
     onError: error,
   });
@@ -278,6 +324,9 @@ export function QuestionBankManagement() {
     onSuccess: refresh,
     onError: error,
   });
+  const publicationJob = overview.data?.jobs.find(
+    (job) => job.kind === "PUBLISH_CONTENT",
+  );
   const sources = overview.data?.sources ?? [],
     coverage = overview.data?.coverage ?? [],
     rows = list.data?.items ?? [],
@@ -290,6 +339,13 @@ export function QuestionBankManagement() {
   const draftInSnapshot = (item: QuestionBankItem) =>
     !allDrafts ||
     new Date(item.createdAt).getTime() <= new Date(allDrafts.before).getTime();
+  const approvedInSnapshot = (item: QuestionBankItem) =>
+    !allApproved ||
+    new Date(item.createdAt).getTime() <=
+      new Date(allApproved.before).getTime();
+  const approvedPage = rows.filter(
+    (item) => item.status === "APPROVED" && approvedInSnapshot(item),
+  );
   const draftPage = rows.filter(
     (item) => item.status === "GENERATED" && draftInSnapshot(item),
   );
@@ -305,15 +361,10 @@ export function QuestionBankManagement() {
     c.subject.trim().length <= 120 &&
     !c.issue;
   const confirmedCandidates = candidates.filter(isConfirmed);
-  const sameSelection =
-    !selected.length ||
-    selected.every(
-      (q) => q.grade === selected[0].grade && q.subject === selected[0].subject,
-    );
   const tabs = [
     ["questions", "Questions", BookMarked],
     ["create", "Create content", Layers],
-    ["jobs", "Generation jobs", Clock],
+    ["jobs", "Content jobs", Clock],
     ["cards", "Memory cards", Brain],
   ] as const;
   return (
@@ -835,12 +886,80 @@ export function QuestionBankManagement() {
       ) : view === "jobs" ? (
         <section className="overflow-hidden rounded-xl border bg-white">
           <div className="flex justify-between border-b p-5">
-            <h2 className="font-semibold">Generation queue</h2>
+            <h2 className="font-semibold">Content queue</h2>
             <button onClick={refresh} className="text-sm">
               <RefreshCw size={16} className="mr-2 inline" />
               Refresh
             </button>
           </div>
+          {publicationJob && (
+            <section
+              aria-label="Publishing progress"
+              className="space-y-3 border-b bg-blue-50/40 p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="font-semibold">
+                  {publicationJob.status === "COMPLETED"
+                    ? "Publication finished"
+                    : publicationJob.status === "FAILED"
+                      ? "Publication needs attention"
+                      : "Publishing content"}
+                </h3>
+                <span className="text-xs font-medium text-slate-500">
+                  {publicationJob.status === "QUEUED"
+                    ? "Queued"
+                    : publicationJob.status === "RUNNING"
+                      ? "Processing"
+                      : publicationJob.status === "COMPLETED"
+                        ? "Finished"
+                        : "Needs attention"}
+                </span>
+              </div>
+              <p className="text-sm text-slate-600">
+                {publicationJob.result?.assignmentsCreated ?? 0} assignments
+                published · {publicationJob.result?.processed ?? 0}/
+                {publicationJob.result?.total ??
+                  (publicationJob.input.audience !== "SCHOOLS" ? 1 : 0) +
+                    (publicationJob.input.schoolIds?.length ?? 0)}{" "}
+                audiences processed
+              </p>
+              <p className="text-xs leading-6 text-slate-500">
+                Published work appears in My Assignments for the matching grade,
+                under its subject and topic. Existing publications are skipped.
+              </p>
+              {publicationJob.error && (
+                <p role="alert" className="text-sm text-red-700">
+                  {publicationJob.error}
+                </p>
+              )}
+              {!!publicationJob.result?.failures?.length && (
+                <details>
+                  <summary className="cursor-pointer text-sm text-amber-800">
+                    {publicationJob.result.failures.length} audiences need
+                    attention
+                  </summary>
+                  <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                    {publicationJob.result.failures.map((failure, i) => (
+                      <li key={i}>
+                        School {failure.schoolId}: {failure.error}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {(publicationJob.status === "FAILED" ||
+                (publicationJob.status === "COMPLETED" &&
+                  !!publicationJob.result?.failures?.length)) && (
+                <button
+                  className={control}
+                  disabled={retry.isPending}
+                  onClick={() => retry.mutate(publicationJob.id)}
+                >
+                  Retry publication
+                </button>
+              )}
+            </section>
+          )}
           {overview.data?.queue && (
             <div className="border-b p-5">
               <p className="mb-4 text-sm leading-6 text-slate-600">
@@ -941,6 +1060,17 @@ export function QuestionBankManagement() {
                       ? ` · ${job.result.count} created`
                       : ""}
                   </p>
+                  {job.kind === "PUBLISH_CONTENT" && (
+                    <p className="mt-2 text-xs leading-6 text-slate-600">
+                      {job.result?.processed ?? 0}/{job.result?.total ?? 0}{" "}
+                      audiences processed ·{" "}
+                      {job.result?.assignmentsCreated ?? 0} assignments
+                      published
+                      {job.result?.failures?.length
+                        ? ` · ${job.result.failures.length} need attention`
+                        : ""}
+                    </p>
+                  )}
                   {job.kind === "PREPARE_GRADE" && job.result && (
                     <p className="mt-2 text-xs leading-6 text-slate-500">
                       {job.result.processed ?? 0}/{job.result.total ?? 0} files
@@ -987,7 +1117,7 @@ export function QuestionBankManagement() {
                 coverage.reduce((n, c) => n + c._count._all, 0),
               ],
               [
-                "Ready for students",
+                "Approved in bank",
                 coverage
                   .filter((c) => c.status === "APPROVED")
                   .reduce((n, c) => n + c._count._all, 0),
@@ -1009,7 +1139,7 @@ export function QuestionBankManagement() {
             <div className="flex flex-wrap gap-3 border-b p-4">
               <select
                 aria-label="Question grade"
-                disabled={bulkApproval.isPending}
+                disabled={bulkApproval.isPending || publish.isPending}
                 className={control}
                 value={grade}
                 onChange={(e) => {
@@ -1025,7 +1155,7 @@ export function QuestionBankManagement() {
               </select>
               <select
                 aria-label="Question subject"
-                disabled={bulkApproval.isPending}
+                disabled={bulkApproval.isPending || publish.isPending}
                 className={control}
                 value={subject}
                 onChange={(e) => {
@@ -1041,7 +1171,7 @@ export function QuestionBankManagement() {
               </select>
               <input
                 aria-label="Filter question topic"
-                disabled={bulkApproval.isPending}
+                disabled={bulkApproval.isPending || publish.isPending}
                 className={control + " min-w-0 flex-1"}
                 placeholder="Find a topic"
                 value={topic}
@@ -1052,7 +1182,7 @@ export function QuestionBankManagement() {
               />
               <select
                 aria-label="Review status"
-                disabled={bulkApproval.isPending}
+                disabled={bulkApproval.isPending || publish.isPending}
                 className={control}
                 value={status}
                 onChange={(e) => {
@@ -1065,6 +1195,18 @@ export function QuestionBankManagement() {
                 <option value="APPROVED">Approved</option>
                 <option value="REJECTED">Rejected</option>
               </select>
+              {status !== "APPROVED" && (
+                <button
+                  className="text-sm font-medium text-blue-700 hover:underline"
+                  disabled={bulkApproval.isPending || publish.isPending}
+                  onClick={() => {
+                    setStatus("APPROVED");
+                    setPage(0);
+                  }}
+                >
+                  Publish approved questions
+                </button>
+              )}
             </div>
             {status === "GENERATED" && list.data?.selectionBefore && (
               <div className="space-y-3 border-b bg-slate-50/70 p-4">
@@ -1164,7 +1306,7 @@ export function QuestionBankManagement() {
                       </button>
                       <button
                         className="text-slate-600 underline"
-                        disabled={bulkApproval.isPending}
+                        disabled={bulkApproval.isPending || publish.isPending}
                         onClick={() => {
                           setDraftIds([]);
                           setAllDrafts(null);
@@ -1176,11 +1318,85 @@ export function QuestionBankManagement() {
                   )}
                 </div>
                 <p className="text-xs leading-5 text-slate-500">
-                  Approval makes questions available for student practice.
-                  Incomplete questions and missing visuals stay in review.
-                  Select all includes the matching drafts already saved when
-                  selected.
+                  Approval prepares questions for publishing. Choose individual
+                  learners, schools, or both to make them available. Incomplete
+                  questions and missing visuals stay in review. Select all
+                  includes the matching drafts already saved when selected.
                 </p>
+              </div>
+            )}
+            {status === "APPROVED" && list.data?.selectionBefore && (
+              <div className="flex flex-wrap items-center gap-4 border-b bg-slate-50/70 p-4 text-sm">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    aria-label="Select this page of approved questions"
+                    disabled={
+                      publish.isPending ||
+                      list.isFetching ||
+                      !approvedPage.length
+                    }
+                    checked={
+                      !!approvedPage.length &&
+                      approvedPage.every((q) =>
+                        allApproved
+                          ? !allApproved.excludedIds.includes(q.id)
+                          : selected.some((s) => s.id === q.id),
+                      )
+                    }
+                    onChange={(e) => {
+                      if (allApproved) {
+                        setAllApproved({
+                          ...allApproved,
+                          excludedIds: e.target.checked
+                            ? allApproved.excludedIds.filter(
+                                (id) => !approvedPage.some((q) => q.id === id),
+                              )
+                            : [
+                                ...new Set([
+                                  ...allApproved.excludedIds,
+                                  ...approvedPage.map((q) => q.id),
+                                ]),
+                              ],
+                        });
+                      } else
+                        setSelected(
+                          e.target.checked
+                            ? [
+                                ...selected.filter(
+                                  (s) =>
+                                    !approvedPage.some((q) => q.id === s.id),
+                                ),
+                                ...approvedPage,
+                              ]
+                            : selected.filter(
+                                (s) => !approvedPage.some((q) => q.id === s.id),
+                              ),
+                        );
+                    }}
+                  />
+                  Select this page
+                </label>
+                <button
+                  type="button"
+                  className="font-medium text-blue-700 hover:underline disabled:opacity-40"
+                  disabled={
+                    publish.isPending || list.isFetching || !list.data.total
+                  }
+                  onClick={() => {
+                    setSelected([]);
+                    setAllApproved({
+                      before: list.data!.selectionBefore,
+                      count: list.data!.total,
+                      excludedIds: [],
+                    });
+                  }}
+                >
+                  Select all {list.data.total} matching approved questions
+                </button>
+                <span className="text-xs text-slate-500">
+                  Approval is complete. Choose where to publish these questions.
+                </span>
               </div>
             )}
             {approvalIssues.length > 0 && (
@@ -1221,6 +1437,9 @@ export function QuestionBankManagement() {
                       type="checkbox"
                       disabled={
                         bulkApproval.isPending ||
+                        publish.isPending ||
+                        (item.status === "APPROVED" &&
+                          !approvedInSnapshot(item)) ||
                         (item.status === "GENERATED" &&
                           !draftInSnapshot(item)) ||
                         (item.status !== "APPROVED" &&
@@ -1233,7 +1452,10 @@ export function QuestionBankManagement() {
                             ? draftInSnapshot(item) &&
                               !allDrafts.excludedIds.includes(item.id)
                             : draftIds.includes(item.id)
-                          : selected.some((q) => q.id === item.id)
+                          : allApproved
+                            ? approvedInSnapshot(item) &&
+                              !allApproved.excludedIds.includes(item.id)
+                            : selected.some((q) => q.id === item.id)
                       }
                       onChange={(e) => {
                         if (item.status === "GENERATED") {
@@ -1252,7 +1474,16 @@ export function QuestionBankManagement() {
                                 ? [...draftIds, item.id]
                                 : draftIds.filter((id) => id !== item.id),
                             );
-                        } else
+                        } else if (allApproved)
+                          setAllApproved({
+                            ...allApproved,
+                            excludedIds: e.target.checked
+                              ? allApproved.excludedIds.filter(
+                                  (id) => id !== item.id,
+                                )
+                              : [...allApproved.excludedIds, item.id],
+                          });
+                        else
                           setSelected(
                             e.target.checked
                               ? [...selected, item]
@@ -1269,6 +1500,18 @@ export function QuestionBankManagement() {
                             : item.status.toLowerCase()}
                         </span>
                       </p>
+                      {!!item.publishedTo?.length && (
+                        <p
+                          className="mt-2 text-xs text-blue-700"
+                          title={item.publishedTo.join(" · ")}
+                        >
+                          Published to:{" "}
+                          {item.publishedTo.slice(0, 2).join(" · ")}
+                          {item.publishedTo.length > 2
+                            ? ` +${item.publishedTo.length - 2} more`
+                            : ""}
+                        </p>
+                      )}
                       <p className="mt-3 text-sm font-medium leading-6">
                         {item.questionText}
                       </p>
@@ -1385,45 +1628,164 @@ export function QuestionBankManagement() {
               </div>
             </footer>
           </section>
-          {selected.length > 0 && (
-            <section className="sticky bottom-3 space-y-3 rounded-xl border bg-white p-4 shadow-lg">
-              <p className="text-sm font-semibold">
-                {selected.length} questions ·{" "}
-                {selected.reduce((n, q) => n + q.points, 0)} marks ·{" "}
-                {selected[0].grade} {selected[0].subject}
-              </p>
-              {!sameSelection && (
-                <p role="alert" className="text-sm text-red-700">
-                  Select one grade and subject per assignment.
+          {(selected.length > 0 || allApproved) && (
+            <section
+              className="sticky bottom-3 space-y-4 rounded-xl border border-blue-200 bg-white p-5 shadow-lg"
+              aria-label="Publish selected content"
+            >
+              <div>
+                <h3 className="font-semibold">
+                  Publish{" "}
+                  {allApproved
+                    ? allApproved.count - allApproved.excludedIds.length
+                    : selected.length}{" "}
+                  approved questions
+                </h3>
+                <p className="mt-1 text-xs leading-6 text-slate-500">
+                  Assignments will be grouped by grade, subject and topic.
+                  Existing publications are skipped; learner submissions are
+                  kept.
                 </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block min-w-0 text-xs font-medium">
+                  Publish to
+                  <select
+                    aria-label="Publish audience"
+                    className={control + " mt-2 w-full min-w-0"}
+                    value={publishAudience}
+                    disabled={publish.isPending}
+                    onChange={(e) =>
+                      setPublishAudience(
+                        e.target.value as typeof publishAudience,
+                      )
+                    }
+                  >
+                    <option value="INDEPENDENT">Individual learners</option>
+                    <option value="SCHOOLS">Schools</option>
+                    <option value="BOTH">Individuals and schools</option>
+                  </select>
+                </label>
+                <label className="block min-w-0 text-xs font-medium">
+                  Assignment title prefix (optional)
+                  <input
+                    aria-label="Assignment title prefix"
+                    className={control + " mt-2 w-full min-w-0"}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Automatic subject and topic titles"
+                    maxLength={160}
+                    disabled={publish.isPending}
+                  />
+                </label>
+              </div>
+              {publishAudience !== "INDEPENDENT" && (
+                <div className="rounded-lg border border-slate-200 p-4">
+                  <label className="block min-w-0 text-xs font-medium">
+                    School audience
+                    <select
+                      aria-label="School audience"
+                      value={publishSchoolScope}
+                      onChange={(e) =>
+                        setPublishSchoolScope(
+                          e.target.value as "ALL" | "SELECTED",
+                        )
+                      }
+                      className={control + " mt-2 w-full min-w-0"}
+                      disabled={publish.isPending}
+                    >
+                      <option value="ALL">
+                        All subscribed schools with bank access
+                      </option>
+                      <option value="SELECTED">Choose schools</option>
+                    </select>
+                  </label>
+                  {publicationTargets.isPending ? (
+                    <p className="mt-3 text-sm">Loading eligible schools…</p>
+                  ) : publicationTargets.isError ? (
+                    <p role="alert" className="mt-3 text-sm text-red-700">
+                      Could not load schools.{" "}
+                      <button
+                        onClick={() => publicationTargets.refetch()}
+                        className="underline"
+                      >
+                        Retry
+                      </button>
+                    </p>
+                  ) : !publicationTargets.data?.length ? (
+                    <p className="mt-3 text-sm text-amber-800">
+                      No subscribed schools have active Question Bank access
+                      yet.
+                    </p>
+                  ) : publishSchoolScope === "SELECTED" ? (
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {publicationTargets.data.map((s) => (
+                        <label
+                          key={s.id}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={publishSchoolIds.includes(s.id)}
+                            disabled={publish.isPending}
+                            onChange={(e) =>
+                              setPublishSchoolIds((ids) =>
+                                e.target.checked
+                                  ? [...ids, s.id]
+                                  : ids.filter((id) => id !== s.id),
+                              )
+                            }
+                          />
+                          {s.name}{" "}
+                          <span className="text-xs text-slate-500">
+                            {s.code}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-slate-500">
+                      {publicationTargets.data.length} eligible schools.
+                      Learners receive only assignments for their grade.
+                    </p>
+                  )}
+                </div>
               )}
-              <div className="flex flex-wrap gap-3">
-                <input
-                  aria-label="Assignment title"
-                  placeholder="Assignment title"
-                  className={control + " min-w-0 flex-1"}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
+              <div className="flex flex-wrap items-center gap-4">
                 <button
+                  className="min-h-11 rounded-lg bg-blue-700 px-5 text-sm font-semibold text-white disabled:opacity-40"
                   disabled={
-                    !sameSelection || !title.trim() || publish.isPending
+                    publish.isPending ||
+                    (allApproved
+                      ? allApproved.count - allApproved.excludedIds.length <= 0
+                      : !selected.length) ||
+                    (publishAudience !== "INDEPENDENT" &&
+                      (publicationTargets.isFetching ||
+                        publicationTargets.isError ||
+                        !publicationTargets.data?.length ||
+                        (publishSchoolScope === "SELECTED" &&
+                          !publishSchoolIds.length)))
                   }
-                  className={control + " disabled:opacity-40"}
                   onClick={() => publish.mutate()}
                 >
-                  Publish assignment
+                  {publish.isPending
+                    ? "Queuing publication…"
+                    : "Publish content"}
                 </button>
                 <button
-                  onClick={() => setSelected([])}
-                  className="text-xs underline"
+                  disabled={publish.isPending}
+                  className="text-sm text-slate-600 underline"
+                  onClick={() => {
+                    setSelected([]);
+                    setAllApproved(null);
+                  }}
                 >
-                  Clear
+                  Clear selection
                 </button>
               </div>
               <p className="text-xs text-slate-500">
-                Independent practice uses approved questions automatically in
-                rotating batches of 30. Publishing an assignment is optional.
+                Published assignments appear in My Assignments for the chosen
+                audience. Approval alone does not publish content.
               </p>
             </section>
           )}

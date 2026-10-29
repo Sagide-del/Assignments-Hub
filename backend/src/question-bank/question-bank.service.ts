@@ -1,3 +1,4 @@
+import { PublishContentDto } from "./dto/publish-content.dto";
 import {
   BulkApproveQuestionBankDto,
   QuestionApprovalFiltersDto,
@@ -18,6 +19,7 @@ import {
   QuestionBankSource,
   QuestionBankStatus,
   QuestionType,
+  AssignmentType,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AssignmentsService } from "../assignments/assignments.service";
@@ -336,11 +338,46 @@ export class QuestionBankService {
         orderBy: { createdAt: "desc" },
         skip,
         take,
+        include: {
+          usages: {
+            where: {
+              assignment: {
+                isPublished: true,
+                createdBy: { role: "PLATFORM_ADMIN" },
+              },
+            },
+            select: { school: { select: { name: true, code: true } } },
+          },
+          publishedAssignment: {
+            select: {
+              isPublished: true,
+              school: { select: { name: true, code: true } },
+            },
+          },
+        },
       }),
       this.prisma.questionBank.count({ where }),
     ]);
     return {
-      items,
+      items: items.map(({ usages, publishedAssignment, ...item }) => ({
+        ...item,
+        publishedTo: [
+          ...new Set([
+            ...(usages ?? []).map((u) =>
+              u.school.code === "INDEPENDENT"
+                ? "Individual learners"
+                : u.school.name,
+            ),
+            ...(publishedAssignment?.isPublished
+              ? [
+                  publishedAssignment.school.code === "INDEPENDENT"
+                    ? "Individual learners"
+                    : publishedAssignment.school.name,
+                ]
+              : []),
+          ]),
+        ],
+      })),
       total,
       skip,
       take,
@@ -630,6 +667,376 @@ export class QuestionBankService {
       metadata: { notes },
     });
     return updated;
+  }
+
+  async publicationTargets(
+    actor: AuthenticatedUser,
+    tx: Prisma.TransactionClient = this.prisma,
+    schoolId?: number,
+  ) {
+    this.assertPlatformAdmin(actor);
+    const access = await tx.schoolQuestionBankAccess.findMany({
+      where: { active: true, ...(schoolId ? { schoolId } : {}) },
+      include: {
+        school: {
+          include: {
+            subscriptions: { orderBy: { startedAt: "desc" }, take: 1 },
+          },
+        },
+      },
+    });
+    return access
+      .filter(
+        (a) =>
+          a.school.code !== "INDEPENDENT" &&
+          a.school.subscriptions[0]?.status === "ACTIVE" &&
+          (!a.school.subscriptions[0].expiresAt ||
+            a.school.subscriptions[0].expiresAt! > new Date()),
+      )
+      .map((a) => ({
+        id: a.school.id,
+        name: a.school.name,
+        code: a.school.code,
+      }));
+  }
+  private publicationSelection(
+    dto: PublishContentDto,
+  ): Prisma.QuestionBankWhereInput {
+    if (dto.scope === "IDS" && !dto.ids?.length)
+      throw new BadRequestException("Select approved questions to publish.");
+    if (dto.scope === "FILTER" && (!dto.filters || !dto.before))
+      throw new BadRequestException(
+        "Select matching approved questions again.",
+      );
+    const before = new Date(
+      Math.min(
+        Date.now(),
+        dto.before ? new Date(dto.before).getTime() : Date.now(),
+      ),
+    );
+    if (!Number.isFinite(before.getTime()))
+      throw new BadRequestException("Invalid publication selection.");
+    return {
+      ...this.adminQuestionFilters(dto.scope === "FILTER" ? dto.filters! : {}),
+      status: "APPROVED",
+      createdAt: { lte: before },
+      updatedAt: { lte: before },
+      ...(dto.scope === "IDS"
+        ? { id: { in: dto.ids } }
+        : { id: { notIn: dto.excludedIds ?? [] } }),
+    };
+  }
+  async queuePublication(dto: PublishContentDto, actor: AuthenticatedUser) {
+    this.assertPlatformAdmin(actor);
+    const where = this.publicationSelection(dto);
+    if (!(await this.prisma.questionBank.count({ where })))
+      throw new BadRequestException(
+        "No matching approved questions are ready to publish.",
+      );
+    const targets =
+      dto.audience === "INDEPENDENT"
+        ? []
+        : await this.publicationTargets(actor);
+    const selected =
+      dto.schoolScope === "SELECTED"
+        ? targets.filter((s) => dto.schoolIds?.includes(s.id))
+        : targets;
+    if (
+      dto.audience !== "INDEPENDENT" &&
+      (!selected.length ||
+        (dto.schoolScope === "SELECTED" &&
+          selected.length !== dto.schoolIds?.length))
+    )
+      throw new BadRequestException(
+        "Choose subscribed schools with active Question Bank access.",
+      );
+    const input = {
+      ...dto,
+      before: dto.before ?? new Date().toISOString(),
+      schoolIds: selected.map((s) => s.id),
+    };
+    const job = await this.prisma.contentLibraryJob.create({
+      data: {
+        kind: "PUBLISH_CONTENT",
+        createdById: actor.id,
+        input: input as unknown as Prisma.InputJsonValue,
+      },
+    });
+    return {
+      id: job.id,
+      status: job.status,
+      schoolCount: selected.length,
+      independent: dto.audience !== "SCHOOLS",
+    };
+  }
+  async publishContent(
+    dto: PublishContentDto,
+    actor: AuthenticatedUser,
+    jobId: string,
+  ) {
+    this.assertPlatformAdmin(actor);
+    dto = { ...dto, before: dto.before ?? new Date().toISOString() };
+    const items = await this.prisma.questionBank.findMany({
+      where: this.publicationSelection(dto),
+      orderBy: { id: "asc" },
+    });
+    const groups = new Map<string, typeof items>();
+    const issues: { id: number; reason: string }[] = [];
+    for (const item of items) {
+      try {
+        this.assertApprovable(item);
+        if (
+          !item.config &&
+          ["NUMERIC", "SHORT_ANSWER"].includes(item.questionType)
+        )
+          item.config = this.deriveConfig(
+            item.questionType,
+            item.correctAnswer!,
+          ) as Prisma.JsonObject;
+      } catch (e) {
+        issues.push({
+          id: item.id,
+          reason: e instanceof Error ? e.message : "Question needs correction.",
+        });
+        continue;
+      }
+      const key = JSON.stringify([
+        normalizeGrade(item.grade) ?? item.grade,
+        item.subject.trim().toLowerCase(),
+        item.topic.trim().replace(/\s+/g, " ").toLowerCase(),
+      ]);
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    }
+    const targets: { id: number; name: string; independent: boolean }[] = [];
+    if (dto.audience !== "SCHOOLS") {
+      const school = await this.prisma.school.upsert({
+        where: { code: "INDEPENDENT" },
+        update: {},
+        create: { code: "INDEPENDENT", name: "Independent Students" },
+      });
+      targets.push({ id: school.id, name: school.name, independent: true });
+    }
+    for (const id of dto.audience === "INDEPENDENT"
+      ? []
+      : (dto.schoolIds ?? []))
+      targets.push({ id, name: `School ${id}`, independent: false });
+    const result = {
+      assignmentsCreated: 0,
+      questionCopies: 0,
+      alreadyPublished: 0,
+      processed: 0,
+      total: targets.length,
+      independentPublished: false,
+      schoolCount: 0,
+      failures: [] as { schoolId: number; error: string }[],
+      issues: issues.slice(0, 100),
+    };
+    const escape = (s: string) =>
+      s.replace(
+        /[&<>"']/g,
+        (c) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          })[c]!,
+      );
+    for (const target of targets) {
+      try {
+        for (const group of groups.values()) {
+          const saved = await this.prisma.$transaction(
+            async (tx) => {
+              await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`question-bank-publication:${target.id}`}))`;
+              if (
+                !target.independent &&
+                !(await this.publicationTargets(actor, tx, target.id)).some(
+                  (s) => s.id === target.id,
+                )
+              )
+                throw new BadRequestException(
+                  "School subscription or bank access is no longer active.",
+                );
+              const used = await tx.questionBankUsage.findMany({
+                where: {
+                  schoolId: target.id,
+                  questionBankId: { in: group.map((q) => q.id) },
+                  assignment: {
+                    isPublished: true,
+                    createdBy: { role: "PLATFORM_ADMIN" },
+                  },
+                },
+                select: { questionBankId: true },
+              });
+              const usedIds = new Set(used.map((u) => u.questionBankId));
+              const fresh = await tx.questionBank.findMany({
+                where: {
+                  AND: [
+                    this.publicationSelection(dto),
+                    {
+                      id: {
+                        in: group
+                          .map((q) => q.id)
+                          .filter((id) => !usedIds.has(id)),
+                      },
+                    },
+                    ...(target.independent
+                      ? [
+                          {
+                            NOT: {
+                              publishedAssignment: {
+                                schoolId: target.id,
+                                isPublished: true,
+                              },
+                            },
+                          },
+                        ]
+                      : []),
+                  ],
+                },
+                orderBy: { id: "asc" },
+              });
+              if (!fresh.length)
+                return { count: 0, questions: 0, skipped: group.length };
+              const first = fresh[0],
+                topic =
+                  first.topic.trim().replace(/\s+/g, " ") || "General practice",
+                grade = normalizeGrade(first.grade) ?? first.grade;
+              const auto = new Set([
+                "MULTIPLE_CHOICE",
+                "TRUE_FALSE",
+                "NUMERIC",
+                "SHORT_ANSWER",
+                "FILL_BLANK",
+                "MATCHING",
+                "ORDERING",
+              ]);
+              const sameMarks = fresh.every((q) => q.points === first.points);
+              // The existing variant allocator supports a larger equal-mark pool.
+              const size = sameMarks ? 300 : 30;
+              const pools = Array.from(
+                { length: Math.ceil(fresh.length / size) },
+                (_, i) => fresh.slice(i * size, (i + 1) * size),
+              );
+              let count = 0;
+              for (const pool of pools) {
+                const description = `Topic: ${topic}\nPublished from Question Bank`;
+                const batch =
+                  (await tx.assignment.count({
+                    where: {
+                      schoolId: target.id,
+                      grade,
+                      subject: first.subject,
+                      description: { startsWith: description },
+                    },
+                  })) + 1;
+                const questionCount = Math.min(30, pool.length);
+                const assignment =
+                  await this.assignments.createPlatformPublished(
+                    {
+                      title:
+                        `${dto.title ? `${dto.title} · ` : ""}${first.subject} · ${topic}`.slice(
+                          0,
+                          175,
+                        ) + ` · Batch ${batch}`,
+                      description,
+                      grade,
+                      subject: first.subject,
+                      isPublished: true,
+                      type: pool.every((q) => auto.has(q.questionType))
+                        ? AssignmentType.AUTO_MARKED
+                        : AssignmentType.TEACHER_MARKED,
+                      maxPoints: sameMarks
+                        ? questionCount * first.points
+                        : pool.reduce((n, q) => n + q.points, 0),
+                      questions: pool.map((q, i) => ({
+                        questionText: q.questionText,
+                        contentHtml:
+                          (q.contentHtml ?? "") +
+                            (q.diagramUrl
+                              ? `<figure><img src="${escape(q.diagramUrl)}" alt="${escape(q.diagramAlt ?? "Question illustration")}" /></figure>`
+                              : "") || undefined,
+                        questionType: q.questionType,
+                        options: (q.options as string[] | null) ?? undefined,
+                        correctAnswer: q.correctAnswer ?? undefined,
+                        config:
+                          (q.config as Record<string, unknown> | null) ??
+                          this.deriveConfig(q.questionType, q.correctAnswer!),
+                        points: q.points,
+                        order: i,
+                        hint: q.hint ?? undefined,
+                        explanation: q.explanation ?? undefined,
+                      })),
+                    },
+                    actor,
+                    target.id,
+                    tx,
+                  );
+                if (sameMarks && pool.length > 30)
+                  await tx.assignmentDeliveryConfig.create({
+                    data: {
+                      schoolId: target.id,
+                      assignmentId: assignment.id,
+                      questionCount,
+                      poolSize: pool.length,
+                      shuffleOptions: true,
+                    },
+                  });
+                await tx.questionBankUsage.createMany({
+                  data: pool.map((q) => ({
+                    schoolId: target.id,
+                    questionBankId: q.id,
+                    assignmentId: assignment.id,
+                    selectedById: actor.id,
+                  })),
+                  skipDuplicates: true,
+                });
+
+                count++;
+              }
+              return {
+                count,
+                questions: fresh.length,
+                skipped: group.length - fresh.length,
+              };
+            },
+            { timeout: 60000 },
+          );
+          result.assignmentsCreated += saved.count;
+          result.questionCopies += saved.questions;
+          result.alreadyPublished += saved.skipped;
+        }
+        if (target.independent) result.independentPublished = true;
+        else result.schoolCount++;
+      } catch (e) {
+        result.failures.push({
+          schoolId: target.id,
+          error: e instanceof Error ? e.message : "Publication failed.",
+        });
+      }
+      result.processed++;
+      await this.prisma.contentLibraryJob.update({
+        where: { id: jobId },
+        data: { result: result as unknown as Prisma.InputJsonValue },
+      });
+    }
+    void this.audit.record({
+      action: "question_bank.content_published",
+      userId: actor.id,
+      schoolId: actor.schoolId,
+      metadata: {
+        jobId,
+        audience: dto.audience,
+        assignmentsCreated: result.assignmentsCreated,
+        questionCopies: result.questionCopies,
+      },
+    });
+    if (result.failures.length === targets.length && targets.length)
+      throw new BadRequestException(
+        result.failures.map((f) => f.error).join(" · "),
+      );
+    return result;
   }
 
   async publishToIndependentStudents(

@@ -9,6 +9,7 @@ export type QuestionBankBloomLevel =
   "REMEMBER" | "UNDERSTAND" | "APPLY" | "ANALYZE" | "EVALUATE" | "CREATE";
 
 export interface QuestionBankItem {
+  publishedTo?: string[];
   curriculumUnitId?: number | null;
   curriculumSourceIds?: number[] | null;
   sourceDocumentId?: number | null;
@@ -181,6 +182,37 @@ export const questionBankAdminApi = {
     api
       .post<QuestionBankItem>(`/admin/question-bank/${id}/reject`, { notes })
       .then((response) => response.data),
+
+  publicationTargets: () =>
+    api
+      .get<{ id: number; name: string; code: string }[]>(
+        "/admin/question-bank/publication-targets",
+      )
+      .then((r) => r.data),
+  publishContent: (
+    input: (
+      | { scope: "IDS"; ids: number[] }
+      | {
+          scope: "FILTER";
+          filters: { grade?: string; subject?: string; topic?: string };
+          before: string;
+          excludedIds?: number[];
+        }
+    ) & {
+      audience: "INDEPENDENT" | "SCHOOLS" | "BOTH";
+      schoolScope?: "ALL" | "SELECTED";
+      schoolIds?: number[];
+      title?: string;
+    },
+  ) =>
+    api
+      .post<{
+        id: string;
+        status: string;
+        schoolCount: number;
+        independent: boolean;
+      }>("/admin/question-bank/publish-content", input)
+      .then((r) => r.data),
 
   publish: (input: {
     questionIds: number[];

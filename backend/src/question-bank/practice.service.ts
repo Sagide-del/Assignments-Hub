@@ -50,6 +50,30 @@ export class PracticeService {
       where: {
         isGlobal: true,
         status: "APPROVED",
+        OR: [
+          {
+            publishedAssignment: {
+              schoolId: actor.schoolId,
+              isPublished: true,
+              createdBy: { role: "PLATFORM_ADMIN" },
+              targetClass: null,
+              targetStream: null,
+            },
+          },
+          {
+            usages: {
+              some: {
+                schoolId: actor.schoolId,
+                assignment: {
+                  isPublished: true,
+                  createdBy: { role: "PLATFORM_ADMIN" },
+                  targetClass: null,
+                  targetStream: null,
+                },
+              },
+            },
+          },
+        ],
         grade: {
           in: [grade, grade.replace(" ", ""), grade.split(" ")[1]],
           mode: "insensitive",
@@ -163,6 +187,30 @@ export class PracticeService {
             where: {
               isGlobal: true,
               status: "APPROVED",
+              OR: [
+                {
+                  publishedAssignment: {
+                    schoolId: actor.schoolId,
+                    isPublished: true,
+                    createdBy: { role: "PLATFORM_ADMIN" },
+                    targetClass: null,
+                    targetStream: null,
+                  },
+                },
+                {
+                  usages: {
+                    some: {
+                      schoolId: actor.schoolId,
+                      assignment: {
+                        isPublished: true,
+                        createdBy: { role: "PLATFORM_ADMIN" },
+                        targetClass: null,
+                        targetStream: null,
+                      },
+                    },
+                  },
+                },
+              ],
               grade: {
                 in: [grade, grade.replace(" ", ""), grade.split(" ")[1]],
                 mode: "insensitive",

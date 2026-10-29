@@ -1369,10 +1369,10 @@ function GradeContentFlow({ grade }: { grade: string }) {
                 </h3>
                 <p className="mt-2 text-sm leading-7 text-slate-500">
                   Check the answers and explanations, then approve the
-                  questions. Approved multiple-choice questions automatically
-                  enter the matching grade and subject practice pool once at
-                  least 30 are available. Memory cards have their own Publish
-                  action.
+                  questions. Then select the approved questions and publish to
+                  individual learners, subscribed schools, or both. Published
+                  assignments appear by grade, subject and topic. Memory cards
+                  have their own Publish action.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -1381,6 +1381,12 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   to={`?view=questions&grade=${encodeURIComponent(grade)}`}
                 >
                   Review {grade} questions <ArrowRight size={16} />
+                </Link>
+                <Link
+                  className={button}
+                  to={`?view=questions&grade=${encodeURIComponent(grade)}&status=APPROVED`}
+                >
+                  Publish approved questions
                 </Link>
                 <Link className={button} to="?view=jobs">
                   Check generation progress

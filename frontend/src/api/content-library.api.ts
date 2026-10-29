@@ -18,15 +18,22 @@ export interface LibraryJob {
     topic?: string;
     count?: number;
     url?: string;
+    audience?: "INDEPENDENT" | "SCHOOLS" | "BOTH";
+    schoolIds?: number[];
   };
   result?: {
     count?: number;
     reusedJobId?: string;
     sourceId?: number;
+    assignmentsCreated?: number;
+    questionCopies?: number;
+    independentPublished?: boolean;
+    schoolCount?: number;
+    alreadyPublished?: number;
     processed?: number;
     total?: number;
     subjects?: { subject: string }[];
-    failures?: { subject: string; error: string }[];
+    failures?: { subject?: string; schoolId?: number; error: string }[];
   };
   error?: string;
   createdAt: string;

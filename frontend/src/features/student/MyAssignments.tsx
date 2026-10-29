@@ -42,6 +42,7 @@ import {
 } from "./assignment-list";
 import {
   catalogueKey,
+  assignmentTopic,
   groupAssignments,
   matchesAssignmentSearch,
 } from "./assignment-catalogue";
@@ -203,7 +204,12 @@ function AssignmentCard({
                   ? navigate(
                       `/student/assignments/practice/${assignment.bankPractice.activeId}`,
                     )
-                  : practice.mutate()
+                  : assignment.bankPractice?.historicalOnly &&
+                      assignment.bankPractice.latestResultId
+                    ? navigate(
+                        `/student/assignments/practice/${assignment.bankPractice.latestResultId}`,
+                      )
+                    : practice.mutate()
               }
               className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white disabled:opacity-50"
             >
@@ -211,7 +217,9 @@ function AssignmentCard({
                 ? "Opening…"
                 : assignment.bankPractice.activeId
                   ? "Continue assignment"
-                  : "Start topic practice"}
+                  : assignment.bankPractice.historicalOnly
+                    ? "View saved review"
+                    : "Start topic practice"}
               <ArrowRight className="h-4 w-4" />
             </button>
             {assignment.bankPractice.latestResultId && (
@@ -269,6 +277,7 @@ export function MyAssignmentsPage() {
     queryKey: ["assignment-catalogue", user?.id, user?.schoolId, user?.grade],
     queryFn: () => assignmentsApi.findAll(),
     enabled: !!user?.id,
+    refetchInterval: 15000,
   });
   const submissionsQuery = useQuery({
     queryKey: ["student-submissions", user?.id],
@@ -301,10 +310,20 @@ export function MyAssignmentsPage() {
     retry: false,
   });
   const assignments = useMemo(() => {
+    const published = (assignmentsQuery.data ?? []).filter(
+      (a) => a.isPublished,
+    );
+    const key = (subject: string, topic: string) =>
+      JSON.stringify([catalogueKey(subject), catalogueKey(topic)]);
+    const publishedTopics = new Set(
+      published.map((a) => key(a.subject, assignmentTopic(a))),
+    );
     const bank: Assignment[] = (practiceQuery.data?.subjects ?? [])
       .flatMap((s) =>
         (s.topics ?? [])
-          .filter((t) => t.count > 0)
+          .filter(
+            (t) => t.count > 0 && !publishedTopics.has(key(s.subject, t.topic)),
+          )
           .map((t) => ({
             id: 0,
             title: `${t.topic} · Topic practice`,
@@ -340,10 +359,48 @@ export function MyAssignmentsPage() {
           })),
       )
       .map((a, i) => ({ ...a, id: -(i + 1) }));
-    return [
-      ...(assignmentsQuery.data ?? []).filter((a) => a.isPublished),
-      ...bank,
-    ];
+    const seen = new Set(bank.map((a) => key(a.subject, a.topic!)));
+    for (const record of [
+      ...(practiceQuery.data?.active ?? []),
+      ...(practiceQuery.data?.completed ?? []),
+    ]) {
+      const topic = record.coverage?.topic ?? "Saved practice",
+        identity = key(record.subject, topic);
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+      bank.push({
+        id: -(bank.length + 1),
+        title: `${topic} · Saved practice`,
+        subject: record.subject,
+        topic,
+        grade: practiceQuery.data!.grade,
+        schoolId: user!.schoolId,
+        isPublished: true,
+        createdAt: "2020-01-01T00:00:00Z",
+        bankPractice: {
+          subject: record.subject,
+          topic,
+          historicalOnly: true,
+          activeId: practiceQuery.data?.active.find(
+            (a) =>
+              a.subject === record.subject &&
+              a.coverage?.topic === record.coverage?.topic,
+          )?.id,
+          latestResultId: practiceQuery.data?.completed?.find(
+            (a) =>
+              a.subject === record.subject &&
+              a.coverage?.topic === record.coverage?.topic,
+          )?.id,
+          completedBatches:
+            practiceQuery.data?.completed?.filter(
+              (a) =>
+                a.subject === record.subject &&
+                a.coverage?.topic === record.coverage?.topic,
+            ).length ?? 0,
+        },
+      });
+    }
+    return [...published, ...bank];
   }, [assignmentsQuery.data, practiceQuery.data, user?.schoolId]);
   const submissions = useMemo(() => {
     const map = new Map<number, Submission>();

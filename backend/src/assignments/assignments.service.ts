@@ -37,6 +37,20 @@ export class AssignmentsService {
     return this.createForSchool(dto, actor, school.id);
   }
 
+  async createPlatformPublished(
+    dto: CreateAssignmentDto,
+    actor: AuthenticatedUser,
+    schoolId: number,
+    tx: Prisma.TransactionClient,
+  ) {
+    if (actor.role !== Role.PLATFORM_ADMIN) {
+      throw new ForbiddenException('Only Platform Admin can publish bank content to another school.');
+    }
+    const school = await tx.school.findUnique({ where: { id: schoolId }, select: { id: true } });
+    if (!school) throw new NotFoundException('Publication school not found.');
+    return this.createForSchool({ ...dto, notifyParents: false }, actor, schoolId, tx);
+  }
+
   async findIndependent(actor: AuthenticatedUser) {
     const school = await this.getIndependentSchool();
     return this.findAll(actor, school.id);
@@ -46,6 +60,7 @@ export class AssignmentsService {
     dto: CreateAssignmentDto,
     actor: AuthenticatedUser,
     schoolId: number,
+    tx: Prisma.TransactionClient = this.prisma,
   ) {
     this.validateQuestionConfigs(dto.questions);
     const rubricTotal = dto.rubric?.reduce((sum, c) => sum + (c.points || 0), 0) ?? 0;
@@ -55,7 +70,7 @@ export class AssignmentsService {
     // published assignment can silently never show up for any student.
     const grade = normalizeGrade(dto.grade) ?? dto.grade;
 
-    const assignment = await this.prisma.assignment.create({
+    const assignment = await tx.assignment.create({
       data: {
         schoolId,
         title: dto.title,

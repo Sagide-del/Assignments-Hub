@@ -467,9 +467,14 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
     const job = await this.prisma.contentLibraryJob.findUnique({
       where: { id },
     });
-    if (!job || !["FAILED", "PAUSED"].includes(job.status))
+    const partial =
+      job?.kind === "PUBLISH_CONTENT" &&
+      job.status === "COMPLETED" &&
+      Array.isArray((job.result as any)?.failures) &&
+      (job.result as any).failures.length > 0;
+    if (!job || (!["FAILED", "PAUSED"].includes(job.status) && !partial))
       throw new BadRequestException(
-        "Only failed or paused jobs can be retried.",
+        "Only failed, paused or partially completed publication jobs can be retried.",
       );
     const changed = await this.prisma.contentLibraryJob.updateMany({
       where: { id, status: job.status },
@@ -529,7 +534,10 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('content-generation-queue'))`;
         const orderBy = [{ createdAt: "asc" as const }, { id: "asc" as const }];
         const priority = await tx.contentLibraryJob.findFirst({
-          where: { status: "QUEUED", kind: "PREPARE_GRADE" },
+          where: {
+            status: "QUEUED",
+            kind: { in: ["PREPARE_GRADE", "PUBLISH_CONTENT"] },
+          },
           orderBy,
         });
         const question = priority
@@ -628,6 +636,8 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
       ) {
         if (!this.collections) throw Error("Collection worker is unavailable.");
         result = await this.collections.process(job as any, actor);
+      } else if (job.kind === "PUBLISH_CONTENT") {
+        result = await this.bank.publishContent(input, actor, job.id);
       } else if (job.kind === "IMPORT") {
         const fetched = await fetchOfficial(input.url);
         if (fetched.bytes.subarray(0, 5).toString() !== "%PDF-")

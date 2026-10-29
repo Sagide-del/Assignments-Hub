@@ -44,7 +44,7 @@ function fixture(rows: any[]) {
   return { tx, p, service: new PracticeService(p) };
 }
 describe("Assignment topic practice", () => {
-  it("opens approved topic questions even when a topic has fewer than 30, scoped to the learner grade", async () => {
+  it("opens published approved topic questions even when a topic has fewer than 30, scoped to the learner grade", async () => {
     const { service, tx } = fixture([make(1), make(2)]);
     expect(await service.start("Mathematics", actor, "Fractions")).toEqual({
       id: "topic",
@@ -56,6 +56,30 @@ describe("Assignment topic practice", () => {
       topic: { equals: "Fractions" },
       grade: { in: ["Grade 7", "Grade7", "7"] },
     });
+    expect(tx.questionBank.findMany.mock.calls[0][0].where.OR).toEqual([
+      {
+        publishedAssignment: {
+          schoolId: 1,
+          isPublished: true,
+          createdBy: { role: "PLATFORM_ADMIN" },
+          targetClass: null,
+          targetStream: null,
+        },
+      },
+      {
+        usages: {
+          some: {
+            schoolId: 1,
+            assignment: {
+              isPublished: true,
+              createdBy: { role: "PLATFORM_ADMIN" },
+              targetClass: null,
+              targetStream: null,
+            },
+          },
+        },
+      },
+    ]);
     expect(tx.kjseaMockAttempt.create.mock.calls[0][0].data).toMatchObject({
       source: "PRACTICE",
       coverage: { topic: "Fractions", questionCount: 2 },

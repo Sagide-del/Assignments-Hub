@@ -1,3 +1,4 @@
+import { PublishContentDto } from "./dto/publish-content.dto";
 import { BulkApproveQuestionBankDto } from "./dto/bulk-approve-question-bank.dto";
 import {
   Body,
@@ -70,6 +71,11 @@ export class QuestionBankAdminController {
     return this.questionBank.listSources(actor);
   }
 
+  @Get("publication-targets")
+  publicationTargets(@CurrentUser() actor: AuthenticatedUser) {
+    return this.questionBank.publicationTargets(actor);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get a single question bank item" })
   getOne(@Param("id", ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
@@ -117,6 +123,12 @@ export class QuestionBankAdminController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.questionBank.reject(id, dto.notes, actor);
+  }
+
+  @Post("publish-content")
+  @AuditAction("question_bank.publish_content")
+  publishContent(@Body() dto: PublishContentDto, @CurrentUser() actor: AuthenticatedUser) {
+    return this.questionBank.queuePublication(dto, actor);
   }
 
   @Post("publish")
