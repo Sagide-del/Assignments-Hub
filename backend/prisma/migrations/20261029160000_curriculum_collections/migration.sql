@@ -1,0 +1,12 @@
+ALTER TABLE "question_bank_source_documents" ADD COLUMN "role" TEXT NOT NULL DEFAULT 'LEGACY', ADD COLUMN "reviewed" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "question_bank" ADD COLUMN "curriculum_unit_id" INTEGER, ADD COLUMN "curriculum_source_ids" JSONB;
+ALTER TABLE "mnemonic_cards" ADD COLUMN "curriculum_unit_id" INTEGER;
+CREATE TABLE "curriculum_scopes" ("id" SERIAL PRIMARY KEY,"grade" TEXT NOT NULL,"subject" TEXT NOT NULL,"pathway" TEXT NOT NULL DEFAULT '',"authority" TEXT NOT NULL,"verified" BOOLEAN NOT NULL DEFAULT false,"created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE UNIQUE INDEX "curriculum_scopes_grade_subject_pathway_key" ON "curriculum_scopes"("grade","subject","pathway");
+CREATE TABLE "curriculum_outcomes" ("id" SERIAL PRIMARY KEY,"scope_id" INTEGER NOT NULL REFERENCES "curriculum_scopes"("id") ON DELETE RESTRICT,"strand" TEXT NOT NULL,"sub_strand" TEXT NOT NULL,"outcome" TEXT NOT NULL,"quote" TEXT NOT NULL,"source_document_id" INTEGER NOT NULL,"supporting_source_ids" JSONB NOT NULL DEFAULT '[]',"verified" BOOLEAN NOT NULL DEFAULT false);
+CREATE INDEX "curriculum_outcomes_scope_id_idx" ON "curriculum_outcomes"("scope_id");
+CREATE TABLE "curriculum_grade_reviews" ("grade" TEXT PRIMARY KEY,"verified_at" TIMESTAMP(3),"verified_by" INTEGER,"note" TEXT NOT NULL DEFAULT '');
+CREATE TABLE "content_collections" ("id" TEXT PRIMARY KEY,"name" TEXT NOT NULL,"grades" JSONB NOT NULL,"rights_confirmed" BOOLEAN NOT NULL,"created_by_id" INTEGER NOT NULL,"created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE "collection_assets" ("id" TEXT PRIMARY KEY,"collection_id" TEXT NOT NULL REFERENCES "content_collections"("id") ON DELETE CASCADE,"name" TEXT NOT NULL,"origin" TEXT NOT NULL,"asset_key" TEXT,"role" TEXT NOT NULL DEFAULT 'AUTO',"status" TEXT NOT NULL DEFAULT 'QUEUED',"mapping" JSONB,"extracted_text" TEXT,"source_ids" JSONB NOT NULL DEFAULT '[]',"error" TEXT,"created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE UNIQUE INDEX "collection_assets_collection_id_origin_key" ON "collection_assets"("collection_id","origin");
+CREATE INDEX "collection_assets_status_idx" ON "collection_assets"("status");

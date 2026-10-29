@@ -621,6 +621,7 @@ model SkillPayment {
 }
 
 model MnemonicCard {
+  curriculumUnitId Int? @map("curriculum_unit_id")
   content Json?
   sourceDocumentId Int? @map("source_document_id")
   id           Int      @id @default(autoincrement())
@@ -2301,6 +2302,8 @@ model IndependentPaystackPayment {
 // ============================================================================
 
 model QuestionBank {
+  curriculumUnitId Int? @map("curriculum_unit_id")
+  curriculumSourceIds Json? @map("curriculum_source_ids")
   id Int @id @default(autoincrement())
 
   source   QuestionBankSource @default(PLATFORM)
@@ -2382,6 +2385,8 @@ model QuestionBank {
 // new question batch can be grounded in the relevant topic without sending
 // an entire textbook to the AI provider on every request.
 model QuestionBankSourceDocument {
+  role String @default("LEGACY")
+  reviewed Boolean @default(false)
   id          Int      @id @default(autoincrement())
   title       String
   subject     String
@@ -2581,4 +2586,68 @@ model ContentLibraryJob {
  updatedAt DateTime @updatedAt @map("updated_at")
  @@index([status,createdAt])
  @@map("content_library_jobs")
+}
+
+model CurriculumScope {
+ id Int @id @default(autoincrement())
+ grade String
+ subject String
+ pathway String @default("")
+ authority String
+ verified Boolean @default(false)
+ units CurriculumOutcome[]
+ createdAt DateTime @default(now()) @map("created_at")
+ updatedAt DateTime @updatedAt @map("updated_at")
+ @@unique([grade,subject,pathway])
+ @@map("curriculum_scopes")
+}
+model CurriculumOutcome {
+ id Int @id @default(autoincrement())
+ scopeId Int @map("scope_id")
+ scope CurriculumScope @relation(fields:[scopeId],references:[id],onDelete:Restrict)
+ strand String
+ subStrand String @map("sub_strand")
+ outcome String
+ quote String @db.Text
+ sourceDocumentId Int @map("source_document_id")
+ supportingSourceIds Json @default("[]") @map("supporting_source_ids")
+ verified Boolean @default(false)
+ @@index([scopeId])
+ @@map("curriculum_outcomes")
+}
+model CurriculumGradeReview {
+ grade String @id
+ verifiedAt DateTime? @map("verified_at")
+ verifiedBy Int? @map("verified_by")
+ note String @default("")
+ @@map("curriculum_grade_reviews")
+}
+model ContentCollection {
+ id String @id @default(cuid())
+ name String
+ grades Json
+ rightsConfirmed Boolean @map("rights_confirmed")
+ createdById Int @map("created_by_id")
+ assets CollectionAsset[]
+ createdAt DateTime @default(now()) @map("created_at")
+ @@map("content_collections")
+}
+model CollectionAsset {
+ id String @id @default(cuid())
+ collectionId String @map("collection_id")
+ collection ContentCollection @relation(fields:[collectionId],references:[id],onDelete:Cascade)
+ name String
+ origin String
+ assetKey String? @map("asset_key")
+ role String @default("AUTO")
+ status String @default("QUEUED")
+ mapping Json?
+ extractedText String? @db.Text @map("extracted_text")
+ sourceIds Json @default("[]") @map("source_ids")
+ error String?
+ createdAt DateTime @default(now()) @map("created_at")
+ updatedAt DateTime @updatedAt @map("updated_at")
+ @@unique([collectionId,origin])
+ @@index([status])
+ @@map("collection_assets")
 }

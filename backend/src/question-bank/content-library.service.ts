@@ -1,5 +1,7 @@
+import { CollectionService } from "./collection.service";
 import {
   BadRequestException,
+  Optional,
   Injectable,
   Logger,
   OnModuleInit,
@@ -33,6 +35,7 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
     private readonly bank: QuestionBankService,
     private readonly retrieval: QuestionBankRetrievalService,
     private readonly ai: AiProviderRouterService,
+    @Optional() private readonly collections?: CollectionService,
   ) {}
   onModuleInit() {
     this.timer = setInterval(() => void this.work(), 4000);
@@ -336,7 +339,20 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
           throw Error("The generating admin no longer has access.");
         const input = job.input as any;
         let result: any;
-        if (job.kind === "IMPORT") {
+        if (
+          [
+            "MAP_SOURCE",
+            "INGEST_FILE",
+            "INGEST_URL",
+            "INDEX_ASSET",
+            "OUTCOME_QUESTIONS",
+            "OUTCOME_CARDS",
+          ].includes(job.kind)
+        ) {
+          if (!this.collections)
+            throw Error("Collection worker is unavailable.");
+          result = await this.collections.process(job as any, actor);
+        } else if (job.kind === "IMPORT") {
           const fetched = await fetchOfficial(input.url);
           if (fetched.bytes.subarray(0, 5).toString() !== "%PDF-")
             throw Error("This link does not return a PDF curriculum design.");

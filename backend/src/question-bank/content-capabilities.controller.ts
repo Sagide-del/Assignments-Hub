@@ -10,12 +10,16 @@ export class ContentCapabilitiesController {
       await this.prisma.mnemonicCard.findFirst({
         select: { content: true, sourceDocumentId: true },
       });
+      await this.prisma.curriculumScope.count();
+      await this.prisma.collectionAsset.count();
       return {
-        centralContentVersion: 2,
+        centralContentVersion: 3,
         practiceBatchSize: 30,
         nativeRecallCards: true,
         gradeLevels: [6, 7, 8, 9, 10, 11, 12],
         bulkCurriculum: true,
+        collectionIngestion: true,
+        outcomeGrounding: true,
         officialCurriculumImport: true,
       };
     } catch {

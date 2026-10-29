@@ -47,3 +47,7 @@ Select Grades 6–12 once in Curriculum sources. The grade table lists subjects 
 Generation defaults to **All indexed sources in selected grades**; individual selection is optional. **Generate questions & cards** queues both content types for every selected source. A request supports up to 200 sources; generated questions and cards remain drafts. Grade 6 is also supported in the independent 30-question practice allocator and card filters. Existing KJSEA-specific grade selectors retain their assessment scope.
 
 The public content capability is version 2 and includes Grade 6 and bulk-curriculum support. The frontend deployment gate waits for that version. No new database migration is required for this extension.
+
+## Collection ingestion and outcome coverage
+
+The main content entry point is now **Curriculum ingestion**. See [collection-ingestion.md](collection-ingestion.md) for folder/ZIP/website collection intake, expected-subject catalogues, curriculum versus teaching references, exact outcome quotations and the coverage matrix. Existing official-source tools remain available. The deployment capability is version 3.

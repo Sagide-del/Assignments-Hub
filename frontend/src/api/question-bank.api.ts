@@ -9,6 +9,8 @@ export type QuestionBankBloomLevel =
   "REMEMBER" | "UNDERSTAND" | "APPLY" | "ANALYZE" | "EVALUATE" | "CREATE";
 
 export interface QuestionBankItem {
+  curriculumUnitId?: number | null;
+  curriculumSourceIds?: number[] | null;
   sourceDocumentId?: number | null;
   id: number;
   source: "PLATFORM" | "SCHOOL";

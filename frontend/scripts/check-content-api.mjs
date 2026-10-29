@@ -9,11 +9,13 @@ for (let n = 1; n <= 24; n++) {
     if (!r.ok) throw Error(`HTTP ${r.status}`);
     const d = await r.json();
     if (
-      d.centralContentVersion !== 2 ||
+      d.centralContentVersion !== 3 ||
       d.practiceBatchSize !== 30 ||
       !d.nativeRecallCards ||
       !d.gradeLevels?.includes(6) ||
-      !d.bulkCurriculum
+      !d.bulkCurriculum ||
+      !d.collectionIngestion ||
+      !d.outcomeGrounding
     )
       throw Error("Backend not ready");
     console.log("PASS: central content library schema and APIs are ready");

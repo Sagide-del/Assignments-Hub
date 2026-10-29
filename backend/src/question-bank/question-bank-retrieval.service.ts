@@ -79,6 +79,7 @@ export class QuestionBankRetrievalService {
         grade: true,
         fileName: true,
         sourceType: true,
+        role:true,reviewed:true,
         createdAt: true,
         _count: { select: { chunks: true, questions: true } },
       },

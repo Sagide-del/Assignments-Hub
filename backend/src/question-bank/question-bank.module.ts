@@ -1,4 +1,7 @@
-import {ContentCapabilitiesController} from "./content-capabilities.controller";
+import { CollectionService } from "./collection.service";
+import { CollectionController } from "./collection.controller";
+import { UploadsModule } from "../uploads/uploads.module";
+import { ContentCapabilitiesController } from "./content-capabilities.controller";
 import { PracticeController } from "./practice.controller";
 import { PracticeService } from "./practice.service";
 import { ContentLibraryController } from "./content-library.controller";
@@ -19,8 +22,9 @@ import { DocumentOcrModule } from "../document-processing/document-ocr.module";
 // registered AuditModule (@Global()) — no explicit import needed here,
 // matching AiContentModule's convention.
 @Module({
-  imports: [AiModule, AssignmentsModule, DocumentOcrModule],
+  imports: [UploadsModule, AiModule, AssignmentsModule, DocumentOcrModule],
   controllers: [
+    CollectionController,
     ContentCapabilitiesController,
     PracticeController,
     ContentLibraryController,
@@ -28,6 +32,7 @@ import { DocumentOcrModule } from "../document-processing/document-ocr.module";
     QuestionBankBrowseController,
   ],
   providers: [
+    CollectionService,
     PracticeService,
     ContentLibraryService,
     QuestionBankService,

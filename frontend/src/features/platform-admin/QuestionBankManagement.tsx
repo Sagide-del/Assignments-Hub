@@ -1,3 +1,4 @@
+import { CurriculumIngestion } from "./CurriculumIngestion";
 import { useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -226,7 +227,8 @@ export function QuestionBankManagement() {
     );
   const tabs = [
     ["questions", "Questions", BookMarked],
-    ["sources", "Curriculum sources", Layers],
+    ["coverage", "Curriculum ingestion", Layers],
+    ["sources", "Official source tools", FileSearch],
     ["jobs", "Generation jobs", Clock],
     ["cards", "Memory cards", Brain],
     ["schools", "School access", School],
@@ -246,7 +248,7 @@ export function QuestionBankManagement() {
         </div>
         <button
           className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-medium text-white"
-          onClick={() => changeView("sources")}
+          onClick={() => changeView("coverage")}
         >
           <Plus size={16} />
           Generate content
@@ -289,7 +291,9 @@ export function QuestionBankManagement() {
           </button>
         </p>
       )}
-      {view === "schools" ? (
+      {view === "coverage" ? (
+        <CurriculumIngestion />
+      ) : view === "schools" ? (
         <SchoolActivation />
       ) : view === "cards" ? (
         <RecallCardsManager />
@@ -950,6 +954,13 @@ export function QuestionBankManagement() {
                           <p className="leading-7 text-slate-600">
                             {item.explanation}
                           </p>
+                          {item.curriculumUnitId && (
+                            <p className="text-xs text-blue-700">
+                              Curriculum outcome #{item.curriculumUnitId} ·
+                              source documents{" "}
+                              {item.curriculumSourceIds?.join(", ")}
+                            </p>
+                          )}
                           <p className="text-xs text-slate-400">
                             Source {item.sourceDocumentId ?? "record"} ·{" "}
                             {item.points} marks

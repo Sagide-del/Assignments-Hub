@@ -12,6 +12,9 @@ async function bootstrap() {
   // works normally, while providers can be verified against the exact body.
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
+  // Larger editorial mappings are scoped to the admin ingestion API; payment webhook parsing remains unchanged.
+  app.use("/api/v1/admin/content-ingestion", express.json({ limit: "2mb" }));
+
   // CORS configuration
   const corsOrigin = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(",").map((origin: string) => origin.trim())

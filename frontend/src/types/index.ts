@@ -236,6 +236,7 @@ export interface Answer {
 }
 
 export interface MnemonicCard {
+  curriculumUnitId?:number|null;
   content?:import("../api/content-library.api").RecallContent|null;
   sourceDocumentId?:number|null;
   id: number;
