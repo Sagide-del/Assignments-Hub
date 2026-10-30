@@ -107,10 +107,17 @@ export const contentLibraryApi = {
     api.post(`/admin/content-library/jobs/${id}/retry`).then((r) => r.data),
 };
 export interface RecallVisual {
-  kind: "diagram" | "concept-map" | "process" | "comparison" | "timeline" | "fraction";
+  kind:
+    | "diagram"
+    | "concept-map"
+    | "process"
+    | "comparison"
+    | "timeline"
+    | "fraction";
   title: string;
   template?: "heart" | "lungs" | "plant-cell" | "circuit";
-  labels?: { label: string; detail: string }[];
+  scene?: "water" | "weeds" | "crop-yield" | "none";
+  labels?: { label: string; detail: string; icon?: string }[];
   numerator?: number;
   denominator?: number;
 }

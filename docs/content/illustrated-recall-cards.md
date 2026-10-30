@@ -17,3 +17,11 @@ The white-paper masthead gives the official logo clear space and links to `https
 
 
 In picture mode, process/timeline cards use connected visual stages, comparisons use labelled panels, fractions use shaded equal parts and concept maps use connected nodes. Full diagram details remain available in Study notes and are not deleted. Future generation prompts ask for 1–4-word visual labels. No regeneration is required for stored cards to use the picture-led presentation.
+
+Topic artwork and semantic cues
+------------------------------
+Water, weeds and crop-yield cards now use shared, original illustrated scenes, with short visual cues instead of paragraphs on the face. Existing saved cards acquire a scene from their title/cue and subject without changing stored content or requesting AI generation. English/Kiswahili literature does not automatically receive literal science scenes. Supporting crop artwork illustrates yield outcomes; it does not establish a specific cause or identify weed species.
+
+Optional `visual.scene` is `water`, `weeds`, `crop-yield` or `none` (editorial opt-out). It is supported on concept maps, comparisons, processes and timelines. Ordered labels remain ordered, and only process/timeline rails show sequence arrows. Diagram and fraction styles retain their dedicated illustrations. Label `icon` values come from a validated symbol list; model-provided SVG, image URLs and unknown icons are rejected. Automatic symbol matching prioritises label wording over incidental detail. The admin editor offers artwork and icon overrides; editing still saves an unpublished draft. Full facts, explanations and questions remain in optional study notes.
+
+All artwork ships as static shared assets; opening a card incurs no image-generation call. Public readiness advertises `topicRecallScenesVersion: 1`, and frontend deployment waits for that backend capability before publishing the new metadata editor.

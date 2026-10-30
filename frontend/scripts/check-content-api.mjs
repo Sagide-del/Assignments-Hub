@@ -14,6 +14,7 @@ for (let n = 1; n <= 24; n++) {
       !d.nativeRecallCards ||
       !Number.isInteger(d.illustratedRecallCardsVersion) ||
       d.illustratedRecallCardsVersion < 1 ||
+      !Number.isInteger(d.topicRecallScenesVersion) || d.topicRecallScenesVersion < 1 ||
       !d.savedQuestionLibrary ||
       !d.numberedQuestionBatches ||
       !d.questionPublication ||

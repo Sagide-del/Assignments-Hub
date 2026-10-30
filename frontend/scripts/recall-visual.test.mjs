@@ -35,3 +35,26 @@ test('every atlas template has a real local artwork asset and bounded authored c
     for(const part of diagram.labels){assert(part.ax>=0&&part.ax<=width);assert(part.ay>=0&&part.ay<=height);}
   }
 });
+const {recallSymbol}=await loadTypeScript(new URL('../src/features/student/recall-symbols.ts',import.meta.url));
+const {RECALL_TOPIC_SCENES}=await loadTypeScript(new URL('../src/features/student/recall-scenes.ts',import.meta.url));
+test('topic scenes upgrade stored cards without regenerating or changing ordered content',()=>{
+ const visual={kind:'process',title:'Protect the crop',labels:[{label:'Weeds',detail:'Compete for water.'},{label:'Remove weeds',detail:'Reduce competition.'}]};
+ const stored={...content,cue:'Explain weed competition.',visual},snapshot=JSON.stringify(stored);
+ const resolved=recallVisual(stored,{subject:'Agriculture',title:'Weed competition',topic:'Water and crop yield'});
+ assert.equal(resolved.scene,'weeds');assert.equal(resolved.kind,'process');assert.deepEqual(resolved.labels,visual.labels);assert.equal(JSON.stringify(stored),snapshot);
+ for(const [title,scene] of [['Water conservation','water'],['Low crop yield','crop-yield'],['Magugu','weeds'],['Maji','water'],['Mavuno kidogo','crop-yield']])assert.equal(recallVisual({...content,cue:title},{subject:'Agriculture',title}).scene,scene);
+ assert.equal(recallVisual({...content,cue:'Water conservation'},{subject:'Agriculture',title:'Water conservation',topic:'Crop yield'}).scene,'water');
+});
+test('editor opt-out and precise scientific diagrams take priority over automatic scenes',()=>{
+ for(const visual of [{kind:'concept-map',title:'Ideas',scene:'none',labels:[]},{kind:'diagram',title:'Cell',template:'plant-cell'},{kind:'fraction',title:'Water fraction',numerator:1,denominator:2}])assert.deepEqual(recallVisual({...content,cue:'Water',visual},{subject:'Science',title:'Water'}),visual);
+ assert.equal(recallVisual({...content,cue:'A poem about water'},{subject:'English',title:'Water imagery'}).scene,undefined);
+});
+test('symbols follow the actual label before incidental explanatory words',()=>{
+ assert.equal(recallSymbol('Weeds','Compete for water.'),'weed');
+ assert.equal(recallSymbol('Water','Weeds compete for it.'),'water');
+ assert.equal(recallSymbol('Pests'),'insect');assert.equal(recallSymbol('Drought'),'drought');assert.equal(recallSymbol('Mavuno'),'harvest');
+ assert.equal(recallSymbol('Water','','sun'),'sun');assert.equal(recallSymbol('Water','','https://bad.test/a.svg'),'water');
+});
+test('every topic scene is a real shared PNG asset',async()=>{
+ for(const scene of Object.values(RECALL_TOPIC_SCENES)){const bytes=await readFile(new URL('../public'+scene.src,import.meta.url));assert.equal(bytes.subarray(1,4).toString(),'PNG');}
+});

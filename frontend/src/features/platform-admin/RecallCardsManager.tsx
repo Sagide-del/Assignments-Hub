@@ -1,3 +1,4 @@
+import { RECALL_SYMBOL_IDS } from "../student/recall-symbols";
 import { RecallStudyNotes } from "../student/RecallStudyNotes";
 import { RecallSheet } from "../student/RecallSheet";
 import { RecallIllustration } from "../student/RecallIllustration";
@@ -268,8 +269,61 @@ export function RecallCardsManager() {
                   ))}
                 </div>
               )}
+              {content.visual &&
+                !["diagram", "fraction"].includes(content.visual.kind) && (
+                  <label className="block text-sm">
+                    Topic artwork
+                    <select
+                      aria-label="Topic artwork"
+                      className={field}
+                      value={content.visual.scene ?? ""}
+                      onChange={(e) =>
+                        setContent({
+                          ...content,
+                          visual: {
+                            ...content.visual!,
+                            scene: (e.target.value || undefined) as NonNullable<
+                              RecallContent["visual"]
+                            >["scene"],
+                          },
+                        })
+                      }
+                    >
+                      <option value="">Automatic match</option>
+                      <option value="none">No topic artwork</option>
+                      <option value="water">Water</option>
+                      <option value="weeds">Weeds</option>
+                      <option value="crop-yield">Crop yield</option>
+                    </select>
+                  </label>
+                )}
               {content.visual?.labels?.map((item, i) => (
                 <div className="space-y-2" key={i}>
+                  <select
+                    aria-label={`Visual icon ${i + 1}`}
+                    className={field}
+                    value={item.icon ?? ""}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        visual: {
+                          ...content.visual!,
+                          labels: content.visual!.labels!.map((v, j) =>
+                            i === j
+                              ? { ...v, icon: e.target.value || undefined }
+                              : v,
+                          ),
+                        },
+                      })
+                    }
+                  >
+                    <option value="">Automatic icon</option>
+                    {RECALL_SYMBOL_IDS.map((id) => (
+                      <option key={id} value={id}>
+                        {id}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     aria-label={`Visual label ${i + 1}`}
                     className={field}

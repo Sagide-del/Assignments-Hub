@@ -68,3 +68,6 @@
   .recall-pictogram-label { text-align: left; font-size: 11px; }
   .recall-pictogram-arrow { display: block; position: absolute; top: auto; right: auto; bottom: -20px; left: 19px; color: #94a3b8; font-size: 18px; transform: none; }
 }
+
+.recall-topic-scene { overflow:hidden; border-radius:16px; }
+.recall-topic-scene svg { mix-blend-mode:multiply; }

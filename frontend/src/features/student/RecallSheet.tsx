@@ -60,7 +60,7 @@ export function RecallSheet({
           </span>
         </div>
         <div
-          className={`recall-visual-first ${visual.kind === "diagram" ? "recall-visual-first-with-rail" : ""}`}
+          className={`recall-visual-first ${visual.kind === "diagram" || (visual.scene && visual.scene !== "none") ? "recall-visual-first-with-rail" : ""}`}
         >
           <div className="recall-visual-canvas min-w-0">
             <IllustrationViewer visual={visual} reveal={reveal} visualOnly />

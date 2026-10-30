@@ -1,3 +1,4 @@
+import { RecallConceptGlyph } from "./RecallConceptGlyph";
 import {
   BatteryMedium,
   Dna,
@@ -22,6 +23,27 @@ export function RecallVisualRail({
   visual: RecallVisual;
   reveal: boolean;
 }) {
+  if (visual.scene && visual.scene !== "none")
+    return (
+      <aside className="recall-visual-rail" aria-label="Visual memory cues">
+        {(visual.labels ?? []).map((part, i) => (
+          <div key={i} className="recall-pictogram">
+            <span className="recall-pictogram-icon">
+              <RecallConceptGlyph {...part} size={32} />
+            </span>
+            <span className="recall-pictogram-label">
+              {reveal ? part.label : String(i + 1).padStart(2, "0")}
+            </span>
+            {i < (visual.labels?.length ?? 0) - 1 &&
+              ["process", "timeline"].includes(visual.kind) && (
+                <span className="recall-pictogram-arrow" aria-hidden="true">
+                  ↓
+                </span>
+              )}
+          </div>
+        ))}
+      </aside>
+    );
   if (visual.kind !== "diagram") return null;
   const items =
     visual.template === "heart"

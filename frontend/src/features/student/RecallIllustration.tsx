@@ -1,3 +1,5 @@
+import { RECALL_TOPIC_SCENES } from "./recall-scenes";
+import { RecallConceptGlyph } from "./RecallConceptGlyph";
 import { RECALL_DIAGRAMS } from "./recall-diagrams";
 import type { RecallVisual } from "../../api/content-library.api";
 function words(value: string, width = 20) {
@@ -18,6 +20,26 @@ export function RecallIllustration({
   reveal?: boolean;
   visualOnly?: boolean;
 }) {
+  if (visual.scene && visual.scene !== "none") {
+    const scene = RECALL_TOPIC_SCENES[visual.scene];
+    return (
+      <figure className="recall-topic-scene" style={{ background: scene.wash }}>
+        <svg
+          viewBox="0 0 1536 1024"
+          role="img"
+          aria-label={`${scene.title} — supporting topic illustration`}
+          className="recall-diagram block h-auto w-full"
+        >
+          <image
+            href={scene.src}
+            width="1536"
+            height="1024"
+            preserveAspectRatio="xMidYMid meet"
+          />
+        </svg>
+      </figure>
+    );
+  }
   const artwork =
     visual.kind === "diagram"
       ? RECALL_DIAGRAMS[visual.template ?? "heart"]
@@ -195,15 +217,15 @@ export function RecallIllustration({
                   cx={x}
                   cy="150"
                   r="48"
-                  fill={i % 2 ? "#101820" : "#B5E61D"}
+                  fill={i % 2 ? "#eef2f6" : "#eaf5cd"}
                 />
+                <RecallConceptGlyph {...part} x={x - 25} y={125} size={50} />
                 <text
                   x={x}
-                  y="162"
+                  y="205"
                   textAnchor="middle"
-                  fill={i % 2 ? "#fff" : "#101820"}
-                  fontSize="32"
-                  fontWeight="700"
+                  fontSize="16"
+                  fill="#64748b"
                 >
                   {i + 1}
                 </text>
@@ -250,18 +272,14 @@ export function RecallIllustration({
                   cx={x + w / 2}
                   cy="120"
                   r="45"
-                  fill={i % 2 ? "#101820" : "#B5E61D"}
+                  fill={i % 2 ? "#eef2f6" : "#eaf5cd"}
                 />
-                <text
-                  x={x + w / 2}
-                  y="132"
-                  textAnchor="middle"
-                  fill={i % 2 ? "#fff" : "#101820"}
-                  fontSize="32"
-                  fontWeight="700"
-                >
-                  {String.fromCharCode(65 + i)}
-                </text>
+                <RecallConceptGlyph
+                  {...part}
+                  x={x + w / 2 - 25}
+                  y={95}
+                  size={50}
+                />
                 <text
                   x={x + w / 2}
                   y="220"
@@ -406,8 +424,9 @@ export function RecallIllustration({
               stroke="#cbd5e1"
               strokeWidth="2"
             />
+            <RecallConceptGlyph {...item} x={x - 98} y={y - 18} size={32} />
             <text
-              x={x}
+              x={x + 12}
               y={y - 7}
               textAnchor="middle"
               fill="#334155"
@@ -415,7 +434,7 @@ export function RecallIllustration({
               fontWeight="600"
             >
               {words(label(item.label, i)).map((line, j) => (
-                <tspan key={j} x={x} dy={j ? 21 : 0}>
+                <tspan key={j} x={x + 12} dy={j ? 21 : 0}>
                   {line}
                 </tspan>
               ))}

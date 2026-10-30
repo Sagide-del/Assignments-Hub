@@ -93,3 +93,36 @@ describe("Stored recall illustrations", () => {
     });
   });
 });
+describe("Topic artwork and semantic symbols", () => {
+  const visual = {
+    kind: "process",
+    title: "Protect crops",
+    scene: "weeds",
+    labels: [
+      { label: "Weeds", detail: "Compete for water.", icon: "weed" },
+      { label: "Remove weeds", detail: "Reduce competition.", icon: "tools" },
+    ],
+  };
+  it("persists a scene and approved symbols without altering ordered steps", () => {
+    expect(validateRecallVisual(visual)).toEqual(visual);
+    expect(validateRecallVisual({ ...visual, scene: "none" })?.scene).toBe(
+      "none",
+    );
+  });
+  it.each([
+    { ...visual, scene: "https://bad.test/a.png" },
+    {
+      ...visual,
+      labels: [{ ...visual.labels[0], icon: "<svg>" }, visual.labels[1]],
+    },
+    { ...visual, kind: "diagram", template: "heart" },
+    { ...visual, kind: "fraction", numerator: 1, denominator: 2 },
+  ])("rejects unsupported or incompatible visual metadata", (value) => {
+    expect(() => validateRecallVisual(value)).toThrow();
+  });
+  it("keeps source evidence when validating illustrated recall content", () => {
+    const result = validateRecall({ ...card, visual }, [7]);
+    expect(result.sourceIds).toEqual([7]);
+    expect(result.visual).toEqual(visual);
+  });
+});

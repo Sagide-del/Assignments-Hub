@@ -1,0 +1,103 @@
+export const RECALL_SYMBOL_IDS = [
+  "water",
+  "drought",
+  "rain",
+  "sun",
+  "cloud",
+  "plant",
+  "crop",
+  "weed",
+  "soil",
+  "roots",
+  "insect",
+  "disease",
+  "nutrients",
+  "harvest",
+  "tools",
+  "temperature",
+  "wind",
+  "energy",
+  "growth",
+  "decline",
+  "money",
+  "time",
+  "people",
+  "book",
+  "language",
+  "numbers",
+  "location",
+  "cycle",
+  "protection",
+  "microscope",
+  "seed",
+  "idea",
+  "light",
+  "heart",
+  "lungs",
+  "cell",
+  "circuit",
+  "mulch",
+] as const;
+export type RecallSymbol = (typeof RECALL_SYMBOL_IDS)[number];
+const rules: [RecallSymbol, RegExp][] = [
+  [
+    "drought",
+    /drought|dry spell|water shortage|water stress|ukame|uhaba wa maji/i,
+  ],
+  ["mulch", /mulch|matandazo/i],
+  ["weed", /\bweeds?\b|weeding|magugu|palizi/i],
+  ["insect", /insects?|pests?|aphids?|caterpillars?|wadudu/i],
+  ["disease", /disease|infection|blight|magonjwa|pathogen/i],
+  ["harvest", /harvest|maize yield|crop yield|mavuno/i],
+  [
+    "nutrients",
+    /nutrient|fertili[sz]|mineral|nitrogen|phosph|potassium|mbolea/i,
+  ],
+  ["roots", /\broots?\b|mizizi/i],
+  ["soil", /\bsoil\b|udongo|topsoil|compost/i],
+  ["rain", /rain|precipitation|mvua/i],
+  ["cloud", /cloud|condensation|mawingu/i],
+  ["sun", /sun|sunlight|solar|photosynthesis|jua/i],
+  [
+    "water",
+    /water|irrigation|watering|maji|umwagiliaji|hydration|evaporation|runoff/i,
+  ],
+  ["temperature", /temperature|heat|warming|joto/i],
+  ["wind", /wind|upepo/i],
+  ["seed", /\bseeds?\b|germination|mbegu/i],
+  ["crop", /\bcrops?\b|maize|wheat|rice|mazao/i],
+  ["plant", /\bplants?\b|leaves|leaf|seedling|sprout|mmea|mimea/i],
+  ["decline", /failure|reduc|declin|decreas|low yield|kushuka/i],
+  ["growth", /grow|increas|improv|rise|kuongezeka/i],
+  ["tools", /\bhoe\b|shovel|spade|trowel|tools?|cultivat|jembe/i],
+  ["heart", /heart|cardiac|moyo/i],
+  ["lungs", /lungs?|breathing|respirat|mapafu/i],
+  ["cell", /\bcells?\b|nucleus|membrane|seli/i],
+  ["circuit", /circuit|voltage|current|battery|switch/i],
+  ["energy", /energy|electric|power|nishati/i],
+  ["light", /\blight\b|mwanga/i],
+  ["money", /money|cost|price|profit|budget|pesa|shillings/i],
+  ["time", /time|date|period|duration|wakati|saa/i],
+  ["people", /people|community|family|citizen|watu|jamii/i],
+  ["language", /language|word|grammar|sentence|lugha|sentensi/i],
+  ["numbers", /number|fraction|percent|ratio|calculate|measure|namba/i],
+  ["location", /location|place|map|region|mahali/i],
+  ["cycle", /cycle|recycl|reuse|mzunguko/i],
+  ["protection", /protect|prevent|conserv|safe|control|linda/i],
+  ["microscope", /microscop|observ|investigat|experiment/i],
+  ["book", /read|book|story|kitabu|kusoma/i],
+];
+export function recallSymbol(
+  label: string,
+  detail = "",
+  explicit?: string,
+): RecallSymbol {
+  if (RECALL_SYMBOL_IDS.includes(explicit as RecallSymbol))
+    return explicit as RecallSymbol;
+  // A short label is a stronger signal than an incidental word in its explanation.
+  return (
+    rules.find(([, pattern]) => pattern.test(label))?.[0] ??
+    rules.find(([, pattern]) => pattern.test(detail))?.[0] ??
+    "idea"
+  );
+}
