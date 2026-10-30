@@ -109,14 +109,14 @@ function RequestMentorshipModal({ mentor, onClose, onSuccess }: { mentor: Mentor
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="What would you like help with? (required)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
           />
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
             placeholder="Anything else you'd like them to know? (optional)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
           />
         </div>
         {status ? <p className="mt-3 text-sm text-slate-600">{status}</p> : null}
@@ -230,7 +230,7 @@ export function MentorshipRequestCard({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Add a note to the log"
-            className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+            className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
           />
           <button
             type="button"

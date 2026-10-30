@@ -13,7 +13,7 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="saas-page-header flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <header className="saas-page-header flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {eyebrow ? (
           <p className="text-xs font-medium text-slate-500">{eyebrow}</p>
@@ -70,7 +70,7 @@ export function ActionCard({
   children?: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {icon ? (
@@ -104,7 +104,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-5 py-10 text-center">
+    <div className="rounded-2xl border border-slate-200 bg-white px-5 py-7 text-center">
       <Inbox
         className="mx-auto mb-3 h-7 w-7 text-slate-300"
         strokeWidth={1.5}

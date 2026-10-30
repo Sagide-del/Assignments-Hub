@@ -97,13 +97,13 @@ function AssessmentCard() {
               placeholder="Subject"
               value={sg.subject}
               onChange={(e) => setSubjectGrades((prev) => prev.map((p, idx) => (idx === i ? { ...p, subject: e.target.value } : p)))}
-              className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+              className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
             />
             <input
               placeholder="Grade e.g. B+"
               value={sg.grade}
               onChange={(e) => setSubjectGrades((prev) => prev.map((p, idx) => (idx === i ? { ...p, grade: e.target.value } : p)))}
-              className="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+              className="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
             />
           </div>
         ))}
@@ -123,7 +123,7 @@ function AssessmentCard() {
               type="button"
               onClick={() => setInterests((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition ${
-                interests.includes(tag) ? 'border-[#101820] bg-[#101820] text-[#B5E61D]' : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                interests.includes(tag) ? 'border-[#101820] bg-[#101820] text-white' : 'border-slate-200 text-slate-500 hover:border-slate-300'
               }`}
             >
               {tag}
@@ -210,7 +210,7 @@ function CurrentSelectionCard({
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Why did you choose this track?"
         rows={3}
-        className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+        className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
       />
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={() => notesMutation.mutate()} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#101820] hover:bg-white">

@@ -98,7 +98,7 @@ export function PrintIcon() {
 export function statusBadgeClass(status: string) {
   switch (status) {
     case 'ACCEPTED':
-      return 'bg-[#101820] text-[#B5E61D]';
+      return 'bg-[#101820] text-white';
     case 'DECLINED':
       return 'bg-red-50 text-red-600 border border-red-200';
     case 'COMPLETED':
@@ -125,12 +125,12 @@ export function TagInput({
     <div>
       <div className="flex flex-wrap gap-2">
         {values.map((value) => (
-          <span key={value} className="inline-flex items-center gap-1.5 rounded-full bg-[#101820] px-3 py-1.5 text-xs font-semibold text-[#B5E61D]">
+          <span key={value} className="inline-flex items-center gap-1.5 rounded-full bg-[#101820] px-3 py-1.5 text-xs font-semibold text-white">
             {value}
             <button
               type="button"
               onClick={() => onChange(values.filter((v) => v !== value))}
-              className="text-[#B5E61D]/70 hover:text-[#B5E61D]"
+              className="text-white/70 hover:text-white"
               aria-label={`Remove ${value}`}
             >
               <XIcon />
@@ -164,7 +164,7 @@ function TagInputField({ onAdd, placeholder }: { onAdd: (value: string) => void;
       <input
         name="tag"
         placeholder={placeholder}
-        className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+        className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
       />
       <button type="submit" className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-[#101820] hover:bg-slate-50">
         <PlusIcon />

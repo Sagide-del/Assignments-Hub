@@ -123,7 +123,7 @@ function AssignmentCard({
   const due = assignmentDeadline(assignment.dueDate);
   const unfinished = state === "NOT_STARTED" || state === "IN_PROGRESS";
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-100/50 transition hover:border-slate-300 sm:p-6">
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-100/50 transition hover:border-slate-300 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <span
@@ -443,7 +443,7 @@ export function MyAssignmentsPage() {
       ? (matchingSubject?.topics.length ?? 0)
       : groups.length;
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-6">
+    <div className="mx-auto max-w-6xl space-y-4 pb-6">
       <PageHeader title="My Assignments" actions={user?.grade ? <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{user.grade}</span> : null} />
       <nav
         aria-label="Assignment breadcrumb"
@@ -652,7 +652,7 @@ export function MyAssignmentsPage() {
                 key={s.key}
                 aria-label={`Open ${s.name}`}
                 onClick={() => navigate(s.key)}
-                className="group relative min-w-0 rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md hover:shadow-slate-200/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 motion-reduce:transform-none sm:p-6"
+                className="group relative min-w-0 rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md hover:shadow-slate-200/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 motion-reduce:transform-none sm:p-5"
               >
                 <span className="flex items-center justify-between">
                   <span
@@ -670,7 +670,7 @@ export function MyAssignmentsPage() {
                     aria-hidden="true"
                   />
                 </span>
-                <h3 className="mt-5 min-h-12 break-words text-base font-semibold leading-6 text-slate-900">
+                <h3 className="mt-3 min-h-12 break-words text-base font-semibold leading-6 text-slate-900">
                   {s.name}
                 </h3>
                 <p className="mt-2 text-xs text-slate-500">

@@ -47,9 +47,9 @@ export function DashboardSubjects({
   return (
     <section
       aria-label="Your subject shortcuts"
-      className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100/60 sm:p-5"
+      className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4"
     >
-      <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2.5 text-sm font-semibold text-slate-900">
           <LayoutGrid size={19} aria-hidden="true" />
           Jump into a subject
@@ -67,18 +67,16 @@ export function DashboardSubjects({
         className="dashboard-subjects flex snap-x snap-proximity gap-3 overflow-x-auto pb-3 pt-1"
       >
         {subjects.map(({ name, key: groupKey }) => {
-          const { Icon, tone, key } = subjectAppearance(name);
+          const { Icon, key } = subjectAppearance(name);
           return (
             <Link
               key={groupKey}
               to={`/student/my-assignments?subject=${encodeURIComponent(groupKey)}`}
-              className="group flex min-h-32 w-[132px] shrink-0 snap-start flex-col items-center gap-3 rounded-xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/60 px-3 py-4 text-center transition hover:border-slate-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:w-[145px]"
+              className="group flex min-h-24 w-[132px] shrink-0 snap-start flex-col items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-center transition hover:border-slate-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:w-[145px]"
             >
-              <span
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone}`}
-              >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center text-slate-600">
                 <Icon
-                  size={25}
+                  size={21}
                   strokeWidth={1.8}
                   data-subject-icon={key}
                   aria-hidden="true"
@@ -103,7 +101,7 @@ export function DashboardSubjects({
           <ChevronLeft size={17} aria-hidden="true" />
         </button>
         <span className="text-[10px] text-slate-400">
-          {subjects.length} subjects · swipe or use the arrows
+          {subjects.length} subjects
         </span>
         <button
           type="button"

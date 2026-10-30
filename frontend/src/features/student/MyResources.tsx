@@ -147,7 +147,7 @@ export function MyResourcesPage() {
 }
 
 function ViewButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof ShoppingBag; label: string }) {
-  return <button type="button" onClick={onClick} aria-pressed={active} className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[11px] font-semibold leading-4 transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${active ? 'bg-[#101820] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#B5E61D]' : ''}`} strokeWidth={1.8} /><span className="max-w-full truncate">{label}</span></button>;
+  return <button type="button" onClick={onClick} aria-pressed={active} className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[11px] font-semibold leading-4 transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${active ? 'bg-[#101820] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Icon className={`h-4 w-4 shrink-0 ${active ? 'text-white' : ''}`} strokeWidth={1.8} /><span className="max-w-full truncate">{label}</span></button>;
 }
 
 function ResourceCard({ resource, owned, onSelect, onDownload }: { resource: ResourceListing; owned: boolean; onSelect: () => void; onDownload: () => void }) {

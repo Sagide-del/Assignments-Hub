@@ -183,7 +183,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
     : isStudent
       ? "Student workspace"
       : (school?.code ?? "School workspace");
-  const logoSrc = isPlatformAdmin ? null : school?.logoUrl;
+  const logoSrc = isPlatformAdmin || independent ? null : school?.logoUrl;
   const footerMeta = isStudent
     ? (user?.grade ?? "Grade not set")
     : user?.role.replace("_", " ");
@@ -221,7 +221,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
           className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#101820] transition hover:text-[#101820]"
           style={{
             borderColor: mobileNavOpen
-              ? "var(--school-accent, #B5E61D)"
+              ? "#64748b"
               : "#e2e8f0",
           }}
           aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
@@ -243,12 +243,12 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
       ) : null}
 
       <aside
-        className={`workspace-sidebar fixed inset-y-0 left-0 z-40 flex w-80 max-w-[85vw] flex-col text-white transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-auto md:h-screen md:w-64 md:shrink-0 md:max-w-none md:translate-x-0 md:border-r md:border-white/10 ${
+        className={`workspace-sidebar fixed inset-y-0 left-0 z-40 flex w-80 max-w-[85vw] flex-col text-white transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-auto md:h-screen md:w-60 md:shrink-0 md:max-w-none md:translate-x-0 md:border-r md:border-white/10 ${
           mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
         style={{ backgroundColor: "var(--school-primary, #101820)" }}
       >
-        <div className="border-b border-white/10 px-5 py-5">
+        <div className="border-b border-white/10 px-4 py-4">
           <div className="flex items-center gap-3">
             <Logo
               src={logoSrc}
@@ -267,7 +267,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
           </div>
 
           {isStudentPortal ? (
-            <div className="mt-5 border-t border-white/10 pt-4">
+            <div className="mt-3 border-t border-white/10 pt-3">
               <p className="sr-only">Student profile</p>
               <p className="truncate text-sm font-medium">{user?.name}</p>
               <p className="mt-1 text-xs text-white/50">
@@ -277,7 +277,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
           ) : null}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-5">
+        <div className="flex-1 overflow-y-auto px-3 py-3">
           {!isStudentPortal && (
             <SidebarSectionLabel>Navigation</SidebarSectionLabel>
           )}
@@ -342,7 +342,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
       </aside>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <div className="workspace-topbar hidden min-h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white px-8 md:flex">
+        <div className="workspace-topbar hidden min-h-14 items-center justify-between gap-4 border-b border-slate-200 bg-white px-8 md:flex">
           <div className="flex min-w-0 items-center gap-3 text-xs text-slate-500">
             <span>Workspace</span>
             <ChevronRight className="h-3 w-3" />
@@ -377,7 +377,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
             </span>
           </div>
         </div>
-        <main className="workspace-content min-w-0 flex-1 p-4 md:p-8 lg:px-10">
+        <main className="workspace-content min-w-0 flex-1 p-4 md:p-6 lg:px-8">
           <Outlet />
         </main>
         {!isStudentPortal ? <Footer /> : null}

@@ -163,7 +163,7 @@ export function StemLabsPage() {
       (view !== "completed" || complete.has(l.key)),
   );
   return (
-    <div className="mx-auto max-w-6xl space-y-6 text-slate-800">
+    <div className="mx-auto max-w-6xl space-y-4 text-slate-800">
       <PageHeader title="STEM Labs" actions={<span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{user?.grade} · {labs.length} practicals</span>} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav

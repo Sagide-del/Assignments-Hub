@@ -44,7 +44,7 @@
 }
 .platform-workspace .saas-page-header {
   align-items: stretch;
-  padding-bottom: 1.25rem;
+  padding-bottom: 1rem;
 }
 .platform-workspace .saas-page-header h1 {
   margin-top: 0;
@@ -82,7 +82,7 @@
   font-variant-numeric: tabular-nums;
 }
 .workspace-sidebar nav a[aria-current="page"] {
-  box-shadow: inset 3px 0 0 #b5e61d;
+  box-shadow: inset 2px 0 0 #94a3b8;
 }
 @media (max-width: 767px) {
   .workspace-content {

@@ -29,7 +29,7 @@ export function FirstAidGuide({ guide }: { guide: Guide }) {
         <ol className="mt-5 space-y-5">
           {guide.actions.map((step, index) => (
             <li key={step.title} className="relative flex items-start gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#101820] text-xs font-bold text-[#B5E61D]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#101820] text-xs font-bold text-white">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <div className="min-w-0">
@@ -73,7 +73,7 @@ export function FirstAidGuide({ guide }: { guide: Guide }) {
         </p>
       </section>
       <section className="rounded-2xl bg-[#101820] p-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#B5E61D]">Keep this in mind</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-white">Keep this in mind</p>
         <p className="mt-3 text-sm font-medium leading-7 text-white">{guide.remember}</p>
       </section>
     </div>

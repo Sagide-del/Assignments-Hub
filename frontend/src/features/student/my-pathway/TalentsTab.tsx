@@ -71,7 +71,7 @@ export function TalentsTab() {
           onChange={(e) => setReflection(e.target.value)}
           rows={3}
           placeholder="What makes you proud of yourself? When do you feel most confident?"
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
         />
       </ActionCard>
 
@@ -81,7 +81,7 @@ export function TalentsTab() {
           onChange={(e) => setGrowthPlan(e.target.value)}
           rows={3}
           placeholder="e.g. Join the school choir, practice coding every weekend, ask my mentor for feedback"
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#B5E61D]"
+          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-500"
         />
       </ActionCard>
 

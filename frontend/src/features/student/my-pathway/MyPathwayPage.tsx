@@ -26,7 +26,7 @@ export function MyPathwayPage() {
   const [tab, setTab] = useState<MyPathwayTab>('dashboard');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="print:hidden">
         <PageHeader title="My Pathway" />
 

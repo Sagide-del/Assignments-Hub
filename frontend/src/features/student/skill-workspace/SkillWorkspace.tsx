@@ -136,7 +136,7 @@ function Workspace({
           aria-valuenow={completedKeys.size}
           className="h-2 min-w-[80px] flex-1 overflow-hidden rounded-full bg-slate-100"
         >
-          <div className="h-full rounded-full bg-[#B5E61D]" style={{ width: `${percent}%` }} />
+          <div className="h-full rounded-full bg-slate-700" style={{ width: `${percent}%` }} />
         </div>
         <span className="text-xs font-semibold text-slate-600">
           {completedKeys.size}/{lessons.length} complete
@@ -185,7 +185,7 @@ function Workspace({
                 className={`flex min-h-14 w-full items-start gap-3 rounded-xl px-3 py-3 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#607D00] ${index === activeIndex ? 'bg-[#101820] text-white' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${index === activeIndex ? 'bg-[#B5E61D] text-[#101820]' : 'bg-slate-100 text-slate-600'}`}
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${index === activeIndex ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
                 >
                   {completedKeys.has(lesson.key) ? (
                     <Check className="h-4 w-4" aria-hidden="true" />

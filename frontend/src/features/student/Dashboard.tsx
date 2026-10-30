@@ -11,8 +11,6 @@ import {
   Award,
   ChartNoAxesCombined,
   ClipboardList,
-  GraduationCap,
-  Hand,
   Wrench,
   BookOpen,
   BrainCircuit,
@@ -274,12 +272,6 @@ export function StudentDashboard() {
   const error = assignmentsQuery.isError || submissionsQuery.isError;
   const ready = !loading && !error;
   const filtered = Boolean(subject || search || status !== "ALL");
-  const date = new Intl.DateTimeFormat("en-KE", {
-    timeZone: "Africa/Nairobi",
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date());
   function clearFilters() {
     setSubject("");
     setStatus("ALL");
@@ -290,26 +282,11 @@ export function StudentDashboard() {
     void submissionsQuery.refetch();
   }
   return (
-    <div className="mx-auto max-w-7xl space-y-6 pb-8">
+    <div className="mx-auto max-w-7xl space-y-4 pb-6">
       <header className="flex flex-wrap items-center justify-between gap-4 pb-1">
-        <div>
-          <p className="mb-2 text-xs text-slate-500">
-            {date}
-            {user?.grade ? ` · ${user.grade}` : ""}
-          </p>
-          <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-slate-900">
-            <Hand
-              className="h-8 w-8 text-amber-400"
-              strokeWidth={1.8}
-              aria-hidden="true"
-            />
-            Dashboard
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
-
-          </p>
-        </div>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          Dashboard
+        </h1>
         <Link
           to="/student/my-assignments"
           className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
@@ -332,7 +309,7 @@ export function StudentDashboard() {
             onClick={() =>
               setStatus((current) => (current === state ? "ALL" : state))
             }
-            className={`flex min-w-0 items-center gap-3 rounded-2xl border bg-white p-4 text-left shadow-sm shadow-slate-100/60 transition hover:shadow-md hover:shadow-slate-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:p-5 ${status === state ? "border-slate-500 ring-1 ring-slate-500" : "border-slate-200 hover:border-slate-300"} disabled:cursor-default`}
+            className={`flex min-w-0 items-center gap-3 rounded-2xl border bg-white p-4 text-left transition hover:shadow-md hover:shadow-slate-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:p-4 ${status === state ? "border-slate-500 ring-1 ring-slate-500" : "border-slate-200 hover:border-slate-300"} disabled:cursor-default`}
           >
             <span
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl sm:h-12 sm:w-12 ${tone}`}
@@ -383,26 +360,15 @@ export function StudentDashboard() {
           {ready && next && (
             <section
               aria-label="Next assignment"
-              className="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/70 p-5 shadow-sm shadow-blue-100/30 sm:p-6"
+              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
             >
-              <div
-                className="pointer-events-none absolute right-6 top-6 hidden h-24 w-24 items-center justify-center rounded-3xl bg-blue-100/40 sm:flex"
-                aria-hidden="true"
-              >
-                <span className="absolute bottom-4 h-5 w-16 rounded-lg border-b-4 border-violet-300 bg-violet-100" />
-                <span className="absolute bottom-8 h-5 w-16 rounded-lg border-b-4 border-blue-300 bg-blue-100" />
-                <GraduationCap
-                  className="absolute top-2 h-12 w-12 text-slate-700"
-                  strokeWidth={1.5}
-                />
-              </div>
               <div className="mb-4 flex items-center gap-2.5 text-xs font-semibold text-blue-700">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100/80">
                   <CalendarDays size={18} aria-hidden="true" />
                 </span>
                 Up next
               </div>
-              <div className="min-w-0 sm:pr-28">
+              <div className="min-w-0">
                 <p className="mb-2 text-xs font-medium text-slate-500">
                   {assignmentSubject(next)}
                 </p>
@@ -569,7 +535,6 @@ export function StudentDashboard() {
               <Wrench size={19} className="text-blue-700" aria-hidden="true" />
               Quick tools
             </h2>
-
           </div>
           <div className="space-y-2 p-3">
             {(user?.isIndependentTrial ? [] : TOOLS).map(

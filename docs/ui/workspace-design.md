@@ -11,3 +11,9 @@ Remove repeated introductions from module libraries. Retain task instructions, l
 Do not add blanket overrides that recolour every brand background, flatten every card radius or hide paragraphs. Those previous overrides were removed from `index.css`; authored educational content, recall sheets and 3D canvases should retain their intended visual hierarchy. Preserve per-school colour variables.
 
 Verification for this pass: 104 frontend tests; ten learner tabs at 1440/390/320px; assignment and review flows; recall rendering/printing and admin card editing; timed exam save/offline/expiry flows; respiratory 3D selection, observation, recovery and mobile checks. The print sample remained one A4 page.
+
+## Neutral navigation and density
+
+Use neutral charcoal, white and slate for navigation, selected tabs and focus states. Keep semantic result/warning colours and the original branded artwork. Do not reintroduce neon active-tab icons, a lime sidebar stripe, dashboard greeting/date blocks or decorative dashboard illustrations. The learner profile remains available for account identification.
+
+Compact Assignment Hub branding now clips the mark directly from `/logo.png`, the same original image used by the wordmark; it is not a redrawn SVG symbol. Uploaded school logos and school-initial fallbacks remain supported. Independent accounts use the platform mark rather than inheriting a school placeholder logo.

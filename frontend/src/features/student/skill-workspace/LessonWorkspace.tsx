@@ -367,7 +367,7 @@ export function LessonWorkspace({
                             <button
                               type="button"
                               onClick={() => replaceCode(section.example!)}
-                              className="min-h-9 rounded-lg px-2 text-xs font-semibold text-[#B5E61D]"
+                              className="min-h-9 rounded-lg px-2 text-xs font-semibold text-white"
                             >
                               Load example
                             </button>
@@ -474,7 +474,7 @@ export function LessonWorkspace({
                           <button
                             type="button"
                             onClick={run}
-                            className={`${BUTTON} bg-[#B5E61D] text-[#101820]`}
+                            className={`${BUTTON} bg-slate-900 text-white`}
                           >
                             <Play className="h-4 w-4" aria-hidden="true" />
                             Run code

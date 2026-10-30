@@ -149,7 +149,7 @@ export function LearnSkillsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-10">
+    <div className="mx-auto max-w-6xl space-y-4 pb-10">
       <PageHeader title="Learn a Skill" />
 
       {!loading && !error && (myLearning.length > 0 || completed.length > 0) ? (

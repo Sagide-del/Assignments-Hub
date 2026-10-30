@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 // Reusable brand mark used everywhere a logo can appear: the dashboard
 // sidebar/topbar (Student, Teacher, School Admin, Platform Admin — see
@@ -16,70 +16,67 @@ import { useState, useEffect } from 'react';
 //   3. No `src` at all -> fallback mark immediately, no failed request.
 //
 // School fallbacks use initials. Assignment Hub itself uses an embedded
-// vector mark in compact contexts so navigation branding never depends on
-// an image request or a fragile crop of the horizontal wordmark.
+// original logo image in compact contexts, matching the public wordmark.
 const SIZE_CLASSES = {
-  sm: 'h-10 w-10 rounded-xl',
-  md: 'h-14 w-14 rounded-2xl',
-  lg: 'h-16 w-16 rounded-2xl',
+  sm: "h-10 w-10 rounded-xl",
+  md: "h-14 w-14 rounded-2xl",
+  lg: "h-16 w-16 rounded-2xl",
   // Used by the public login page's brand mark — the one place a much
   // larger logo is shown outside a dashboard sidebar/topbar.
-  xl: 'h-36 w-36 rounded-[28px]',
+  xl: "h-36 w-36 rounded-[28px]",
   // Horizontal Assignment Hub wordmark used on public authentication pages.
-  wordmark: 'h-20 w-64 rounded-2xl',
+  wordmark: "h-20 w-64 rounded-2xl",
 } as const;
 
 const TEXT_SIZE_CLASSES = {
-  sm: 'text-xs',
-  md: 'text-base',
-  lg: 'text-lg',
-  xl: 'text-4xl',
-  wordmark: 'text-2xl',
+  sm: "text-xs",
+  md: "text-base",
+  lg: "text-lg",
+  xl: "text-4xl",
+  wordmark: "text-2xl",
 } as const;
 
 export type LogoSize = keyof typeof SIZE_CLASSES;
 
 const WORDMARK_SIZES = {
   sm: {
-    frame: 'h-10 w-44',
-    image: 'w-[194px]',
+    frame: "h-10 w-44",
+    image: "w-[194px]",
   },
   md: {
-    frame: 'h-12 w-52',
-    image: 'w-[228px]',
+    frame: "h-12 w-52",
+    image: "w-[228px]",
   },
 } as const;
 
 function getInitials(name?: string | null): string {
-  const trimmed = (name ?? '').trim();
-  if (!trimmed || trimmed.toLowerCase() === 'assignment hub') return 'AH';
+  const trimmed = (name ?? "").trim();
+  if (!trimmed || trimmed.toLowerCase() === "assignment hub") return "AH";
   const initials = trimmed
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
-    .join('');
-  return initials || 'AH';
+    .join("");
+  return initials || "AH";
 }
 
 function AssignmentHubMark() {
+  // Clip the original horizontal logo to its mark; never redraw the brand.
   return (
-    <svg viewBox="0 0 64 64" className="h-[72%] w-[72%]" role="img" aria-label="Assignment Hub logo">
-      <path
-        d="M10 19.5 27 9v46l-8-5V36H10v-16.5Zm9 9.5V21l-5 3v5h5Z"
-        fill="#B5E61D"
-      />
-      <path
-        d="M37 9 54 19.5V45L37 55V36h-6v-7h6V9Zm8 15-5-3v8h5v-5Zm0 12h-5v8l5-3v-5Z"
-        fill="#101820"
-      />
-      <circle cx="32" cy="32.5" r="5.5" fill="#B5E61D" stroke="#fff" strokeWidth="2" />
+    <svg
+      viewBox="60 365 330 350"
+      className="h-full w-full"
+      role="img"
+      aria-label="Assignment Hub logo"
+    >
+      <image href="/logo.png" width="1448" height="1086" />
     </svg>
   );
 }
 
 export function AssignmentHubWordmark({
-  size = 'sm',
-  className = '',
+  size = "sm",
+  className = "",
 }: {
   size?: keyof typeof WORDMARK_SIZES;
   className?: string;
@@ -107,8 +104,8 @@ export function AssignmentHubWordmark({
 export function Logo({
   src,
   name,
-  size = 'md',
-  className = '',
+  size = "md",
+  className = "",
 }: {
   /** Logo image URL (e.g. school.logoUrl). Falsy/undefined shows the fallback mark. */
   src?: string | null;
@@ -127,7 +124,8 @@ export function Logo({
 
   const showImage = !!src && !broken;
   const initials = getInitials(name);
-  const showAssignmentHubMark = !src && name?.trim().toLowerCase() === 'assignment hub' && !broken;
+  const showAssignmentHubMark =
+    !src && name?.trim().toLowerCase() === "assignment hub" && !broken;
 
   return (
     <div
@@ -137,7 +135,7 @@ export function Logo({
       {showImage ? (
         <img
           src={src as string}
-          alt={name ? `${name} logo` : 'School logo'}
+          alt={name ? `${name} logo` : "School logo"}
           className="h-full w-full object-contain p-1.5"
           loading="lazy"
           onError={() => setBroken(true)}
