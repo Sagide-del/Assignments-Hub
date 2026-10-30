@@ -24,7 +24,7 @@ export async function printRecallSheet(sheet: HTMLElement, title: string) {
       doc.head.appendChild(style.cloneNode(true));
     const printStyle = doc.createElement("style");
     printStyle.textContent =
-      "@page{size:A4 landscape;margin:10mm}html{font-size:14px}html,body{margin:0;background:white!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}[data-revision-card]{box-shadow:none!important;width:100%;break-inside:avoid}.recall-diagram{max-height:95mm}";
+      "@page{size:A4 landscape;margin:5mm}html{font-size:14px}html,body{margin:0;background:white!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}[data-revision-card]{box-shadow:none!important;width:100%;break-inside:avoid;zoom:.92}.recall-diagram{max-height:80mm}";
     doc.head.appendChild(printStyle);
     doc.body.appendChild(sheet.cloneNode(true));
     await Promise.race([

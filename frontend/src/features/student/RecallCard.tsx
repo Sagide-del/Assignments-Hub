@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { RotateCcw, CheckCircle2, Eye, Printer } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { RotateCcw, CheckCircle2, Eye, Printer, Zap } from "lucide-react";
 import type { MnemonicCard } from "../../types";
 import { RecallSheet } from "./RecallSheet";
 import { printRecallSheet } from "./recall-print";
@@ -15,6 +15,25 @@ export function RecallCard({
     [rating, setRating] = useState(""),
     [printing, setPrinting] = useState(false),
     [printError, setPrintError] = useState("");
+  const [challengeEnd, setChallengeEnd] = useState<number | null>(null),
+    [seconds, setSeconds] = useState(30),
+    [challengeNote, setChallengeNote] = useState("");
+  useEffect(() => {
+    if (!challengeEnd) return;
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((challengeEnd - Date.now()) / 1000));
+      setSeconds(left);
+      if (!left) {
+        setChallengeEnd(null);
+        setChallengeNote(
+          "Time’s up. Reveal the card and check what you remembered.",
+        );
+      }
+    };
+    tick();
+    const timer = setInterval(tick, 250);
+    return () => clearInterval(timer);
+  }, [challengeEnd]);
   const printSheet = useRef<HTMLDivElement>(null),
     c = card.content!;
   return (
@@ -67,16 +86,49 @@ export function RecallCard({
           />
         </div>
       </div>
-      <button
-        onClick={() => {
-          setRevealed((v) => !v);
-          setChecked([]);
-        }}
-        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white"
-      >
-        <Eye size={17} />
-        {revealed ? "Cover labels & notes" : "Reveal labelled study card"}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={() => {
+            if (challengeEnd) {
+              setChallengeEnd(null);
+              setChallengeNote(
+                "Challenge stopped. You can reveal the card whenever you are ready.",
+              );
+            } else {
+              setSeconds(30);
+              setRevealed(false);
+              setChecked([]);
+              setChallengeEnd(Date.now() + 30000);
+              setChallengeNote(
+                "Say the answer out loud, or jot it down. Check it when you reveal the card.",
+              );
+            }
+          }}
+          className="recall-sprint-button inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold"
+        >
+          <Zap size={16} />
+          {challengeEnd
+            ? `${seconds}s · Stop challenge`
+            : "30-second challenge"}
+        </button>
+        <button
+          onClick={() => {
+            setChallengeEnd(null);
+            setChallengeNote("");
+            setRevealed((v) => !v);
+            setChecked([]);
+          }}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white"
+        >
+          <Eye size={17} />
+          {revealed ? "Cover labels & notes" : "Reveal labelled study card"}
+        </button>
+      </div>
+      {challengeNote && (
+        <p role="status" className="text-xs leading-6 text-slate-600">
+          {challengeNote}
+        </p>
+      )}
       {revealed && (
         <section
           className="rounded-xl border bg-white p-5"

@@ -1,7 +1,15 @@
+import {
+  ArrowUpRight,
+  BookOpen,
+  Brain,
+  Lightbulb,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import { AssignmentHubWordmark } from "../../components/ui/Logo";
 import "./recall-cards.css";
 import type { RecallContent } from "../../api/content-library.api";
-import { RecallIllustration } from "./RecallIllustration";
+import { IllustrationViewer } from "./IllustrationViewer";
 import { recallVisual } from "./recall-visual";
 export function RecallSheet({
   content,
@@ -26,16 +34,25 @@ export function RecallSheet({
       data-revision-card
       className="overflow-hidden rounded-sm border border-slate-200 bg-white text-slate-900 shadow-sm"
     >
-      <header className="recall-brand-header flex flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-7">
-        <div className="flex flex-wrap items-center gap-3">
-          <AssignmentHubWordmark size="sm" className="rounded-md" />
-          <span className="recall-brand-accent text-[10px] font-bold uppercase tracking-[0.13em]">
-            Revision cards
+      <header className="recall-brand-header flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-7">
+        <a
+          href="https://assignmenthub.co.ke/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Visit Assignment Hub"
+          className="recall-card-logo inline-flex rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          <AssignmentHubWordmark size="md" />
+        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="recall-edition-sticker inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em]">
+            <Sparkles size={13} />
+            Recall club
+          </span>
+          <span className="recall-course-label rounded-full px-3 py-1.5 text-[11px] font-semibold">
+            {grade} · {subject}
           </span>
         </div>
-        <span className="text-xs font-medium">
-          {grade} · {subject}
-        </span>
       </header>
       <div className="px-5 pb-5 pt-5 sm:px-7 sm:pt-6">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
@@ -51,18 +68,31 @@ export function RecallSheet({
             {cardNumber ? String(cardNumber).padStart(2, "0") : "AH"}
           </span>
         </div>
-        <p className="my-4 text-sm font-medium leading-6 text-slate-700">
-          {content.cue}
-        </p>
+        <div className="recall-question-strip my-4 flex items-start gap-3 rounded-lg px-4 py-3">
+          <span className="recall-challenge-icon mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
+            <Zap size={15} />
+          </span>
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-500">
+              Your memory mission
+            </p>
+            <p className="mt-1 text-sm font-medium leading-6 text-slate-800">
+              {content.cue}
+            </p>
+          </div>
+        </div>
         <div className="revision-sheet-layout">
-          <div className="min-w-0 rounded-lg bg-slate-50/50 p-2 sm:p-3">
-            <RecallIllustration visual={visual} reveal={reveal} />
+          <div className="recall-art-panel min-w-0 rounded-xl border border-slate-100 p-2 sm:p-3">
+            <IllustrationViewer visual={visual} reveal={reveal} />
           </div>
           {reveal ? (
             <div className="space-y-4">
               <div className="recall-brand-memory border-l-4 px-4 py-3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.13em] recall-brand-ink">
-                  Memory cue
+                  <span className="inline-flex items-center gap-1.5">
+                    <Lightbulb size={13} />
+                    Make it stick
+                  </span>
                 </p>
                 <p className="mt-2 text-base font-semibold leading-7 text-slate-900">
                   {content.mnemonic}
@@ -98,12 +128,29 @@ export function RecallSheet({
           </p>
         )}
         <div className="recall-brand-footer mt-5 flex flex-wrap items-center justify-between gap-2 border-t-2 pt-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            Understand · Recall · Apply
-          </span>
-          <span className="text-[10px] font-semibold recall-brand-ink">
-            Assignment Hub
-          </span>
+          <div className="flex flex-wrap items-center gap-3 text-[10px] font-semibold text-slate-500">
+            <span className="inline-flex items-center gap-1">
+              <BookOpen size={12} />
+              Understand
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Brain size={12} />
+              Recall
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Lightbulb size={12} />
+              Apply
+            </span>
+          </div>
+          <a
+            href="https://assignmenthub.co.ke/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="recall-site-link inline-flex items-center gap-1 text-[11px] font-semibold underline underline-offset-4"
+          >
+            assignmenthub.co.ke
+            <ArrowUpRight size={12} />
+          </a>
         </div>
       </div>
     </article>

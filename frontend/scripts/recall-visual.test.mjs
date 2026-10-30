@@ -23,3 +23,15 @@ test('legacy long facts remain intact while editable diagram labels fit the stor
   assert.equal(visual.labels[0].detail.length,220);
   assert.equal(old.facts[0].meaning.length,400);
 });
+const { RECALL_DIAGRAMS } = await loadTypeScript(new URL('../src/features/student/recall-diagrams.ts', import.meta.url));
+const { readFile } = await import('node:fs/promises');
+test('every atlas template has a real local artwork asset and bounded authored callouts', async()=>{
+  for(const diagram of Object.values(RECALL_DIAGRAMS)){
+    const bytes=await readFile(new URL('../public'+diagram.src,import.meta.url));
+    assert.equal(bytes.subarray(1,4).toString(),'PNG');
+    const [, ,width,height]=diagram.viewBox.split(' ').map(Number);
+    assert(diagram.labels.length>=4);
+    assert.equal(new Set(diagram.labels.map(x=>x.name)).size,diagram.labels.length);
+    for(const part of diagram.labels){assert(part.ax>=0&&part.ax<=width);assert(part.ay>=0&&part.ay<=height);}
+  }
+});

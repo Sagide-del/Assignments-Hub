@@ -12,7 +12,7 @@
 }
 
 /* Assignment Hub's own identity is fixed on revision cards, including exports. */
-.recall-brand-header { background: #101820; color: #fff; border-bottom: 4px solid #B5E61D; }
+.recall-brand-header { background: #fff; color: #101820; border-top: 5px solid #B5E61D; border-bottom: 1px solid #e2e8f0; }
 .recall-brand-accent { color: #B5E61D; }
 .recall-brand-ink { color: #101820; }
 .recall-brand-badge { background: #101820; color: #B5E61D; }
@@ -20,3 +20,25 @@
 .recall-brand-footer { border-color: #B5E61D; }
 .recall-brand-step { background: #f5f9e8; border-color: #d9e9a5; color: #101820; }
 .recall-brand-comparison { background: #f5f9e8; border-color: #d9e9a5; }
+
+/* White-paper masthead gives the original wordmark its own clear space. */
+.recall-card-logo { padding: 0; flex-shrink: 0; }
+.recall-card-logo > [role="img"] { width: 208px; height: 48px; }
+.recall-edition-sticker { background: #f2f8df; color: #486100; transform: rotate(-3deg); }
+.recall-course-label { background: #101820; color: #fff; }
+.recall-question-strip { background: #f8faf4; border: 1px solid #edf2e2; }
+.recall-challenge-icon, .recall-sprint-button { background: #B5E61D; color: #101820; }
+.recall-art-panel { background: #fff; }
+.recall-site-link { color: #101820; }
+.recall-illustration-dialog { width: min(94vw, 1100px); max-height: 90vh; }
+.recall-illustration-dialog::backdrop { background: rgb(16 24 32 / .6); backdrop-filter: blur(4px); }
+@media print {
+  [data-recall-interactive], .recall-illustration-dialog { display: none !important; }
+  .recall-edition-sticker { transform: none; }
+}
+
+@media print {
+  .recall-brand-header { padding-top: 8px; padding-bottom: 8px; }
+  .recall-question-strip { padding-top: 8px; padding-bottom: 8px; }
+  .recall-brand-footer { margin-top: 10px; padding-top: 6px; }
+}
