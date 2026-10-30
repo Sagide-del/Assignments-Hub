@@ -1,6 +1,7 @@
 import { subjectAppearance } from "./subject-appearance";
 import { groupAssignments } from "./assignment-catalogue";
 import { LearningTitle, FullLearningTitle } from "./LearningTitle";
+import { DashboardSubjects } from "./DashboardSubjects";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -8,14 +9,16 @@ import {
   AlertCircle,
   ArrowRight,
   Award,
-  BadgeCheck,
+  ChartNoAxesCombined,
+  ClipboardList,
+  GraduationCap,
+  Hand,
+  Wrench,
   BookOpen,
   BrainCircuit,
   CalendarDays,
   ChevronRight,
-  CircleDashed,
   CirclePlay,
-  ClipboardCheck,
   Clock3,
   CodeXml,
   Compass,
@@ -47,26 +50,26 @@ const METRICS: {
   {
     state: "NOT_STARTED",
     label: "To start",
-    Icon: CircleDashed,
-    tone: "bg-slate-100 text-slate-600",
+    Icon: ClipboardList,
+    tone: "bg-blue-50 text-blue-600",
   },
   {
     state: "IN_PROGRESS",
     label: "In progress",
     Icon: CirclePlay,
-    tone: "bg-blue-50 text-blue-700",
+    tone: "bg-emerald-50 text-emerald-600",
   },
   {
     state: "SUBMITTED",
     label: "Awaiting results",
-    Icon: ClipboardCheck,
+    Icon: Clock3,
     tone: "bg-amber-50 text-amber-700",
   },
   {
     state: "RESULTS_AVAILABLE",
     label: "Results available",
-    Icon: BadgeCheck,
-    tone: "bg-emerald-50 text-emerald-700",
+    Icon: ChartNoAxesCombined,
+    tone: "bg-violet-50 text-violet-600",
   },
 ];
 const TOOLS: {
@@ -288,18 +291,23 @@ export function StudentDashboard() {
   }
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-8">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <header className="flex flex-wrap items-center justify-between gap-4 pb-1">
         <div>
           <p className="mb-2 text-xs text-slate-500">
             {date}
             {user?.grade ? ` · ${user.grade}` : ""}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-slate-900">
+            <Hand
+              className="h-8 w-8 text-amber-400"
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
             Dashboard
           </h1>
           <p className="mt-2 text-sm text-slate-500">
             Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
-            Here’s your assignment overview.
+            Here’s your learning overview.
           </p>
         </div>
         <Link
@@ -324,10 +332,10 @@ export function StudentDashboard() {
             onClick={() =>
               setStatus((current) => (current === state ? "ALL" : state))
             }
-            className={`flex min-w-0 items-center gap-3 rounded-xl border bg-white p-4 text-left transition sm:p-5 ${status === state ? "border-slate-500 ring-1 ring-slate-500" : "border-slate-200 hover:border-slate-300"} disabled:cursor-default`}
+            className={`flex min-w-0 items-center gap-3 rounded-2xl border bg-white p-4 text-left shadow-sm shadow-slate-100/60 transition hover:shadow-md hover:shadow-slate-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:p-5 ${status === state ? "border-slate-500 ring-1 ring-slate-500" : "border-slate-200 hover:border-slate-300"} disabled:cursor-default`}
           >
             <span
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tone}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl sm:h-12 sm:w-12 ${tone}`}
             >
               <Icon className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
             </span>
@@ -339,49 +347,15 @@ export function StudentDashboard() {
                 {label}
               </span>
             </span>
+            <ChevronRight
+              className="ml-auto hidden h-4 w-4 shrink-0 text-slate-400 sm:block"
+              aria-hidden="true"
+            />
           </button>
         ))}
       </section>
-      {ready && subjects.length > 0 && (
-        <section
-          aria-label="Your subject shortcuts"
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5"
-        >
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Jump into a subject
-            </h2>
-            <Link
-              to="/student/my-assignments"
-              className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-slate-500"
-            >
-              Browse all <ChevronRight size={13} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {subjectGroups.map(({ name, key: groupKey }) => {
-              const { Icon, tone, key } = subjectAppearance(name);
-              return (
-                <Link
-                  key={name}
-                  to={`/student/my-assignments?subject=${encodeURIComponent(groupKey)}`}
-                  className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
-                >
-                  <span
-                    className={`flex h-7 w-7 items-center justify-center rounded-lg ${tone}`}
-                  >
-                    <Icon
-                      size={16}
-                      data-subject-icon={key}
-                      aria-hidden="true"
-                    />
-                  </span>
-                  {name}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+      {ready && subjectGroups.length > 0 && (
+        <DashboardSubjects subjects={subjectGroups} />
       )}
       {error && (
         <div
@@ -404,45 +378,61 @@ export function StudentDashboard() {
           </button>
         </div>
       )}
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5">
           {ready && next && (
             <section
               aria-label="Next assignment"
-              className="relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl border border-slate-200 border-l-4 border-l-[#B5E61D] bg-white p-5 shadow-sm shadow-slate-100/50"
+              className="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/70 p-5 shadow-sm shadow-blue-100/30 sm:p-6"
             >
-              <div className="flex w-full min-w-0 items-start gap-3 sm:w-auto sm:flex-1">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                  <Clock3 className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-slate-500">
-                    Up next · {assignmentSubject(next)}
-                  </p>
-                  <LearningTitle
-                    value={next.title}
-                    subject={assignmentSubject(next)}
-                    as="h2"
-                    className="mt-2"
-                  />
-                  <FullLearningTitle
-                    value={next.title}
-                    subject={assignmentSubject(next)}
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    {assignmentDeadline(next.dueDate).label}
-                  </p>
-                </div>
-              </div>
-              <Link
-                to={`/student/assignments/${next.id}`}
-                className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white sm:w-auto"
+              <div
+                className="pointer-events-none absolute right-6 top-6 hidden h-24 w-24 items-center justify-center rounded-3xl bg-blue-100/40 sm:flex"
+                aria-hidden="true"
               >
-                {assignmentState(submissions.get(next.id)) === "IN_PROGRESS"
-                  ? "Continue assignment"
-                  : "Start assignment"}
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </Link>
+                <span className="absolute bottom-4 h-5 w-16 rounded-lg border-b-4 border-violet-300 bg-violet-100" />
+                <span className="absolute bottom-8 h-5 w-16 rounded-lg border-b-4 border-blue-300 bg-blue-100" />
+                <GraduationCap
+                  className="absolute top-2 h-12 w-12 text-slate-700"
+                  strokeWidth={1.5}
+                />
+              </div>
+              <div className="mb-4 flex items-center gap-2.5 text-xs font-semibold text-blue-700">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100/80">
+                  <CalendarDays size={18} aria-hidden="true" />
+                </span>
+                Up next
+              </div>
+              <div className="min-w-0 sm:pr-28">
+                <p className="mb-2 text-xs font-medium text-slate-500">
+                  {assignmentSubject(next)}
+                </p>
+                <LearningTitle
+                  value={next.title}
+                  subject={assignmentSubject(next)}
+                  as="h2"
+                  className="[&_h2]:text-xl [&_h2]:leading-7"
+                />
+                <FullLearningTitle
+                  value={next.title}
+                  subject={assignmentSubject(next)}
+                />
+              </div>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <p className="inline-flex items-center gap-2 text-xs text-slate-500">
+                  <Clock3 size={15} aria-hidden="true" />
+                  {assignmentDeadline(next.dueDate).label}
+                </p>
+                <Link
+                  to={`/student/assignments/${next.id}`}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-xs font-semibold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:w-auto"
+                >
+                  <CirclePlay size={16} aria-hidden="true" />
+                  {assignmentState(submissions.get(next.id)) === "IN_PROGRESS"
+                    ? "Continue assignment"
+                    : "Start assignment"}
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
             </section>
           )}
           <section
@@ -575,22 +565,23 @@ export function StudentDashboard() {
           className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
         >
           <div className="border-b border-slate-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Learning tools
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Wrench size={19} className="text-blue-700" aria-hidden="true" />
+              Quick tools
             </h2>
             <p className="mt-1 text-xs text-slate-500">
               Open your study workspace
             </p>
           </div>
-          <div className="p-2">
+          <div className="space-y-2 p-3">
             {(user?.isIndependentTrial ? [] : TOOLS).map(
               ({ title, description, href, Icon }) => (
                 <Link
                   key={href}
                   to={href}
-                  className="group flex min-h-20 items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-50"
+                  className="group flex min-h-20 items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-3 transition hover:border-blue-200 hover:bg-blue-50/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 group-hover:border-slate-300">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 group-hover:bg-blue-100">
                     <Icon
                       className="h-[18px] w-[18px]"
                       strokeWidth={1.7}

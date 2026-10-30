@@ -1,0 +1,4 @@
+.dashboard-subjects { scrollbar-width: thin; scrollbar-color: #b8c5d4 #f1f5f9; }
+.dashboard-subjects::-webkit-scrollbar { height: 7px; }
+.dashboard-subjects::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+.dashboard-subjects::-webkit-scrollbar-thumb { background: #b8c5d4; border-radius: 8px; }
