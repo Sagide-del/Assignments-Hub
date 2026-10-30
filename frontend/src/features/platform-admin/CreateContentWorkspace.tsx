@@ -60,7 +60,8 @@ export function CreateContentWorkspace() {
         <div>
           <h2 className="text-xl font-semibold">Create learning content</h2>
           <p className="mt-2 text-sm text-slate-500">
-            Start with one grade. No textbook or notes upload is needed.
+            Generate a new saved batch for one grade. Existing questions and
+            other grades stay in your library.
           </p>
         </div>
         <label className="flex flex-col gap-2 text-xs font-medium">
@@ -79,6 +80,12 @@ export function CreateContentWorkspace() {
           </select>
         </label>
       </div>
+      <Link
+        className="inline-flex items-center gap-2 text-sm font-medium text-blue-700"
+        to={`?view=library&grade=${encodeURIComponent(grade)}`}
+      >
+        Open saved {grade} questions
+      </Link>
       <GradeContentFlow key={grade} grade={grade} />
     </div>
   );
@@ -199,6 +206,8 @@ function GradeContentFlow({ grade }: { grade: string }) {
     void client.invalidateQueries({ queryKey: ["curriculum-ingestion"] });
     void client.invalidateQueries({ queryKey: ["ingestion-documents"] });
     void client.invalidateQueries({ queryKey: ["content-library"] });
+    void client.invalidateQueries({ queryKey: ["saved-question-library"] });
+    void client.invalidateQueries({ queryKey: ["question-bank-batches"] });
   };
   const error = (e: unknown) =>
     setNotice(

@@ -8,6 +8,25 @@ export type QuestionBankQuestionType =
 export type QuestionBankBloomLevel =
   "REMEMBER" | "UNDERSTAND" | "APPLY" | "ANALYZE" | "EVALUATE" | "CREATE";
 
+export interface SavedQuestionBatch {
+  batchId: number | null;
+  createdAt: string | null;
+  subject: string;
+  total: number;
+  approved: number;
+  drafts: number;
+  rejected: number;
+  published: number;
+}
+export interface SavedQuestionGrade {
+  grade: string;
+  total: number;
+  approved: number;
+  drafts: number;
+  published: number;
+  batches: SavedQuestionBatch[];
+}
+
 export interface QuestionBankItem {
   batchId?: number | null;
   batch?: { id: number; createdAt: string } | null;
@@ -191,6 +210,10 @@ export const questionBankAdminApi = {
       .post<QuestionBankItem>(`/admin/question-bank/${id}/reject`, { notes })
       .then((response) => response.data),
 
+  savedLibrary: () =>
+    api
+      .get<SavedQuestionGrade[]>("/admin/question-bank/library")
+      .then((r) => r.data),
   batches: () =>
     api
       .get<{ id: number; createdAt: string; count: number }[]>(

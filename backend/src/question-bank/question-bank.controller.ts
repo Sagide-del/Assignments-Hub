@@ -71,6 +71,11 @@ export class QuestionBankAdminController {
     return this.questionBank.listSources(actor);
   }
 
+  @Get("library")
+  library(@CurrentUser() actor: AuthenticatedUser) {
+    return this.questionBank.savedLibrary(actor);
+  }
+
   @Get("batches")
   batches(@CurrentUser() actor: AuthenticatedUser) {
     return this.questionBank.listBatches(actor);

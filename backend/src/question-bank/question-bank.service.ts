@@ -354,6 +354,107 @@ export class QuestionBankService {
     }));
   }
 
+  async savedLibrary(actor: AuthenticatedUser) {
+    this.assertPlatformAdmin(actor);
+    const { groups, published, batches } = await this.prisma.$transaction(
+      async (tx) => {
+        const groups = await tx.questionBank.groupBy({
+          by: ["grade", "subject", "batchId", "status"],
+          orderBy: { grade: "asc" },
+          where: { isGlobal: true },
+          _count: { _all: true },
+        });
+        const published = await tx.questionBank.groupBy({
+          by: ["grade", "subject", "batchId"],
+          orderBy: { grade: "asc" },
+          where: {
+            isGlobal: true,
+            OR: [
+              { publishedAssignment: { isPublished: true } },
+              {
+                usages: {
+                  some: {
+                    assignment: {
+                      isPublished: true,
+                      createdBy: { role: "PLATFORM_ADMIN" },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+          _count: { _all: true },
+        });
+        const batches = await tx.questionGenerationBatch.findMany({
+          select: { id: true, createdAt: true },
+        });
+        return { groups, published, batches };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
+    const dates = new Map(batches.map((b) => [b.id, b.createdAt]));
+    return [6, 7, 8, 9, 10, 11, 12].map((n) => {
+      const grade = `Grade ${n}`;
+      const saved = new Map<
+        string,
+        {
+          batchId: number | null;
+          createdAt: Date | null;
+          subject: string;
+          total: number;
+          approved: number;
+          drafts: number;
+          rejected: number;
+          published: number;
+        }
+      >();
+      for (const row of groups.filter(
+        (g) => normalizeGrade(g.grade) === grade,
+      )) {
+        const key = JSON.stringify([
+          row.batchId,
+          row.subject.trim().toLowerCase(),
+        ]);
+        const entry = saved.get(key) ?? {
+          batchId: row.batchId,
+          createdAt: dates.get(row.batchId!) ?? null,
+          subject: row.subject.trim(),
+          total: 0,
+          approved: 0,
+          drafts: 0,
+          rejected: 0,
+          published: 0,
+        };
+        entry.total += row._count._all;
+        if (row.status === "APPROVED") entry.approved += row._count._all;
+        if (row.status === "GENERATED") entry.drafts += row._count._all;
+        if (row.status === "REJECTED") entry.rejected += row._count._all;
+        saved.set(key, entry);
+      }
+      for (const row of published.filter(
+        (g) => normalizeGrade(g.grade) === grade,
+      )) {
+        const entry = saved.get(
+          JSON.stringify([row.batchId, row.subject.trim().toLowerCase()]),
+        );
+        if (entry) entry.published += row._count._all;
+      }
+      const rows = [...saved.values()].sort(
+        (a, b) =>
+          (b.batchId ?? 0) - (a.batchId ?? 0) ||
+          a.subject.localeCompare(b.subject),
+      );
+      return {
+        grade,
+        total: rows.reduce((n, b) => n + b.total, 0),
+        approved: rows.reduce((n, b) => n + b.approved, 0),
+        drafts: rows.reduce((n, b) => n + b.drafts, 0),
+        published: rows.reduce((n, b) => n + b.published, 0),
+        batches: rows,
+      };
+    });
+  }
+
   async listAdmin(actor: AuthenticatedUser, query: ListQuestionBankDto) {
     this.assertPlatformAdmin(actor);
     const skip = Math.max(query.skip ?? 0, 0);
@@ -493,6 +594,7 @@ export class QuestionBankService {
   private adminQuestionFilters(
     query: QuestionApprovalFiltersDto,
   ): Prisma.QuestionBankWhereInput {
+    const grade = normalizeGrade(query.grade);
     return {
       isGlobal: true,
       batchId: query.batchId,
@@ -500,7 +602,12 @@ export class QuestionBankService {
         ? { equals: query.subject, mode: "insensitive" }
         : undefined,
       grade: query.grade
-        ? { equals: query.grade, mode: "insensitive" }
+        ? grade
+          ? {
+              in: [grade, grade.replace(/ /g, ""), grade.replace("Grade ", "")],
+              mode: "insensitive",
+            }
+          : { equals: query.grade, mode: "insensitive" }
         : undefined,
       topic: query.topic
         ? { contains: query.topic, mode: "insensitive" }

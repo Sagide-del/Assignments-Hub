@@ -13,6 +13,8 @@ export class ContentCapabilitiesController {
       await this.prisma.mnemonicCard.findFirst({
         select: { content: true, sourceDocumentId: true },
       });
+      await this.prisma.questionGenerationBatch.count();
+      await this.prisma.questionBank.findFirst({ select: { batchId: true } });
       await this.prisma.curriculumScope.count();
       await this.prisma.collectionAsset.count();
       const snapshot = JSON.parse(
@@ -29,6 +31,9 @@ export class ContentCapabilitiesController {
       return {
         centralContentVersion: 3,
         practiceBatchSize: 30,
+        savedQuestionLibrary: true,
+        numberedQuestionBatches: true,
+        questionPublication: true,
         nativeRecallCards: true,
         gradeLevels: [6, 7, 8, 9, 10, 11, 12],
         bulkCurriculum: true,

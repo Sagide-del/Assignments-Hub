@@ -1,3 +1,4 @@
+import { SavedQuestionLibrary } from "./SavedQuestionLibrary";
 import { CreateContentWorkspace } from "./CreateContentWorkspace";
 import { CurriculumIngestion } from "./CurriculumIngestion";
 import { useEffect, useState } from "react";
@@ -49,7 +50,7 @@ export function QuestionBankManagement() {
     view =
       params.get("view") === "coverage"
         ? "create"
-        : (params.get("view") ?? "questions"),
+        : (params.get("view") ?? "library"),
     client = useQueryClient();
   const [batchFilter, setBatchFilter] = useState(
     params.get("batch") ?? "LATEST",
@@ -73,7 +74,7 @@ export function QuestionBankManagement() {
       timeZone: "Africa/Nairobi",
     }).format(new Date(date));
   const [grade, setGrade] = useState(params.get("grade") ?? ""),
-    [subject, setSubject] = useState(""),
+    [subject, setSubject] = useState(params.get("subject") ?? ""),
     [topic, setTopic] = useState(""),
     [status, setStatus] = useState(
       params.get("status") === "APPROVED" ? "APPROVED" : "GENERATED",
@@ -100,6 +101,11 @@ export function QuestionBankManagement() {
     before: string;
     count: number;
     excludedIds: number[];
+  } | null>(null);
+  const [batchPublication, setBatchPublication] = useState<{
+    grade: string;
+    batchId: number;
+    subject: string;
   } | null>(null);
   const [selectAllApprovedRequested, setSelectAllApprovedRequested] =
     useState(false);
@@ -141,7 +147,8 @@ export function QuestionBankManagement() {
       grades.includes(requestedGrade)
     ) {
       setGrade(requestedGrade);
-      setSubject("");
+      setSubject(params.get("subject") ?? "");
+      if (params.has("batch")) setBatchFilter(params.get("batch")!);
       setTopic("");
       setStatus(params.get("status") === "APPROVED" ? "APPROVED" : "GENERATED");
       setPage(0);
@@ -225,15 +232,67 @@ export function QuestionBankManagement() {
     list.isFetching,
     list.isError,
   ]);
+  useEffect(() => {
+    if (
+      !batchPublication ||
+      view !== "questions" ||
+      grade !== batchPublication.grade ||
+      batchId !== batchPublication.batchId ||
+      subject !== batchPublication.subject ||
+      status !== "APPROVED" ||
+      list.isFetching
+    )
+      return;
+    if (list.isError) {
+      setBatchPublication(null);
+      setNotice(
+        "Could not load this saved batch for publication. Please retry from Saved library.",
+      );
+      return;
+    }
+    if (!list.data?.selectionBefore) return;
+    setSelected([]);
+    setAllApproved(
+      list.data.total
+        ? {
+            before: list.data.selectionBefore,
+            count: list.data.total,
+            excludedIds: [],
+          }
+        : null,
+    );
+    setBatchPublication(null);
+    setNotice(
+      list.data.total
+        ? `Batch ${batchPublication.batchId}: ${list.data.total} approved questions selected for ${grade} · ${subject}. Choose schools or independent learners, then publish.`
+        : "This batch has no approved questions yet. Review and approve them first.",
+    );
+  }, [
+    batchPublication,
+    view,
+    grade,
+    batchId,
+    subject,
+    status,
+    list.isFetching,
+    list.isError,
+    list.data,
+  ]);
   const error = (e: unknown) =>
     setNotice(apiErrorMessage(e, "The operation could not be completed."));
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ["question-bank-admin"] });
     void client.invalidateQueries({ queryKey: ["question-bank-batches"] });
+    void client.invalidateQueries({ queryKey: ["saved-question-library"] });
     void client.invalidateQueries({ queryKey: ["content-library"] });
   };
   const changeView = (value: string) => {
-    setParams({ view: value });
+    setParams({
+      view: value,
+      ...(params.get("grade") || grade
+        ? { grade: params.get("grade") || grade }
+        : {}),
+    });
     setLegacy(false);
   };
   const review = useMutation({
@@ -406,7 +465,14 @@ export function QuestionBankManagement() {
     onSuccess: refresh,
     onError: error,
   });
-  const publicationJob = overview.data?.jobs.find(
+  const jobGrade = params.get("grade") ?? "";
+  const visibleJobs = (overview.data?.jobs ?? []).filter(
+    (job) => !jobGrade || !job.input.grade || job.input.grade === jobGrade,
+  );
+  const queueSubjects = (overview.data?.queue?.subjects ?? []).filter(
+    (row) => !jobGrade || row.grade === jobGrade,
+  );
+  const publicationJob = visibleJobs.find(
     (job) => job.kind === "PUBLISH_CONTENT",
   );
   const sources = overview.data?.sources ?? [],
@@ -444,7 +510,8 @@ export function QuestionBankManagement() {
     !c.issue;
   const confirmedCandidates = candidates.filter(isConfirmed);
   const tabs = [
-    ["questions", "Questions", BookMarked],
+    ["library", "Saved library", BookMarked],
+    ["questions", "Review questions", FileSearch],
     ["create", "Create content", Layers],
     ["jobs", "Content jobs", Clock],
     ["cards", "Memory cards", Brain],
@@ -462,15 +529,44 @@ export function QuestionBankManagement() {
             schools.
           </p>
         </div>
-        {view !== "create" && (
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-medium text-white"
-            onClick={() => changeView("create")}
+            type="button"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
+            disabled={
+              bulkApproval.isPending ||
+              publish.isPending ||
+              selectAllApprovedRequested
+            }
+            onClick={() => {
+              setBatchPublication(null);
+              setParams({ view: "questions" });
+              setSelected([]);
+              setAllApproved(null);
+              setBatchFilter("");
+              setGrade("");
+              setSubject("");
+              setTopic("");
+              setStatus("APPROVED");
+              setPage(0);
+              setSelectAllApprovedRequested(true);
+            }}
           >
-            <Plus size={16} />
-            Generate content
+            <Check size={16} aria-hidden="true" />
+            {selectAllApprovedRequested
+              ? "Selecting approved questions…"
+              : "Select all approved questions"}
           </button>
-        )}
+          {view !== "create" && (
+            <button
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-medium text-white"
+              onClick={() => changeView("create")}
+            >
+              <Plus size={16} />
+              Generate content
+            </button>
+          )}
+        </div>
       </header>
       <nav
         className="flex gap-1 overflow-x-auto border-b"
@@ -487,41 +583,6 @@ export function QuestionBankManagement() {
           </button>
         ))}
       </nav>
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-white p-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Bulk publishing</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Select every approved question across all grades, subjects and
-            pages, then choose who receives it.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-          disabled={
-            bulkApproval.isPending ||
-            publish.isPending ||
-            selectAllApprovedRequested
-          }
-          onClick={() => {
-            setParams({ view: "questions" });
-            setSelected([]);
-            setAllApproved(null);
-            setBatchFilter("");
-            setGrade("");
-            setSubject("");
-            setTopic("");
-            setStatus("APPROVED");
-            setPage(0);
-            setSelectAllApprovedRequested(true);
-          }}
-        >
-          <Check size={16} aria-hidden="true" />
-          {selectAllApprovedRequested
-            ? "Selecting approved questions…"
-            : "Select all approved questions"}
-        </button>
-      </div>
       {(selected.length > 0 || allApproved) && (
         <section
           className="space-y-4 rounded-xl border border-blue-200 bg-white p-5"
@@ -696,7 +757,28 @@ export function QuestionBankManagement() {
           </button>
         </p>
       )}
-      {view === "create" ? (
+      {view === "library" ? (
+        <SavedQuestionLibrary
+          onPublish={(scope) => {
+            setParams({
+              view: "questions",
+              grade: scope.grade,
+              batch: String(scope.batchId),
+              subject: scope.subject,
+              status: "APPROVED",
+            });
+            setGrade(scope.grade);
+            setBatchFilter(String(scope.batchId));
+            setSubject(scope.subject);
+            setStatus("APPROVED");
+            setTopic("");
+            setPage(0);
+            setSelected([]);
+            setAllApproved(null);
+            setBatchPublication(scope);
+          }}
+        />
+      ) : view === "create" ? (
         <CreateContentWorkspace />
       ) : view === "collections" ? (
         <CurriculumIngestion />
@@ -1154,8 +1236,24 @@ export function QuestionBankManagement() {
         </div>
       ) : view === "jobs" ? (
         <section className="overflow-hidden rounded-xl border bg-white">
-          <div className="flex justify-between border-b p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
             <h2 className="font-semibold">Content queue</h2>
+            <select
+              aria-label="Job grade"
+              className={control}
+              value={jobGrade}
+              onChange={(e) =>
+                setParams({
+                  view: "jobs",
+                  ...(e.target.value ? { grade: e.target.value } : {}),
+                })
+              }
+            >
+              <option value="">All grades</option>
+              {grades.map((g) => (
+                <option key={g}>{g}</option>
+              ))}
+            </select>
             <button onClick={refresh} className="text-sm">
               <RefreshCw size={16} className="mr-2 inline" />
               Refresh
@@ -1237,7 +1335,7 @@ export function QuestionBankManagement() {
                 reuse existing work. You can leave this page safely.
               </p>
               <div className="divide-y divide-slate-100">
-                {overview.data.queue.subjects.map((row) => {
+                {queueSubjects.map((row) => {
                   const total =
                     row.queued + row.running + row.completed + row.failed;
                   const percent = total
@@ -1290,13 +1388,11 @@ export function QuestionBankManagement() {
               </div>
             </div>
           )}
-          <details
-            open={!!overview.data?.jobs.some((job) => job.status === "FAILED")}
-          >
+          <details open={visibleJobs.some((job) => job.status === "FAILED")}>
             <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-slate-600">
               Recent job details (latest 100)
             </summary>
-            {(overview.data?.jobs ?? []).map((job) => (
+            {visibleJobs.map((job) => (
               <article
                 key={job.id}
                 className="flex flex-wrap justify-between gap-3 border-b p-5 text-sm"
@@ -1371,9 +1467,9 @@ export function QuestionBankManagement() {
               </article>
             ))}
           </details>
-          {!overview.data?.jobs.length && (
+          {!visibleJobs.length && (
             <p className="p-10 text-sm text-slate-500">
-              No generation jobs yet.
+              No saved jobs for {jobGrade || "these grades"} yet.
             </p>
           )}
         </section>
