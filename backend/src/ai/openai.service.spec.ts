@@ -57,4 +57,20 @@ describe("DeepSeek request bounds and SDK backoff", () => {
     });
     expect(calls).toBe(1);
   });
+  it.each([
+    [402, "INSUFFICIENT_BALANCE"],
+    [400, "INVALID_REQUEST"],
+    [404, "INVALID_REQUEST"],
+    [422, "INVALID_REQUEST"],
+  ])(
+    "classifies HTTP %i without retrying an unchanged request",
+    async (httpStatus, reason) => {
+      status = httpStatus as number;
+      await expect(service.generateAssignment("test")).rejects.toMatchObject({
+        reason,
+        retryable: false,
+      });
+      expect(calls).toBe(1);
+    },
+  );
 });

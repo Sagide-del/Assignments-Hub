@@ -1,10 +1,17 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { AiUsageStatus } from '@prisma/client';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from "@nestjs/common";
+import { AiUsageStatus } from "@prisma/client";
 
-import { AiUsageService } from './ai-usage.service';
-import { OpenaiService } from './openai.service';
-import { AiProviderError } from './errors/ai-provider.error';
-import { AiGenerationResult } from './interfaces/ai-provider.interface';
+import { AiUsageService } from "./ai-usage.service";
+import { OpenaiService } from "./openai.service";
+import {
+  AiProviderError,
+  AiProviderErrorReason,
+} from "./errors/ai-provider.error";
+import { AiGenerationResult } from "./interfaces/ai-provider.interface";
 
 /**
  * Optional caller context, used only for AI usage logging (AiUsageService).
@@ -80,13 +87,15 @@ export class AiProviderRouterService {
         err instanceof AiProviderError
           ? err
           : new AiProviderError(
-              'OPENAI',
-              'UNKNOWN',
-              (err as Error)?.message || 'Unknown AI provider error',
+              "OPENAI",
+              "UNKNOWN",
+              (err as Error)?.message || "Unknown AI provider error",
               false,
             );
 
-      this.logger.warn(`DeepSeek generation failed (${aiError.reason}): ${aiError.message}`);
+      this.logger.warn(
+        `DeepSeek generation failed (${aiError.reason}): ${aiError.message}`,
+      );
 
       void this.aiUsageService.record({
         schoolId: context?.schoolId,
@@ -96,8 +105,24 @@ export class AiProviderRouterService {
         errorMessage: `${aiError.reason}: ${aiError.message}`,
       });
 
+      const guidance: Record<AiProviderErrorReason, string> = {
+        INSUFFICIENT_BALANCE:
+          "DeepSeek reported insufficient account credit. The platform administrator must top up the DeepSeek account before retrying this saved job.",
+        NOT_CONFIGURED:
+          "DeepSeek is not configured or rejected the API credentials. The platform administrator must check DEEPSEEK_API_KEY before retrying.",
+        INVALID_REQUEST:
+          "DeepSeek rejected the generation request. The platform administrator must check DEEPSEEK_MODEL and request settings. Retrying unchanged jobs will not resolve this.",
+        RATE_LIMITED:
+          "DeepSeek rate-limited this request after automatic retries. Wait before retrying the saved job.",
+        UNAVAILABLE:
+          "DeepSeek could not be reached or timed out after automatic retries. Retry the saved job later.",
+        INVALID_RESPONSE:
+          "DeepSeek returned an empty or invalid JSON response. Retry this saved job; repeated failures require checking the model and response settings.",
+        UNKNOWN:
+          "DeepSeek generation failed for an unclassified reason. The platform administrator must inspect the backend provider error log before retrying multiple jobs.",
+      };
       throw new ServiceUnavailableException(
-        `AI assignment generation is temporarily unavailable (${aiError.reason}). Please try again shortly.`,
+        `AI generation failed (${aiError.reason}). ${guidance[aiError.reason]}`,
       );
     }
   }

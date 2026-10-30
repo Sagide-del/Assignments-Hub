@@ -58,7 +58,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
           NODE_OPTIONS: --max-old-space-size=3072
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
       - name: Wait for assessment API capabilities
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs

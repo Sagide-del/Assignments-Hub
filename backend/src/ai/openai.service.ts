@@ -124,10 +124,21 @@ export class OpenaiService implements AiProviderService {
     if (status === 401 || status === 403) {
       return new AiProviderError("OPENAI", "NOT_CONFIGURED", message, false);
     }
+    if (status === 402) {
+      return new AiProviderError(
+        "OPENAI",
+        "INSUFFICIENT_BALANCE",
+        message,
+        false,
+      );
+    }
+    if ([400, 404, 422].includes(status ?? 0)) {
+      return new AiProviderError("OPENAI", "INVALID_REQUEST", message, false);
+    }
     if (status === 429) {
       return new AiProviderError("OPENAI", "RATE_LIMITED", message);
     }
-    if (status !== undefined && status >= 500) {
+    if (status === 408 || (status !== undefined && status >= 500)) {
       return new AiProviderError("OPENAI", "UNAVAILABLE", message);
     }
     if (status === undefined) {
