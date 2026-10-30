@@ -46,6 +46,13 @@ jobs:
         working-directory: frontend
         env:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
+      - name: Save frontend build for deployment recovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: frontend/dist/
+          if-no-files-found: error
+          retention-days: 7
       - name: Verify assessment backend
         working-directory: backend
         env:
@@ -76,9 +83,26 @@ jobs:
           role-to-assume: arn:aws:iam::516962256415:role/AssignmentHubGitHubFrontendDeploy
           aws-region: eu-west-2
       - name: Publish and verify frontend
+        id: publish
         run: bash scripts/deployment/publish-frontend.sh
         env:
           FRONTEND_DIST: frontend/dist
       - name: Verify first-aid images
         run: npm run check:firstaid-assets -- https://assignmenthub.co.ke
         working-directory: frontend
+      - name: Report deployment result
+        if: always()
+        env:
+          DEPLOY_COMMIT: ${{ github.sha }}
+          DEPLOY_OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          {
+            echo "## Frontend deployment"
+            echo "Commit: $DEPLOY_COMMIT"
+            if [ "$DEPLOY_OUTCOME" = "success" ]; then
+              echo "The public homepage was verified against this build after the CloudFront invalidation."
+            else
+              echo "This run did not verify a completed live deployment. A successful build or push alone does not update the site."
+              echo "Open the first failed step above for the error. If the frontend build succeeded, its recovery artifact is attached to this run."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
