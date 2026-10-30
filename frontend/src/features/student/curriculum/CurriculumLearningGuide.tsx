@@ -39,9 +39,7 @@ export function CurriculumLearningGuide() {
     <div className="space-y-5">
       <header className="border-b border-slate-200 pb-5">
         <h2 className="text-xl font-semibold">Learning guide</h2>
-        <p className="mt-2 text-sm text-slate-500">
-          Find activity outcomes and keep a record of your work.
-        </p>
+
       </header>
       <LearningActivities key={user?.id} />
       <SavedEvidence key={`reviews-${user?.id}`} />
@@ -173,12 +171,9 @@ function LearningActivities() {
     <section aria-label="Learning outcome explorer" className="space-y-4">
       <div>
         <h2 className="text-xl font-semibold">
-          Find an outcome to work towards
+          Learning activities
         </h2>
-        <p className="mt-2 text-sm leading-7 text-slate-600">
-          Activity goals for content available to your account. These are
-          learning intentions, not claims that a competency has been mastered.
-        </p>
+        <details className="mt-2 text-xs text-slate-500"><summary className="inline-flex min-h-8 cursor-pointer items-center">About these activities</summary><p className="mt-2 max-w-2xl leading-6">Activity goals for content available to your account. These are learning intentions, not claims that a competency has been mastered.</p></details>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="text-xs font-semibold text-slate-600">

@@ -24,8 +24,6 @@ import {
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
 import { StudentStudyPlan } from './StudentStudyPlan';
 
-const RESOURCE_PURPOSE: Record<ResourceListingType,string> = { NOTES:'Understand key ideas, then explain them in your own words.', ESSAY:'Study an argument and practise expressing your own reasoning.', REVISION_GUIDE:'Identify a gap, try a focused task and check your correction.', STUDY_GUIDE:'Plan an outcome, practise it and review your evidence.', TOOLKIT:'Apply an idea through a practical task using appropriate supervision.' };
-
 const TYPES: Array<{ value: ResourceListingType | 'ALL'; label: string }> = [
   { value: 'ALL', label: 'All' },
   { value: 'NOTES', label: 'Notes' },
@@ -99,7 +97,7 @@ export function MyResourcesPage() {
 
   return (
     <div className="min-w-0 space-y-4 pb-12 sm:space-y-5">
-      <PageHeader title="My Resources" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : view==='GUIDE' ? 'Outcomes, evidence and official resources' : 'Personal study plan'} />
+      <PageHeader title="My Resources" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : undefined} />
 
       <nav aria-label="Resource sections" className="grid grid-cols-2 gap-1 rounded-2xl sm:grid-cols-4 border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)]">
           <ViewButton active={view === 'GUIDE'} onClick={() => setView('GUIDE')} icon={BookOpenCheck} label="Learning guide" />
@@ -149,7 +147,7 @@ export function MyResourcesPage() {
 }
 
 function ViewButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof ShoppingBag; label: string }) {
-  return <button type="button" onClick={onClick} className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[11px] font-semibold leading-4 transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${active ? 'bg-[#101820] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#B5E61D]' : ''}`} strokeWidth={1.8} /><span className="max-w-full truncate">{label}</span></button>;
+  return <button type="button" onClick={onClick} aria-pressed={active} className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[11px] font-semibold leading-4 transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${active ? 'bg-[#101820] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#B5E61D]' : ''}`} strokeWidth={1.8} /><span className="max-w-full truncate">{label}</span></button>;
 }
 
 function ResourceCard({ resource, owned, onSelect, onDownload }: { resource: ResourceListing; owned: boolean; onSelect: () => void; onDownload: () => void }) {
@@ -161,10 +159,10 @@ function ResourceCard({ resource, owned, onSelect, onDownload }: { resource: Res
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#101820]"><Icon className="h-5 w-5" strokeWidth={1.75} /></div>
         <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{textLabel(resource.type)}</span>
       </div>
-      <h2 className="mt-3 break-words text-base font-semibold leading-6 text-[#101820] sm:mt-4">{resource.title}</h2>
+      <h2 title={resource.title} className="mt-3 line-clamp-2 break-words text-base font-semibold leading-6 text-[#101820] sm:mt-4">{resource.title}</h2>
       <p className="mt-1 break-words text-xs leading-5 text-slate-500">{[resource.subject, resource.grade, resource.seller.name].filter(Boolean).join(' · ')}</p>
       {resource.description ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">{resource.description}</p> : null}
-      <p className="mt-3 rounded-xl bg-teal-50 p-3 text-xs leading-6 text-teal-950"><strong>Use it to learn:</strong> {RESOURCE_PURPOSE[resource.type]}</p>
+
       <div className="mt-auto flex flex-col gap-3 pt-4 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
         <span className="text-sm font-semibold text-[#101820]">{priceLabel(resource.priceKES)}</span>
         {owned && resource.fulfillment === 'DIGITAL_DOWNLOAD' ? (

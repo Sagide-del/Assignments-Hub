@@ -1,3 +1,4 @@
+import "../workspace.css";
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -99,7 +100,8 @@ function iconForNavigation(path: string): LucideIcon {
     return GraduationCap;
   if (path.includes("my-pathway") || path.includes("pathways")) return Compass;
   if (path.includes("messages")) return MessageCircle;
-  if (path.includes("question-bank") || path.includes("curriculum-library")) return BookMarked;
+  if (path.includes("question-bank") || path.includes("curriculum-library"))
+    return BookMarked;
   if (path.includes("marking") || path.includes("csl-review"))
     return BookOpenCheck;
   if (path.includes("analytics") || path.includes("reports")) return BarChart3;
@@ -241,7 +243,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-80 max-w-[85vw] flex-col text-white transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-auto md:h-screen md:w-64 md:shrink-0 md:max-w-none md:translate-x-0 md:border-r md:border-white/10 ${
+        className={`workspace-sidebar fixed inset-y-0 left-0 z-40 flex w-80 max-w-[85vw] flex-col text-white transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-auto md:h-screen md:w-64 md:shrink-0 md:max-w-none md:translate-x-0 md:border-r md:border-white/10 ${
           mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
         style={{ backgroundColor: "var(--school-primary, #101820)" }}
@@ -276,8 +278,10 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-5">
-          <SidebarSectionLabel>Navigation</SidebarSectionLabel>
-          <nav className="mt-3 space-y-1">
+          {!isStudentPortal && (
+            <SidebarSectionLabel>Navigation</SidebarSectionLabel>
+          )}
+          <nav aria-label="Workspace navigation" className="mt-3 space-y-1">
             {visibleNav.map((item) => {
               const Icon = iconForNavigation(item.to);
               return (
@@ -292,7 +296,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                   onClick={() => setMobileNavOpen(false)}
                   className={({ isActive }) =>
                     [
-                      "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors duration-150",
+                      "group flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors duration-150",
                       isActive
                         ? "text-white"
                         : "text-white/72 hover:bg-white/7 hover:text-white",
@@ -348,8 +352,12 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                 .find(
                   (item) =>
                     location.pathname === item.to ||
-                    location.pathname.startsWith(item.to + "/"),
-                )?.label ?? "Overview"}
+                    (item.to !== "/student" &&
+                      location.pathname.startsWith(item.to + "/")),
+                )?.label ??
+                (location.pathname.startsWith("/student/assignments/")
+                  ? "My Assignments"
+                  : "Overview")}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -369,7 +377,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
             </span>
           </div>
         </div>
-        <main className="min-w-0 flex-1 p-4 md:p-8 lg:px-10">
+        <main className="workspace-content min-w-0 flex-1 p-4 md:p-8 lg:px-10">
           <Outlet />
         </main>
         {!isStudentPortal ? <Footer /> : null}

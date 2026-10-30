@@ -354,7 +354,7 @@ export default function TitrationPractical({
             Acid–base titration
           </h1>
           <p className="mt-2 text-xs text-slate-500">
-            {lab.grade} · Chemistry · Interactive 3D practical
+            {lab.grade} · Chemistry
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

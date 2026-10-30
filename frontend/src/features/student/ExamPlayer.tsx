@@ -1,3 +1,4 @@
+import { learningTitle } from "./assignment-presentation";
 import { ReleasedReview } from "./ReleasedReview";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -535,7 +536,7 @@ function ExamWorkspace() {
                 className="truncate text-base font-semibold text-slate-900"
                 title={assignment.title}
               >
-                {assignment.title}
+                {learningTitle(assignment.title, assignment.subject).title}
               </h1>
               <p className="mt-1 text-xs text-slate-500">
                 {assignment.subject} · {assignmentMaxPoints} marks ·{" "}

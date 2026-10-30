@@ -307,7 +307,7 @@ export function StudentDashboard() {
           </h1>
           <p className="mt-2 text-sm text-slate-500">
             Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
-            Here’s your learning overview.
+
           </p>
         </div>
         <Link
@@ -569,9 +569,7 @@ export function StudentDashboard() {
               <Wrench size={19} className="text-blue-700" aria-hidden="true" />
               Quick tools
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Open your study workspace
-            </p>
+
           </div>
           <div className="space-y-2 p-3">
             {(user?.isIndependentTrial ? [] : TOOLS).map(

@@ -60,7 +60,7 @@ export function MessagesInbox({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="News/Messages"
+        title="Messages"
         meta={pageMeta}
       />
 

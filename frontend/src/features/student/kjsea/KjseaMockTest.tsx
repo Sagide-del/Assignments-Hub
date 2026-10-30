@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../components/ui/Saas";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
@@ -124,31 +125,14 @@ export function KjseaMockTestPage() {
     );
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
-          <p className="mb-2 text-xs font-medium text-slate-500">
-            Assessments / Mock tests
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Sit a timed paper. Answers save as you go; hand in for marks, an
-            estimated performance level (EE1–BE2), and every answer explained.
-          </p>
-        </div>
-        <span className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs font-medium text-slate-600">
-          <GraduationCap className="h-4 w-4" />
-          {grade}
-        </span>
-      </header>
+      <PageHeader title={title} actions={<span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500"><GraduationCap size={15} aria-hidden="true"/>{grade}</span>} />
       <section
         className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"
         aria-label="Generate a mock test"
       >
         <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-7">
           <h2 className="text-lg font-semibold">Create a timed mock exam</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Choose your grade, subject and timing.
-          </p>
+
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <label className="text-sm font-medium" htmlFor="mock-grade">
               Grade

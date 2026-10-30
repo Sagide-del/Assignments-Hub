@@ -214,7 +214,7 @@ export default function PracticalWorkshop({
             {lab.title}
           </h1>
           <p className="mt-2 text-xs text-slate-500">
-            {lab.grade} · {lab.subject} · Interactive 3D workspace
+            {lab.grade} · {lab.subject}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

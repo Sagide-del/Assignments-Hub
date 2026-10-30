@@ -1,3 +1,4 @@
+import { PageHeader } from "../../components/ui/Saas";
 import { learningTitle } from "./assignment-presentation";
 import { subjectAppearance } from "./subject-appearance";
 import { LearningTitle, FullLearningTitle } from "./LearningTitle";
@@ -443,21 +444,7 @@ export function MyAssignmentsPage() {
       : groups.length;
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-6">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-            My Assignments
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Choose a subject, explore its topics, then open an assignment.
-          </p>
-        </div>
-        {user?.grade && (
-          <span className="rounded-lg border bg-white px-3 py-2 text-xs font-medium text-slate-600">
-            {user.grade}
-          </span>
-        )}
-      </header>
+      <PageHeader title="My Assignments" actions={user?.grade ? <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{user.grade}</span> : null} />
       <nav
         aria-label="Assignment breadcrumb"
         className="flex flex-wrap items-center gap-2 text-xs"

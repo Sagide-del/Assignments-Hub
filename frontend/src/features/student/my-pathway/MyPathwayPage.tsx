@@ -36,6 +36,7 @@ export function MyPathwayPage() {
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
+              aria-pressed={tab === t.key}
               className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
                 tab === t.key ? 'bg-[#101820] text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-[#101820]'
               }`}

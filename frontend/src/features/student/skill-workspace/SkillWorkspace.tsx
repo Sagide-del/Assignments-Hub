@@ -117,9 +117,7 @@ function Workspace({
           <h1 className="mt-1 break-words text-xl font-semibold text-[#101820] sm:text-2xl">
             {course.title}
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Beginner learning path · Read, practise, check and reflect
-          </p>
+
         </div>
         <Link
           to={`/student/learn-skills/${course.id}`}

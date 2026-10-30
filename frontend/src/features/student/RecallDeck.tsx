@@ -20,7 +20,7 @@ export function RecallDeck({ cards }: { cards: MnemonicCard[] }) {
               Card {current + 1} of {cards.length}
             </p>
             <p className="mt-0.5 text-xs text-slate-500">
-              Illustrated study cards · {card.grade}
+               {card.grade}
             </p>
           </div>
         </div>

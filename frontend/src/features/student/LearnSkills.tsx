@@ -1,3 +1,4 @@
+import { PageHeader } from "../../components/ui/Saas";
 import { useMemo, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -149,16 +150,9 @@ export function LearnSkillsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-10">
-      <header className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">Learn a Skill</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Your courses, practical lessons and saved work.
-          </p>
-        </div>
-      </header>
+      <PageHeader title="Learn a Skill" />
 
-      {!loading && !error ? (
+      {!loading && !error && (myLearning.length > 0 || completed.length > 0) ? (
         <>
           <section className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Learning summary">
             <LearningStat
@@ -370,9 +364,7 @@ export function LearnSkillsPage() {
           ))}
         </section>
       )}
-      <p className="text-xs leading-5 text-slate-500">
-        Progress reflects recorded lesson completion. It is not a skills assessment or certification.
-      </p>
+
     </div>
   );
 }
@@ -541,13 +533,9 @@ function CourseCard({ item }: { item: LearningCourse }) {
                 ? 'Your enrollment request is awaiting review.'
                 : 'Open your enrollment details to check access.'}
           </p>
-        ) : (
-          <p className="mb-4 text-xs text-slate-500">
-            {access
-              ? 'Ready when you are. Open your first lesson.'
-              : 'Check course access before requesting enrollment.'}
-          </p>
-        )}
+        ) : !access ? (
+          <p className="mb-4 text-xs text-slate-500">Check course access before requesting enrollment.</p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-3">
           <Link
             to={destination}

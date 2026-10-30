@@ -1,3 +1,4 @@
+import { PageHeader } from "../../components/ui/Saas";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -163,22 +164,7 @@ export function StemLabsPage() {
   );
   return (
     <div className="mx-auto max-w-6xl space-y-6 text-slate-800">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
-          <p className="text-xs font-medium text-slate-500">
-            Practical learning workspace
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            STEM Labs
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
-            Pick up equipment, build a model and test your ideas.
-          </p>
-        </div>
-        <span className="rounded-lg border bg-white px-3 py-2 text-xs text-slate-600">
-          {user?.grade} · {labs.length} practicals
-        </span>
-      </header>
+      <PageHeader title="STEM Labs" actions={<span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{user?.grade} · {labs.length} practicals</span>} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav
           className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1"
@@ -200,7 +186,7 @@ export function StemLabsPage() {
           ))}
         </nav>
         <span className="text-xs text-slate-500">
-          {complete.size} completed · Grade-scoped activities
+          {complete.size} completed
         </span>
       </div>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_240px]">
@@ -301,10 +287,10 @@ export function StemLabsPage() {
                       <Icon className="h-4 w-4" />
                     </span>
                   </div>
-                  <h2 className="mt-2 text-base font-semibold leading-6">
+                  <h2 title={lab.title} className="mt-2 line-clamp-2 text-base font-semibold leading-6">
                     {lab.title}
                   </h2>
-                  <p className="mt-3 text-xs leading-6 text-slate-500">
+                  <p className="mt-3 line-clamp-2 text-xs leading-6 text-slate-500">
                     {isTitrationKey(lab.key)
                       ? "Prepare glassware, titrate an unknown sample and calculate its concentration."
                       : spec.goal}
@@ -336,11 +322,7 @@ export function StemLabsPage() {
           })}
         </section>
       )}
-      <p className="text-[11px] leading-6 text-slate-500">
-        Virtual practicals support investigation and reflection. Each lab uses
-        the grade assigned by your school or the platform; read its brief for
-        model assumptions and curriculum context.
-      </p>
+
     </div>
   );
 }
