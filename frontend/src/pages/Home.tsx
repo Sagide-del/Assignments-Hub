@@ -1,3 +1,4 @@
+import { HomeProductPreview } from '../components/HomeProductPreview';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BarChart3, BookOpenCheck, CheckCircle2, Clock3, GraduationCap, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { AssignmentHubWordmark } from '../components/ui/Logo';
@@ -135,33 +136,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-xl lg:mx-0">
-              <div className="rounded-[2rem] bg-[#101820] p-5 shadow-[0_30px_80px_rgba(16,24,32,0.22)] sm:p-7">
-                <div className="flex items-center justify-between border-b border-white/10 pb-5">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B5E61D]">Learner workspace</p>
-                    <p className="mt-2 text-xl font-semibold text-white">Today&apos;s learning</p>
-                  </div>
-                  <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200">Grade 10</span>
-                </div>
-                <div className="mt-5 grid gap-3">
-                  <div className="rounded-2xl bg-white p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Mathematics</p><p className="mt-1 font-semibold">Linear equations</p></div>
-                      <span className="rounded-lg bg-[#B5E61D] px-2.5 py-1 text-xs font-bold text-[#101820]">Due today</span>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-white">
-                    <div className="flex items-center justify-between"><span className="text-sm font-semibold">Weekly progress</span><span className="text-sm font-bold">68%</span></div>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[68%] rounded-full bg-[#B5E61D]" /></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-[#B5E61D] p-4"><p className="text-2xl font-bold">4</p><p className="mt-1 text-xs font-semibold">Tasks completed</p></div>
-                    <div className="rounded-2xl bg-white p-4"><p className="text-2xl font-bold">2</p><p className="mt-1 text-xs font-semibold text-slate-500">Need attention</p></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <HomeProductPreview />
           </div>
         </section>
 
