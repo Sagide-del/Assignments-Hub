@@ -29,3 +29,11 @@ Generation failures retain actionable provider guidance in the saved job error. 
 
 
 Illustrated recall-card presentation, automatic diagram metadata, legacy-card compatibility and isolated printing are documented in [illustrated-recall-cards.md](illustrated-recall-cards.md).
+
+### Released assignment review
+
+The assignment player renders `ReleasedReview` only after the existing submission reports `resultsReleasedAt` and the released-results endpoint supplies answer-level data. Unreleased results remain pending and do not fetch the review payload. The review uses a single numbered navigator (collapsible on phones), neutral/amber incorrect states and compact answer rows. Official partial marks and unscored states remain visible.
+
+Known generic feedback is filtered by exact normalized strings; custom notes and actionable numeric guidance remain. Explanations support safe inline bold markers and paragraphs. A stored trailing `Transfer check:`, `Check your understanding:`, `Try this:` or `Retrieval cue:` becomes a separate practice prompt. Only an explicit supplied `Answer:` is revealed as its answer; otherwise the learner can compare reasoning with the original explanation. No answer is invented.
+
+“Hide answers & retry” and transfer responses are local, ungraded practice state. They make no submission, grading or AI calls and do not change the saved result. Navigating to another question resets that question's practice state. Existing timed assessment, draft-saving and release rules remain in the assignment player.
