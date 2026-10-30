@@ -106,7 +106,16 @@ export const contentLibraryApi = {
   retry: (id: string) =>
     api.post(`/admin/content-library/jobs/${id}/retry`).then((r) => r.data),
 };
+export interface RecallVisual {
+  kind: "diagram" | "concept-map" | "process" | "comparison" | "timeline" | "fraction";
+  title: string;
+  template?: "heart" | "lungs" | "plant-cell" | "circuit";
+  labels?: { label: string; detail: string }[];
+  numerator?: number;
+  denominator?: number;
+}
 export interface RecallContent {
+  visual?: RecallVisual;
   version: 1;
   cue: string;
   mnemonic: string;

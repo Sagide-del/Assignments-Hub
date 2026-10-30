@@ -12,6 +12,8 @@ for (let n = 1; n <= 24; n++) {
       d.centralContentVersion !== 3 ||
       d.practiceBatchSize !== 30 ||
       !d.nativeRecallCards ||
+      !Number.isInteger(d.illustratedRecallCardsVersion) ||
+      d.illustratedRecallCardsVersion < 1 ||
       !d.savedQuestionLibrary ||
       !d.numberedQuestionBatches ||
       !d.questionPublication ||

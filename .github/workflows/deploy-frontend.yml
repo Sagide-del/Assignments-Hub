@@ -40,7 +40,7 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - name: Verify learning activities
-        run: npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:assignments && npm run test:revision
+        run: npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
         working-directory: frontend
       - run: npm run build
         working-directory: frontend

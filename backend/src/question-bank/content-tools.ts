@@ -1,3 +1,4 @@
+import { RecallVisual, validateRecallVisual } from "./recall-visual";
 // Structured visuals only: no model-authored SVG, HTML, URLs or executable markup.
 const esc = (s: unknown) =>
   String(s ?? "")
@@ -82,6 +83,7 @@ export function renderQuestionVisual(v: any): string | undefined {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280" role="img" aria-label="${esc(v.caption || "Question diagram")}"><title>${esc(v.caption || "Question diagram")}</title><defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="#64748b"/></marker></defs>${body}${label(260, 275, v.caption || "")}</svg>`;
 }
 export interface RecallContent {
+  visual?: RecallVisual;
   version: 1;
   cue: string;
   mnemonic: string;
@@ -114,6 +116,7 @@ export function validateRecall(v: any, sourceIds: number[]): RecallContent {
     throw new Error("Generated card is incomplete. Retry generation.");
   return {
     version: 1,
+    ...(v.visual != null ? { visual: validateRecallVisual(v.visual) } : {}),
     cue: v.cue.trim(),
     mnemonic: v.mnemonic.trim(),
     explanation: v.explanation.trim(),

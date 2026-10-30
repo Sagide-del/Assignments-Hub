@@ -1,71 +1,119 @@
-import { useState } from "react";
-import { Brain, RotateCcw, CheckCircle2, Eye } from "lucide-react";
+import { useRef, useState } from "react";
+import { RotateCcw, CheckCircle2, Eye, Printer } from "lucide-react";
 import type { MnemonicCard } from "../../types";
-export function RecallCard({ card }: { card: MnemonicCard }) {
+import { RecallSheet } from "./RecallSheet";
+import { printRecallSheet } from "./recall-print";
+export function RecallCard({
+  card,
+  cardNumber,
+}: {
+  card: MnemonicCard;
+  cardNumber?: number;
+}) {
   const [revealed, setRevealed] = useState(false),
     [checked, setChecked] = useState<number[]>([]),
-    [rating, setRating] = useState("");
-  const c = card.content!;
+    [rating, setRating] = useState(""),
+    [printing, setPrinting] = useState(false),
+    [printError, setPrintError] = useState("");
+  const printSheet = useRef<HTMLDivElement>(null),
+    c = card.content!;
   return (
-    <article className="flex flex-col rounded-xl border bg-white p-5">
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span className="inline-flex items-center gap-2">
-          <Brain size={18} className="text-indigo-600" />
-          {card.subject}
-        </span>
-        <span>{card.grade}</span>
-      </div>
-      <h2 className="mt-4 text-lg font-semibold">{card.title}</h2>
-      <p className="mt-3 text-sm leading-7">{c.cue}</p>
-      <p className="mt-2 text-xs text-slate-500">
-        Try answering from memory before revealing the card.
-      </p>
-      {!revealed ? (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-slate-500">
+          {revealed
+            ? "Study the illustration, then cover it and try again."
+            : "Try the question from memory before revealing the labels and notes."}
+        </p>
         <button
-          className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-indigo-700 px-4 text-sm font-medium text-white"
-          onClick={() => setRevealed(true)}
+          disabled={printing}
+          onClick={async () => {
+            if (!printSheet.current) return;
+            setPrinting(true);
+            setPrintError("");
+            try {
+              await printRecallSheet(printSheet.current, card.title);
+            } catch {
+              setPrintError("Could not open the print view. Please try again.");
+            } finally {
+              setPrinting(false);
+            }
+          }}
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border bg-white px-3 text-xs font-semibold disabled:opacity-40"
         >
-          <Eye size={16} />
-          Reveal memory aid
+          <Printer size={15} />
+          {printing ? "Preparing…" : "Print / Save PDF"}
         </button>
-      ) : (
-        <div className="mt-4 space-y-4">
-          <p className="rounded-lg bg-indigo-50 p-4 text-lg font-semibold text-indigo-900">
-            {c.mnemonic}
+      </div>
+      <RecallSheet
+        content={c}
+        title={card.title}
+        grade={card.grade}
+        subject={card.subject}
+        topic={card.topic}
+        cardNumber={cardNumber}
+        reveal={revealed}
+      />
+      <div className="hidden" aria-hidden="true">
+        <div ref={printSheet}>
+          <RecallSheet
+            content={c}
+            title={card.title}
+            grade={card.grade}
+            subject={card.subject}
+            topic={card.topic}
+            cardNumber={cardNumber}
+            reveal
+          />
+        </div>
+      </div>
+      <button
+        onClick={() => {
+          setRevealed((v) => !v);
+          setChecked([]);
+        }}
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white"
+      >
+        <Eye size={17} />
+        {revealed ? "Cover labels & notes" : "Reveal labelled study card"}
+      </button>
+      {revealed && (
+        <section
+          className="rounded-xl border bg-white p-5"
+          aria-label="Check your recall"
+        >
+          <h3 className="text-sm font-semibold">Check your recall</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Answer each question before checking the explanation.
           </p>
-          <dl className="space-y-3">
-            {c.facts.map((f, i) => (
-              <div className="text-sm leading-6" key={i}>
-                <dt className="font-semibold">{f.label}</dt>
-                <dd className="text-slate-600">{f.meaning}</dd>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {c.checks.map((q, i) => (
+              <div key={i} className="rounded-lg border border-slate-200 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-red-600">
+                  {["Retrieve", "Explain", "Apply"][i] ?? `Check ${i + 1}`}
+                </p>
+                <p className="mt-2 text-sm leading-6">{q.question}</p>
+                <button
+                  onClick={() =>
+                    setChecked((v) =>
+                      v.includes(i) ? v.filter((x) => x !== i) : [...v, i],
+                    )
+                  }
+                  className="mt-3 min-h-9 text-xs font-semibold text-blue-700 underline"
+                >
+                  {checked.includes(i) ? "Hide answer" : "Check answer"}
+                </button>
+                {checked.includes(i) && (
+                  <p className="mt-2 border-t pt-3 text-xs leading-6 text-slate-600">
+                    {q.answer}
+                  </p>
+                )}
               </div>
             ))}
-          </dl>
-          <p className="text-sm leading-7 text-slate-600">{c.explanation}</p>
-          <p className="border-t pt-3 text-xs font-semibold uppercase tracking-wide">
-            Check your recall
-          </p>
-          {c.checks.map((q, i) => (
-            <div className="rounded-lg border p-3 text-sm" key={i}>
-              <p>{q.question}</p>
-              <button
-                className="mt-2 text-xs text-indigo-700 underline"
-                onClick={() =>
-                  setChecked((v) =>
-                    v.includes(i) ? v.filter((x) => x !== i) : [...v, i],
-                  )
-                }
-              >
-                {checked.includes(i) ? "Hide answer" : "Check answer"}
-              </button>
-              {checked.includes(i) && (
-                <p className="mt-2 leading-6 text-slate-600">{q.answer}</p>
-              )}
-            </div>
-          ))}
-          <div className="flex flex-wrap gap-2">
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
             <button
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium"
               onClick={() => {
                 setRating("Review again: try the cue without looking.");
                 setRevealed(false);
@@ -76,7 +124,7 @@ export function RecallCard({ card }: { card: MnemonicCard }) {
               Review again
             </button>
             <button
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium"
               onClick={() => {
                 setRating(
                   "Recalled. Try again tomorrow, then after 3, 7 and 14 days. Explain the idea and apply it to a new example.",
@@ -88,13 +136,18 @@ export function RecallCard({ card }: { card: MnemonicCard }) {
               <CheckCircle2 size={15} />I remembered
             </button>
           </div>
-        </div>
+        </section>
       )}
       {rating && (
-        <p role="status" className="mt-3 text-xs text-indigo-700">
+        <p role="status" className="text-xs text-slate-600">
           {rating}
         </p>
       )}
-    </article>
+      {printError && (
+        <p role="alert" className="text-sm text-red-700">
+          {printError}
+        </p>
+      )}
+    </div>
   );
 }

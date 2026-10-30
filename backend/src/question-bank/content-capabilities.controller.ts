@@ -35,6 +35,7 @@ export class ContentCapabilitiesController {
         numberedQuestionBatches: true,
         questionPublication: true,
         nativeRecallCards: true,
+        illustratedRecallCardsVersion: 1,
         gradeLevels: [6, 7, 8, 9, 10, 11, 12],
         bulkCurriculum: true,
         collectionIngestion: true,

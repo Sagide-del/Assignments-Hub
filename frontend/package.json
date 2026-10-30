@@ -16,6 +16,7 @@
     "check:firstaid-assets": "node scripts/check-firstaid-assets.mjs",
     "test:stem": "node --test scripts/stem-investigations.test.mjs scripts/titration.test.mjs scripts/workshop.test.mjs scripts/studio.test.mjs scripts/respiratory.test.mjs scripts/respiratory-traces.test.mjs scripts/science-studios.test.mjs",
     "test:curriculum": "node --test scripts/curriculum.test.mjs",
+    "test:recall": "node --test scripts/recall-visual.test.mjs",
     "test:kjsea": "node --test scripts/kjsea.test.mjs scripts/kjsea-api-contract.test.mjs"
   },
   "dependencies": {

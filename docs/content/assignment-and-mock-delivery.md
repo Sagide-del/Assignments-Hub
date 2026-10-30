@@ -26,3 +26,6 @@ Language mock presentation follows the supplied paper's page layout: a paper mas
 
 
 Generation failures retain actionable provider guidance in the saved job error. DeepSeek HTTP 402 is reported as INSUFFICIENT_BALANCE; HTTP 400/404/422 as INVALID_REQUEST (check the configured model/request); credential rejection as NOT_CONFIGURED; rate limits and temporary/network errors remain distinct. Balance/configuration failures require administrator action and are not represented as problems that a short wait will fix. Provider diagnostics remain in backend logs; public errors use fixed guidance. Historical UNKNOWN messages are not rewritten or guessed: after deployment, retry one saved failed job to obtain its current result before retrying a whole collection. This diagnostic change does not top up an account, alter production credentials/models, or claim to resolve an unobserved provider failure.
+
+
+Illustrated recall-card presentation, automatic diagram metadata, legacy-card compatibility and isolated printing are documented in [illustrated-recall-cards.md](illustrated-recall-cards.md).

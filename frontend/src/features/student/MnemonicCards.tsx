@@ -1,4 +1,4 @@
-import { RecallCard } from "./RecallCard";
+import { RecallDeck } from "./RecallDeck";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { mnemonicCardsApi } from "../../api/mnemonic-cards.api";
@@ -92,58 +92,59 @@ export function MnemonicCardsPage() {
           }
         />
       ) : (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleCards.map((card) =>
-            card.content ? (
-              <RecallCard key={card.id} card={card} />
-            ) : (
-              <article
-                key={card.id}
-                className="group flex min-h-[250px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-              >
-                <div className="relative flex h-20 items-center justify-between overflow-hidden border-b border-slate-100 bg-slate-50 px-5 text-slate-600">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
-                    <PdfIcon />
-                  </span>
-                  <span className="relative rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold">
-                    {card.grade ?? "All grades"}
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                    {card.subject}
-                  </p>
-                  <h2 className="mt-2 text-lg font-semibold leading-7 text-[#101820]">
-                    {card.title}
-                  </h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">
-                    {card.topic}
-                  </p>
-                  {card.description ? (
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-500">
-                      {card.description}
-                    </p>
-                  ) : null}
-                  <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                    <span className="text-xs font-semibold text-slate-400">
-                      {formatFileSize(card.fileSize)}
+        <>
+          <RecallDeck cards={visibleCards.filter((card) => !!card.content)} />
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {visibleCards
+              .filter((card) => !card.content)
+              .map((card) => (
+                <article
+                  key={card.id}
+                  className="group flex min-h-[250px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+                >
+                  <div className="relative flex h-20 items-center justify-between overflow-hidden border-b border-slate-100 bg-slate-50 px-5 text-slate-600">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
+                      <PdfIcon />
                     </span>
-                    <a
-                      href={resolveUploadUrl(card.pdfUrl)}
-                      download={card.fileName}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl bg-[#B5E61D] px-4 py-2.5 text-sm font-semibold text-[#101820] transition hover:bg-[#A8D517]"
-                    >
-                      <DownloadIcon />
-                      Download
-                    </a>
+                    <span className="relative rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold">
+                      {card.grade ?? "All grades"}
+                    </span>
                   </div>
-                </div>
-              </article>
-            ),
-          )}
-        </section>
+                  <div className="flex flex-1 flex-col p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      {card.subject}
+                    </p>
+                    <h2 className="mt-2 text-lg font-semibold leading-7 text-[#101820]">
+                      {card.title}
+                    </h2>
+                    <p className="mt-2 text-sm font-medium text-slate-500">
+                      {card.topic}
+                    </p>
+                    {card.description ? (
+                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-500">
+                        {card.description}
+                      </p>
+                    ) : null}
+                    <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+                      <span className="text-xs font-semibold text-slate-400">
+                        {formatFileSize(card.fileSize)}
+                      </span>
+                      <a
+                        href={resolveUploadUrl(card.pdfUrl)}
+                        download={card.fileName}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#B5E61D] px-4 py-2.5 text-sm font-semibold text-[#101820] transition hover:bg-[#A8D517]"
+                      >
+                        <DownloadIcon />
+                        Download
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              ))}
+          </section>
+        </>
       )}
     </div>
   );

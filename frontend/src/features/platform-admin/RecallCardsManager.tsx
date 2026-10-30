@@ -1,3 +1,6 @@
+import { RecallSheet } from "../student/RecallSheet";
+import { RecallIllustration } from "../student/RecallIllustration";
+import { recallVisual } from "../student/recall-visual";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Brain, Eye, EyeOff, Check, ArrowLeft } from "lucide-react";
@@ -7,43 +10,38 @@ import type { MnemonicCard } from "../../types";
 import type { RecallContent } from "../../api/content-library.api";
 import { MnemonicCardsStudio } from "./MnemonicCardsStudio";
 const field = "w-full rounded-lg border border-slate-200 bg-white p-3 text-sm";
-export function RecallPreview({ content }: { content: RecallContent }) {
+export function RecallPreview({
+  content,
+  title,
+  grade,
+  subject,
+  topic,
+}: {
+  content: RecallContent;
+  title?: string;
+  grade?: string | null;
+  subject?: string;
+  topic?: string;
+}) {
   return (
-    <article className="space-y-4 rounded-xl border border-indigo-100 bg-indigo-50/40 p-5">
-      <p className="text-xs font-semibold uppercase tracking-widest text-indigo-700">
-        Recall cue
-      </p>
-      <h3 className="text-lg font-semibold">{content.cue}</h3>
-      <p className="rounded-lg bg-white p-4 text-lg font-semibold text-indigo-800">
-        {content.mnemonic}
-      </p>
-      <dl className="space-y-2">
-        {content.facts.map((f, i) => (
-          <div
-            key={i}
-            className="grid grid-cols-[minmax(70px,1fr)_3fr] gap-3 text-sm"
-          >
-            <dt className="font-semibold">{f.label}</dt>
-            <dd>{f.meaning}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="text-sm leading-7 text-slate-600">{content.explanation}</p>
-      <div className="border-t pt-3">
-        <p className="text-xs font-semibold uppercase tracking-wide">
-          Test your recall
-        </p>
-        {content.checks.map((c, i) => (
-          <details
-            key={i}
-            className="mt-3 rounded-lg border bg-white p-3 text-sm"
-          >
-            <summary className="cursor-pointer">{c.question}</summary>
-            <p className="mt-3 text-slate-600">{c.answer}</p>
+    <div className="space-y-4">
+      <RecallSheet
+        content={content}
+        title={title}
+        grade={grade}
+        subject={subject}
+        topic={topic}
+      />
+      <section className="rounded-xl border bg-white p-5">
+        <h3 className="text-sm font-semibold">Recall checks</h3>
+        {content.checks.map((check, i) => (
+          <details key={i} className="mt-3 border-t pt-3 text-sm">
+            <summary className="cursor-pointer">{check.question}</summary>
+            <p className="mt-2 leading-6 text-slate-600">{check.answer}</p>
           </details>
         ))}
-      </div>
-    </article>
+      </section>
+    </div>
   );
 }
 export function RecallCardsManager() {
@@ -155,6 +153,162 @@ export function RecallCardsManager() {
                 />
               </label>
             ))}
+            <fieldset className="space-y-3 rounded-lg border p-4">
+              <legend className="px-1 text-xs font-semibold">
+                Illustration
+              </legend>
+              <label className="block text-xs">
+                Visual style
+                <select
+                  aria-label="Recall visual style"
+                  className={field + " mt-2"}
+                  value={recallVisual(content, editing).kind}
+                  onChange={(e) => {
+                    const kind = e.target.value as NonNullable<
+                      RecallContent["visual"]
+                    >["kind"];
+                    setContent({
+                      ...content,
+                      visual: {
+                        kind,
+                        title: content.visual?.title ?? "Connect the key ideas",
+                        ...(kind === "diagram"
+                          ? { template: "heart" as const }
+                          : kind === "fraction"
+                            ? { numerator: 3, denominator: 4 }
+                            : {
+                                labels: content.facts.slice(0, 5).map((f) => ({
+                                  label: f.label.slice(0, 70),
+                                  detail: f.meaning.slice(0, 220),
+                                })),
+                              }),
+                      },
+                    });
+                  }}
+                >
+                  {[
+                    "diagram",
+                    "concept-map",
+                    "process",
+                    "comparison",
+                    "timeline",
+                    "fraction",
+                  ].map((k) => (
+                    <option key={k}>{k}</option>
+                  ))}
+                </select>
+              </label>
+              {content.visual && (
+                <label className="block text-xs">
+                  Caption
+                  <input
+                    aria-label="Recall illustration caption"
+                    className={field + " mt-2"}
+                    maxLength={140}
+                    value={content.visual.title}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        visual: { ...content.visual!, title: e.target.value },
+                      })
+                    }
+                  />
+                </label>
+              )}
+              {content.visual?.kind === "diagram" && (
+                <label className="block text-xs">
+                  Diagram
+                  <select
+                    aria-label="Recall diagram template"
+                    className={field + " mt-2"}
+                    value={content.visual.template}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        visual: {
+                          ...content.visual!,
+                          template: e.target.value as NonNullable<
+                            RecallContent["visual"]
+                          >["template"],
+                        },
+                      })
+                    }
+                  >
+                    {["heart", "lungs", "plant-cell", "circuit"].map((k) => (
+                      <option key={k}>{k}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {content.visual?.kind === "fraction" && (
+                <div className="grid grid-cols-2 gap-2">
+                  {(["numerator", "denominator"] as const).map((key) => (
+                    <label key={key} className="text-xs capitalize">
+                      {key}
+                      <input
+                        aria-label={`Fraction ${key}`}
+                        type="number"
+                        className={field + " mt-2"}
+                        min={key === "denominator" ? 2 : 0}
+                        max={12}
+                        value={content.visual![key]}
+                        onChange={(e) =>
+                          setContent({
+                            ...content,
+                            visual: {
+                              ...content.visual!,
+                              [key]: Number(e.target.value),
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+              {content.visual?.labels?.map((item, i) => (
+                <div className="space-y-2" key={i}>
+                  <input
+                    aria-label={`Visual label ${i + 1}`}
+                    className={field}
+                    maxLength={70}
+                    value={item.label}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        visual: {
+                          ...content.visual!,
+                          labels: content.visual!.labels!.map((v, j) =>
+                            i === j ? { ...v, label: e.target.value } : v,
+                          ),
+                        },
+                      })
+                    }
+                  />
+                  <textarea
+                    aria-label={`Visual detail ${i + 1}`}
+                    className={field}
+                    maxLength={220}
+                    value={item.detail}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        visual: {
+                          ...content.visual!,
+                          labels: content.visual!.labels!.map((v, j) =>
+                            i === j ? { ...v, detail: e.target.value } : v,
+                          ),
+                        },
+                      })
+                    }
+                  />
+                </div>
+              ))}
+              <p className="text-xs leading-5 text-slate-500">
+                Illustrations render automatically. Check the diagram and every
+                label before publishing.
+              </p>
+            </fieldset>
             <p className="text-xs font-semibold">Mnemonic → accurate fact</p>
             {content.facts.map((f, i) => (
               <div className="grid grid-cols-2 gap-2" key={i}>
@@ -224,7 +378,13 @@ export function RecallCardsManager() {
               Save reviewed draft
             </button>
           </form>
-          <RecallPreview content={content} />
+          <RecallPreview
+            content={content}
+            title={title}
+            grade={editing.grade}
+            subject={editing.subject}
+            topic={editing.topic}
+          />
         </div>
         {notice && <p role="status">{notice}</p>}
       </div>
@@ -313,12 +473,20 @@ export function RecallCardsManager() {
               </div>
               <h3 className="mt-3 font-semibold">{card.title}</h3>
               <p className="mt-2 text-sm text-slate-500">{card.content!.cue}</p>
+              <div className="mt-4 rounded-lg border bg-slate-50/50 p-3">
+                <RecallIllustration
+                  visual={recallVisual(card.content!, card)}
+                />
+              </div>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   className="inline-flex items-center gap-2 text-sm text-blue-700"
                   onClick={() => {
                     setEditing(card);
-                    setContent(card.content!);
+                    setContent({
+                      ...card.content!,
+                      visual: recallVisual(card.content!, card),
+                    });
                     setTitle(card.title);
                   }}
                 >
