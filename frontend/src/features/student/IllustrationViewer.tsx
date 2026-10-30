@@ -5,9 +5,11 @@ import { RecallIllustration } from "./RecallIllustration";
 export function IllustrationViewer({
   visual,
   reveal,
+  visualOnly = false,
 }: {
   visual: RecallVisual;
   reveal: boolean;
+  visualOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -17,7 +19,11 @@ export function IllustrationViewer({
   }, [open]);
   return (
     <>
-      <RecallIllustration visual={visual} reveal={reveal} />
+      <RecallIllustration
+        visual={visual}
+        reveal={reveal}
+        visualOnly={visualOnly}
+      />
       <div className="mt-3 flex justify-center" data-recall-interactive>
         <button
           onClick={() => setOpen(true)}
@@ -48,7 +54,11 @@ export function IllustrationViewer({
             </button>
           </div>
           <div className="p-4 sm:p-8">
-            <RecallIllustration visual={visual} reveal={reveal} />
+            <RecallIllustration
+              visual={visual}
+              reveal={reveal}
+              visualOnly={visualOnly}
+            />
           </div>
         </dialog>
       )}

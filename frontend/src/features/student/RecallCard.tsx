@@ -1,3 +1,4 @@
+import { RecallStudyNotes } from "./RecallStudyNotes";
 import { useEffect, useRef, useState } from "react";
 import { RotateCcw, CheckCircle2, Eye, Printer, Zap } from "lucide-react";
 import type { MnemonicCard } from "../../types";
@@ -39,11 +40,7 @@ export function RecallCard({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-slate-500">
-          {revealed
-            ? "Study the illustration, then cover it and try again."
-            : "Try the question from memory before revealing the labels and notes."}
-        </p>
+        <p className="text-xs text-slate-500">{c.cue}</p>
         <button
           disabled={printing}
           onClick={async () => {
@@ -129,66 +126,69 @@ export function RecallCard({
           {challengeNote}
         </p>
       )}
+      {revealed && <RecallStudyNotes content={c} />}
       {revealed && (
-        <section
-          className="rounded-xl border bg-white p-5"
-          aria-label="Check your recall"
-        >
-          <h3 className="text-sm font-semibold">Check your recall</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            Answer each question before checking the explanation.
-          </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {c.checks.map((q, i) => (
-              <div key={i} className="rounded-lg border border-slate-200 p-4">
-                <p className="recall-brand-ink text-[10px] font-bold uppercase tracking-wider">
-                  {["Retrieve", "Explain", "Apply"][i] ?? `Check ${i + 1}`}
-                </p>
-                <p className="mt-2 text-sm leading-6">{q.question}</p>
-                <button
-                  onClick={() =>
-                    setChecked((v) =>
-                      v.includes(i) ? v.filter((x) => x !== i) : [...v, i],
-                    )
-                  }
-                  className="mt-3 min-h-9 recall-brand-ink text-xs font-semibold underline"
-                >
-                  {checked.includes(i) ? "Hide answer" : "Check answer"}
-                </button>
-                {checked.includes(i) && (
-                  <p className="mt-2 border-t pt-3 text-xs leading-6 text-slate-600">
-                    {q.answer}
+        <details className="rounded-xl border bg-white p-5">
+          <summary className="cursor-pointer text-sm font-semibold">
+            Practice questions
+          </summary>
+          <section className="mt-4" aria-label="Check your recall">
+            <h3 className="text-sm font-semibold">Check your recall</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Answer each question before checking the explanation.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {c.checks.map((q, i) => (
+                <div key={i} className="rounded-lg border border-slate-200 p-4">
+                  <p className="recall-brand-ink text-[10px] font-bold uppercase tracking-wider">
+                    {["Retrieve", "Explain", "Apply"][i] ?? `Check ${i + 1}`}
                   </p>
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <button
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium"
-              onClick={() => {
-                setRating("Review again: try the cue without looking.");
-                setRevealed(false);
-                setChecked([]);
-              }}
-            >
-              <RotateCcw size={15} />
-              Review again
-            </button>
-            <button
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium"
-              onClick={() => {
-                setRating(
-                  "Recalled. Try again tomorrow, then after 3, 7 and 14 days. Explain the idea and apply it to a new example.",
-                );
-                setRevealed(false);
-                setChecked([]);
-              }}
-            >
-              <CheckCircle2 size={15} />I remembered
-            </button>
-          </div>
-        </section>
+                  <p className="mt-2 text-sm leading-6">{q.question}</p>
+                  <button
+                    onClick={() =>
+                      setChecked((v) =>
+                        v.includes(i) ? v.filter((x) => x !== i) : [...v, i],
+                      )
+                    }
+                    className="mt-3 min-h-9 recall-brand-ink text-xs font-semibold underline"
+                  >
+                    {checked.includes(i) ? "Hide answer" : "Check answer"}
+                  </button>
+                  {checked.includes(i) && (
+                    <p className="mt-2 border-t pt-3 text-xs leading-6 text-slate-600">
+                      {q.answer}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium"
+                onClick={() => {
+                  setRating("Review again: try the cue without looking.");
+                  setRevealed(false);
+                  setChecked([]);
+                }}
+              >
+                <RotateCcw size={15} />
+                Review again
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium"
+                onClick={() => {
+                  setRating(
+                    "Recalled. Try again tomorrow, then after 3, 7 and 14 days. Explain the idea and apply it to a new example.",
+                  );
+                  setRevealed(false);
+                  setChecked([]);
+                }}
+              >
+                <CheckCircle2 size={15} />I remembered
+              </button>
+            </div>
+          </section>
+        </details>
       )}
       {rating && (
         <p role="status" className="text-xs text-slate-600">

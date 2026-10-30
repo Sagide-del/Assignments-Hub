@@ -1,3 +1,4 @@
+import { RecallStudyNotes } from "../student/RecallStudyNotes";
 import { RecallSheet } from "../student/RecallSheet";
 import { RecallIllustration } from "../student/RecallIllustration";
 import { recallVisual } from "../student/recall-visual";
@@ -32,6 +33,7 @@ export function RecallPreview({
         subject={subject}
         topic={topic}
       />
+      <RecallStudyNotes content={content} />
       <section className="rounded-xl border bg-white p-5">
         <h3 className="text-sm font-semibold">Recall checks</h3>
         {content.checks.map((check, i) => (
@@ -476,6 +478,7 @@ export function RecallCardsManager() {
               <div className="mt-4 rounded-lg border bg-slate-50/50 p-3">
                 <RecallIllustration
                   visual={recallVisual(card.content!, card)}
+                  visualOnly
                 />
               </div>
               <div className="mt-4 flex flex-wrap gap-3">

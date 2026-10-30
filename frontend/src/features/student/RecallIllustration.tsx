@@ -12,9 +12,11 @@ function words(value: string, width = 20) {
 export function RecallIllustration({
   visual,
   reveal = true,
+  visualOnly = false,
 }: {
   visual: RecallVisual;
   reveal?: boolean;
+  visualOnly?: boolean;
 }) {
   const artwork =
     visual.kind === "diagram"
@@ -60,27 +62,31 @@ export function RecallIllustration({
         {artwork.labels.map((part, i) =>
           callout(part.name, i, part.x, part.y, part.ax, part.ay, part.side),
         )}
-        <text
-          x="500"
-          y={
-            visual.template === "heart" || visual.template === "lungs"
-              ? 635
-              : 540
-          }
-          textAnchor="middle"
-          fill="#64748b"
-          fontSize="17"
-        >
-          {artwork.caption}
-        </text>
+        {!visualOnly && (
+          <text
+            x="500"
+            y={
+              visual.template === "heart" || visual.template === "lungs"
+                ? 635
+                : 540
+            }
+            textAnchor="middle"
+            fill="#64748b"
+            fontSize="17"
+          >
+            {artwork.caption}
+          </text>
+        )}
       </>
     );
     return (
       <figure className="min-w-0">
         <svg {...common}>{drawing}</svg>
-        <figcaption className="mt-2 text-center text-xs leading-5 text-slate-500">
-          {visual.title}
-        </figcaption>
+        {!visualOnly && (
+          <figcaption className="mt-2 text-center text-xs leading-5 text-slate-500">
+            {visual.title}
+          </figcaption>
+        )}
         {visual.template === "heart" && reveal && (
           <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[11px] text-slate-600">
             <span className="inline-flex items-center gap-1.5">
@@ -136,26 +142,149 @@ export function RecallIllustration({
               strokeWidth="2"
             />
           ))}
-          <text
-            x="500"
-            y="420"
-            textAnchor="middle"
-            fill="#64748b"
-            fontSize="25"
-          >
-            {reveal
-              ? `${n} shaded parts out of ${d} equal parts`
-              : "Count the shaded parts and all equal parts."}
-          </text>
+          {!visualOnly && (
+            <text
+              x="500"
+              y="420"
+              textAnchor="middle"
+              fill="#64748b"
+              fontSize="25"
+            >
+              {reveal
+                ? `${n} shaded parts out of ${d} equal parts`
+                : "Count the shaded parts and all equal parts."}
+            </text>
+          )}
         </svg>
-        <figcaption className="text-center text-xs text-slate-500">
-          {visual.title}
-        </figcaption>
+        {!visualOnly && (
+          <figcaption className="text-center text-xs text-slate-500">
+            {visual.title}
+          </figcaption>
+        )}
       </figure>
     );
   }
   const items = visual.labels ?? [],
     count = items.length;
+  if (visualOnly && (visual.kind === "process" || visual.kind === "timeline"))
+    return (
+      <figure>
+        <svg {...common} viewBox="0 0 1000 360">
+          <rect x="25" y="55" width="950" height="280" rx="30" fill="#f8faf4" />
+          {items.map((part, i) => {
+            const x = 120 + (i * 760) / Math.max(1, count - 1),
+              next = 120 + ((i + 1) * 760) / Math.max(1, count - 1);
+            return (
+              <g key={i}>
+                {i < count - 1 && (
+                  <>
+                    <path
+                      d={`M${x + 52} 150H${next - 58}`}
+                      stroke="#a5c650"
+                      strokeWidth="4"
+                    />
+                    <path
+                      d={`M${next - 68} 140L${next - 54} 150L${next - 68} 160`}
+                      fill="none"
+                      stroke="#607d00"
+                      strokeWidth="4"
+                    />
+                  </>
+                )}
+                <circle
+                  cx={x}
+                  cy="150"
+                  r="48"
+                  fill={i % 2 ? "#101820" : "#B5E61D"}
+                />
+                <text
+                  x={x}
+                  y="162"
+                  textAnchor="middle"
+                  fill={i % 2 ? "#fff" : "#101820"}
+                  fontSize="32"
+                  fontWeight="700"
+                >
+                  {i + 1}
+                </text>
+                <text
+                  x={x}
+                  y="240"
+                  textAnchor="middle"
+                  fill="#334155"
+                  fontSize="20"
+                  fontWeight="600"
+                >
+                  {words(reveal ? part.label : "?", 18).map((line, j) => (
+                    <tspan key={j} x={x} dy={j ? 25 : 0}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </figure>
+    );
+  if (visualOnly && visual.kind === "comparison")
+    return (
+      <figure>
+        <svg {...common} viewBox="0 0 1000 360">
+          {items.map((part, i) => {
+            const w = 850 / Math.max(1, count),
+              x = 75 + i * w;
+            return (
+              <g key={i}>
+                <rect
+                  x={x + 8}
+                  y="35"
+                  width={w - 16}
+                  height="285"
+                  rx="24"
+                  fill={i % 2 ? "#f8fafc" : "#f5f9e8"}
+                  stroke={i % 2 ? "#cbd5e1" : "#d9e9a5"}
+                  strokeWidth="2"
+                />
+                <circle
+                  cx={x + w / 2}
+                  cy="120"
+                  r="45"
+                  fill={i % 2 ? "#101820" : "#B5E61D"}
+                />
+                <text
+                  x={x + w / 2}
+                  y="132"
+                  textAnchor="middle"
+                  fill={i % 2 ? "#fff" : "#101820"}
+                  fontSize="32"
+                  fontWeight="700"
+                >
+                  {String.fromCharCode(65 + i)}
+                </text>
+                <text
+                  x={x + w / 2}
+                  y="220"
+                  textAnchor="middle"
+                  fill="#334155"
+                  fontSize="19"
+                  fontWeight="600"
+                >
+                  {words(
+                    reveal ? part.label : "?",
+                    Math.max(12, 32 / count),
+                  ).map((line, j) => (
+                    <tspan key={j} x={x + w / 2} dy={j ? 25 : 0}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </figure>
+    );
   if (visual.kind === "process" || visual.kind === "timeline")
     return (
       <figure className="space-y-3">
@@ -240,19 +369,31 @@ export function RecallIllustration({
           stroke="#a5c650"
           strokeWidth="2"
         />
-        <text
-          x="500"
-          y="240"
-          textAnchor="middle"
-          fill="#101820"
-          fontSize="21"
-          fontWeight="700"
-        >
-          <tspan x="500">Connect</tspan>
-          <tspan x="500" dy="28">
-            the ideas
-          </tspan>
-        </text>
+        {visualOnly ? (
+          <g stroke="#607d00" strokeWidth="4" fill="#B5E61D">
+            <path d="M475 225L525 225L500 270Z" fill="none" />
+            <circle cx="475" cy="225" r="10" />
+            <circle cx="525" cy="225" r="10" />
+            <circle cx="500" cy="270" r="10" />
+          </g>
+        ) : (
+          <>
+            {" "}
+            <text
+              x="500"
+              y="240"
+              textAnchor="middle"
+              fill="#101820"
+              fontSize="21"
+              fontWeight="700"
+            >
+              <tspan x="500">Connect</tspan>
+              <tspan x="500" dy="28">
+                the ideas
+              </tspan>
+            </text>
+          </>
+        )}
         {nodes.map(({ item, x, y }, i) => (
           <g key={i}>
             <rect
@@ -282,9 +423,11 @@ export function RecallIllustration({
           </g>
         ))}
       </svg>
-      <figcaption className="text-center text-xs leading-5 text-slate-500">
-        {visual.title}
-      </figcaption>
+      {!visualOnly && (
+        <figcaption className="text-center text-xs leading-5 text-slate-500">
+          {visual.title}
+        </figcaption>
+      )}
     </figure>
   );
 }
