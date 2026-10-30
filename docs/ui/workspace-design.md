@@ -17,3 +17,7 @@ Verification for this pass: 104 frontend tests; ten learner tabs at 1440/390/320
 Use neutral charcoal, white and slate for navigation, selected tabs and focus states. Keep semantic result/warning colours and the original branded artwork. Do not reintroduce neon active-tab icons, a lime sidebar stripe, dashboard greeting/date blocks or decorative dashboard illustrations. The learner profile remains available for account identification.
 
 Compact Assignment Hub branding now clips the mark directly from `/logo.png`, the same original image used by the wordmark; it is not a redrawn SVG symbol. Uploaded school logos and school-initial fallbacks remain supported. Independent accounts use the platform mark rather than inheriting a school placeholder logo.
+
+### Dashboard refinement
+
+The learner landing page keeps one Dashboard heading; its top bar shows Workspace without repeating the current page name. Charcoal controls and neutral navigation remain, with lime limited to the heading marker, next-assignment edge and muted olive subject icons. Learning tools use compact icon links without repeated descriptions. Assignment status filters, subject routes and access gates retain their existing behavior.

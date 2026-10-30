@@ -345,20 +345,24 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         <div className="workspace-topbar hidden min-h-14 items-center justify-between gap-4 border-b border-slate-200 bg-white px-8 md:flex">
           <div className="flex min-w-0 items-center gap-3 text-xs text-slate-500">
             <span>Workspace</span>
-            <ChevronRight className="h-3 w-3" />
-            <span className="truncate font-medium text-slate-800">
-              {[...visibleNav]
-                .sort((a, b) => b.to.length - a.to.length)
-                .find(
-                  (item) =>
-                    location.pathname === item.to ||
-                    (item.to !== "/student" &&
-                      location.pathname.startsWith(item.to + "/")),
-                )?.label ??
-                (location.pathname.startsWith("/student/assignments/")
-                  ? "My Assignments"
-                  : "Overview")}
-            </span>
+            {location.pathname !== "/student" && location.pathname !== "/student/" && (
+              <>
+                <ChevronRight className="h-3 w-3" />
+                <span className="truncate font-medium text-slate-800">
+                  {[...visibleNav]
+                    .sort((a, b) => b.to.length - a.to.length)
+                    .find(
+                      (item) =>
+                        location.pathname === item.to ||
+                        (item.to !== "/student" &&
+                          location.pathname.startsWith(item.to + "/")),
+                    )?.label ??
+                    (location.pathname.startsWith("/student/assignments/")
+                      ? "My Assignments"
+                      : "Overview")}
+                </span>
+              </>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="text-xs text-slate-500">

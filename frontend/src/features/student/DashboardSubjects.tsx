@@ -49,10 +49,10 @@ export function DashboardSubjects({
       aria-label="Your subject shortcuts"
       className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4"
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-1 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2.5 text-sm font-semibold text-slate-900">
           <LayoutGrid size={19} aria-hidden="true" />
-          Jump into a subject
+          Your subjects
         </h2>
         <Link
           to="/student/my-assignments"
@@ -74,7 +74,7 @@ export function DashboardSubjects({
               to={`/student/my-assignments?subject=${encodeURIComponent(groupKey)}`}
               className="group flex min-h-24 w-[132px] shrink-0 snap-start flex-col items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-center transition hover:border-slate-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:w-[145px]"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center text-slate-600">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#f1f5e5] text-[#526b10]">
                 <Icon
                   size={21}
                   strokeWidth={1.8}

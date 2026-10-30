@@ -11,7 +11,7 @@ import {
   Award,
   ChartNoAxesCombined,
   ClipboardList,
-  Wrench,
+  PanelsTopLeft,
   BookOpen,
   BrainCircuit,
   CalendarDays,
@@ -282,9 +282,10 @@ export function StudentDashboard() {
     void submissionsQuery.refetch();
   }
   return (
-    <div className="mx-auto max-w-7xl space-y-4 pb-6">
+    <div className="student-overview mx-auto max-w-7xl space-y-4 pb-6">
       <header className="flex flex-wrap items-center justify-between gap-4 pb-1">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+        <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-slate-900">
+          <span className="h-7 w-1 rounded-full bg-[#b5df18]" aria-hidden="true" />
           Dashboard
         </h1>
         <Link
@@ -309,7 +310,7 @@ export function StudentDashboard() {
             onClick={() =>
               setStatus((current) => (current === state ? "ALL" : state))
             }
-            className={`flex min-w-0 items-center gap-3 rounded-2xl border bg-white p-4 text-left transition hover:shadow-md hover:shadow-slate-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:p-4 ${status === state ? "border-slate-500 ring-1 ring-slate-500" : "border-slate-200 hover:border-slate-300"} disabled:cursor-default`}
+            className={`flex min-w-0 items-center gap-3 rounded-xl border bg-white p-4 text-left transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:p-4 ${status === state ? "border-slate-700 ring-1 ring-slate-700" : "border-slate-200 hover:border-slate-300"} disabled:cursor-default`}
           >
             <span
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl sm:h-12 sm:w-12 ${tone}`}
@@ -355,16 +356,16 @@ export function StudentDashboard() {
           </button>
         </div>
       )}
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0 space-y-5">
           {ready && next && (
             <section
               aria-label="Next assignment"
-              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
+              className="relative overflow-hidden rounded-xl border border-slate-200 border-l-[3px] border-l-[#b5df18] bg-white p-4 sm:p-5"
             >
-              <div className="mb-4 flex items-center gap-2.5 text-xs font-semibold text-blue-700">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100/80">
-                  <CalendarDays size={18} aria-hidden="true" />
+              <div className="mb-4 flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f1f5e5] text-[#526b10]">
+                  <CirclePlay size={18} aria-hidden="true" />
                 </span>
                 Up next
               </div>
@@ -390,7 +391,7 @@ export function StudentDashboard() {
                 </p>
                 <Link
                   to={`/student/assignments/${next.id}`}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-xs font-semibold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:w-auto"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#101820] px-5 text-xs font-semibold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 sm:w-auto"
                 >
                   <CirclePlay size={16} aria-hidden="true" />
                   {assignmentState(submissions.get(next.id)) === "IN_PROGRESS"
@@ -405,7 +406,7 @@ export function StudentDashboard() {
             className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
             aria-label="Your assignments"
           >
-            <div className="p-4 sm:p-6">
+            <div className="p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-base font-semibold text-slate-900">
                   Your assignments
@@ -532,19 +533,19 @@ export function StudentDashboard() {
         >
           <div className="border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <Wrench size={19} className="text-blue-700" aria-hidden="true" />
-              Quick tools
+              <PanelsTopLeft size={18} className="text-slate-500" aria-hidden="true" />
+              Learning tools
             </h2>
           </div>
-          <div className="space-y-2 p-3">
+          <div className="divide-y divide-slate-100 px-3">
             {(user?.isIndependentTrial ? [] : TOOLS).map(
-              ({ title, description, href, Icon }) => (
+              ({ title, href, Icon }) => (
                 <Link
                   key={href}
                   to={href}
-                  className="group flex min-h-20 items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-3 transition hover:border-blue-200 hover:bg-blue-50/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+                  className="group flex min-h-14 items-center gap-3 rounded-lg px-2 py-3 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 group-hover:bg-blue-100">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-600 group-hover:bg-[#f1f5e5] group-hover:text-[#526b10]">
                     <Icon
                       className="h-[18px] w-[18px]"
                       strokeWidth={1.7}
@@ -554,9 +555,6 @@ export function StudentDashboard() {
                   <span className="min-w-0 flex-1">
                     <span className="block text-xs font-semibold text-slate-800">
                       {title}
-                    </span>
-                    <span className="mt-1 block text-[11px] leading-5 text-slate-500">
-                      {description}
                     </span>
                   </span>
                   <ChevronRight
