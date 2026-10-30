@@ -89,7 +89,7 @@ export function RecallCard({
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {c.checks.map((q, i) => (
               <div key={i} className="rounded-lg border border-slate-200 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-red-600">
+                <p className="recall-brand-ink text-[10px] font-bold uppercase tracking-wider">
                   {["Retrieve", "Explain", "Apply"][i] ?? `Check ${i + 1}`}
                 </p>
                 <p className="mt-2 text-sm leading-6">{q.question}</p>
@@ -99,7 +99,7 @@ export function RecallCard({
                       v.includes(i) ? v.filter((x) => x !== i) : [...v, i],
                     )
                   }
-                  className="mt-3 min-h-9 text-xs font-semibold text-blue-700 underline"
+                  className="mt-3 min-h-9 recall-brand-ink text-xs font-semibold underline"
                 >
                   {checked.includes(i) ? "Hide answer" : "Check answer"}
                 </button>

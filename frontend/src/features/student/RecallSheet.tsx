@@ -1,3 +1,4 @@
+import { AssignmentHubWordmark } from "../../components/ui/Logo";
 import "./recall-cards.css";
 import type { RecallContent } from "../../api/content-library.api";
 import { RecallIllustration } from "./RecallIllustration";
@@ -25,10 +26,13 @@ export function RecallSheet({
       data-revision-card
       className="overflow-hidden rounded-sm border border-slate-200 bg-white text-slate-900 shadow-sm"
     >
-      <header className="flex flex-wrap items-center justify-between gap-2 bg-red-600 px-5 py-2.5 text-white sm:px-7">
-        <span className="text-xs font-bold uppercase tracking-[0.13em]">
-          Assignment Hub · Revision cards
-        </span>
+      <header className="recall-brand-header flex flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-7">
+        <div className="flex flex-wrap items-center gap-3">
+          <AssignmentHubWordmark size="sm" className="rounded-md" />
+          <span className="recall-brand-accent text-[10px] font-bold uppercase tracking-[0.13em]">
+            Revision cards
+          </span>
+        </div>
         <span className="text-xs font-medium">
           {grade} · {subject}
         </span>
@@ -36,14 +40,14 @@ export function RecallSheet({
       <div className="px-5 pb-5 pt-5 sm:px-7 sm:pt-6">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-600">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] recall-brand-ink">
               {topic || subject}
             </p>
             <h2 className="mt-2 text-xl font-bold leading-snug text-slate-950 sm:text-2xl">
               {title}
             </h2>
           </div>
-          <span className="shrink-0 border border-red-200 px-2 py-1 text-xs font-semibold text-red-700">
+          <span className="recall-brand-badge shrink-0 px-2.5 py-1 text-xs font-semibold">
             {cardNumber ? String(cardNumber).padStart(2, "0") : "AH"}
           </span>
         </div>
@@ -56,8 +60,8 @@ export function RecallSheet({
           </div>
           {reveal ? (
             <div className="space-y-4">
-              <div className="border-l-4 border-red-500 bg-red-50 px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-red-600">
+              <div className="recall-brand-memory border-l-4 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.13em] recall-brand-ink">
                   Memory cue
                 </p>
                 <p className="mt-2 text-base font-semibold leading-7 text-slate-900">
@@ -75,7 +79,7 @@ export function RecallSheet({
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6">
-              <p className="text-xs font-bold uppercase tracking-widest text-red-600">
+              <p className="text-xs font-bold uppercase tracking-widest recall-brand-ink">
                 Look · cover · recall
               </p>
               <h3 className="mt-3 text-lg font-semibold">
@@ -93,11 +97,11 @@ export function RecallSheet({
             {content.explanation}
           </p>
         )}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t-2 border-red-500 pt-3">
+        <div className="recall-brand-footer mt-5 flex flex-wrap items-center justify-between gap-2 border-t-2 pt-3">
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
             Understand · Recall · Apply
           </span>
-          <span className="text-[10px] font-semibold text-red-600">
+          <span className="text-[10px] font-semibold recall-brand-ink">
             Assignment Hub
           </span>
         </div>

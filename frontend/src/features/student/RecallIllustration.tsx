@@ -34,7 +34,7 @@ export function RecallIllustration({
         stroke="#64748b"
         strokeWidth="1.6"
       />
-      <circle cx={ax} cy={ay} r="4" fill="#b91c1c" />
+      <circle cx={ax} cy={ay} r="4" fill="#101820" />
       <text x={x} y={y} fontSize="18" fontWeight="600" fill="#1e293b">
         {label(name, i)}
       </text>
@@ -392,8 +392,8 @@ export function RecallIllustration({
               width={780 / d - 6}
               height="145"
               rx="8"
-              fill={i < n ? "#ef4444" : "#fff1f2"}
-              stroke="#be123c"
+              fill={i < n ? "#B5E61D" : "#f5f9e8"}
+              stroke="#607D00"
               strokeWidth="2"
             />
           ))}
@@ -426,9 +426,9 @@ export function RecallIllustration({
         {items.map((item, i) => (
           <div key={i} className="relative flex gap-4 pb-3">
             {i < count - 1 && (
-              <span className="absolute bottom-0 left-[17px] top-8 w-px bg-red-200" />
+              <span className="absolute bottom-0 left-[17px] top-8 w-px bg-[#d9e9a5]" />
             )}
-            <span className="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-200 bg-red-50 text-sm font-bold text-red-700">
+            <span className="recall-brand-step z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold">
               {i + 1}
             </span>
             <div className="min-w-0 pt-1">
@@ -457,7 +457,7 @@ export function RecallIllustration({
           {items.map((item, i) => (
             <div
               key={i}
-              className={`rounded-lg border p-4 ${i % 2 ? "border-blue-200 bg-blue-50/50" : "border-red-200 bg-red-50/50"}`}
+              className={`rounded-lg border p-4 ${i % 2 ? "border-slate-200 bg-slate-50" : "recall-brand-comparison"}`}
             >
               <span className="text-xs font-bold text-slate-400">0{i + 1}</span>
               <p className="mt-3 text-sm font-semibold">
@@ -489,7 +489,7 @@ export function RecallIllustration({
           <path
             key={i}
             d={`M500 245L${x} ${y}`}
-            stroke="#fca5a5"
+            stroke="#c4d98e"
             strokeWidth="3"
           />
         ))}
@@ -497,15 +497,15 @@ export function RecallIllustration({
           cx="500"
           cy="245"
           r="80"
-          fill="#fff1f2"
-          stroke="#f87171"
+          fill="#f5f9e8"
+          stroke="#a5c650"
           strokeWidth="2"
         />
         <text
           x="500"
           y="240"
           textAnchor="middle"
-          fill="#991b1b"
+          fill="#101820"
           fontSize="21"
           fontWeight="700"
         >

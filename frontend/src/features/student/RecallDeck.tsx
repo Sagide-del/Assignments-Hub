@@ -14,7 +14,7 @@ export function RecallDeck({ cards }: { cards: MnemonicCard[] }) {
     <section className="space-y-4" aria-label="Revision card deck">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
         <div className="flex items-center gap-3">
-          <Layers3 size={20} className="text-red-600" />
+          <Layers3 size={20} className="recall-brand-ink" />
           <div>
             <p className="text-sm font-semibold">
               Card {current + 1} of {cards.length}
