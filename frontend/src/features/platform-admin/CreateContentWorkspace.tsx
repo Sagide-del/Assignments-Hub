@@ -403,7 +403,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
       return {
         scope: s,
         ids: chosen,
-        count: Math.max(5, Math.ceil(30 / chosen.length)),
+        count: 30,
       };
     });
   const generate = useMutation({
@@ -1325,7 +1325,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                     <p>
                       Across {plans.length} subjects and{" "}
                       {plans.reduce((n, p) => n + p.ids.length, 0)} selected
-                      outcomes, plus recall cards. Existing saved or queued
+                      outcomes (30 questions per outcome), plus recall cards. Existing saved or queued
                       outcomes are skipped. Each new batch covers additional
                       available outcomes.
                     </p>

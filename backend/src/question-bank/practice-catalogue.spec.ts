@@ -6,6 +6,7 @@ describe("Grade-wide practice catalogue", () => {
       school: {
         findUnique: jest.fn().mockResolvedValue({ code: "INDEPENDENT" }),
       },
+      submission: { findMany: jest.fn().mockResolvedValue([]) },
       curriculumScope: {
         findMany: jest
           .fn()
@@ -43,6 +44,7 @@ describe("Grade-wide practice catalogue", () => {
       school: {
         findUnique: jest.fn().mockResolvedValue({ code: "INDEPENDENT" }),
       },
+      submission: { findMany: jest.fn().mockResolvedValue([]) },
       curriculumScope: { findMany: jest.fn() },
     };
     await expect(

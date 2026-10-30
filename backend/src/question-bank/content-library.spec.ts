@@ -141,6 +141,7 @@ function setup(current: any = null, count = 60) {
   }));
   const tx = {
     $executeRaw: jest.fn(),
+    submission: { findMany: jest.fn().mockResolvedValue([]) },
     questionBank: { findMany: jest.fn().mockResolvedValue(rows) },
     kjseaMockAttempt: {
       findFirst: jest.fn().mockResolvedValue(current),
@@ -192,9 +193,9 @@ describe("Independent practice allocation", () => {
     });
   });
   it("does not generate undersized batches or allow school users into independent allocation", async () => {
-    const small = setup(null, 29);
+    const small = setup(null, 19);
     await expect(small.service.start("Mathematics", actor)).rejects.toThrow(
-      "At least 30",
+      "At least 20",
     );
     const school = setup();
     (school.prisma as any).subscription={findFirst:jest.fn().mockResolvedValue(null)};
@@ -214,6 +215,7 @@ describe("Durable content generation", () => {
         findMany: jest.fn().mockResolvedValue([source]),
       },
       $executeRaw: jest.fn(),
+    submission: { findMany: jest.fn().mockResolvedValue([]) },
       contentLibraryJob: {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockImplementation((x) => Promise.resolve(x.data)),

@@ -170,3 +170,48 @@ export function rankPractice<T extends { id: number; topic: string }>(
     )
     .slice(0, 30);
 }
+
+export const MIN_TOPIC_QUESTIONS = 20;
+export const PRACTICE_BATCH_SIZE = 30;
+
+/** A new set contains unseen prompts, including across separately generated batches. */
+export function freshPractice<T extends { id: number; questionText: string }>(
+  pool: T[],
+  history: { questions: any; subject?: string }[],
+): T[] {
+  const ids = new Set<number>();
+  const prompts = new Set<string>();
+  const key = (value: string) =>
+    value.trim().replace(/\s+/g, " ").toLowerCase();
+  for (const attempt of history) {
+    for (const question of Array.isArray(attempt.questions)
+      ? attempt.questions
+      : []) {
+      if (Number.isInteger(question.sourceQuestionId))
+        ids.add(question.sourceQuestionId);
+      if (typeof question.prompt === "string")
+        prompts.add(key(`${attempt.subject ?? ""}::${question.prompt}`));
+    }
+  }
+  return pool.filter((question) => {
+    const prompt = key(
+      `${(question as T & { subject?: string }).subject ?? ""}::${question.questionText}`,
+    );
+    if (ids.has(question.id) || prompts.has(prompt)) return false;
+    prompts.add(prompt);
+    return true;
+  });
+}
+
+/** Avoid stranding 1–19 questions when the pool can form complete further sets. */
+export function practiceSetSize(remaining: number) {
+  if (remaining < MIN_TOPIC_QUESTIONS) return 0;
+  const sets = Math.min(
+    Math.ceil(remaining / PRACTICE_BATCH_SIZE),
+    Math.floor(remaining / MIN_TOPIC_QUESTIONS),
+  );
+  return Math.min(
+    PRACTICE_BATCH_SIZE,
+    remaining - (sets - 1) * MIN_TOPIC_QUESTIONS,
+  );
+}

@@ -1,3 +1,4 @@
+import { NextTopicSet } from "../NextTopicSet";
 import { LanguagePaperPage } from "./LanguagePaperPage";
 import { languagePages } from "./language-paper-layout";
 import { useEffect, useRef, useState } from "react";
@@ -278,6 +279,9 @@ function PaperWorkspace({
         <ArrowLeft className="h-4 w-4" />
         {result.source === "PRACTICE" ? "My Assignments" : "KJSEA Mock Test"}
       </Link>
+      {completed && result.source === "PRACTICE" && (
+        <NextTopicSet subject={result.subject} topic={result.coverage?.topic} />
+      )}
       <header
         className={
           paperLayout
@@ -442,7 +446,7 @@ function PaperWorkspace({
             className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-teal-800"
           >
             {result.source === "PRACTICE"
-              ? "Choose your next 30-question batch"
+              ? "All topic sets"
               : "Prepare another paper"}
             <ArrowRight className="h-4 w-4" />
           </Link>

@@ -37,3 +37,12 @@ The assignment player renders `ReleasedReview` only after the existing submissio
 Known generic feedback is filtered by exact normalized strings; custom notes and actionable numeric guidance remain. Explanations support safe inline bold markers and paragraphs. A stored trailing `Transfer check:`, `Check your understanding:`, `Try this:` or `Retrieval cue:` becomes a separate practice prompt. Only an explicit supplied `Answer:` is revealed as its answer; otherwise the learner can compare reasoning with the original explanation. No answer is invented.
 
 “Hide answers & retry” and transfer responses are local, ungraded practice state. They make no submission, grading or AI calls and do not change the saved result. Navigating to another question resets that question's practice state. Existing timed assessment, draft-saving and release rules remain in the assignment player.
+
+
+### Fresh topic sets
+
+New bank topic publications require at least 20 approved questions per saved batch, grade, subject and topic. Short selections remain stored with an actionable publication issue. Generation now targets 30 questions per selected outcome; outcomes with fewer than 20 saved questions remain eligible for a top-up.
+
+After submission, Start next set opens a private set of 20–30 unseen questions from the learner's published grade/subject/topic pool. Existing practice history and questions delivered through fixed assignment variants are excluded. Existing drafts resume; prior results and pending teacher reviews remain unchanged. Allocation balances pools where possible: 40 unseen questions produce two sets of 20.
+
+When fewer than 20 unseen questions remain, more content must be generated, reviewed and published by an administrator. No duplicate padding, silent repeat batches or paid generation on learner login/completion occurs. Existing short assignments and snapshots remain preserved. School subscription and bank access requirements still apply.

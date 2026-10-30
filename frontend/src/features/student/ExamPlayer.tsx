@@ -1,3 +1,5 @@
+import { NextTopicSet } from "./NextTopicSet";
+import { assignmentTopic } from "./assignment-catalogue";
 import { learningTitle } from "./assignment-presentation";
 import { ReleasedReview } from "./ReleasedReview";
 import { useEffect, useMemo, useState, useRef } from "react";
@@ -441,6 +443,10 @@ function ExamWorkspace() {
 
     return (
       <div className={workspaceClassName}>
+        <NextTopicSet
+          subject={assignment.subject}
+          topic={assignmentTopic(assignment)}
+        />
         {resultsReleased && loadingReleasedResults ? (
           <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
             Loading released results...

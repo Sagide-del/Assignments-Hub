@@ -1043,6 +1043,14 @@ export class QuestionBankService {
               });
               if (!fresh.length)
                 return { count: 0, questions: 0, skipped: group.length };
+              if (fresh.length < 20) {
+                if (result.issues.length < 100)
+                  result.issues.push({
+                    id: fresh[0].id,
+                    reason: `${fresh[0].subject} · ${fresh[0].topic}: ${fresh.length} questions selected; at least 20 are required to publish a topic set. Generate or select more approved questions.`,
+                  });
+                return { count: 0, questions: 0, skipped: 0 };
+              }
               const first = fresh[0],
                 topic =
                   first.topic.trim().replace(/\s+/g, " ") || "General practice",
@@ -1059,9 +1067,19 @@ export class QuestionBankService {
               const sameMarks = fresh.every((q) => q.points === first.points);
               // The existing variant allocator supports a larger equal-mark pool.
               const size = sameMarks ? 300 : 30;
-              const pools = Array.from(
-                { length: Math.ceil(fresh.length / size) },
-                (_, i) => fresh.slice(i * size, (i + 1) * size),
+              // Balance partitions so a final small remainder never becomes a short assignment.
+              const parts = Math.max(
+                1,
+                Math.min(
+                  Math.ceil(fresh.length / size),
+                  Math.floor(fresh.length / 20),
+                ),
+              );
+              const pools = Array.from({ length: parts }, (_, i) =>
+                fresh.slice(
+                  Math.floor((i * fresh.length) / parts),
+                  Math.floor(((i + 1) * fresh.length) / parts),
+                ),
               );
               let count = 0;
               for (const pool of pools) {

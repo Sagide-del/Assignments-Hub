@@ -187,23 +187,26 @@ export class CollectionService {
       ids(unit.supportingSourceIds).every((id) =>
         sources.some((s) => s.id === id && s.reviewed && s.role === "TEACHING"),
       );
-    const usedPractice = new Set(
-      questions
-        .filter(
-          (q) =>
-            q.status !== "REJECTED" && q.questionType === "MULTIPLE_CHOICE",
+    // Short legacy outputs must remain eligible for a full topic top-up.
+    const enoughQuestions = (types: string[]) => {
+      const counts = new Map<number, number>();
+      for (const row of questions) {
+        if (
+          row.curriculumUnitId != null &&
+          row.status !== "REJECTED" &&
+          types.includes(row.questionType)
         )
-        .map((q) => q.curriculumUnitId),
-    );
-    const usedWritten = new Set(
-      questions
-        .filter(
-          (q) =>
-            q.status !== "REJECTED" &&
-            ["SHORT_ANSWER", "ESSAY"].includes(q.questionType),
-        )
-        .map((q) => q.curriculumUnitId),
-    );
+          counts.set(
+            row.curriculumUnitId,
+            (counts.get(row.curriculumUnitId) ?? 0) + row._count._all,
+          );
+      }
+      return new Set(
+        [...counts].filter(([, count]) => count >= 20).map(([id]) => id),
+      );
+    };
+    const usedPractice = enoughQuestions(["MULTIPLE_CHOICE"]);
+    const usedWritten = enoughQuestions(["SHORT_ANSWER", "ESSAY"]);
     for (const job of generationJobs) {
       const input = job.input as any;
       if (Number.isInteger(input?.unitId))

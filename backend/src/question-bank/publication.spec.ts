@@ -244,9 +244,13 @@ describe("Explicit question-bank publication", () => {
   it("publishes real grade/subject/topic assignments to both audiences and skips repeat copies", async () => {
     const f = fixture([
       ...Array.from({ length: 35 }, (_, i) => q(i + 1)),
-      q(36, { subject: "English", topic: "Reading", points: 2 }),
-      q(37, { grade: "Grade 8", topic: "Angles" }),
-      q(38, { status: "GENERATED" }),
+      ...Array.from({ length: 20 }, (_, i) =>
+        q(36 + i, { subject: "English", topic: "Reading", points: 2 }),
+      ),
+      ...Array.from({ length: 20 }, (_, i) =>
+        q(56 + i, { grade: "Grade 8", topic: "Angles" }),
+      ),
+      q(76, { status: "GENERATED" }),
     ]);
     await f.service.queuePublication(
       { scope: "IDS", ids: f.questions.map((q) => q.id), audience: "BOTH" },
@@ -255,7 +259,7 @@ describe("Explicit question-bank publication", () => {
     const dto = f.jobs[0].input;
     expect(await f.service.publishContent(dto, actor, "job1")).toMatchObject({
       assignmentsCreated: 9,
-      questionCopies: 111,
+      questionCopies: 225,
       independentPublished: true,
       schoolCount: 2,
       failures: [],
@@ -281,18 +285,18 @@ describe("Explicit question-bank publication", () => {
     ).toBe(true);
     expect(await f.service.publishContent(dto, actor, "job1")).toMatchObject({
       assignmentsCreated: 0,
-      alreadyPublished: 111,
+      alreadyPublished: 225,
     });
     expect(f.assignments).toHaveLength(9);
-    expect(f.usages).toHaveLength(111);
+    expect(f.usages).toHaveLength(225);
     expect(f.sms.getStudentRecipients).not.toHaveBeenCalled();
   });
   it("does not deliver school-only content to independent learners or other schools", async () => {
-    const f = fixture([q(1)]);
+    const f = fixture(Array.from({ length: 20 }, (_, i) => q(i + 1)));
     await f.service.queuePublication(
       {
         scope: "IDS",
-        ids: [1],
+        ids: f.questions.map((q) => q.id),
         audience: "SCHOOLS",
         schoolScope: "SELECTED",
         schoolIds: [2],
@@ -304,9 +308,17 @@ describe("Explicit question-bank publication", () => {
     expect(f.assignments[0].schoolId).toBe(2);
   });
   it("publishes two generations of the same topic into distinct numbered assignments", async () => {
-    const f = fixture([q(1, { batchId: 1 }), q(2, { batchId: 2 })]);
+    const f = fixture(
+      Array.from({ length: 40 }, (_, i) =>
+        q(i + 1, { batchId: i < 20 ? 1 : 2 }),
+      ),
+    );
     const result = await f.service.publishContent(
-      { scope: "IDS", ids: [1, 2], audience: "INDEPENDENT" },
+      {
+        scope: "IDS",
+        ids: f.questions.map((q) => q.id),
+        audience: "INDEPENDENT",
+      },
       actor,
       "pub",
     );
@@ -315,10 +327,16 @@ describe("Explicit question-bank publication", () => {
       "Mathematics · Fractions · Batch 1",
       "Mathematics · Fractions · Batch 2",
     ]);
-    expect(f.assignments.map((a) => a.questions.create.length)).toEqual([1, 1]);
+    expect(f.assignments.map((a) => a.questions.create.length)).toEqual([
+      20, 20,
+    ]);
   });
   it("publishes only the selected saved batch when selecting across pages", async () => {
-    const f = fixture([q(1, { batchId: 1 }), q(2, { batchId: 2 })]);
+    const f = fixture(
+      Array.from({ length: 40 }, (_, i) =>
+        q(i + 1, { batchId: i < 20 ? 1 : 2 }),
+      ),
+    );
     await f.service.publishContent(
       {
         scope: "FILTER",
@@ -329,7 +347,9 @@ describe("Explicit question-bank publication", () => {
       actor,
       "pub",
     );
-    expect(f.usages.map((u) => u.questionBankId)).toEqual([2]);
+    expect(f.usages.map((u) => u.questionBankId)).toEqual(
+      Array.from({ length: 20 }, (_, i) => i + 21),
+    );
   });
   it("keeps images, grading configuration and essay marking semantics", async () => {
     const f = fixture([
@@ -339,9 +359,14 @@ describe("Explicit question-bank publication", () => {
       }),
       q(2, { questionType: "ESSAY", points: 10, correctAnswer: "Model essay" }),
       q(3, { questionType: "NUMERIC", correctAnswer: "12", config: null }),
+      ...Array.from({ length: 17 }, (_, i) => q(i + 4)),
     ]);
     await f.service.publishContent(
-      { scope: "IDS", ids: [1, 2, 3], audience: "INDEPENDENT" },
+      {
+        scope: "IDS",
+        ids: f.questions.map((q) => q.id),
+        audience: "INDEPENDENT",
+      },
       actor,
       "job",
     );
@@ -369,13 +394,13 @@ describe("Explicit question-bank publication", () => {
     expect(f.assignments).toHaveLength(0);
   });
   it("rolls back assignment creation if provenance fails, then retries without duplicates", async () => {
-    const f = fixture([q(1)]);
+    const f = fixture(Array.from({ length: 20 }, (_, i) => q(i + 1)));
     f.tx.questionBankUsage.createMany.mockRejectedValueOnce(
       Error("Database interruption"),
     );
     const dto = {
       scope: "IDS",
-      ids: [1],
+      ids: f.questions.map((q) => q.id),
       audience: "INDEPENDENT",
     } as PublishContentDto;
     await expect(f.service.publishContent(dto, actor, "job")).rejects.toThrow(
@@ -386,6 +411,39 @@ describe("Explicit question-bank publication", () => {
       assignmentsCreated: 1,
     });
     expect(f.assignments).toHaveLength(1);
+  });
+  it("retains short topics in the bank with an actionable publication issue", async () => {
+    const f = fixture(Array.from({ length: 19 }, (_, i) => q(i + 1)));
+    const result = await f.service.publishContent(
+      {
+        scope: "IDS",
+        ids: f.questions.map((q) => q.id),
+        audience: "INDEPENDENT",
+      },
+      actor,
+      "short",
+    );
+    expect(result.assignmentsCreated).toBe(0);
+    expect(result.issues[0].reason).toContain("at least 20");
+    expect(f.usages).toHaveLength(0);
+    expect(f.questions).toHaveLength(19);
+  });
+  it("balances mixed-mark partitions so no assignment contains fewer than 20 questions", async () => {
+    const f = fixture(
+      Array.from({ length: 61 }, (_, i) => q(i + 1, { points: (i % 2) + 1 })),
+    );
+    await f.service.publishContent(
+      {
+        scope: "IDS",
+        ids: f.questions.map((q) => q.id),
+        audience: "INDEPENDENT",
+      },
+      actor,
+      "mixed",
+    );
+    expect(f.assignments.map((a) => a.questions.create.length)).toEqual([
+      20, 20, 21,
+    ]);
   });
   it("enforces admin permissions and validates audience selections", async () => {
     const f = fixture([q(1)]);

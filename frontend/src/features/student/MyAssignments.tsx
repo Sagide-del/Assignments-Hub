@@ -34,7 +34,6 @@ import {
 } from "./assignment-list";
 import {
   catalogueKey,
-  assignmentTopic,
   groupAssignments,
   matchesAssignmentSearch,
 } from "./assignment-catalogue";
@@ -58,7 +57,7 @@ function GroupProgress({
   if (!fixed.length)
     return (
       <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
-        Reviewed topic practice · up to 30 questions per batch
+        Topic sets · 20–30 questions
       </p>
     );
   const submitted = fixed.filter((a) =>
@@ -192,7 +191,9 @@ function AssignmentCard({
                   ? "Continue assignment"
                   : assignment.bankPractice.historicalOnly
                     ? "View saved review"
-                    : "Start topic practice"}
+                    : assignment.bankPractice.completedBatches
+                      ? "Start next set"
+                      : "Start topic practice"}
               <ArrowRight className="h-4 w-4" />
             </button>
             {assignment.bankPractice.latestResultId && (
@@ -265,7 +266,7 @@ export function MyAssignmentsPage() {
           grade: string;
           subjects: {
             subject: string;
-            topics: { topic: string; count: number }[];
+            topics: { topic: string; count: number; remainingCount?: number; nextSetSize?: number }[];
           }[];
           active: {
             id: string;
@@ -288,15 +289,10 @@ export function MyAssignmentsPage() {
     );
     const key = (subject: string, topic: string) =>
       JSON.stringify([catalogueKey(subject), catalogueKey(topic)]);
-    const publishedTopics = new Set(
-      published.map((a) => key(a.subject, assignmentTopic(a))),
-    );
     const bank: Assignment[] = (practiceQuery.data?.subjects ?? [])
       .flatMap((s) =>
         (s.topics ?? [])
-          .filter(
-            (t) => t.count > 0 && !publishedTopics.has(key(s.subject, t.topic)),
-          )
+          .filter((t) => (t.remainingCount ?? t.count) >= 20)
           .map((t) => ({
             id: 0,
             title: `${t.topic} · Topic practice`,
@@ -308,7 +304,11 @@ export function MyAssignmentsPage() {
             createdAt: "2020-01-01T00:00:00Z",
             type: "AUTO_MARKED",
 
-            _count: { questions: Math.min(30, t.count), submissions: 0 },
+            _count: {
+              questions:
+                t.nextSetSize ?? Math.min(30, t.remainingCount ?? t.count),
+              submissions: 0,
+            },
             bankPractice: {
               subject: s.subject,
               topic: t.topic,
@@ -444,7 +444,16 @@ export function MyAssignmentsPage() {
       : groups.length;
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-6">
-      <PageHeader title="My Assignments" actions={user?.grade ? <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{user.grade}</span> : null} />
+      <PageHeader
+        title="My Assignments"
+        actions={
+          user?.grade ? (
+            <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+              {user.grade}
+            </span>
+          ) : null
+        }
+      />
       <nav
         aria-label="Assignment breadcrumb"
         className="flex flex-wrap items-center gap-2 text-xs"

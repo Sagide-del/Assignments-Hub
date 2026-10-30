@@ -2,7 +2,7 @@ import { CollectionService } from "./collection.service";
 import manifest from "./github-curriculum.manifest.json";
 
 describe("Next content batch coverage", () => {
-  it("excludes saved/active question outcomes per mode, but permits rejected or failed outcomes", async () => {
+  it("excludes full saved/active sets per mode, but permits short legacy, rejected or failed outcomes", async () => {
     const sources = [
       {
         id: 1,
@@ -98,8 +98,8 @@ describe("Next content batch coverage", () => {
     const result = await service.overview();
     expect(result.scopes[0]).toMatchObject({
       unitIds: [1, 2, 3, 4, 5, 6],
-      nextPracticeUnitIds: [2, 3, 5, 6],
-      nextWrittenUnitIds: [1, 3, 4, 6],
+      nextPracticeUnitIds: [1, 2, 3, 5, 6],
+      nextWrittenUnitIds: [1, 2, 3, 4, 6],
     });
     expect(result.scopes[1].nextPracticeUnitIds).toEqual([]);
     expect(p.contentLibraryJob.findMany).toHaveBeenCalledWith(
