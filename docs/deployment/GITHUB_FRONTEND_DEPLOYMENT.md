@@ -33,3 +33,9 @@ aws iam update-assume-role-policy --role-name AssignmentHubGitHubFrontendDeploy 
 ```
 
 This preserves GitHub’s immutable identity configuration and the existing least-privilege publication policy. Rerun the failed GitHub workflow after the update.
+
+### Exam API readiness regression
+
+The AWS frontend workflow probes the Render `/api/v1/kjsea/blueprint` before uploading to S3. The full-paper backend introduced `assessmentWorkspaceVersion: 3` and `fullExamVersion: 1`; a stale check requiring workspace version 2 rejected the current backend, even when builds and unit tests passed. The check now requires those minimum capabilities and reports the mismatched field/value. It retains all schema, subject, question-count and other API readiness checks.
+
+`src/kjsea/deployment-readiness.spec.ts` starts a local HTTP endpoint serving the real `KjseaService.configuration()` result and runs the actual frontend deployment script against it. This test runs in the existing assessment-backend workflow step. The frontend KJSEA suite also covers rejection of older or malformed capability responses. A build artifact confirms that compilation succeeded; only the Publish and verify frontend step confirms an AWS upload and matching public homepage.
