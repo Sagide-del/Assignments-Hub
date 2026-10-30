@@ -39,3 +39,14 @@ test('math spelling variants form one subject folder',()=>{
  const groups=groupAssignments([task(1,'Surds',{subject:'Mathematic'}),task(2,'Algebra',{subject:'Maths'}),task(3,'Geometry',{subject:'Mathematics'})]);
  assert.equal(groups.length,1);assert.equal(groups[0].name,'Mathematics');assert.equal(groups[0].assignments.length,3);
 });
+const {learningTitle}=await loadTypeScript(new URL('../src/features/student/assignment-presentation.ts',import.meta.url));
+test('long generated headings separate strand, topic, coverage and batch without mutating originals',()=>{
+ const title='Business Studies · Entrepreneurship / 1.2 Business opportunities • Identifying opportunities • Evaluating business ideas · Batch 77';
+ assert.deepEqual(learningTitle(title,'Business Studies'),{title:'Business opportunities',strand:'Entrepreneurship',code:'1.2',coverage:['Identifying opportunities','Evaluating business ideas'],batch:'77',full:title});
+ assert.equal(learningTitle('Mathematics · Numbers / 1.3 Fractions • Comparing fractions · Batch 8','Mathematics').title,'Fractions');
+});
+test('display cleanup preserves manual titles, fractions, non-prefix subject wording and full search content',()=>{
+ for(const title of ['The Mole - Quiz 1','Profit and loss','Calculate 1/2 + 1/3','Business Studies in everyday life'])assert.equal(learningTitle(title,'Business Studies').title,title);
+ const a=task(20,'Business Studies · Enterprise / 1.2 Opportunities • Cash flow · Batch 2',{subject:'Business Studies'}),before=JSON.stringify(a),groups=groupAssignments([a]);
+ learningTitle(a.title,a.subject);assert.equal(JSON.stringify(a),before);assert.equal(groupAssignments([a])[0].topics[0].key,groups[0].topics[0].key);assert(matchesAssignmentSearch(a,'cash flow'));
+});

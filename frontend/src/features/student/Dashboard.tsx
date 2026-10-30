@@ -1,16 +1,16 @@
+import { subjectAppearance } from "./subject-appearance";
+import { groupAssignments } from "./assignment-catalogue";
+import { LearningTitle, FullLearningTitle } from "./LearningTitle";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
   ArrowRight,
-  Atom,
   Award,
   BadgeCheck,
   BookOpen,
   BrainCircuit,
-  BriefcaseBusiness,
-  Calculator,
   CalendarDays,
   ChevronRight,
   CircleDashed,
@@ -19,16 +19,10 @@ import {
   Clock3,
   CodeXml,
   Compass,
-  Dna,
   FileCheck2,
   FlaskConical,
-  Globe2,
-  Landmark,
-  Languages,
   LibraryBig,
-  Palette,
   Search,
-  Sprout,
   type LucideIcon,
 } from "lucide-react";
 import { assignmentsApi } from "../../api/assignments.api";
@@ -44,34 +38,6 @@ import {
   type AssignmentState,
 } from "./assignment-list";
 
-function subjectAppearance(subject: string): {
-  Icon: LucideIcon;
-  tone: string;
-} {
-  if (/math/i.test(subject))
-    return { Icon: Calculator, tone: "bg-blue-50 text-blue-700" };
-  if (/chem/i.test(subject))
-    return { Icon: FlaskConical, tone: "bg-violet-50 text-violet-700" };
-  if (/bio|life science/i.test(subject))
-    return { Icon: Dna, tone: "bg-emerald-50 text-emerald-700" };
-  if (/physic|integrated science/i.test(subject))
-    return { Icon: Atom, tone: "bg-sky-50 text-sky-700" };
-  if (/computer|coding|technology|technical/i.test(subject))
-    return { Icon: CodeXml, tone: "bg-indigo-50 text-indigo-700" };
-  if (/english|kiswahili|language|literature/i.test(subject))
-    return { Icon: Languages, tone: "bg-orange-50 text-orange-700" };
-  if (/geog|environment/i.test(subject))
-    return { Icon: Globe2, tone: "bg-cyan-50 text-cyan-700" };
-  if (/history|government|social/i.test(subject))
-    return { Icon: Landmark, tone: "bg-amber-50 text-amber-700" };
-  if (/agri|nutrition/i.test(subject))
-    return { Icon: Sprout, tone: "bg-green-50 text-green-700" };
-  if (/business|commerce|econom/i.test(subject))
-    return { Icon: BriefcaseBusiness, tone: "bg-slate-100 text-slate-700" };
-  if (/art|design|music/i.test(subject))
-    return { Icon: Palette, tone: "bg-rose-50 text-rose-700" };
-  return { Icon: BookOpen, tone: "bg-slate-100 text-slate-600" };
-}
 const METRICS: {
   state: AssignmentState;
   label: string;
@@ -155,7 +121,7 @@ function AssignmentRow({
   submission?: Submission;
 }) {
   const subject = assignmentSubject(assignment);
-  const { Icon, tone } = subjectAppearance(subject);
+  const { Icon, tone, key: iconKey } = subjectAppearance(subject);
   const state = assignmentState(submission);
   const meta = STATE_META[state];
   const questions =
@@ -168,7 +134,12 @@ function AssignmentRow({
       <span
         className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tone}`}
       >
-        <Icon className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
+        <Icon
+          data-subject-icon={iconKey}
+          className="h-5 w-5"
+          strokeWidth={1.7}
+          aria-hidden="true"
+        />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -179,9 +150,12 @@ function AssignmentRow({
             {meta.label}
           </span>
         </div>
-        <h3 className="mt-2 break-words text-sm font-semibold leading-6 text-slate-900 sm:text-base">
-          {assignment.title}
-        </h3>
+        <LearningTitle
+          value={assignment.title}
+          subject={subject}
+          className="mt-2"
+        />
+        <FullLearningTitle value={assignment.title} subject={subject} />
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
           {questions != null && <span>{questions} questions</span>}
           {marks != null && <span>{marks} marks</span>}
@@ -252,6 +226,10 @@ export function StudentDashboard() {
   }, [submissionsQuery.data]);
   const subjects = useMemo(
     () => [...new Set(assignments.map(assignmentSubject))].sort(),
+    [assignments],
+  );
+  const subjectGroups = useMemo(
+    () => groupAssignments(assignments),
     [assignments],
   );
   const counts = useMemo(() => {
@@ -364,6 +342,47 @@ export function StudentDashboard() {
           </button>
         ))}
       </section>
+      {ready && subjects.length > 0 && (
+        <section
+          aria-label="Your subject shortcuts"
+          className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5"
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Jump into a subject
+            </h2>
+            <Link
+              to="/student/my-assignments"
+              className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-slate-500"
+            >
+              Browse all <ChevronRight size={13} aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {subjectGroups.map(({ name, key: groupKey }) => {
+              const { Icon, tone, key } = subjectAppearance(name);
+              return (
+                <Link
+                  key={name}
+                  to={`/student/my-assignments?subject=${encodeURIComponent(groupKey)}`}
+                  className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+                >
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center rounded-lg ${tone}`}
+                  >
+                    <Icon
+                      size={16}
+                      data-subject-icon={key}
+                      aria-hidden="true"
+                    />
+                  </span>
+                  {name}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
       {error && (
         <div
           role="alert"
@@ -390,7 +409,7 @@ export function StudentDashboard() {
           {ready && next && (
             <section
               aria-label="Next assignment"
-              className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-blue-100 bg-white p-5"
+              className="relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl border border-slate-200 border-l-4 border-l-[#B5E61D] bg-white p-5 shadow-sm shadow-slate-100/50"
             >
               <div className="flex w-full min-w-0 items-start gap-3 sm:w-auto sm:flex-1">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
@@ -400,9 +419,16 @@ export function StudentDashboard() {
                   <p className="text-xs font-medium text-slate-500">
                     Up next · {assignmentSubject(next)}
                   </p>
-                  <h2 className="mt-1 break-words text-sm font-semibold text-slate-900">
-                    {next.title}
-                  </h2>
+                  <LearningTitle
+                    value={next.title}
+                    subject={assignmentSubject(next)}
+                    as="h2"
+                    className="mt-2"
+                  />
+                  <FullLearningTitle
+                    value={next.title}
+                    subject={assignmentSubject(next)}
+                  />
                   <p className="mt-1 text-xs text-slate-500">
                     {assignmentDeadline(next.dueDate).label}
                   </p>
@@ -420,7 +446,7 @@ export function StudentDashboard() {
             </section>
           )}
           <section
-            className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
             aria-label="Your assignments"
           >
             <div className="p-4 sm:p-6">
@@ -546,7 +572,7 @@ export function StudentDashboard() {
         </div>
         <aside
           aria-label="Learning tools"
-          className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
         >
           <div className="border-b border-slate-100 px-5 py-4">
             <h2 className="text-sm font-semibold text-slate-900">

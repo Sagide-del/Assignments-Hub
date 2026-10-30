@@ -1,3 +1,6 @@
+import { learningTitle } from "./assignment-presentation";
+import { subjectAppearance } from "./subject-appearance";
+import { LearningTitle, FullLearningTitle } from "./LearningTitle";
 import { api, apiErrorMessage } from "../../api/axios";
 import { useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -10,23 +13,11 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
-  Atom,
   BookOpen,
-  BriefcaseBusiness,
-  Calculator,
   CalendarDays,
   ChevronRight,
-  CodeXml,
-  Dna,
-  FlaskConical,
   FolderOpen,
-  Globe2,
-  Landmark,
-  Languages,
-  Palette,
   Search,
-  Sprout,
-  type LucideIcon,
 } from "lucide-react";
 import { assignmentsApi } from "../../api/assignments.api";
 import { submissionsApi } from "../../api/submissions.api";
@@ -55,31 +46,6 @@ const STATES = [
 ] as const;
 const CONTROL =
   "min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700";
-function subjectStyle(name: string): { Icon: LucideIcon; tone: string } {
-  if (/math/i.test(name))
-    return { Icon: Calculator, tone: "bg-blue-50 text-blue-700" };
-  if (/chem/i.test(name))
-    return { Icon: FlaskConical, tone: "bg-violet-50 text-violet-700" };
-  if (/bio|life science/i.test(name))
-    return { Icon: Dna, tone: "bg-emerald-50 text-emerald-700" };
-  if (/physic|science/i.test(name))
-    return { Icon: Atom, tone: "bg-sky-50 text-sky-700" };
-  if (/english|kiswahili|language|literature/i.test(name))
-    return { Icon: Languages, tone: "bg-orange-50 text-orange-700" };
-  if (/computer|technical|coding/i.test(name))
-    return { Icon: CodeXml, tone: "bg-indigo-50 text-indigo-700" };
-  if (/geo/i.test(name))
-    return { Icon: Globe2, tone: "bg-cyan-50 text-cyan-700" };
-  if (/history|government|social/i.test(name))
-    return { Icon: Landmark, tone: "bg-amber-50 text-amber-700" };
-  if (/agri|nutrition/i.test(name))
-    return { Icon: Sprout, tone: "bg-green-50 text-green-700" };
-  if (/business|commerce/i.test(name))
-    return { Icon: BriefcaseBusiness, tone: "bg-slate-100 text-slate-700" };
-  if (/art|music|design/i.test(name))
-    return { Icon: Palette, tone: "bg-rose-50 text-rose-700" };
-  return { Icon: BookOpen, tone: "bg-slate-100 text-slate-600" };
-}
 function GroupProgress({
   items,
   submissions,
@@ -156,7 +122,7 @@ function AssignmentCard({
   const due = assignmentDeadline(assignment.dueDate);
   const unfinished = state === "NOT_STARTED" || state === "IN_PROGRESS";
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5">
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-100/50 transition hover:border-slate-300 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <span
@@ -164,9 +130,15 @@ function AssignmentCard({
           >
             {meta.label}
           </span>
-          <h3 className="mt-3 break-words text-base font-semibold text-slate-900">
-            {assignment.title}
-          </h3>
+          <LearningTitle
+            value={assignment.title}
+            subject={assignment.subject}
+            className="mt-3"
+          />
+          <FullLearningTitle
+            value={assignment.title}
+            subject={assignment.subject}
+          />
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
             {count != null && <span>{count} questions</span>}
             {marks != null && <span>{marks} marks</span>}
@@ -525,7 +497,9 @@ export function MyAssignmentsPage() {
               aria-current="page"
               className="break-words font-medium text-slate-900"
             >
-              {title}
+              <span className="line-clamp-1" title={title}>
+                {learningTitle(title, selectedSubject?.name).title}
+              </span>
             </span>
           </>
         )}
@@ -583,7 +557,14 @@ export function MyAssignmentsPage() {
       </section>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          <h2
+            className="line-clamp-2 break-words text-lg font-semibold text-slate-900 [overflow-wrap:anywhere]"
+            title={title}
+          >
+            {topicKey
+              ? learningTitle(title, selectedSubject?.name).title
+              : title}
+          </h2>
           <p role="status" className="mt-1 text-xs text-slate-500">
             {error
               ? "Assignments unavailable"
@@ -677,20 +658,21 @@ export function MyAssignmentsPage() {
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {groups.map((s) => {
-            const { Icon, tone } = subjectStyle(s.name);
+            const { Icon, tone, key: iconKey } = subjectAppearance(s.name);
             return (
               <button
                 type="button"
                 key={s.key}
                 aria-label={`Open ${s.name}`}
                 onClick={() => navigate(s.key)}
-                className="group min-w-0 rounded-xl border border-slate-200 bg-white p-5 text-left transition hover:border-slate-400 hover:shadow-sm"
+                className="group relative min-w-0 rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md hover:shadow-slate-200/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 motion-reduce:transform-none sm:p-6"
               >
                 <span className="flex items-center justify-between">
                   <span
                     className={`flex h-11 w-11 items-center justify-center rounded-xl ${tone}`}
                   >
                     <Icon
+                      data-subject-icon={iconKey}
                       className="h-6 w-6"
                       strokeWidth={1.7}
                       aria-hidden="true"
@@ -701,7 +683,7 @@ export function MyAssignmentsPage() {
                     aria-hidden="true"
                   />
                 </span>
-                <h3 className="mt-5 text-base font-semibold text-slate-900">
+                <h3 className="mt-5 min-h-12 break-words text-base font-semibold leading-6 text-slate-900">
                   {s.name}
                 </h3>
                 <p className="mt-2 text-xs text-slate-500">
@@ -718,39 +700,56 @@ export function MyAssignmentsPage() {
           })}
         </section>
       ) : !topicKey ? (
-        <section
-          aria-label="Subject topics"
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {matchingSubject?.topics.map((t) => (
-            <button
-              type="button"
-              key={t.key}
-              aria-label={`Open topic: ${t.name}`}
-              onClick={() => navigate(subjectKey, t.key)}
-              className="group min-w-0 rounded-xl border border-slate-200 bg-white p-5 text-left hover:border-slate-400 hover:shadow-sm"
-            >
-              <span className="flex items-center justify-between">
-                <FolderOpen
-                  className="h-6 w-6 text-slate-400"
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                />
-                <ArrowRight
-                  className="h-4 w-4 text-slate-300 group-hover:text-slate-600"
-                  aria-hidden="true"
-                />
-              </span>
-              <h3 className="mt-5 break-words text-sm font-semibold leading-6 text-slate-900">
-                {t.name}
-              </h3>
-              <p className="mt-2 text-xs text-slate-500">
-                {t.assignments.length}{" "}
-                {t.assignments.length === 1 ? "assignment" : "assignments"}
-              </p>
-              <GroupProgress items={t.assignments} submissions={submissions} />
-            </button>
-          ))}
+        <section aria-label="Subject topics" className="grid gap-3">
+          {matchingSubject?.topics.map((t) => {
+            const { Icon, tone } = subjectAppearance(
+              selectedSubject?.name ?? "",
+            );
+            return (
+              <article
+                key={t.key}
+                className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-slate-300 sm:px-5"
+              >
+                <button
+                  type="button"
+                  aria-label={`Open topic: ${t.name}`}
+                  onClick={() => navigate(subjectKey, t.key)}
+                  className="group flex min-h-20 w-full min-w-0 items-center gap-3 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400 sm:gap-4"
+                >
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}
+                  >
+                    <Icon size={21} strokeWidth={1.7} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <LearningTitle
+                      value={t.name}
+                      subject={selectedSubject?.name}
+                    />
+                  </div>
+                  <span className="hidden shrink-0 text-xs text-slate-500 sm:block">
+                    {t.assignments.length}{" "}
+                    {t.assignments.length === 1 ? "assignment" : "assignments"}
+                  </span>
+                  <ChevronRight
+                    size={17}
+                    className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                </button>
+                <div className="pl-14 sm:pl-[60px]">
+                  <p className="text-xs text-slate-500 sm:hidden">
+                    {t.assignments.length}{" "}
+                    {t.assignments.length === 1 ? "assignment" : "assignments"}
+                  </p>
+                  <FullLearningTitle
+                    value={t.name}
+                    subject={selectedSubject?.name}
+                  />
+                </div>
+              </article>
+            );
+          })}
         </section>
       ) : (
         <section aria-label="Topic assignments" className="space-y-3">
