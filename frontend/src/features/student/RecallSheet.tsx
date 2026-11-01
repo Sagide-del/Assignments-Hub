@@ -74,20 +74,28 @@ export function RecallSheet({
           <p className="mt-1.5 text-sm font-semibold leading-6 text-[#2a2b2e]">{content.cue}</p>
         </section>
         <div className="recall-learning-grid">
-          <div className={`recall-visual-first ${visual.kind === "diagram" || (visual.scene && visual.scene !== "none") ? "recall-visual-first-with-rail" : ""}`}>
+          <div className={`recall-visual-first ${visual.kind === "diagram" ? "recall-visual-first-with-rail" : ""}`}>
             <div className="recall-visual-canvas min-w-0">
               <div className="recall-visual-caption"><WandSparkles size={14} /> See the idea</div>
               <IllustrationViewer visual={visual} reveal={reveal} visualOnly />
             </div>
-            <RecallVisualRail visual={visual} reveal={reveal} />
+            {visual.kind === "diagram" && <RecallVisualRail visual={visual} reveal={reveal} />}
           </div>
-          <section className="recall-memory-panel rounded-2xl px-5 py-5">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em]"><Brain size={14} /> Memory hook</p>
-            <p className="mt-3 text-xl font-extrabold leading-8 sm:text-2xl">{content.mnemonic}</p>
-            <div className="mt-5 border-t border-white/20 pt-4 text-sm leading-6 text-white/85">
-              <p className="font-semibold text-white">Say it, then explain it.</p>
-              <p className="mt-1">Cover the labels first. Use the illustration and the hook to rebuild the idea in your own words.</p>
+          <section className="recall-knowledge-panel rounded-2xl px-5 py-5">
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em]"><Brain size={14} /> Remember</p>
+            <p className="recall-mnemonic-copy mt-3 font-extrabold leading-7">{content.mnemonic}</p>
+            <div className="mt-5 border-t border-slate-200 pt-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Key links</p>
+              <dl className="mt-3 space-y-3">
+                {content.facts.slice(0, 4).map((fact, index) => (
+                  <div key={`${fact.label}-${index}`} className="recall-fact-row">
+                    <dt>{reveal ? fact.label : String(index + 1).padStart(2, "0")}</dt>
+                    {reveal && <dd>{fact.meaning}</dd>}
+                  </div>
+                ))}
+              </dl>
             </div>
+            <p className="mt-5 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-600"><strong className="text-slate-900">Try it:</strong> Cover the labels, explain the picture, then answer the recall check.</p>
           </section>
         </div>
         <footer className="recall-brand-footer mt-3 flex flex-wrap items-center justify-between gap-2 border-t-2 pt-3">
