@@ -33,6 +33,7 @@ export function RecallPreview({
         grade={grade}
         subject={subject}
         topic={topic}
+        isAdminPreview
       />
       <RecallStudyNotes content={content} />
       <section className="rounded-xl border bg-white p-5">
