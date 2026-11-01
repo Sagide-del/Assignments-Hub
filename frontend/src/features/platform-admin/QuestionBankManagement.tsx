@@ -405,7 +405,7 @@ export function QuestionBankManagement() {
     onError: error,
   });
   const generation = useMutation({
-    mutationFn: (kind: "QUESTIONS" | "CARDS" | "BOTH") =>
+    mutationFn: (kind: "QUESTIONS") =>
       contentLibraryApi.generate(generationIds, kind, count, generationTopic),
     onSuccess: (jobs) => {
       setNotice(
@@ -1156,32 +1156,9 @@ export function QuestionBankManagement() {
               >
                 Generate questions · {generationIds.length} sources
               </button>
-              <button
-                disabled={!generationIds.length || generation.isPending}
-                className={control + " disabled:opacity-40"}
-                onClick={() => generation.mutate("CARDS")}
-              >
-                Generate memory cards
-              </button>
-              <button
-                className={
-                  control + " bg-blue-700 text-white disabled:opacity-40"
-                }
-                disabled={
-                  !generationIds.length ||
-                  generation.isPending ||
-                  count < 5 ||
-                  count > 100
-                }
-                onClick={() => generation.mutate("BOTH")}
-              >
-                Generate questions & cards
-              </button>
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              Memory-card batches are capped at 12 per source for careful
-              review. Questions can be generated repeatedly to grow the rotating
-              pool.
+              Questions can be generated repeatedly to grow the rotating pool.
             </p>
             <div className="mt-4 max-h-[360px] divide-y overflow-y-auto">
               {eligibleSources.map((source) => {

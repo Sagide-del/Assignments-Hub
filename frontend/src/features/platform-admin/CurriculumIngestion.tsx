@@ -257,10 +257,10 @@ export function CurriculumIngestion() {
       );
   const generate = useMutation({
     mutationFn: () =>
-      ingestionApi.generate(ready, "BOTH", count, assessmentMode),
+      ingestionApi.generate(ready, "QUESTIONS", count, assessmentMode),
     onSuccess: () => {
       setNotice(
-        "Outcome-based question and recall-card jobs queued as drafts. Open Generation jobs to monitor them.",
+        "Outcome-based question jobs queued as drafts. Open Generation jobs to monitor them.",
       );
       refresh();
     },
@@ -896,7 +896,7 @@ export function CurriculumIngestion() {
                 className={control + " text-blue-700"}
                 onClick={() => generate.mutate()}
               >
-                Generate questions & cards · {ready.length} outcomes
+                Generate questions · {ready.length} outcomes
               </button>
             </div>
             <Link
