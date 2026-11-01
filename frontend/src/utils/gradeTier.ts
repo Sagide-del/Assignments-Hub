@@ -30,3 +30,8 @@ export function isPathwayGuidanceGrade(grade: string | null | undefined) {
 export function isCbcGrade(grade: string | null | undefined) {
   return grade === 'PP1' || grade === 'PP2' || (gradeNumber(grade) !== null && gradeNumber(grade)! >= 1 && gradeNumber(grade)! <= 12);
 }
+
+export function isEarlyYearsGrade(grade: string | null | undefined) {
+  const value = gradeNumber(grade);
+  return grade === 'PP1' || grade === 'PP2' || (value !== null && value >= 1 && value <= 3);
+}

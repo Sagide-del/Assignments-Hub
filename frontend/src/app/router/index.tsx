@@ -16,13 +16,12 @@ import { LearnSkillsPage } from '../../features/student/LearnSkills';
 import { SkillDetailPage } from '../../features/student/SkillDetail';
 import { MyPathwayPage } from '../../features/student/my-pathway/MyPathwayPage';
 import { MessagesPage } from '../../features/student/Messages';
-import { MnemonicCardsPage } from '../../features/student/MnemonicCards';
+import { StudentHome } from '../../features/student/StudentHome';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
 import { StudentReports } from '../../features/student/Reports';
 import { MyResourcesPage } from '../../features/student/MyResources';
 import { TrialActivationPage } from '../../features/student/TrialActivation';
 import { LearningCoachPage } from '../../features/student/LearningCoach';
-import { StudentDashboard } from '../../features/student/Dashboard';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
@@ -262,7 +261,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/student',
-            element: <StudentDashboard />,
+            element: <StudentHome />,
           },
           {
             path: '/student/my-assignments',
@@ -277,7 +276,7 @@ export const router = createBrowserRouter([
           {path:'/student/assignments/practice/:id',element:<KjseaMockPlayerPage/>},
           {
             path: '/student/mnemonic-cards',
-            element: <MnemonicCardsPage />,
+            element: <Navigate to="/student" replace />,
           },
           {
             path: '/student/learning-coach',
