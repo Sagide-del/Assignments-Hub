@@ -854,7 +854,7 @@ export function CurriculumIngestion() {
             </h3>
             <p className="mt-2 text-sm leading-7 text-slate-500">
               {ready.length} outcomes have reviewed curriculum evidence. AI
-              generates original questions and recall cards within that scope;
+              generates original questions within that scope;
               notes and books are optional. Answers still require review before
               publication. Curriculum-aligned does not mean KICD-approved.
             </p>

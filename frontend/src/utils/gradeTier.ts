@@ -32,6 +32,7 @@ export function isCbcGrade(grade: string | null | undefined) {
 }
 
 export function isEarlyYearsGrade(grade: string | null | undefined) {
+  const normalized = (grade ?? "").replace(/[\s-]+/g, "").toUpperCase();
   const value = gradeNumber(grade);
-  return grade === 'PP1' || grade === 'PP2' || (value !== null && value >= 1 && value <= 3);
+  return /^(PP|PREPRIMARY)[12]$/.test(normalized) || (value !== null && value >= 1 && value <= 3);
 }

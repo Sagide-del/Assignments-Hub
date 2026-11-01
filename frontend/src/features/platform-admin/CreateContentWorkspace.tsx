@@ -431,7 +431,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
     },
     onSuccess: ({ queued, reused, failures }) => {
       setNotice(
-        `${queued} new jobs queued${reused ? ` · ${reused} existing jobs or saved drafts reused` : ""}. ${queued ? "Questions run first, with up to three jobs together. Drafts and memory cards are saved for your review." : "Existing matching jobs or saved drafts are being reused."}${failures.length ? " Could not queue: " + failures.join(" · ") : ""}`,
+        `${queued} new jobs queued${reused ? ` · ${reused} existing jobs or saved drafts reused` : ""}. ${queued ? "Questions run with up to three jobs together and save as drafts for your review." : "Existing matching jobs or saved drafts are being reused."}${failures.length ? " Could not queue: " + failures.join(" · ") : ""}`,
       );
       if (queued || reused) setStep(3);
       refresh();
@@ -1380,8 +1380,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   Check the answers and explanations, then approve the
                   questions. Then select the approved questions and publish to
                   individual learners, subscribed schools, or both. Published
-                  assignments appear by grade, subject and topic. Memory cards
-                  have their own Publish action.
+                  assignments appear by grade, subject and topic.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -1399,9 +1398,6 @@ function GradeContentFlow({ grade }: { grade: string }) {
                 </Link>
                 <Link className={button} to="?view=jobs">
                   Check generation progress
-                </Link>
-                <Link className={button} to="?view=cards">
-                  Review memory cards
                 </Link>
               </div>
               <p className="text-xs leading-6 text-slate-500">

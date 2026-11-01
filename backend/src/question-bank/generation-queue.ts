@@ -2,9 +2,7 @@ import { Prisma } from "@prisma/client";
 
 export const GENERATION_KINDS = [
   "OUTCOME_QUESTIONS",
-  "OUTCOME_CARDS",
   "QUESTIONS",
-  "CARDS",
 ];
 export const QUESTION_KINDS = ["OUTCOME_QUESTIONS", "QUESTIONS"];
 
@@ -47,27 +45,21 @@ export async function reusableGeneration(
     },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
-  const requested = kind.endsWith("CARDS")
-    ? Math.min(12, input.count)
-    : input.count;
+  const requested = input.count;
   for (const job of jobs) {
     const other = job.input as any;
     if (!sameGeneration(input, other)) continue;
     if (job.status !== "COMPLETED") {
-      const capacity = kind.endsWith("CARDS")
-        ? Math.min(12, other.count)
-        : other.count;
+      const capacity = other.count;
       if (capacity >= requested) return job;
       continue;
     }
     const result = job.result as any;
-    const ids = kind.endsWith("CARDS") ? result?.cardIds : result?.questionIds;
+    const ids = result?.questionIds;
     if (!Array.isArray(ids) || ids.length < requested) continue;
-    const count = kind.endsWith("CARDS")
-      ? await tx.mnemonicCard.count({ where: { id: { in: ids } } })
-      : await tx.questionBank.count({
-          where: { id: { in: ids }, status: { not: "REJECTED" } },
-        });
+    const count = await tx.questionBank.count({
+      where: { id: { in: ids }, status: { not: "REJECTED" } },
+    });
     if (count >= requested) return job;
   }
   return null;

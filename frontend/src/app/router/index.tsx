@@ -85,10 +85,6 @@ const PlatformBilling = lazy(() =>
 const SkillStudio = lazy(() =>
   import('../../features/platform-admin/SkillStudio').then((module) => ({ default: module.SkillStudio })),
 );
-const MnemonicCardsStudio = lazy(() =>
-  import('../../features/platform-admin/MnemonicCardsStudio').then((module) => ({ default: module.MnemonicCardsStudio })),
-);
-
 
 const studentNav = [
   {
@@ -274,10 +270,6 @@ export const router = createBrowserRouter([
           {path:'/student/kjsea-mock-test',element:<KjseaMockTestPage/>},
           {path:'/student/kjsea-mock-test/:id',element:<KjseaMockPlayerPage/>},
           {path:'/student/assignments/practice/:id',element:<KjseaMockPlayerPage/>},
-          {
-            path: '/student/mnemonic-cards',
-            element: <Navigate to="/student" replace />,
-          },
           {
             path: '/student/learning-coach',
             element: <LearningCoachPage />,
@@ -536,10 +528,6 @@ export const router = createBrowserRouter([
           {
             path: '/platform/skill-studio',
             element: <SkillStudio />,
-          },
-          {
-            path: '/platform/mnemonic-cards',
-            element: <MnemonicCardsStudio />,
           },
           {
             path: '/platform/resources',

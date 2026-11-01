@@ -7,7 +7,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BookMarked,
   Layers,
-  Brain,
   Clock,
   Plus,
   ChevronLeft,
@@ -40,9 +39,7 @@ const jobLabels: Record<string, string> = {
   INGEST_FILE: "Read uploaded file",
   INDEX_ASSET: "Index curriculum",
   OUTCOME_QUESTIONS: "Generate questions",
-  OUTCOME_CARDS: "Generate recall cards",
   QUESTIONS: "Generate questions",
-  CARDS: "Generate recall cards",
 };
 const grades = [6, 7, 8, 9, 10, 11, 12].map((g) => `Grade ${g}`);
 export function QuestionBankManagement() {
@@ -514,7 +511,6 @@ export function QuestionBankManagement() {
     ["questions", "Review questions", FileSearch],
     ["create", "Create content", Layers],
     ["jobs", "Content jobs", Clock],
-    ["cards", "Memory cards", Brain],
   ] as const;
   return (
     <div className="space-y-5 pb-12 text-slate-800">
@@ -1308,8 +1304,8 @@ export function QuestionBankManagement() {
             <div className="border-b p-5">
               <p className="mb-4 text-sm leading-6 text-slate-600">
                 Up to {overview.data.queue.concurrency} jobs run together.
-                Questions are prepared before recall cards; duplicate requests
-                reuse existing work. You can leave this page safely.
+                Duplicate question-generation requests reuse existing work. You
+                can leave this page safely.
               </p>
               <div className="divide-y divide-slate-100">
                 {queueSubjects.map((row) => {
