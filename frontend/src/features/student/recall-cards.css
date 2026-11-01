@@ -12,24 +12,33 @@
 }
 
 /* Assignment Hub's own identity is fixed on revision cards, including exports. */
-.recall-brand-header { background: #fff; color: #101820; border-top: 5px solid #B5E61D; border-bottom: 1px solid #e2e8f0; }
+.recall-brand-header { background: #2a2b2e; color: #fff; border-top: 6px solid #b5d334; border-bottom: 0; }
 .recall-brand-accent { color: #B5E61D; }
 .recall-brand-ink { color: #101820; }
-.recall-brand-badge { background: #101820; color: #B5E61D; }
+.recall-brand-badge { background: #b5d334; color: #2a2b2e; }
 .recall-brand-memory { background: #f5f9e8; border-color: #B5E61D; }
 .recall-brand-footer { border-color: #B5E61D; }
 .recall-brand-step { background: #f5f9e8; border-color: #d9e9a5; color: #101820; }
 .recall-brand-comparison { background: #f5f9e8; border-color: #d9e9a5; }
 
 /* White-paper masthead gives the original wordmark its own clear space. */
-.recall-card-logo { padding: 0; flex-shrink: 0; }
+.recall-card-logo { padding: 4px 8px; flex-shrink: 0; border-radius: 8px; background: #fff; }
 .recall-card-logo > [role="img"] { width: 208px; height: 48px; }
-.recall-edition-sticker { background: #f2f8df; color: #486100; transform: rotate(-3deg); }
-.recall-course-label { background: #101820; color: #fff; }
+.recall-edition-sticker { background: #b5d334; color: #2a2b2e; transform: rotate(-3deg); }
+.recall-course-label { background: rgb(255 255 255 / .12); color: #fff; border: 1px solid rgb(255 255 255 / .2); }
 .recall-question-strip { background: #f8faf4; border: 1px solid #edf2e2; }
 .recall-challenge-icon, .recall-sprint-button { background: #B5E61D; color: #101820; }
 .recall-art-panel { background: #fff; }
 .recall-site-link { color: #101820; }
+.recall-title-zone { position: relative; padding: .25rem 0 .9rem; border-bottom: 1px solid #e5e7eb; }
+.recall-title-kicker { color: #607b00; }
+.recall-mission { border: 1px solid #e1e4e8; border-left: 5px solid #b5d334; background: #f4f5f7; box-shadow: inset 0 1px 0 rgb(255 255 255 / .85); }
+.recall-learning-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.recall-memory-panel { background: linear-gradient(145deg, #2a2b2e 0%, #101820 100%); color: #fff; box-shadow: 0 12px 28px rgb(16 24 32 / .18); }
+.recall-memory-panel > :first-child { color: #dff38a; }
+.recall-visual-canvas { position: relative; overflow: hidden; border: 1px solid #dfe5d0; border-radius: 18px; background: linear-gradient(180deg, #fbfdf6, #f4f5f7); padding: 1.5rem .75rem .75rem; }
+.recall-visual-caption { position: absolute; top: .5rem; left: .65rem; z-index: 1; display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; background: #2a2b2e; color: #fff; padding: .3rem .55rem; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+@container revision (min-width: 760px) { .recall-learning-grid { grid-template-columns: minmax(0, 2.1fr) minmax(210px, .9fr); align-items: stretch; } }
 .recall-illustration-dialog { width: min(94vw, 1100px); max-height: 90vh; }
 .recall-illustration-dialog::backdrop { background: rgb(16 24 32 / .6); backdrop-filter: blur(4px); }
 @media print {
