@@ -58,7 +58,6 @@ function fixture(initial: any[]) {
       }),
     },
     questionBank: { count: jest.fn().mockResolvedValue(5) },
-    mnemonicCard: { count: jest.fn().mockResolvedValue(5) },
     user: { findUnique: jest.fn().mockResolvedValue(actor) },
   };
   // Model PostgreSQL's advisory transaction lock for concurrent lane claims.
@@ -84,13 +83,8 @@ describe("Bounded content generation queue", () => {
     else process.env.CONTENT_GENERATION_CONCURRENCY = prior;
   });
 
-  it("drains the backlog with three lanes and starts questions before older cards", async () => {
+  it("drains a question-generation backlog with three lanes", async () => {
     const { p, jobs } = fixture([
-      ...Array.from({ length: 4 }, (_, i) => ({
-        id: `c${i}`,
-        kind: "OUTCOME_CARDS",
-        input: input(i),
-      })),
       ...Array.from({ length: 7 }, (_, i) => ({
         id: `q${i}`,
         kind: "OUTCOME_QUESTIONS",
@@ -109,7 +103,6 @@ describe("Bounded content generation queue", () => {
       return {
         count: 5,
         questionIds: [1, 2, 3, 4, 5],
-        cardIds: [1, 2, 3, 4, 5],
       };
     });
     const s = new ContentLibraryService(
@@ -125,7 +118,7 @@ describe("Bounded content generation queue", () => {
       Array.from({ length: 7 }, (_, i) => `q${i}`),
     );
     expect(jobs.every((j) => j.status === "COMPLETED")).toBe(true);
-    expect(processJob).toHaveBeenCalledTimes(11);
+    expect(processJob).toHaveBeenCalledTimes(7);
   });
 
   it("skips old queued duplicates and reuses completed saved output", async () => {
