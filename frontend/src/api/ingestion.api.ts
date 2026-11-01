@@ -221,7 +221,7 @@ export const ingestionApi = {
       .then((r) => r.data),
   generate: async (
     unitIds: number[],
-    kind: "QUESTIONS" | "CARDS" | "BOTH",
+      kind: "QUESTIONS",
     count: number,
     assessmentMode: "PRACTICE" | "WRITTEN" = "PRACTICE",
   ) => {
@@ -237,7 +237,7 @@ export const ingestionApi = {
     }
     return {
       queued,
-      reused: unitIds.length * (kind === "BOTH" ? 2 : 1) - queued,
+        reused: unitIds.length - queued,
     };
   },
 };

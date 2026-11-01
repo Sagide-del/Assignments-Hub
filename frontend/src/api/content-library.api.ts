@@ -91,7 +91,7 @@ export const contentLibraryApi = {
       .then((r) => r.data),
   generate: (
     sourceIds: number[],
-    kind: "QUESTIONS" | "CARDS" | "BOTH",
+    kind: "QUESTIONS",
     count: number,
     topic?: string,
   ) =>

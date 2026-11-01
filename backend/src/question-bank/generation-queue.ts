@@ -9,8 +9,8 @@ export const GENERATION_KINDS = [
 export const QUESTION_KINDS = ["OUTCOME_QUESTIONS", "QUESTIONS"];
 
 export function generationConcurrency() {
-  const value = Number(process.env.CONTENT_GENERATION_CONCURRENCY ?? 3);
-  return Number.isInteger(value) && value >= 1 && value <= 6 ? value : 3;
+  const value = Number(process.env.CONTENT_GENERATION_CONCURRENCY ?? 4);
+  return Number.isInteger(value) && value >= 1 && value <= 6 ? value : 4;
 }
 
 export function sameGeneration(a: any, b: any) {

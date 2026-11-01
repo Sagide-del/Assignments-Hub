@@ -77,7 +77,9 @@ export class OutcomeGenerationDto {
   @ArrayUnique()
   @IsInt({ each: true })
   unitIds: number[];
-  @IsIn(["QUESTIONS", "CARDS", "BOTH"]) kind: "QUESTIONS" | "CARDS" | "BOTH";
+  // Recall-card generation is retired. Existing cards remain stored, but new
+  // curriculum batches spend the AI allocation on assessable question content.
+  @IsIn(["QUESTIONS"]) kind: "QUESTIONS";
   @IsInt() @Min(5) @Max(30) count: number;
 }
 

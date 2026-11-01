@@ -20,7 +20,7 @@ export class LibraryGenerationDto {
   @ArrayUnique()
   @IsInt({ each: true })
   sourceIds: number[];
-  @IsIn(["QUESTIONS", "CARDS", "BOTH"]) kind: "QUESTIONS" | "CARDS" | "BOTH";
+  @IsIn(["QUESTIONS"]) kind: "QUESTIONS";
   @IsInt() @Min(5) @Max(100) count: number = 30;
   @IsOptional() @IsString() @MaxLength(160) topic?: string;
 }

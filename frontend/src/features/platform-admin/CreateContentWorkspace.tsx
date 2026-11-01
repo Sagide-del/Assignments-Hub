@@ -161,7 +161,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
       setStep(2);
       setAdvanceAfterPreparation(false);
       setNotice(
-        "Your available curriculum is prepared. Generate starter questions and recall cards next.",
+        "Your available curriculum is prepared. Generate starter questions next.",
       );
     }
   }, [advanceAfterPreparation, ready.length, preparation?.status]);
@@ -415,7 +415,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
         try {
           const result = await ingestionApi.generate(
             plan.ids,
-            "BOTH",
+            "QUESTIONS",
             plan.count,
             written ? "WRITTEN" : "PRACTICE",
           );
@@ -1325,7 +1325,7 @@ function GradeContentFlow({ grade }: { grade: string }) {
                     <p>
                       Across {plans.length} subjects and{" "}
                       {plans.reduce((n, p) => n + p.ids.length, 0)} selected
-                      outcomes (30 questions per outcome), plus recall cards. Existing saved or queued
+                      outcomes (30 questions per outcome). Existing saved or queued
                       outcomes are skipped. Each new batch covers additional
                       available outcomes.
                     </p>

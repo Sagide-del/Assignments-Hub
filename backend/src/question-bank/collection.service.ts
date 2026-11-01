@@ -852,12 +852,9 @@ export class CollectionService {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('content-generation-queue'))`;
         const jobs = [];
         for (const { unit } of checked) {
-          for (const kind of dto.kind === "BOTH"
-            ? ["OUTCOME_QUESTIONS", "OUTCOME_CARDS"]
-            : [`OUTCOME_${dto.kind}`]) {
             const job = await enqueueGeneration(
               tx,
-              kind,
+              "OUTCOME_QUESTIONS",
               {
                 unitId: unit.id,
                 grade: unit.scope.grade,
@@ -869,7 +866,6 @@ export class CollectionService {
               actor.id,
             );
             if (job) jobs.push(job);
-          }
         }
         return jobs;
       },

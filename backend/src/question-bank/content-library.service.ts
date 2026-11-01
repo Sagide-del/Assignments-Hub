@@ -440,12 +440,9 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('content-generation-queue'))`;
         const jobs = [];
         for (const source of sources) {
-          for (const kind of dto.kind === "BOTH"
-            ? ["QUESTIONS", "CARDS"]
-            : [dto.kind]) {
             const job = await enqueueGeneration(
               tx,
-              kind,
+              "QUESTIONS",
               {
                 sourceId: source.id,
                 grade: source.grade,
@@ -456,7 +453,6 @@ export class ContentLibraryService implements OnModuleInit, OnModuleDestroy {
               actor.id,
             );
             if (job) jobs.push(job);
-          }
         }
         return jobs;
       },
