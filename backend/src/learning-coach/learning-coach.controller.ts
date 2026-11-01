@@ -1,4 +1,7 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditAction } from '../common/decorators/audit.decorator';
@@ -26,6 +29,30 @@ export class LearningCoachController {
   @ApiOperation({ summary: 'List the learner’s saved topic mastery plans' })
   plans(@CurrentUser() actor: AuthenticatedUser) {
     return this.learningCoach.plans(actor);
+  }
+
+  @Get('report-cards')
+  @ApiOperation({ summary: 'List this learner’s private report-card references' })
+  reportCards(@CurrentUser() actor: AuthenticatedUser) {
+    return this.learningCoach.reportCards(actor);
+  }
+
+  @Post('report-cards')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, callback) => {
+      const extension = extname(file.originalname).toLowerCase();
+      const allowed = (file.mimetype === 'application/pdf' && extension === '.pdf') ||
+        (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype) && ['.jpg', '.jpeg', '.png', '.webp'].includes(extension));
+      callback(allowed ? null : new BadRequestException('Upload a PDF, JPG, PNG, or WEBP report card.'), allowed);
+    },
+  }))
+  @AuditAction('learning_coach.report_card_uploaded')
+  @ApiOperation({ summary: 'Upload a private CBC end-term report card for future coaching linkage' })
+  uploadReportCard(@UploadedFile() file: Express.Multer.File, @CurrentUser() actor: AuthenticatedUser) {
+    if (!file) throw new BadRequestException('Choose a report-card PDF or image to upload.');
+    return this.learningCoach.uploadReportCard(file, actor);
   }
 
   @Post('sessions')

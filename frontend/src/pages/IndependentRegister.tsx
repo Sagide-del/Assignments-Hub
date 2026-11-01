@@ -20,6 +20,7 @@ export default function IndependentRegister() {
     password: '',
     confirmPassword: '',
     grade: 'Grade 7',
+    pathway: '',
     parentPhone: '',
   });
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export default function IndependentRegister() {
         email: form.email.trim().toLowerCase() || undefined,
         password: form.password,
         grade: form.grade,
+        pathway: form.pathway || undefined,
         parentPhone: form.parentPhone.trim() || undefined,
       }),
     onSuccess: (result) => {
@@ -147,14 +149,26 @@ export default function IndependentRegister() {
                 <select
                   id="registration-grade"
                   value={form.grade}
-                  onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value }))}
+                  onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value, pathway: /^Grade (10|11|12)$/.test(event.target.value) ? current.pathway : '' }))}
                   className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#8CB500]"
                 >
-                  {[7, 8, 9, 10, 11, 12].map((grade) => (
-                    <option key={grade} value={`Grade ${grade}`}>Grade {grade}</option>
+                  {['PP1', 'PP2', ...Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`)].map((grade) => (
+                    <option key={grade} value={grade}>{grade}</option>
                   ))}
                 </select>
               </div>
+              {/^Grade (10|11|12)$/.test(form.grade) ? (
+                <div>
+                  <label htmlFor="registration-pathway" className="mb-1.5 block text-sm font-medium text-slate-700">Senior School pathway</label>
+                  <select id="registration-pathway" value={form.pathway} onChange={(event) => setForm((current) => ({ ...current, pathway: event.target.value }))} className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#8CB500]">
+                    <option value="">Choose your pathway</option>
+                    <option value="STEM">STEM</option>
+                    <option value="Social Sciences">Social Sciences</option>
+                    <option value="Arts and Sports Science">Arts and Sports Science</option>
+                  </select>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Independent learners can change this later as their subject combination becomes clear.</p>
+                </div>
+              ) : null}
               <Field
                 label="Parent or guardian phone"
                 type="tel"

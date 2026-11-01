@@ -4,6 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { StartLearningSessionDto } from './dto/start-learning-session.dto';
 import { SubmitLearningAnswerDto } from './dto/submit-learning-answer.dto';
 
@@ -25,10 +26,12 @@ export class LearningCoachService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly uploads: UploadsService,
   ) {}
 
   async catalog(actor: AuthenticatedUser) {
     this.assertStudent(actor);
+    this.assertCbcLearner(actor);
     if (!actor.grade) return [];
     const rows = await this.prisma.questionBank.groupBy({
       by: ['subject', 'topic'],
@@ -47,6 +50,7 @@ export class LearningCoachService {
 
   async plans(actor: AuthenticatedUser) {
     this.assertStudent(actor);
+    this.assertCbcLearner(actor);
     return this.prisma.learningCoachPlan.findMany({
       where: { schoolId: actor.schoolId, studentId: actor.id },
       orderBy: [{ nextReviewAt: 'asc' }, { updatedAt: 'desc' }],
@@ -55,6 +59,7 @@ export class LearningCoachService {
 
   async start(dto: StartLearningSessionDto, actor: AuthenticatedUser) {
     this.assertStudent(actor);
+    this.assertCbcLearner(actor);
     const grade = actor.grade?.trim();
     if (!grade) throw new BadRequestException('Set the learner grade before starting Learning Coach');
 
@@ -136,8 +141,37 @@ export class LearningCoachService {
     };
   }
 
+  async reportCards(actor: AuthenticatedUser) {
+    this.assertStudent(actor);
+    this.assertCbcLearner(actor);
+    return this.prisma.learningCoachReportCard.findMany({
+      where: { studentId: actor.id },
+      select: { id: true, fileName: true, fileSize: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async uploadReportCard(file: Express.Multer.File, actor: AuthenticatedUser) {
+    this.assertStudent(actor);
+    this.assertCbcLearner(actor);
+    const uploaded = await this.uploads.uploadPrivate(file, 'learning-coach-report-cards');
+    const report = await this.prisma.learningCoachReportCard.create({
+      data: {
+        schoolId: actor.schoolId,
+        studentId: actor.id,
+        assetKey: uploaded.assetKey,
+        fileName: uploaded.filename,
+        fileSize: uploaded.size,
+      },
+      select: { id: true, fileName: true, fileSize: true, createdAt: true },
+    });
+    await this.audit.record({ action: 'learning_coach.report_card_uploaded', userId: actor.id, schoolId: actor.schoolId, resource: `LearningCoachReportCard:${report.id}` });
+    return report;
+  }
+
   async answer(sessionId: number, dto: SubmitLearningAnswerDto, actor: AuthenticatedUser) {
     this.assertStudent(actor);
+    this.assertCbcLearner(actor);
     const session = await this.prisma.learningCoachSession.findFirst({
       where: { id: sessionId, schoolId: actor.schoolId, studentId: actor.id },
       include: { plan: true },
@@ -293,5 +327,11 @@ export class LearningCoachService {
 
   private assertStudent(actor: AuthenticatedUser) {
     if (actor.role !== Role.STUDENT) throw new ForbiddenException('Learning Coach is available to student accounts only');
+  }
+
+  private assertCbcLearner(actor: AuthenticatedUser) {
+    const grade = actor.grade?.trim() ?? '';
+    if (grade === 'PP1' || grade === 'PP2' || /^Grade\s+(?:[1-9]|1[0-2])$/i.test(grade)) return;
+    throw new ForbiddenException('Learning Coach is available to CBC learners only.');
   }
 }

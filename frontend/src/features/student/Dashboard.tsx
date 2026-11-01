@@ -30,6 +30,7 @@ import { assignmentsApi } from "../../api/assignments.api";
 import { submissionsApi } from "../../api/submissions.api";
 import { useAuthStore } from "../../store/auth.store";
 import type { Assignment, Submission } from "../../types";
+import { isKjseaGrade, isPathwayGuidanceGrade } from '../../utils/gradeTier';
 import {
   assignmentDeadline,
   assignmentState,
@@ -538,7 +539,11 @@ export function StudentDashboard() {
             </h2>
           </div>
           <div className="divide-y divide-slate-100 px-3">
-            {(user?.isIndependentTrial ? [] : TOOLS).map(
+            {(user?.isIndependentTrial ? [] : TOOLS.filter((tool) => {
+              if (tool.href === '/student/kjsea-mock-test') return isKjseaGrade(user?.grade);
+              if (tool.href === '/student/my-pathway') return isPathwayGuidanceGrade(user?.grade);
+              return true;
+            })).map(
               ({ title, href, Icon }) => (
                 <Link
                   key={href}

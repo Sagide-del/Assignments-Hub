@@ -40,6 +40,14 @@ export class RegisterIndependentStudentDto {
   @MaxLength(30)
   grade: string;
 
+  // Senior School learners can start with a nationally available pathway.
+  // It remains optional so existing clients and Junior/Primary registration
+  // keep working unchanged.
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  pathway?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(30)

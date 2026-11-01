@@ -1,9 +1,25 @@
 import { PageHeader } from "../../components/ui/Saas";
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlarmClock, ArrowRight, CheckCircle2, ChevronLeft, CircleAlert, Clock3, Lightbulb, RotateCcw, Target, Volume2 } from 'lucide-react';
+import { AlarmClock, ArrowRight, CheckCircle2, ChevronLeft, CircleAlert, Clock3, Lightbulb, RotateCcw, Target, Upload, Volume2 } from 'lucide-react';
 import { apiErrorMessage } from '../../api/axios';
 import { learningCoachApi, type LearningPlan, type LearningSession, type LearningTopic } from '../../api/learning-coach.api';
+import { useAuthStore } from '../../store/auth.store';
+import { isCbcGrade } from '../../utils/gradeTier';
+
+function ReportCardPanel() {
+  const client = useQueryClient();
+  const reports = useQuery({ queryKey: ['learning-coach-report-cards'], queryFn: learningCoachApi.reportCards });
+  const upload = useMutation({
+    mutationFn: learningCoachApi.uploadReportCard,
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['learning-coach-report-cards'] }),
+  });
+  return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">CBC learning profile</p><h2 className="mt-1 text-lg font-semibold text-[#101820]">End-term report card</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Upload a PDF or clear image for your private Learning Coach profile. It is stored securely and will only be used after report-card coaching is connected.</p></div><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50"><Upload className="h-4 w-4" />{upload.isPending ? 'Uploading…' : 'Upload report'}<input className="sr-only" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={upload.isPending} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = ''; }} /></label></div>
+    {upload.isError ? <p className="mt-3 text-sm text-red-700">{apiErrorMessage(upload.error, 'The report card could not be uploaded.')}</p> : null}
+    {(reports.data ?? []).length ? <ul className="mt-4 divide-y divide-slate-100 border-t border-slate-100 text-sm">{reports.data!.map((report) => <li key={report.id} className="flex justify-between gap-3 py-3 text-slate-700"><span className="truncate font-medium">{report.fileName}</span><span className="shrink-0 text-slate-500">{new Date(report.createdAt).toLocaleDateString()}</span></li>)}</ul> : null}
+  </section>;
+}
 
 function MasteryBadge({ score }: { score: number }) {
   const tone = score >= 70 ? 'bg-emerald-100 text-emerald-800' : score >= 40 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800';
@@ -107,11 +123,13 @@ function SessionPlayer({ data, onClose }: { data: LearningSession; onClose: () =
 }
 
 export function LearningCoachPage() {
+  const user = useAuthStore((state) => state.user);
   const [session, setSession] = useState<LearningSession | null>(null);
   const catalog = useQuery({ queryKey: ['learning-coach-catalog'], queryFn: learningCoachApi.catalog });
   const plans = useQuery({ queryKey: ['learning-coach-plans'], queryFn: learningCoachApi.plans });
   const start = useMutation({ mutationFn: (input: { subject: string; topic: string; mode: 'DIAGNOSTIC' | 'PRACTICE' }) => learningCoachApi.start(input), onSuccess: setSession });
+  if (!isCbcGrade(user?.grade)) return <div className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm leading-6 text-amber-950"><PageHeader title="Learning Coach" /><p className="mt-4">Learning Coach is designed for CBC learners from PP1 to Grade 12.</p></div>;
   if (session) return <SessionPlayer data={session} onClose={() => setSession(null)} />;
   if (catalog.isLoading || plans.isLoading) return <div className="space-y-4"><div className="h-44 animate-pulse rounded-2xl bg-slate-200" /><div className="h-28 animate-pulse rounded-2xl bg-slate-200" /></div>;
-  return <div className="mx-auto max-w-6xl space-y-8"><TopicPicker topics={catalog.data ?? []} plans={plans.data ?? []} loading={start.isPending} onStart={({ subject, topic }, mode) => start.mutate({ subject, topic, mode })} />{start.isError ? <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{apiErrorMessage(start.error, 'Learning Coach could not start this topic.')}</p> : null}{(plans.data ?? []).length ? <section><div className="mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-[#607D00]" /><h2 className="text-xl font-semibold text-[#101820]">My mastery plans</h2></div><div className="grid gap-4 md:grid-cols-2">{plans.data!.map((plan) => <PlanCard key={plan.id} plan={plan} onPractice={() => start.mutate({ subject: plan.subject, topic: plan.topic, mode: 'PRACTICE' })} />)}</div></section> : null}<div className="flex items-center gap-2 text-xs text-slate-500"><Clock3 className="h-4 w-4" /> Short sessions, immediate feedback, and spaced follow-up practice.</div></div>;
+  return <div className="mx-auto max-w-6xl space-y-8"><ReportCardPanel /><TopicPicker topics={catalog.data ?? []} plans={plans.data ?? []} loading={start.isPending} onStart={({ subject, topic }, mode) => start.mutate({ subject, topic, mode })} />{start.isError ? <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{apiErrorMessage(start.error, 'Learning Coach could not start this topic.')}</p> : null}{(plans.data ?? []).length ? <section><div className="mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-[#607D00]" /><h2 className="text-xl font-semibold text-[#101820]">My mastery plans</h2></div><div className="grid gap-4 md:grid-cols-2">{plans.data!.map((plan) => <PlanCard key={plan.id} plan={plan} onPractice={() => start.mutate({ subject: plan.subject, topic: plan.topic, mode: 'PRACTICE' })} />)}</div></section> : null}<div className="flex items-center gap-2 text-xs text-slate-500"><Clock3 className="h-4 w-4" /> Short sessions, immediate feedback, and spaced follow-up practice.</div></div>;
 }

@@ -70,6 +70,13 @@ export interface LearningAnswerFeedback {
   plan?: LearningPlan;
 }
 
+export interface LearningCoachReportCard {
+  id: number;
+  fileName: string;
+  fileSize: number;
+  createdAt: string;
+}
+
 export const learningCoachApi = {
   catalog: () => api.get<LearningTopic[]>('/learning-coach/catalog').then((response) => response.data),
   plans: () => api.get<LearningPlan[]>('/learning-coach/plans').then((response) => response.data),
@@ -77,4 +84,10 @@ export const learningCoachApi = {
     api.post<LearningSession>('/learning-coach/sessions', input).then((response) => response.data),
   answer: (sessionId: number, input: { questionId: number; answer: string }) =>
     api.post<LearningAnswerFeedback>(`/learning-coach/sessions/${sessionId}/answers`, input).then((response) => response.data),
+  reportCards: () => api.get<LearningCoachReportCard[]>('/learning-coach/report-cards').then((response) => response.data),
+  uploadReportCard: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<LearningCoachReportCard>('/learning-coach/report-cards', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((response) => response.data);
+  },
 };

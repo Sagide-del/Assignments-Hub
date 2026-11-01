@@ -42,6 +42,7 @@ import {
   endCurrentPresenceSession,
   usePresenceHeartbeat,
 } from "../hooks/usePresenceHeartbeat";
+import { isKjseaGrade, isPathwayGuidanceGrade } from "../utils/gradeTier";
 
 interface NavItem {
   to: string;
@@ -188,13 +189,20 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
     ? (user?.grade ?? "Grade not set")
     : user?.role.replace("_", " ");
   const isStudentPortal = nav.some((item) => item.to.startsWith("/student"));
+  const gradeScopedNav = isStudent
+    ? nav.filter((item) => {
+        if (item.to === '/student/kjsea-mock-test') return isKjseaGrade(user?.grade);
+        if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(user?.grade);
+        return true;
+      })
+    : nav;
   const visibleNav =
     isStudent && user?.isIndependentTrial
       ? [
-          ...nav.filter((item) => item.to === "/student/my-assignments"),
+          ...gradeScopedNav.filter((item) => item.to === "/student/my-assignments"),
           { to: "/student/activate", label: "Activate full access" },
         ]
-      : nav;
+      : gradeScopedNav;
 
   return (
     <div

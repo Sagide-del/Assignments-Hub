@@ -24,6 +24,7 @@ export const authApi = {
     email?: string;
     password: string;
     grade: string;
+    pathway?: string;
     parentPhone?: string;
   }) =>
     api.post<IndependentRegistrationResult>('/auth/independent/register', dto).then((r) => r.data),

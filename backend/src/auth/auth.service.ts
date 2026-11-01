@@ -184,6 +184,7 @@ export class AuthService {
     }
 
     const grade = normalizeGrade(dto.grade) ?? dto.grade.trim();
+    const pathway = this.pathwayForGrade(grade, dto.pathway);
     // Independent usernames share the existing per-school unique login column.
     // Preserve uppercase storage so new names and legacy IDs cannot collide by case.
     const admissionNumber = dto.username
@@ -222,6 +223,7 @@ export class AuthService {
             create: {
               admissionNumber,
               grade,
+              pathway,
               parentPhone: dto.parentPhone?.trim() || undefined,
             },
           },
@@ -257,6 +259,15 @@ export class AuthService {
       grade: student.grade,
       requiresPayment: true,
     };
+  }
+
+  private pathwayForGrade(grade: string, pathway?: string) {
+    const gradeNumber = /^Grade\s+(\d{1,2})$/i.exec(grade)?.[1];
+    if (!pathway?.trim()) return undefined;
+    if (!gradeNumber || Number(gradeNumber) < 10 || Number(gradeNumber) > 12) {
+      throw new ConflictException('A Senior School pathway can only be selected for Grades 10–12');
+    }
+    return pathway.trim();
   }
 
   async loginIndependentStudent(dto: IndependentLoginDto, ipAddress?: string) {

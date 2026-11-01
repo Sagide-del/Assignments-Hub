@@ -367,6 +367,7 @@ model School {
   learningCoachPlans        LearningCoachPlan[]
   learningCoachSessions     LearningCoachSession[]
   learningCoachResponses    LearningCoachResponse[]
+  learningCoachReportCards  LearningCoachReportCard[]
   presenceSessions          UserPresenceSession[]
 
   @@map("schools")
@@ -478,6 +479,7 @@ model User {
   learningCoachPlans               LearningCoachPlan[]          @relation("LearningCoachPlanStudent")
   learningCoachSessions            LearningCoachSession[]       @relation("LearningCoachSessionStudent")
   learningCoachResponses           LearningCoachResponse[]      @relation("LearningCoachResponseStudent")
+  learningCoachReportCards         LearningCoachReportCard[]
   presenceSessions                 UserPresenceSession[]
 
   @@unique([schoolId, email])
@@ -507,6 +509,25 @@ model StudentProfile {
   @@index([grade])
   @@index([pathway])
   @@map("student_profiles")
+}
+
+// A learner-owned, private reference document for Learning Coach. The file
+// itself is stored in private object storage; only its key is persisted here.
+// No automated interpretation is performed on upload — it is intentionally a
+// future input to the learner-approved coaching workflow.
+model LearningCoachReportCard {
+  id        Int      @id @default(autoincrement())
+  schoolId  Int      @map("school_id")
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId Int      @map("student_id")
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assetKey  String   @map("asset_key")
+  fileName  String   @map("file_name")
+  fileSize  Int      @map("file_size")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([studentId, createdAt])
+  @@map("learning_coach_report_cards")
 }
 
 model SkillCategory {
