@@ -211,7 +211,7 @@ describe("Curriculum evidence and expected subjects", () => {
       "expected",
     );
     await expect(
-      s.generate({ unitIds: [1], kind: "BOTH", count: 10 }, { id: 1 } as any),
+      s.generate({ unitIds: [1], kind: "QUESTIONS", count: 10 }, { id: 1 } as any),
     ).rejects.toThrow("Review");
     expect(p.contentLibraryJob.create).not.toHaveBeenCalled();
   });
@@ -238,13 +238,13 @@ describe("Curriculum evidence and expected subjects", () => {
     };
     const s = service(p);
     await expect(
-      s.generate({ unitIds: [1], kind: "BOTH", count: 10 }, { id: 1 } as any),
+      s.generate({ unitIds: [1], kind: "QUESTIONS", count: 10 }, { id: 1 } as any),
     ).rejects.toThrow("expected subject");
     p.curriculumGradeReview.findUnique.mockResolvedValue({
       verifiedAt: new Date(),
     });
     await expect(
-      s.generate({ unitIds: [1], kind: "BOTH", count: 10 }, { id: 1 } as any),
+      s.generate({ unitIds: [1], kind: "QUESTIONS", count: 10 }, { id: 1 } as any),
     ).rejects.toThrow("teaching");
     expect(p.contentLibraryJob.create).not.toHaveBeenCalled();
   });
@@ -346,13 +346,10 @@ describe("Curriculum evidence and expected subjects", () => {
       }),
     };
     const jobs = await service(p).generate(
-      { unitIds: [7], kind: "BOTH", count: 10 },
+      { unitIds: [7], kind: "QUESTIONS", count: 10 },
       { id: 1 } as any,
     );
-    expect(jobs.map((j) => j.kind)).toEqual([
-      "OUTCOME_QUESTIONS",
-      "OUTCOME_CARDS",
-    ]);
+    expect(jobs.map((j) => j.kind)).toEqual(["OUTCOME_QUESTIONS"]);
     expect(jobs[0].input).toMatchObject({
       unitId: 7,
       grade: "Grade 6",

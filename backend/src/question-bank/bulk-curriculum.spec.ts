@@ -23,7 +23,7 @@ describe("Grade 6–12 bulk curriculum", () => {
     );
     expect(official.detectedGrades("Grade 60")).toEqual([]);
   });
-  it("accepts Grade 6, combined generation and 80 sources, rejecting unsupported grades", async () => {
+  it("accepts Grade 6, question generation and 80 sources, rejecting unsupported grades", async () => {
     expect(
       await validate(
         plainToInstance(ImportSourceDto, {
@@ -37,7 +37,7 @@ describe("Grade 6–12 bulk curriculum", () => {
       await validate(
         plainToInstance(LibraryGenerationDto, {
           sourceIds: Array.from({ length: 80 }, (_, i) => i + 1),
-          kind: "BOTH",
+          kind: "QUESTIONS",
           count: 30,
         }),
       ),
@@ -115,7 +115,7 @@ describe("Grade 6–12 bulk curriculum", () => {
       ),
     ).toBeUndefined();
   });
-  it("queues both content types for each actual grade/subject source", async () => {
+  it("queues question content for each actual grade/subject source", async () => {
     const sources = [
       { id: 1, grade: "Grade 6", subject: "Science and Technology" },
       { id: 2, grade: "Grade 12", subject: "Chemistry" },
@@ -147,10 +147,10 @@ describe("Grade 6–12 bulk curriculum", () => {
       {} as any,
     );
     const jobs = await service.generate(
-      { sourceIds: [1, 2], kind: "BOTH", count: 30 },
+      { sourceIds: [1, 2], kind: "QUESTIONS", count: 30 },
       actor,
     );
-    expect(jobs).toHaveLength(4);
+    expect(jobs).toHaveLength(2);
     expect(
       jobs.map((j) => [
         j.kind,
@@ -159,9 +159,7 @@ describe("Grade 6–12 bulk curriculum", () => {
       ]),
     ).toEqual([
       ["QUESTIONS", "Grade 6", "Science and Technology"],
-      ["CARDS", "Grade 6", "Science and Technology"],
       ["QUESTIONS", "Grade 12", "Chemistry"],
-      ["CARDS", "Grade 12", "Chemistry"],
     ]);
   });
   it("skips indexed documents, pending jobs and repeated rows in one bulk import", async () => {

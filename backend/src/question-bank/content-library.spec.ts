@@ -243,7 +243,7 @@ describe("Durable content generation", () => {
     });
     source.grade = "All grades";
     await expect(
-      service.generate({ sourceIds: [1], kind: "CARDS", count: 5 }, actor),
+      service.generate({ sourceIds: [1], kind: "QUESTIONS", count: 5 }, actor),
     ).rejects.toThrow("Grade 6–12");
   });
   it("atomically claims work, records failures, and only retries failed jobs", async () => {
