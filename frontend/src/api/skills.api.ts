@@ -63,6 +63,7 @@ export const skillsApi = {
   getCourseProgress: (id: number) => api.get<SkillLessonProgress[]>(`/skills/courses/${id}/progress`).then((response) => response.data),
   completeLesson: (id: number, lessonKey: string) => api.post<SkillLessonProgress>(`/skills/courses/${id}/lessons/${encodeURIComponent(lessonKey)}/complete`).then((response) => response.data),
   createCourse: (dto: SkillCourseInput) => api.post<SkillCourse>('/skills/courses', dto).then((response) => response.data),
+  generateDraft: (dto: { topic: string; gradeBand: 'Grade 4-6' | 'Grade 7-9' | 'Grade 10-12'; pathway?: 'STEM' | 'SOCIAL_SCIENCES' | 'ARTS_AND_SPORTS' }) => api.post<SkillCourse>('/skills/admin/generate-draft', dto).then((response) => response.data),
   updateCourse: (id: number, dto: Partial<SkillCourseInput>) => api.patch<SkillCourse>(`/skills/courses/${id}`, dto).then((response) => response.data),
   removeCourse: (id: number) => api.delete(`/skills/courses/${id}`).then((response) => response.data),
 

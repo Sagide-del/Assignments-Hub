@@ -37,7 +37,7 @@ export function SeniorPathwayExecution() {
 
   return <div className="space-y-5">
     <section className="overflow-hidden rounded-3xl bg-[#101820] p-5 text-white sm:p-7">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B5E61D]">Senior school pathway</p>
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B5E61D]">My Senior Journey · Grade {user?.grade?.replace('Grade ', '')}</p>
       {track ? <><h1 className="mt-2 text-2xl font-semibold sm:text-3xl">{track.name}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{pathway?.name}. Use this space to keep your subjects, practical work and targeted revision connected.</p></> : <><h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Confirm your pathway</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Your school pathway is not yet recorded here. Ask your school to confirm it, then return to see aligned practice and planning.</p></>}
       <div className="mt-5 flex flex-wrap gap-3"><Link to="/student/my-assignments" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#101820]"><ClipboardCheck className="h-4 w-4" />My pathway assignments</Link>{track ? <Link to={practiceHref} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 px-4 text-sm font-bold text-white hover:bg-white/10"><FlaskConical className="h-4 w-4" />{practiceLabel}</Link> : null}</div>
     </section>

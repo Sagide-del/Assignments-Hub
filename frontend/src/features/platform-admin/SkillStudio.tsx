@@ -64,6 +64,7 @@ export function SkillStudio() {
   const [category, setCategory] = useState({ name: '', description: '', icon: '', imageUrl: '', displayOrder: '0', status: 'DRAFT' as SkillContentStatus });
   const [provider, setProvider] = useState({ name: '', description: '', logoUrl: '', website: '', contactEmail: '', verified: false, status: 'DRAFT' as SkillContentStatus });
   const [paymentDraft, setPaymentDraft] = useState({ enrollmentId: '', paymentMethod: '' as PaymentMethod | '', transactionReference: '', status: 'AWAITING_VERIFICATION' as PaymentStatus });
+  const [aiDraft, setAiDraft] = useState<{ topic: string; gradeBand: 'Grade 4-6' | 'Grade 7-9' | 'Grade 10-12'; pathway: '' | 'STEM' | 'SOCIAL_SCIENCES' | 'ARTS_AND_SPORTS' }>({ topic: 'Machine Learning Foundations', gradeBand: 'Grade 10-12', pathway: 'STEM' });
 
   const summaryQuery = useQuery({ queryKey: ['skill-studio', 'summary'], queryFn: skillsApi.getAdminSummary });
   const categoriesQuery = useQuery({ queryKey: ['skill-studio', 'categories'], queryFn: skillsApi.getCategories });
@@ -183,6 +184,14 @@ export function SkillStudio() {
     onSuccess: (result) => setCourse((current) => ({ ...current, thumbnailUrl: result.url })),
     onError: mutationError,
   });
+  const aiDraftMutation = useMutation({
+    mutationFn: () => skillsApi.generateDraft({ topic: aiDraft.topic, gradeBand: aiDraft.gradeBand, pathway: aiDraft.pathway || undefined }),
+    onSuccess: async (draft) => {
+      setNotice(`AI created “${draft.title}” as a draft. Review and publish it when ready.`);
+      await refresh();
+    },
+    onError: mutationError,
+  });
 
   function editCourse(item: SkillCourse) {
     setEditingCourseId(item.id);
@@ -237,6 +246,12 @@ export function SkillStudio() {
       {tab === 'courses' ? (
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 rounded-2xl border border-lime-200 bg-lime-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#607D00]">AI course drafts</p>
+              <h2 className="mt-1 font-semibold text-[#101820]">Generate a reviewable skills course</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">AI creates a draft only. An administrator must review and publish it before students can see it.</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2"><input value={aiDraft.topic} onChange={(event) => setAiDraft({ ...aiDraft, topic: event.target.value })} placeholder="Topic, e.g. Machine Learning Foundations" className={inputClass} /><select value={aiDraft.gradeBand} onChange={(event) => setAiDraft({ ...aiDraft, gradeBand: event.target.value as typeof aiDraft.gradeBand })} className={inputClass}><option>Grade 4-6</option><option>Grade 7-9</option><option>Grade 10-12</option></select><select value={aiDraft.pathway} onChange={(event) => setAiDraft({ ...aiDraft, pathway: event.target.value as typeof aiDraft.pathway })} className={inputClass}><option value="">All pathways</option><option value="STEM">STEM</option><option value="SOCIAL_SCIENCES">Social Sciences</option><option value="ARTS_AND_SPORTS">Arts & Sports Science</option></select><button type="button" disabled={!aiDraft.topic.trim() || aiDraftMutation.isPending} onClick={() => aiDraftMutation.mutate()} className="rounded-xl bg-[#607D00] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{aiDraftMutation.isPending ? 'Generating…' : 'Generate draft'}</button></div>
+            </div>
             <h2 className="text-lg font-semibold text-[#101820]">{editingCourseId ? 'Edit course' : 'Create course'}</h2>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <input value={course.title} onChange={(event) => setCourse({ ...course, title: event.target.value })} placeholder="Course title" className={`${inputClass} sm:col-span-2`} />

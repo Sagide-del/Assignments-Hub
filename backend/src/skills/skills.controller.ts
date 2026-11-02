@@ -9,6 +9,7 @@ import { CreateSkillProviderDto } from './dto/create-skill-provider.dto';
 import { CreateSkillEnrollmentDto, CreateSkillPaymentDto, UpdateSkillEnrollmentDto, UpdateSkillPaymentDto } from './dto/skill-enrollment.dto';
 import { UpdateSkillCategoryDto, UpdateSkillCourseDto, UpdateSkillProviderDto } from './dto/update-skill.dto';
 import { SkillsService } from './skills.service';
+import { GenerateSkillDraftDto } from './dto/generate-skill-draft.dto';
 
 @Controller('skills')
 export class SkillsController {
@@ -78,6 +79,12 @@ export class SkillsController {
   @Roles(Role.PLATFORM_ADMIN)
   createCourse(@Body() dto: CreateSkillCourseDto) {
     return this.skillsService.createCourse(dto);
+  }
+
+  @Post('admin/generate-draft')
+  @Roles(Role.PLATFORM_ADMIN)
+  generateDraft(@Body() dto: GenerateSkillDraftDto, @CurrentUser() actor: AuthenticatedUser) {
+    return this.skillsService.generateDraft(dto, actor);
   }
 
   @Patch('courses/:id')

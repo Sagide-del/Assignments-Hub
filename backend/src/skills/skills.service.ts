@@ -10,6 +10,7 @@ import {
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
+import { AiProviderRouterService } from '../ai/ai-provider-router.service';
 import { CreateSkillCategoryDto } from './dto/create-skill-category.dto';
 import { CreateSkillCourseDto } from './dto/create-skill-course.dto';
 import { CreateSkillProviderDto } from './dto/create-skill-provider.dto';
@@ -23,6 +24,7 @@ import {
   UpdateSkillCourseDto,
   UpdateSkillProviderDto,
 } from './dto/update-skill.dto';
+import { GenerateSkillDraftDto } from './dto/generate-skill-draft.dto';
 
 const COURSE_INCLUDE = {
   category: true,
@@ -35,6 +37,7 @@ export class SkillsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsService: SmsService,
+    private readonly ai: AiProviderRouterService,
   ) {}
 
   findCategories(actor: AuthenticatedUser) {
@@ -42,6 +45,29 @@ export class SkillsService {
       where: actor.role === Role.PLATFORM_ADMIN ? undefined : { status: SkillContentStatus.PUBLISHED },
       orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
       include: { _count: { select: { courses: true } } },
+    });
+  }
+
+  async generateDraft(dto: GenerateSkillDraftDto, actor: AuthenticatedUser) {
+    const topic = dto.topic.trim();
+    const context = `${dto.gradeBand}${dto.pathway ? `; ${dto.pathway.replace(/_/g, ' ')} pathway` : ''}`;
+    const response = await this.ai.generateAssignment(
+      `You are an expert Kenyan youth skills curriculum designer. Draft a safe, project-based course about "${topic}" for ${context}. It must be practical, age-appropriate, inclusive, low-bandwidth aware and must not promise a certificate or job. Return strict JSON only with: {"title":"","shortDescription":"","fullDescription":"","durationWeeks":number,"level":"BEGINNER|INTERMEDIATE|ADVANCED","learningOutcomes":[""],"courseStructure":["" ]}. Include a real project, evidence/reflection and responsible use where relevant. For Machine Learning, teach data awareness, pattern recognition, bias, privacy and a no-code activity before tools.`,
+      { userId: actor.id },
+    );
+    let data: any;
+    try { data = typeof response.content === 'string' ? JSON.parse(response.content) : response.content; } catch { throw new ConflictException('AI returned an invalid course draft. Please try again.'); }
+    if (!data || typeof data.title !== 'string' || typeof data.shortDescription !== 'string' || typeof data.fullDescription !== 'string' || !Array.isArray(data.learningOutcomes) || !Array.isArray(data.courseStructure)) {
+      throw new ConflictException('AI returned an incomplete course draft. Please try again.');
+    }
+    const [category, provider] = await this.prisma.$transaction([
+      this.prisma.skillCategory.upsert({ where: { name: 'Digital Learning' }, update: {}, create: { name: 'Digital Learning', description: 'Digital literacy, coding, data and responsible AI projects.', icon: 'CodeXml', displayOrder: 10, status: SkillContentStatus.DRAFT } }),
+      this.prisma.skillProvider.upsert({ where: { name: 'Assignment Hub Learning' }, update: {}, create: { name: 'Assignment Hub Learning', description: 'Platform-authored draft content for editorial review.', verified: true, status: SkillContentStatus.DRAFT } }),
+    ]);
+    return this.prisma.skillCourse.create({
+      data: {
+        categoryId: category.id, providerId: provider.id, title: data.title.slice(0, 180), shortDescription: data.shortDescription.slice(0, 280), fullDescription: `${data.fullDescription.slice(0, 4300)}\n\nAudience: ${context}.`, durationWeeks: Math.min(16, Math.max(1, Number(data.durationWeeks) || 4)), level: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'].includes(data.level) ? data.level : 'BEGINNER', costKES: 0, certificateAvailable: false, learningOutcomes: data.learningOutcomes.filter((item: unknown) => typeof item === 'string').slice(0, 12), courseStructure: data.courseStructure.filter((item: unknown) => typeof item === 'string').slice(0, 16), status: SkillContentStatus.DRAFT,
+      }, include: COURSE_INCLUDE,
     });
   }
 

@@ -322,7 +322,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                     strokeWidth={1.75}
                     aria-hidden="true"
                   />
-                  <span className="truncate">{item.label}</span>
+                  <span className="truncate">{item.to === '/student/my-pathway' && gradeTier(user?.grade) === 'senior' ? 'My Senior Journey' : item.label}</span>
                 </NavLink>
               );
             })}
