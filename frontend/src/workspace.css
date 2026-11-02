@@ -1,31 +1,10 @@
 /* Shared workspace typography and interaction tokens. Content and learning canvases
    retain their own layout; no global hiding or truncation of instructional copy. */
-@font-face {
-  font-family: "Hub Sans";
-  src: url("/fonts/open-sans-regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Hub Sans";
-  src: url("/fonts/open-sans-semibold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Hub Sans";
-  src: url("/fonts/open-sans-bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
 .platform-workspace {
   --workspace-ink: #101820;
   --workspace-muted: #64748b;
   --workspace-line: #e2e8f0;
-  font-family: "Hub Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Assignment Hub Sans", ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   font-kerning: normal;
