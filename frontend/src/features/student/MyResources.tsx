@@ -1,17 +1,20 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
 import { CurriculumLearningGuide } from './curriculum/CurriculumLearningGuide';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpenCheck,
+  BrainCircuit,
   CalendarDays,
+  Clock3,
   Download,
   FileText,
   LibraryBig,
   Package,
   Search,
   ShoppingBag,
+  Target,
   X,
 } from 'lucide-react';
 import { apiErrorMessage } from '../../api/axios';
@@ -23,6 +26,8 @@ import {
 } from '../../api/resources.api';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
 import { StudentStudyPlan } from './StudentStudyPlan';
+import { academicResultsApi } from '../../api/academic-results.api';
+import { learningCoachApi, type LearningPlan } from '../../api/learning-coach.api';
 
 const TYPES: Array<{ value: ResourceListingType | 'ALL'; label: string }> = [
   { value: 'ALL', label: 'All' },
@@ -45,7 +50,7 @@ export function MyResourcesPage() {
   const queryClient = useQueryClient();
   const [params,setParams]=useSearchParams();
   const section=params.get('section');
-  const view=['MARKETPLACE','LIBRARY','STUDY_PLAN'].includes(section??'') ? section as 'MARKETPLACE'|'LIBRARY'|'STUDY_PLAN' : 'GUIDE';
+  const view=['REVIEW','MARKETPLACE','LIBRARY','STUDY_PLAN','GUIDE'].includes(section??'') ? section as 'REVIEW'|'MARKETPLACE'|'LIBRARY'|'STUDY_PLAN'|'GUIDE' : 'REVIEW';
   const setView=(value:string)=>setParams({section:value});
   const userId=useAuthStore(s=>s.user?.id);
   const [type, setType] = useState<ResourceListingType | 'ALL'>('ALL');
@@ -97,13 +102,14 @@ export function MyResourcesPage() {
 
   return (
     <div className="min-w-0 space-y-4 pb-12 sm:space-y-5">
-      <PageHeader title="My Resources" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : undefined} />
+      <PageHeader title="My Study Hub" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : view === 'REVIEW' ? 'Your next best study step' : undefined} />
 
-      <nav aria-label="Resource sections" className="grid grid-cols-2 gap-1 rounded-2xl sm:grid-cols-4 border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)]">
-          <ViewButton active={view === 'GUIDE'} onClick={() => setView('GUIDE')} icon={BookOpenCheck} label="Learning guide" />
+      <nav aria-label="Study Hub sections" className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)] sm:grid-cols-5">
+          <ViewButton active={view === 'REVIEW'} onClick={() => setView('REVIEW')} icon={BrainCircuit} label="Review plan" />
+          <ViewButton active={view === 'STUDY_PLAN'} onClick={() => setView('STUDY_PLAN')} icon={CalendarDays} label="Timetable" />
           <ViewButton active={view === 'MARKETPLACE'} onClick={() => setView('MARKETPLACE')} icon={ShoppingBag} label="Marketplace" />
           <ViewButton active={view === 'LIBRARY'} onClick={() => setView('LIBRARY')} icon={LibraryBig} label="My library" />
-          <ViewButton active={view === 'STUDY_PLAN'} onClick={() => setView('STUDY_PLAN')} icon={CalendarDays} label="Study plan" />
+          <ViewButton active={view === 'GUIDE'} onClick={() => setView('GUIDE')} icon={BookOpenCheck} label="Learning guide" />
       </nav>
 
       {(view === 'MARKETPLACE'||view === 'LIBRARY') ? <label className="flex min-h-12 min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-[0_8px_24px_rgba(16,24,32,0.03)] sm:ml-auto sm:w-80">
@@ -121,7 +127,7 @@ export function MyResourcesPage() {
 
       {status && (view==='MARKETPLACE'||view==='LIBRARY') ? <p role="status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{status}</p> : null}
 
-      {view==='GUIDE' ? <CurriculumLearningGuide/> : view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
+      {view === 'REVIEW' ? <ReviewPlan /> : view==='GUIDE' ? <CurriculumLearningGuide/> : view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
         <EmptyState title="Loading resources..." />
       ) : listingsQuery.isError || purchasesQuery.isError ? (
         <EmptyState title="Resources are temporarily unavailable." />
@@ -144,6 +150,51 @@ export function MyResourcesPage() {
       {selected ? <PurchasePanel resource={selected} onClose={() => setSelected(null)} onPurchased={refresh} /> : null}
     </div>
   );
+}
+
+function reviewLabel(date: string | null) {
+  if (!date) return 'Ready to begin';
+  const target = new Date(date);
+  const today = new Date();
+  const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  if (targetDay <= todayDay) return 'Due now';
+  const tomorrow = todayDay + 86_400_000;
+  if (targetDay === tomorrow) return 'Due tomorrow';
+  return `Due ${target.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`;
+}
+
+function ReviewPlan() {
+  const coachPlans = useQuery({ queryKey: ['learning-coach-plans'], queryFn: learningCoachApi.plans });
+  const studyPlan = useQuery({ queryKey: ['academic-results', 'my-plan'], queryFn: academicResultsApi.myPlan });
+  const plans = coachPlans.data ?? [];
+  const due = [...plans].filter((plan) => !plan.nextReviewAt || new Date(plan.nextReviewAt) <= new Date()).sort((a, b) => (a.nextReviewAt ?? '').localeCompare(b.nextReviewAt ?? ''));
+  const upcoming = [...plans].filter((plan) => !due.includes(plan)).sort((a, b) => (a.nextReviewAt ?? '').localeCompare(b.nextReviewAt ?? '')).slice(0, 3);
+  const weakSubjects = studyPlan.data?.plan?.weakSubjects ?? [];
+
+  if (coachPlans.isLoading || studyPlan.isLoading) return <EmptyState title="Preparing your review plan..." />;
+  if (coachPlans.isError || studyPlan.isError) return <EmptyState title="Your review plan is temporarily unavailable." />;
+
+  return <section className="space-y-4">
+    <div className="overflow-hidden rounded-2xl bg-[#101820] p-5 text-white sm:p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#B5E61D]">Today’s review</p>
+      <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div><h2 className="text-2xl font-semibold">{due.length ? `${due.length} recall ${due.length === 1 ? 'session' : 'sessions'} ready` : 'Keep your learning moving'}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Your plan combines your Learning Coach check-ins with the priorities from your latest academic results. Start with the earliest review, then return when the next concept is due.</p></div>
+        <Link to="/student/learning-coach" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#101820] hover:bg-slate-100"><BrainCircuit className="h-4 w-4" />Open Learning Coach</Link>
+      </div>
+    </div>
+
+    {due.length ? <div className="grid gap-3 md:grid-cols-2">{due.map((plan) => <ReviewCard key={plan.id} plan={plan} />)}</div> : <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm leading-6 text-slate-600">No recall session is due right now. Start a topic in Learning Coach to create a personal review schedule, or use your timetable for a focused study session.</div>}
+
+    {weakSubjects.length ? <section className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Target className="h-5 w-5 text-[#607D00]" /><div><h3 className="font-semibold text-[#101820]">Priorities from your results</h3><p className="mt-0.5 text-xs text-slate-500">These subjects shape your saved timetable.</p></div></div><div className="mt-4 flex flex-wrap gap-2">{weakSubjects.map((item) => <span key={item.subject} className="rounded-full bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">{item.subject} <span className="font-medium text-amber-700">{Math.round(item.percentage)}%</span></span>)}</div><Link to="/student/resources?section=STUDY_PLAN" className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#101820] hover:underline">View my timetable <CalendarDays className="h-4 w-4" /></Link></section> : null}
+
+    {upcoming.length ? <section className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Clock3 className="h-5 w-5 text-slate-500" /><h3 className="font-semibold text-[#101820]">Coming up</h3></div><div className="mt-3 divide-y divide-slate-100">{upcoming.map((plan) => <div key={plan.id} className="flex items-center justify-between gap-4 py-3"><div className="min-w-0"><p className="truncate font-semibold text-[#101820]">{plan.subject}: {plan.topic}</p><p className="mt-0.5 text-xs text-slate-500">{plan.masteryScore}% current mastery</p></div><span className="shrink-0 text-xs font-semibold text-slate-500">{reviewLabel(plan.nextReviewAt)}</span></div>)}</div></section> : null}
+  </section>;
+}
+
+function ReviewCard({ plan }: { plan: LearningPlan }) {
+  const needsSupport = plan.masteryScore < 50 || plan.requiresHumanSupport;
+  return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(16,24,32,0.035)]"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.13em] text-[#607D00]">{plan.subject}</p><h3 className="mt-1 truncate text-lg font-semibold text-[#101820]">{plan.topic}</h3></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${needsSupport ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'}`}>{plan.masteryScore}% mastery</span></div><p className="mt-3 text-sm leading-6 text-slate-600">{plan.recommendedTechnique}</p><div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4"><span className="text-xs font-semibold text-slate-500">{reviewLabel(plan.nextReviewAt)}</span><Link to="/student/learning-coach" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#101820] px-3 text-sm font-semibold text-white hover:bg-[#1d2c38]">Review now <BrainCircuit className="h-4 w-4" /></Link></div></article>;
 }
 
 function ViewButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof ShoppingBag; label: string }) {

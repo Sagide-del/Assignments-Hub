@@ -102,8 +102,8 @@ const TOOLS: {
     Icon: CodeXml,
   },
   {
-    title: "My Resources",
-    description: "Learning guide and saved resources",
+    title: "My Study Hub",
+    description: "Review plan, timetable and resources",
     href: "/student/resources",
     Icon: LibraryBig,
   },

@@ -118,7 +118,7 @@ const studentNav = [
   },
   {
     to: '/student/resources',
-    label: 'My Resources',
+    label: 'My Study Hub',
   },
 ];
 
@@ -316,7 +316,7 @@ export const router = createBrowserRouter([
           },
           {
             // Keep the retired activity URL working while the learner's
-            // primary library now lives under My Resources.
+            // Study Hub now brings together review, timetable and resources.
             // redirect old bookmarks/links rather than break them.
             path: '/student/my-activities',
             element: <Navigate to="/student/resources" replace />,
@@ -324,6 +324,11 @@ export const router = createBrowserRouter([
           {
             path: '/student/resources',
             element: <MyResourcesPage />,
+          },
+          {
+            // Friendly route for new links while preserving existing library bookmarks.
+            path: '/student/study-hub',
+            element: <Navigate to="/student/resources" replace />,
           },
           {
             path: '/student/activate',
