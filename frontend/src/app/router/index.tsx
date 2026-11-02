@@ -53,6 +53,7 @@ import { PrivateTutorPage } from '../../features/platform-admin/PrivateTutor';
 import { TutorMessagesPage } from '../../features/platform-admin/TutorMessages';
 import { ResourceMarketplaceAdminPage } from '../../features/platform-admin/ResourceMarketplace';
 import { LiveActivity } from '../../features/platform-admin/LiveActivity';
+import { EarlyYearsStudio } from '../../features/platform-admin/EarlyYearsStudio';
 
 import { ParentPortal } from '../../features/parent/ParentPortal';
 
@@ -205,6 +206,7 @@ const schoolAdminNav = [
 const platformAdminNav = [
  {to:'/platform',label:'Dashboard'},
  {to:'/platform/question-bank',label:'Question Bank'},
+ {to:'/platform/early-years',label:'Early Years Studio'},
  {to:'/platform/schools',label:'Schools'},
  {to:'/platform/independent-students',label:'Independent Students'},
  {to:'/platform/stem-content',label:'STEM Studio'},
@@ -552,6 +554,10 @@ export const router = createBrowserRouter([
           {
             path: '/platform/question-bank',
             element: <QuestionBankManagement />,
+          },
+          {
+            path: '/platform/early-years',
+            element: <EarlyYearsStudio />,
           },
           {
             path: '/platform/question-bank/schools',

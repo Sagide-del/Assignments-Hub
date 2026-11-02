@@ -2612,6 +2612,39 @@ model ContentLibraryJob {
  @@map("content_library_jobs")
 }
 
+// Short, play-led learning activities for PP1 through Grade 3. Generated
+// content always starts as a draft and becomes visible only after a platform
+// administrator publishes it to the intended audience.
+model EarlyYearsActivity {
+ id String @id @default(cuid())
+ grade String
+ area String
+ language String @default("EN")
+ title String
+ prompt String
+ content Json
+ status String @default("DRAFT")
+ audience String @default("BOTH")
+ schoolIds Json @default("[]") @map("school_ids")
+ createdById Int @map("created_by_id")
+ publishedAt DateTime? @map("published_at")
+ createdAt DateTime @default(now()) @map("created_at")
+ updatedAt DateTime @updatedAt @map("updated_at")
+ @@index([grade, status, audience])
+ @@index([area, language])
+ @@map("early_years_activities")
+}
+
+model EarlyYearsActivityProgress {
+ id String @id @default(cuid())
+ activityId String @map("activity_id")
+ studentId Int @map("student_id")
+ completedAt DateTime @default(now()) @map("completed_at")
+ @@unique([activityId, studentId])
+ @@index([studentId, completedAt])
+ @@map("early_years_activity_progress")
+}
+
 model CurriculumScope {
  id Int @id @default(autoincrement())
  grade String
