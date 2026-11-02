@@ -368,6 +368,7 @@ model School {
   learningCoachSessions     LearningCoachSession[]
   learningCoachResponses    LearningCoachResponse[]
   learningCoachReportCards  LearningCoachReportCard[]
+  sbaEvidence               StudentSbaEvidence[]
   presenceSessions          UserPresenceSession[]
 
   @@map("schools")
@@ -480,6 +481,8 @@ model User {
   learningCoachSessions            LearningCoachSession[]       @relation("LearningCoachSessionStudent")
   learningCoachResponses           LearningCoachResponse[]      @relation("LearningCoachResponseStudent")
   learningCoachReportCards         LearningCoachReportCard[]
+  sbaEvidence                      StudentSbaEvidence[] @relation("SbaEvidenceStudent")
+  reviewedSbaEvidence              StudentSbaEvidence[] @relation("SbaEvidenceReviewer")
   presenceSessions                 UserPresenceSession[]
 
   @@unique([schoolId, email])
@@ -832,6 +835,36 @@ model LearningCoachPlan {
   @@index([studentId, updatedAt])
   @@index([studentId, nextReviewAt])
   @@map("learning_coach_plans")
+}
+
+// Learner-owned Senior School SBA evidence. Completion is based on records
+// verified by a teacher or administrator; the student cannot mark evidence as
+// verified themselves. Files are optional because schools may ask for a link,
+// reflection, photograph, or physical artefact reference.
+model StudentSbaEvidence {
+  id          Int    @id @default(autoincrement())
+  schoolId    Int    @map("school_id")
+  school      School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId   Int    @map("student_id")
+  student     User   @relation("SbaEvidenceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  subject     String
+  title       String
+  description String?
+  assetKey    String? @map("asset_key")
+  fileName    String? @map("file_name")
+  fileSize    Int?    @map("file_size")
+  status      String  @default("SUBMITTED")
+  feedback    String?
+  reviewedById Int?   @map("reviewed_by_id")
+  reviewedBy   User?  @relation("SbaEvidenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([schoolId, studentId, status])
+  @@index([studentId, createdAt])
+  @@map("student_sba_evidence")
 }
 
 model LearningCoachSession {

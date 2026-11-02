@@ -45,6 +45,7 @@ import { PresenceModule } from './presence/presence.module';
 import { KjseaModule } from './kjsea/kjsea.module';
 import { LearningCoachModule } from './learning-coach/learning-coach.module';
 import { EarlyYearsModule } from './early-years/early-years.module';
+import { SbaEvidenceModule } from './sba-evidence/sba-evidence.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -129,6 +130,8 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
     LearningCoachModule,
 
     EarlyYearsModule,
+
+    SbaEvidenceModule,
 
     KjseaModule,
   ],
