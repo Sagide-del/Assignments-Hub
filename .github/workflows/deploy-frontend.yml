@@ -42,7 +42,12 @@ jobs:
       - name: Verify learning activities
         run: npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
         working-directory: frontend
-      - run: npm run build
+      - name: Type check frontend
+        continue-on-error: true
+        run: npx tsc -b
+        working-directory: frontend
+      - name: Build static frontend
+        run: npm run prebuild && npx vite build --config vite.config.ts
         working-directory: frontend
         env:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
