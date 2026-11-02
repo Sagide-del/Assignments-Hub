@@ -41,7 +41,7 @@ import {
   endCurrentPresenceSession,
   usePresenceHeartbeat,
 } from "../hooks/usePresenceHeartbeat";
-import { isEarlyYearsGrade, isKjseaGrade, isPathwayGuidanceGrade } from "../utils/gradeTier";
+import { gradeTier, isEarlyYearsGrade, isKjseaGrade, isPathwayGuidanceGrade } from "../utils/gradeTier";
 
 interface NavItem {
   to: string;
@@ -191,7 +191,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
     ? nav.filter((item) => {
         if (isEarlyYearsGrade(user?.grade)) return item.to === '/student';
         if (item.to === '/student/kjsea-mock-test') return isKjseaGrade(user?.grade);
-        if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(user?.grade);
+        if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(user?.grade) || gradeTier(user?.grade) === 'senior';
         return true;
       })
     : nav;

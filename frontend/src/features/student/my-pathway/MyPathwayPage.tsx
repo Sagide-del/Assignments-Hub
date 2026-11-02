@@ -9,6 +9,7 @@ import { DashboardIcon, ExploreIcon, JourneyIcon, MentorIcon, ParentIcon, Talent
 import { MentorshipTab } from './MentorshipTab';
 import { ParentCornerTab } from './ParentCornerTab';
 import { TalentsTab } from './TalentsTab';
+import { SeniorPathwayExecution } from './SeniorPathwayExecution';
 import type { MyPathwayTab } from './types';
 
 const TABS: { key: MyPathwayTab; label: string; icon: React.ReactNode }[] = [
@@ -24,6 +25,8 @@ export function MyPathwayPage() {
   const user = useAuthStore((state) => state.user);
   const tier = gradeTier(user?.grade);
   const [tab, setTab] = useState<MyPathwayTab>('dashboard');
+
+  if (tier === 'senior') return <SeniorPathwayExecution />;
 
   return (
     <div className="space-y-4">
