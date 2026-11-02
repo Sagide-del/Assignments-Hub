@@ -1,4 +1,4 @@
-import { ArrayMaxSize, ArrayUnique, IsArray, IsIn, IsInt, IsOptional, IsString, MaxLength, Min, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 export const EARLY_YEARS_GRADES = ['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3'] as const;
 export const EARLY_YEARS_AREAS = ['language', 'maths', 'world', 'creative', 'movement', 'values'] as const;

@@ -20,7 +20,7 @@ export class EarlyYearsService {
       if (typeof activity?.title !== 'string' || typeof activity?.prompt !== 'string' || !Array.isArray(activity?.choices) || activity.choices.length < 2 || !activity.choices.some((choice: any) => choice?.correct === true)) throw new BadRequestException('The AI response did not meet the activity quality checks.');
       return { grade: dto.grade, area: dto.area, language: dto.language, title: activity.title.slice(0, 120), prompt: activity.prompt.slice(0, 300), content: { choices: activity.choices.slice(0, 4), celebration: String(activity.celebration ?? 'Well done!').slice(0, 160), grownUpTip: String(activity.grownUpTip ?? '').slice(0, 300) }, audience: dto.audience, schoolIds: dto.schoolScope === 'SELECTED' ? dto.schoolIds ?? [] : [], createdById: actor.id };
     });
-    return this.prisma.$transaction(rows.map((data) => this.prisma.earlyYearsActivity.create({ data })));
+    return this.prisma.$transaction(rows.map((data: (typeof rows)[number]) => this.prisma.earlyYearsActivity.create({ data })));
   }
 
   listAdmin() { return this.prisma.earlyYearsActivity.findMany({ orderBy: { createdAt: 'desc' }, take: 200 }); }
