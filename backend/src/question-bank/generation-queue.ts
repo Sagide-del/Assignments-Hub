@@ -4,7 +4,10 @@ export const GENERATION_KINDS = [
   "OUTCOME_QUESTIONS",
   "QUESTIONS",
 ];
-export const QUESTION_KINDS = ["OUTCOME_QUESTIONS", "QUESTIONS"];
+export const QUESTION_KINDS = [
+  "OUTCOME_QUESTIONS",
+  "QUESTIONS",
+];
 
 export function generationConcurrency() {
   const value = Number(process.env.CONTENT_GENERATION_CONCURRENCY ?? 4);

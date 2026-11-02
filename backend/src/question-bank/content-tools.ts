@@ -171,7 +171,9 @@ export function rankPractice<T extends { id: number; topic: string }>(
     .slice(0, 30);
 }
 
-export const MIN_TOPIC_QUESTIONS = 20;
+// A learner should never be offered a partial topic cycle. The content
+// pipeline, publishing flow and practice allocator all share this threshold.
+export const MIN_TOPIC_QUESTIONS = 30;
 export const PRACTICE_BATCH_SIZE = 30;
 
 /** A new set contains unseen prompts, including across separately generated batches. */
@@ -205,13 +207,5 @@ export function freshPractice<T extends { id: number; questionText: string }>(
 
 /** Avoid stranding 1–19 questions when the pool can form complete further sets. */
 export function practiceSetSize(remaining: number) {
-  if (remaining < MIN_TOPIC_QUESTIONS) return 0;
-  const sets = Math.min(
-    Math.ceil(remaining / PRACTICE_BATCH_SIZE),
-    Math.floor(remaining / MIN_TOPIC_QUESTIONS),
-  );
-  return Math.min(
-    PRACTICE_BATCH_SIZE,
-    remaining - (sets - 1) * MIN_TOPIC_QUESTIONS,
-  );
+  return remaining >= PRACTICE_BATCH_SIZE ? PRACTICE_BATCH_SIZE : 0;
 }

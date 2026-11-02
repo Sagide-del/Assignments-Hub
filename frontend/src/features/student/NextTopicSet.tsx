@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
@@ -15,6 +16,7 @@ export function NextTopicSet({
 }) {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const allocated = useRef(false);
   const catalogue = useQuery({
     queryKey: ["practice-batches", user?.id, user?.grade],
     queryFn: () =>
@@ -52,7 +54,15 @@ export function NextTopicSet({
       catalogueKey(a.subject) === catalogueKey(subject) &&
       catalogueKey(a.coverage?.topic ?? "") === catalogueKey(topic ?? ""),
   );
-  const ready = !!active || (available.remainingCount ?? available.count) >= 20;
+  const ready = !!active || (available.remainingCount ?? available.count) >= 30;
+  // Completion allocates the following full set while the learner reviews
+  // their result. It does not redirect them away from useful feedback; the
+  // button below opens the already-created draft when they are ready.
+  useEffect(() => {
+    if (!ready || active || allocated.current || next.isPending) return;
+    allocated.current = true;
+    next.mutate();
+  }, [ready, active, next]);
   return (
     <section
       aria-label="Next topic set"
@@ -62,7 +72,7 @@ export function NextTopicSet({
         <p className="text-sm font-semibold text-slate-900">{topic}</p>
         <p className="mt-1 text-xs text-slate-500">
           {ready
-            ? "Your next set is ready. Completed sets stay saved."
+            ? "Your next 30-question set is ready. Completed sets stay saved."
             : "Topic complete for now. More questions will appear when published."}
         </p>
       </div>
@@ -81,7 +91,7 @@ export function NextTopicSet({
             ? "Opening…"
             : active
               ? "Continue current set"
-              : "Start next set"}
+              : "Start next 30 questions"}
           <ArrowRight size={15} aria-hidden="true" />
         </button>
       )}

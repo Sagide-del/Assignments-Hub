@@ -195,7 +195,10 @@ export class QuestionBankService {
       : Array.from(AI_GENERATABLE_QUESTION_TYPES).filter(
           (type) => type !== QuestionType.ESSAY,
         );
-    const questionCount = dto.questionCount ?? 60;
+    // The learner delivery contract is a complete 30-question cycle. Larger
+    // pools can still be made deliberately, but quick generation should make
+    // one reviewable/publishable learner batch at a time.
+    const questionCount = dto.questionCount ?? 30;
     const difficulty = dto.difficulty ?? "MIXED";
     const autoTagTopic = dto.autoTagTopic ?? false;
     const includeDiagramPlaceholders = dto.includeDiagramPlaceholders ?? false;
@@ -1043,14 +1046,18 @@ export class QuestionBankService {
               });
               if (!fresh.length)
                 return { count: 0, questions: 0, skipped: group.length };
-              if (fresh.length < 20) {
+              const publishableCount = Math.floor(fresh.length / 30) * 30;
+              if (publishableCount < 30) {
                 if (result.issues.length < 100)
                   result.issues.push({
                     id: fresh[0].id,
-                    reason: `${fresh[0].subject} · ${fresh[0].topic}: ${fresh.length} questions selected; at least 20 are required to publish a topic set. Generate or select more approved questions.`,
+                    reason: `${fresh[0].subject} · ${fresh[0].topic}: ${fresh.length} questions selected; exactly 30 approved questions are required for each learner set. Generate or select more approved questions.`,
                   });
                 return { count: 0, questions: 0, skipped: 0 };
               }
+              // Keep an incomplete remainder in the bank for the next
+              // generation/review cycle instead of publishing a short set.
+              const publishable = fresh.slice(0, publishableCount);
               const first = fresh[0],
                 topic =
                   first.topic.trim().replace(/\s+/g, " ") || "General practice",
@@ -1065,21 +1072,9 @@ export class QuestionBankService {
                 "ORDERING",
               ]);
               const sameMarks = fresh.every((q) => q.points === first.points);
-              // The existing variant allocator supports a larger equal-mark pool.
-              const size = sameMarks ? 300 : 30;
-              // Balance partitions so a final small remainder never becomes a short assignment.
-              const parts = Math.max(
-                1,
-                Math.min(
-                  Math.ceil(fresh.length / size),
-                  Math.floor(fresh.length / 20),
-                ),
-              );
-              const pools = Array.from({ length: parts }, (_, i) =>
-                fresh.slice(
-                  Math.floor((i * fresh.length) / parts),
-                  Math.floor(((i + 1) * fresh.length) / parts),
-                ),
+              const pools = Array.from(
+                { length: publishable.length / 30 },
+                (_, index) => publishable.slice(index * 30, (index + 1) * 30),
               );
               let count = 0;
               for (const pool of pools) {
@@ -1093,7 +1088,7 @@ export class QuestionBankService {
                       description: { startsWith: description },
                     },
                   })) + 1;
-                const questionCount = Math.min(30, pool.length);
+                const questionCount = 30;
                 const assignment =
                   await this.assignments.createPlatformPublished(
                     {
@@ -1136,16 +1131,6 @@ export class QuestionBankService {
                     target.id,
                     tx,
                   );
-                if (sameMarks && pool.length > 30)
-                  await tx.assignmentDeliveryConfig.create({
-                    data: {
-                      schoolId: target.id,
-                      assignmentId: assignment.id,
-                      questionCount,
-                      poolSize: pool.length,
-                      shuffleOptions: true,
-                    },
-                  });
                 await tx.questionBankUsage.createMany({
                   data: pool.map((q) => ({
                     schoolId: target.id,
@@ -1160,8 +1145,8 @@ export class QuestionBankService {
               }
               return {
                 count,
-                questions: fresh.length,
-                skipped: group.length - fresh.length,
+                questions: publishable.length,
+                skipped: group.length - publishable.length,
               };
             },
             { timeout: 60000 },

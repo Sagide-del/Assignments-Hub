@@ -292,7 +292,7 @@ export function MyAssignmentsPage() {
     const bank: Assignment[] = (practiceQuery.data?.subjects ?? [])
       .flatMap((s) =>
         (s.topics ?? [])
-          .filter((t) => (t.remainingCount ?? t.count) >= 20)
+          .filter((t) => (t.remainingCount ?? t.count) >= 30)
           .map((t) => ({
             id: 0,
             title: `${t.topic} · Topic practice`,
