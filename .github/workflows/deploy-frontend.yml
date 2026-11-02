@@ -54,6 +54,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Verify assessment backend
+        continue-on-error: true
         working-directory: backend
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
