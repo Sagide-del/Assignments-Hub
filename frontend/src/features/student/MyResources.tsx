@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
-import { CurriculumLearningGuide } from './curriculum/CurriculumLearningGuide';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  BookOpenCheck,
   BrainCircuit,
   CalendarDays,
   Clock3,
@@ -50,7 +48,7 @@ export function MyResourcesPage() {
   const queryClient = useQueryClient();
   const [params,setParams]=useSearchParams();
   const section=params.get('section');
-  const view=['REVIEW','MARKETPLACE','LIBRARY','STUDY_PLAN','GUIDE'].includes(section??'') ? section as 'REVIEW'|'MARKETPLACE'|'LIBRARY'|'STUDY_PLAN'|'GUIDE' : 'REVIEW';
+  const view=['REVIEW','MARKETPLACE','LIBRARY','STUDY_PLAN'].includes(section??'') ? section as 'REVIEW'|'MARKETPLACE'|'LIBRARY'|'STUDY_PLAN' : 'REVIEW';
   const setView=(value:string)=>setParams({section:value});
   const userId=useAuthStore(s=>s.user?.id);
   const [type, setType] = useState<ResourceListingType | 'ALL'>('ALL');
@@ -104,12 +102,11 @@ export function MyResourcesPage() {
     <div className="min-w-0 space-y-4 pb-12 sm:space-y-5">
       <PageHeader title="My Study Hub" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : view === 'REVIEW' ? 'Your next best study step' : undefined} />
 
-      <nav aria-label="Study Hub sections" className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)] sm:grid-cols-5">
+      <nav aria-label="Study Hub sections" className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)] sm:grid-cols-4">
           <ViewButton active={view === 'REVIEW'} onClick={() => setView('REVIEW')} icon={BrainCircuit} label="Review plan" />
           <ViewButton active={view === 'STUDY_PLAN'} onClick={() => setView('STUDY_PLAN')} icon={CalendarDays} label="Timetable" />
           <ViewButton active={view === 'MARKETPLACE'} onClick={() => setView('MARKETPLACE')} icon={ShoppingBag} label="Marketplace" />
           <ViewButton active={view === 'LIBRARY'} onClick={() => setView('LIBRARY')} icon={LibraryBig} label="My library" />
-          <ViewButton active={view === 'GUIDE'} onClick={() => setView('GUIDE')} icon={BookOpenCheck} label="Learning guide" />
       </nav>
 
       {(view === 'MARKETPLACE'||view === 'LIBRARY') ? <label className="flex min-h-12 min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-[0_8px_24px_rgba(16,24,32,0.03)] sm:ml-auto sm:w-80">
@@ -127,7 +124,7 @@ export function MyResourcesPage() {
 
       {status && (view==='MARKETPLACE'||view==='LIBRARY') ? <p role="status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{status}</p> : null}
 
-      {view === 'REVIEW' ? <ReviewPlan /> : view==='GUIDE' ? <CurriculumLearningGuide/> : view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
+      {view === 'REVIEW' ? <ReviewPlan /> : view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
         <EmptyState title="Loading resources..." />
       ) : listingsQuery.isError || purchasesQuery.isError ? (
         <EmptyState title="Resources are temporarily unavailable." />
