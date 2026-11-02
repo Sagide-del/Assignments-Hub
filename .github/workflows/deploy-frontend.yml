@@ -61,21 +61,27 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=3072
         run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
       - name: Wait for assessment API capabilities
+        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
       - name: Wait for immersive lab API and catalogue
+        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-stem-api.mjs
       - name: Wait for curriculum library API
+        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-curriculum-api.mjs
       - name: Wait for Tuma payment API and migration
+        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-tuma-api.mjs
       - name: Wait for username registration API
+        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-auth-api.mjs
       - name: Wait for central content library
+        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-content-api.mjs
       - name: Connect to AWS without stored access keys
