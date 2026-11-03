@@ -392,18 +392,23 @@ function GradeContentFlow({ grade }: { grade: string }) {
   const plans = selectedScopes
     .filter((s) => s.nextIds.length > 0)
     .map((s) => {
-      // Spread each new batch across outcomes that have neither saved questions
-      // nor an active generation job for this assessment mode.
+      // A learner cycle is exactly 30 questions per subject. Spread that one
+      // cycle across several reviewed outcomes instead of accidentally asking
+      // the AI for 30 questions *per* outcome.
       const ids = [...new Set(s.nextIds)].sort((a, b) => a - b);
       const size = Math.min(6, ids.length);
       const chosen = Array.from(
         { length: size },
         (_, i) => ids[Math.floor((i * ids.length) / size)],
       );
+      const base = Math.floor(30 / chosen.length);
+      const remainder = 30 % chosen.length;
       return {
         scope: s,
-        ids: chosen,
-        count: 30,
+        items: chosen.map((id, index) => ({
+          id,
+          count: base + (index < remainder ? 1 : 0),
+        })),
       };
     });
   const generate = useMutation({
@@ -412,19 +417,21 @@ function GradeContentFlow({ grade }: { grade: string }) {
       let reused = 0;
       const failures: string[] = [];
       for (const plan of plans) {
-        try {
-          const result = await ingestionApi.generate(
-            plan.ids,
-            "QUESTIONS",
-            plan.count,
-            written ? "WRITTEN" : "PRACTICE",
-          );
-          queued += result.queued;
-          reused += result.reused;
-        } catch (e) {
-          failures.push(
-            `${plan.scope.subject}: ${apiErrorMessage(e, "Could not queue this subject")}`,
-          );
+        for (const item of plan.items) {
+          try {
+            const result = await ingestionApi.generate(
+              [item.id],
+              "QUESTIONS",
+              item.count,
+              written ? "WRITTEN" : "PRACTICE",
+            );
+            queued += result.queued;
+            reused += result.reused;
+          } catch (e) {
+            failures.push(
+              `${plan.scope.subject}: ${apiErrorMessage(e, "Could not queue this outcome")}`,
+            );
+          }
         }
       }
       return { queued, reused, failures };
@@ -1222,9 +1229,9 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   Generate {grade} content
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  AI will create original questions, explanations and recall
-                  cards from validated outcomes. Start small to keep generation
-                  costs down.
+                  AI will create original questions and explanations from
+                  validated outcomes. One subject batch is capped at 30
+                  questions to control generation costs.
                 </p>
               </div>
               {!ready.length ? (
@@ -1319,15 +1326,19 @@ function GradeContentFlow({ grade }: { grade: string }) {
                   </label>
                   <div className="rounded-lg bg-slate-50 p-4 text-sm leading-7">
                     <strong>
-                      {plans.reduce((n, p) => n + p.ids.length * p.count, 0)}{" "}
+                      {plans.reduce(
+                        (n, p) =>
+                          n + p.items.reduce((sum, item) => sum + item.count, 0),
+                        0,
+                      )}{" "}
                       draft questions requested
                     </strong>
                     <p>
                       Across {plans.length} subjects and{" "}
-                      {plans.reduce((n, p) => n + p.ids.length, 0)} selected
-                      outcomes (30 questions per outcome). Existing saved or queued
-                      outcomes are skipped. Each new batch covers additional
-                      available outcomes.
+                      {plans.reduce((n, p) => n + p.items.length, 0)} selected
+                      outcomes (30 questions per subject). Existing saved or queued
+                      outcomes are skipped. Each batch shares its 30 questions
+                      across the selected outcomes.
                     </p>
                   </div>
                   {!!preparation?.result?.subjects?.filter(
