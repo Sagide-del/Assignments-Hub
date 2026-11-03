@@ -33,6 +33,7 @@ const normalized = (value: string) =>
 
 export function validateCmsGeneratedContent(
   value: unknown,
+  expectedQuestions = 30,
 ): CmsGeneratedContent {
   const raw =
     typeof value === "string" ? (JSON.parse(value) as unknown) : value;
@@ -50,8 +51,11 @@ export function validateCmsGeneratedContent(
     throw Error("Invalid equations");
   const equations = content.equations.map((value) => text(value, 1000));
   const illustration_prompt = text(content.illustration_prompt, 3000);
-  if (!Array.isArray(content.questions) || content.questions.length !== 30)
-    throw Error("Exactly 30 questions are required");
+  if (
+    !Array.isArray(content.questions) ||
+    content.questions.length !== expectedQuestions
+  )
+    throw Error(`Exactly ${expectedQuestions} questions are required`);
   const seen = new Set<string>();
   const questions = content.questions.map((value) => {
     const question = object(value);

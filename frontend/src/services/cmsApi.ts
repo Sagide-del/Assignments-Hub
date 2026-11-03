@@ -63,6 +63,10 @@ export const cmsApi = {
     api
       .post<MasterModule>("/cms/drafts", draft)
       .then((response) => response.data),
+  enrichModule: (id: string) =>
+    api
+      .post<MasterModule>(`/cms/drafts/${encodeURIComponent(id)}/enrich`)
+      .then((response) => response.data),
   approveModule: (id: string) =>
     api
       .patch<MasterModule>(`/cms/drafts/${encodeURIComponent(id)}/approve`)

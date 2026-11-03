@@ -74,8 +74,9 @@ export function parseCmsContent(value: unknown) {
         : "");
     return {
       prompt:
-        text(q.question_text ?? q.question ?? q.questionText ?? q.prompt ?? q.text) ||
-        "No question text supplied",
+        text(
+          q.question_text ?? q.question ?? q.questionText ?? q.prompt ?? q.text,
+        ) || "No question text supplied",
       answer: answer || "No answer supplied",
       options,
     };
@@ -86,5 +87,34 @@ export function parseCmsContent(value: unknown) {
     theory: bodyText(content.theory_text ?? content.theory),
     assets,
     questions,
+  };
+}
+
+/** Learner-safe view: never render migration placeholders or assume 30 questions. */
+export function cmsLearningContent(value: unknown) {
+  let parsed = value;
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      parsed = null;
+    }
+  }
+  const content = record(parsed);
+  const theory = bodyText(content.theory_text ?? content.theory).trim();
+  const questions = Array.isArray(content.questions) ? content.questions : [];
+  const count =
+    typeof content.question_count === "number"
+      ? content.question_count
+      : questions.length;
+  return {
+    theory: theory === "Legacy content migrated from old system." ? "" : theory,
+    equations: Array.isArray(content.equations)
+      ? content.equations.filter(
+          (item): item is string => typeof item === "string" && !!item.trim(),
+        )
+      : [],
+    partial: count > 0 && count < 30,
+    label: count > 0 && count < 30 ? "Practice Set (Partial)" : "Practice Set",
   };
 }

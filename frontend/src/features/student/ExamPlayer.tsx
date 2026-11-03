@@ -1,3 +1,4 @@
+import { CmsTheory } from "./CmsTheory";
 import { NextTopicSet } from "./NextTopicSet";
 import { assignmentTopic } from "./assignment-catalogue";
 import { learningTitle } from "./assignment-presentation";
@@ -731,6 +732,7 @@ function ExamWorkspace() {
           </aside>
         )}
         <div className="min-w-0 space-y-4">
+          <CmsTheory content={assignment.rawJson?.cms_content} />
           {assignment.description && (
             <details className="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <summary className="cursor-pointer text-xs font-medium text-slate-600">

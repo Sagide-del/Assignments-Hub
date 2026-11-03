@@ -85,6 +85,12 @@ export default function CmsReviewPage() {
       ]);
     },
   });
+  const enrich = useMutation({
+    mutationFn: () => cmsApi.enrichModule(id!),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["cms", userId] });
+    },
+  });
   const back = (
     <Link
       to="/platform/cms"
@@ -143,7 +149,7 @@ export default function CmsReviewPage() {
     );
   const hasPayload = module.content_json !== undefined;
   const complete =
-    content.valid && content.questions.length === 30 && !!content.theory.trim();
+    content.valid && content.questions.length >= 30 && !!content.theory.trim();
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       {publishing && (
@@ -173,10 +179,20 @@ export default function CmsReviewPage() {
                     ? "Approved"
                     : "Draft"}
             </span>
+            {hasPayload && ["DRAFT", "APPROVED"].includes(module.status) && (
+              <button
+                type="button"
+                disabled={enrich.isPending || approve.isPending}
+                onClick={() => enrich.mutate()}
+                className="min-h-11 rounded-lg border border-slate-200 px-4 text-xs font-semibold disabled:opacity-40"
+              >
+                {enrich.isPending ? "Enriching…" : "Enrich with AI"}
+              </button>
+            )}
             {module.status === "DRAFT" && hasPayload && (
               <button
                 type="button"
-                disabled={approve.isPending || !complete}
+                disabled={approve.isPending || enrich.isPending || !complete}
                 onClick={() => approve.mutate()}
                 className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#101820] px-4 text-xs font-semibold text-white disabled:opacity-40"
               >
@@ -187,6 +203,7 @@ export default function CmsReviewPage() {
             {module.status === "APPROVED" && (
               <button
                 type="button"
+                disabled={enrich.isPending}
                 onClick={() => setPublishing(true)}
                 className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#101820] px-4 text-xs font-semibold text-white"
               >
@@ -197,6 +214,14 @@ export default function CmsReviewPage() {
           </>
         }
       />
+      {enrich.isError && (
+        <p role="alert" className="text-sm text-amber-900">
+          {apiErrorMessage(
+            enrich.error,
+            "Enrichment failed. Your existing questions are unchanged.",
+          )}
+        </p>
+      )}
       {approve.isError && (
         <p
           role="alert"
@@ -228,7 +253,7 @@ export default function CmsReviewPage() {
             >
               {!content.valid
                 ? "The content payload could not be read."
-                : `This module has ${content.questions.length} questions. This review expects theory and 30 questions before approval.`}
+                : `This module has ${content.questions.length} questions. Enrich this set with theory and at least 30 questions before approval.`}
             </p>
           )}
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">

@@ -37,3 +37,12 @@ test('school stream choices exclude other schools, grades, staff and inactive le
   const rows=[user(),user(),user({studentProfile:{stream:'1B'}}),user({schoolId:3,studentProfile:{stream:'Other school'}}),user({grade:'Grade 9',studentProfile:{stream:'Other grade'}}),user({role:'TEACHER',studentProfile:{stream:'Staff'}}),user({isActive:false,studentProfile:{stream:'Inactive'}}),user({studentProfile:{stream:null,className:'1C'}})];
   assert.deepEqual(cmsSchoolStreams(rows,2,11),['1A','1B','1C']);
 });
+
+const { cmsLearningContent } = await loadTypeScript(new URL('../src/services/cms-content.ts', import.meta.url));
+test('learner content hides legacy theory, labels partial sets and safely ignores absent equations',()=>{
+  const view=cmsLearningContent({source:'LEGACY',theory_text:'Legacy content migrated from old system.',questions:Array(10).fill({})});
+  assert.equal(view.theory,'');assert.equal(view.label,'Practice Set (Partial)');assert.deepEqual(view.equations,[]);
+  assert.deepEqual(cmsLearningContent(null).equations,[]);
+  assert.equal(cmsLearningContent({questions:Array(35).fill({})}).partial,false);
+  assert.equal(cmsLearningContent({theory_text:'New theory',question_count:30,equations:[]}).theory,'New theory');
+});

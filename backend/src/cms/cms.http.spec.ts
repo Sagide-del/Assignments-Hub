@@ -267,6 +267,7 @@ describe("Master Content Library HTTP API", () => {
       [`/modules/${id}`, "GET", undefined],
       ["/drafts", "POST", draft],
       [`/drafts/${id}/approve`, "PATCH", undefined],
+      [`/drafts/${id}/enrich`, "POST", undefined],
       ["/publish", "POST", { module_id: id, target_type: "STORE" }],
     ] as const) {
       expect((await request(path, method, body)).status).toBe(401);
@@ -275,6 +276,16 @@ describe("Master Content Library HTTP API", () => {
     }
     expect((await request("/store")).status).toBe(200);
     expect(db.masterModule.create).not.toHaveBeenCalled();
+  });
+  it("restricts published learner content routes to authenticated students", async () => {
+    for (const [path, method] of [
+      ["/learning", "GET"],
+      [`/learning/${randomUUID()}/start`, "POST"],
+    ]) {
+      expect((await request(path, method)).status).toBe(401);
+      for (const role of ["TEACHER", "SCHOOL_ADMIN", "PLATFORM_ADMIN"])
+        expect((await request(path, method, undefined, role)).status).toBe(403);
+    }
   });
   it("creates drafts, lists pending content and approves idempotently", async () => {
     const module = await create();

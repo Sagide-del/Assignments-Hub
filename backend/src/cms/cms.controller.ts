@@ -44,6 +44,16 @@ export class CmsController {
     return this.cms.approveModule(id);
   }
 
+  @Post("drafts/:id/enrich")
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction("cms.module_enriched")
+  enrich(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.cms.enrichModule(id, actor);
+  }
+
   @Post("publish")
   @Roles(Role.PLATFORM_ADMIN)
   @AuditAction("cms.module_published")
@@ -61,6 +71,21 @@ export class CmsController {
   @Roles(Role.PLATFORM_ADMIN)
   getSchoolPublications() {
     return this.cms.getSchoolPublications();
+  }
+
+  @Get("learning")
+  @Roles(Role.STUDENT)
+  getLearning(@CurrentUser() actor: AuthenticatedUser) {
+    return this.cms.getLearningModules(actor);
+  }
+
+  @Post("learning/:id/start")
+  @Roles(Role.STUDENT)
+  startLearning(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.cms.startLearningModule(id, actor);
   }
 
   @Get("store")

@@ -1,3 +1,5 @@
+import { CmsLearningLibrary } from "./CmsLearningLibrary";
+import { cmsLearningContent } from "../../services/cms-content";
 import { PageHeader } from "../../components/ui/Saas";
 import { learningTitle } from "./assignment-presentation";
 import { subjectAppearance } from "./subject-appearance";
@@ -141,6 +143,10 @@ function AssignmentCard({
           />
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
             {count != null && <span>{count} questions</span>}
+            {assignment.rawJson?.cms_content &&
+            cmsLearningContent(assignment.rawJson.cms_content).partial ? (
+              <span>Practice Set (Partial)</span>
+            ) : null}
             {marks != null && <span>{marks} marks</span>}
             {assignment.timeAllowedMinutes ? (
               <span>{assignment.timeAllowedMinutes} min</span>
@@ -454,6 +460,7 @@ export function MyAssignmentsPage() {
           ) : null
         }
       />
+      <CmsLearningLibrary subject={subjectKey} topic={topicKey} search={search} />
       <nav
         aria-label="Assignment breadcrumb"
         className="flex flex-wrap items-center gap-2 text-xs"

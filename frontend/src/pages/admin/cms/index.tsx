@@ -45,6 +45,7 @@ export default function CmsDashboard() {
   const status =
     TABS.find((tab) => tab.status === params.get("status"))?.status ?? "DRAFT";
   const [search, setSearch] = useState("");
+  const [legacyOnly, setLegacyOnly] = useState(false);
   const pending = useQuery({
     queryKey: ["cms", userId, "drafts"],
     queryFn: cmsApi.getDrafts,
@@ -72,6 +73,10 @@ export default function CmsDashboard() {
   const items = (query.data ?? []).filter(
     (item) =>
       item.status === status &&
+      (!legacyOnly ||
+        !["DRAFT", "APPROVED"].includes(status) ||
+        (item.content_json as { source?: string } | undefined)?.source ===
+          "LEGACY") &&
       `${item.topic} ${item.subject} ${item.pathway ?? ""} Grade ${item.grade}`
         .toLowerCase()
         .includes(search.trim().toLowerCase()),
@@ -185,6 +190,16 @@ export default function CmsDashboard() {
             />
           </label>
         </div>
+        {(status === "DRAFT" || status === "APPROVED") && (
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={legacyOnly}
+              onChange={(event) => setLegacyOnly(event.target.checked)}
+            />
+            Legacy content only
+          </label>
+        )}
         {query.isPending ? (
           <div
             role="status"
