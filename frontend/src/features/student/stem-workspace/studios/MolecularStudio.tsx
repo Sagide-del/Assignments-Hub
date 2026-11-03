@@ -264,6 +264,7 @@ export default function MolecularStudio({
           error={studio.save.error}
           onSave={() => studio.save.mutate()}
           onExport={studio.exportReport}
+          resultSession={studio.resultSession}
           restore={studio.restore}
         >
           <div className="space-y-3">

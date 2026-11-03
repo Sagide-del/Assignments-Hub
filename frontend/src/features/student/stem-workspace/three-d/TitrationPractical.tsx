@@ -14,6 +14,7 @@ import {
 import type { Lab } from "../../../../types";
 import { labSessionsApi } from "../../../../api/labs.api";
 import { apiErrorMessage } from "../../../../api/axios";
+import { LabQuizFeedback } from "../LabQuizFeedback";
 import {
   ALIQUOT_ML,
   BASE_MOLARITY,
@@ -1088,6 +1089,7 @@ export default function TitrationPractical({
               Practical report saved to your account.
             </p>
           )}
+          <LabQuizFeedback session={completion.data} />
           {storedReport && (
             <div className="text-xs text-slate-500">
               <p>

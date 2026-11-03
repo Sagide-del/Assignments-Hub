@@ -4,9 +4,10 @@ import type { RespiratoryEvent } from "../../../../../../backend/src/labs/respir
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, LoaderCircle, Save } from "lucide-react";
-import type { Lab } from "../../../../types";
+import type { Lab, LabSession } from "../../../../types";
 import { labSessionsApi } from "../../../../api/labs.api";
 import { apiErrorMessage } from "../../../../api/axios";
+import { LabQuizFeedback } from "../LabQuizFeedback";
 import type {
   CyberEvent,
   PendulumEvent,
@@ -144,6 +145,7 @@ export function useStudio<
     (r) => r.labKey === lab.key && r.completionSummary?.version === version,
   );
   const stored = savedSession?.completionSummary;
+  const resultSession = save.data ?? savedSession;
   const restore =
     stored && draft.events.length === 0
       ? () => {
@@ -180,6 +182,7 @@ export function useStudio<
     storageError,
     saved,
     save,
+    resultSession,
     exportReport,
   };
 }
@@ -195,6 +198,7 @@ export function StudioReport({
   error,
   onSave,
   onExport,
+  resultSession,
   children,
   restore,
 }: {
@@ -209,6 +213,7 @@ export function StudioReport({
   error: unknown;
   onSave: () => void;
   onExport: () => void;
+  resultSession?: LabSession | null;
   children: React.ReactNode;
   restore?: () => void;
 }) {
@@ -294,6 +299,7 @@ export function StudioReport({
           Practical report saved to your account.
         </p>
       )}
+      <LabQuizFeedback session={resultSession} />
     </section>
   );
 }

@@ -378,7 +378,7 @@ export interface Lab {
 }
 
 export interface LabSession {
-  answers?: {questionId:number;answer:string}[] | null;
+  answers?: {questionId:number;answer:string;isCorrect?: boolean | null;pointsAwarded?: number}[] | null;
   completionSummary?: Record<string, unknown> | null;
   id: number;
   schoolId: number;

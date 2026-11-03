@@ -556,6 +556,7 @@ export default function PendulumStudio({
           error={studio.save.error}
           onSave={() => studio.save.mutate()}
           onExport={studio.exportReport}
+          resultSession={studio.resultSession}
         >
           <p className="text-xs leading-6 text-slate-500">
             Record three measurements across at least two lengths. Compare the

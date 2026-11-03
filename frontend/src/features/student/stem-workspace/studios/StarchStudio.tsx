@@ -662,6 +662,7 @@ export default function StarchStudio({
           error={studio.save.error}
           onSave={() => studio.save.mutate()}
           onExport={studio.exportReport}
+          resultSession={studio.resultSession}
           restore={studio.restore}
         >
           <p className="text-sm text-slate-500">

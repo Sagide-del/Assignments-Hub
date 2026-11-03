@@ -986,6 +986,7 @@ export default function CyberStudio({
           error={studio.save.error}
           onSave={() => studio.save.mutate()}
           onExport={studio.exportReport}
+          resultSession={studio.resultSession}
         >
           <p className="text-xs leading-6 text-slate-500">
             Complete at least three runs across two scenarios. Include an

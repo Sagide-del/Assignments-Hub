@@ -21,6 +21,7 @@ import {
 import type { Lab } from "../../../../types";
 import { labSessionsApi } from "../../../../api/labs.api";
 import { apiErrorMessage } from "../../../../api/axios";
+import { LabQuizFeedback } from "../LabQuizFeedback";
 import { gradeDesignLink } from "../../curriculum/framework";
 import {
   practicalFor,
@@ -704,6 +705,7 @@ export default function PracticalWorkshop({
               Practical report saved to your account.
             </p>
           )}
+          <LabQuizFeedback session={save.data} />
           {stored && !state.events.length && (
             <button
               className="min-h-10 text-sm underline"

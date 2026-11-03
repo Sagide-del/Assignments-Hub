@@ -547,6 +547,7 @@ export default function RespiratoryStudio({
           restore={studio.restore}
           onSave={() => studio.save.mutate()}
           onExport={studio.exportReport}
+          resultSession={studio.resultSession}
         >
           <p className="text-xs leading-6 text-slate-500">
             Inspect both lungs, the trachea, bronchi and diaphragm. Record three
