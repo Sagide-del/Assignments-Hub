@@ -1,3 +1,5 @@
+import { useState } from "react";
+import PublishModal from "../PublishModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -65,35 +67,22 @@ export default function CmsReviewPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
-  const drafts = useQuery({
-    queryKey: ["cms", userId, "drafts"],
-    queryFn: cmsApi.getDrafts,
+  const [publishing, setPublishing] = useState(false);
+  const detail = useQuery({
+    queryKey: ["cms", userId, "module", id],
+    queryFn: () => cmsApi.getModule(id!),
+    enabled: !!id,
     retry: false,
   });
-  const draft = drafts.data?.find((item) => item.id === id);
-  const store = useQuery({
-    queryKey: ["cms", userId, "store"],
-    queryFn: cmsApi.getPublicStore,
-    enabled: drafts.isSuccess && !draft,
-    retry: false,
-  });
-  const module = draft ?? store.data?.find((item) => item.id === id);
+  const module = detail.data;
   const content = parseCmsContent(module?.content_json);
   const approve = useMutation({
     mutationFn: () => cmsApi.approveModule(id!),
     onSuccess: async () => {
-      await client.invalidateQueries({ queryKey: ["cms", userId, "drafts"] });
-    },
-  });
-  const publish = useMutation({
-    mutationFn: () =>
-      cmsApi.publishModule({ module_id: id!, target_type: "STORE" }),
-    onSuccess: async () => {
       await Promise.all([
+        client.invalidateQueries({ queryKey: ["cms", userId, "module", id] }),
         client.invalidateQueries({ queryKey: ["cms", userId, "drafts"] }),
-        client.invalidateQueries({ queryKey: ["cms", userId, "store"] }),
       ]);
-      navigate("/platform/cms?status=PUBLISHED_STORE");
     },
   });
   const back = (
@@ -105,7 +94,7 @@ export default function CmsReviewPage() {
       Content Library
     </Link>
   );
-  if (drafts.isPending || (!draft && store.isPending && !drafts.isError))
+  if (detail.isPending)
     return (
       <div className="space-y-4">
         {back}
@@ -117,7 +106,7 @@ export default function CmsReviewPage() {
         </p>
       </div>
     );
-  if (drafts.isError || (!draft && store.isError))
+  if (detail.isError)
     return (
       <div className="space-y-4">
         {back}
@@ -126,16 +115,11 @@ export default function CmsReviewPage() {
           className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
         >
           <p>
-            {apiErrorMessage(
-              drafts.error ?? store.error,
-              "This module could not be loaded.",
-            )}
+            {apiErrorMessage(detail.error, "This module could not be loaded.")}
           </p>
           <button
             type="button"
-            onClick={() =>
-              drafts.isError ? drafts.refetch() : store.refetch()
-            }
+            onClick={() => detail.refetch()}
             className="mt-2 min-h-10 font-semibold underline"
           >
             Try again
@@ -151,8 +135,7 @@ export default function CmsReviewPage() {
           title="Module preview is not available"
           action={
             <p className="mx-auto max-w-md text-sm leading-6 text-slate-500">
-              This module is not in the draft or public-store lists. School
-              publications need a separate detail endpoint.
+              Return to the Content Library to choose an available module.
             </p>
           }
         />
@@ -163,6 +146,18 @@ export default function CmsReviewPage() {
     content.valid && content.questions.length === 30 && !!content.theory.trim();
   return (
     <div className="mx-auto max-w-6xl space-y-5">
+      {publishing && (
+        <PublishModal
+          module={module}
+          onClose={() => setPublishing(false)}
+          onPublished={(result) => {
+            void client.invalidateQueries({ queryKey: ["cms", userId] });
+            navigate(`/platform/cms?status=${result.status}`, {
+              state: { cmsPublication: result.message },
+            });
+          }}
+        />
+      )}
       {back}
       <PageHeader
         title={module.topic}
@@ -172,9 +167,11 @@ export default function CmsReviewPage() {
             <span className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600">
               {module.status === "PUBLISHED_STORE"
                 ? "Published to Store"
-                : module.status === "APPROVED"
-                  ? "Approved"
-                  : "Draft"}
+                : module.status === "PUBLISHED_SCHOOL"
+                  ? "Published to Schools"
+                  : module.status === "APPROVED"
+                    ? "Approved"
+                    : "Draft"}
             </span>
             {module.status === "DRAFT" && hasPayload && (
               <button
@@ -190,24 +187,23 @@ export default function CmsReviewPage() {
             {module.status === "APPROVED" && (
               <button
                 type="button"
-                disabled={publish.isPending}
-                onClick={() => publish.mutate()}
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#101820] px-4 text-xs font-semibold text-white disabled:opacity-40"
+                onClick={() => setPublishing(true)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#101820] px-4 text-xs font-semibold text-white"
               >
                 <Store size={16} aria-hidden="true" />
-                {publish.isPending ? "Publishing…" : "Publish to Store"}
+                Publish
               </button>
             )}
           </>
         }
       />
-      {(approve.isError || publish.isError) && (
+      {approve.isError && (
         <p
           role="alert"
           className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"
         >
           {apiErrorMessage(
-            approve.error ?? publish.error,
+            approve.error,
             "The action could not be completed. Try again.",
           )}
         </p>

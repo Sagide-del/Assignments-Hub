@@ -107,6 +107,23 @@ Use precisely those four top-level keys and those four keys per question. Count 
     });
   }
 
+  async getModule(id: string) {
+    const module = await this.prisma.masterModule.findUnique({
+      where: { id },
+      include: { assignments: { orderBy: { stream_id: "asc" } } },
+    });
+    if (!module) throw new NotFoundException("Master module not found.");
+    return module;
+  }
+
+  getSchoolPublications() {
+    return this.prisma.masterModule.findMany({
+      where: { status: ContentStatus.PUBLISHED_SCHOOL },
+      include: { assignments: { orderBy: { stream_id: "asc" } } },
+      orderBy: { updated_at: "desc" },
+    });
+  }
+
   private async lockedModule(tx: Prisma.TransactionClient, id: string) {
     // Serialise approval/publication, including retries across API instances.
     await tx.$queryRaw`SELECT id FROM "MasterModule" WHERE id = ${id} FOR UPDATE`;

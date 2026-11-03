@@ -51,6 +51,18 @@ export class CmsController {
     return this.cms.publishModule(dto);
   }
 
+  @Get("modules/:id")
+  @Roles(Role.PLATFORM_ADMIN)
+  getModule(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.cms.getModule(id);
+  }
+
+  @Get("publications/schools")
+  @Roles(Role.PLATFORM_ADMIN)
+  getSchoolPublications() {
+    return this.cms.getSchoolPublications();
+  }
+
   @Get("store")
   @Public()
   getPublicStore() {

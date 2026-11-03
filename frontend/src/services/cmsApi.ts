@@ -16,6 +16,13 @@ export interface MasterModule {
   updated_at: string;
   tenant_id?: string | null;
   generation_cost_tokens?: number;
+  assignments?: {
+    id: string;
+    module_id: string;
+    stream_id: string;
+    published_at: string;
+    due_date?: string | null;
+  }[];
 }
 export interface CreateCmsDraft {
   level: string;
@@ -39,8 +46,16 @@ const list = (value: unknown): MasterModule[] => {
 };
 
 // Reuse the app's token attachment, single-flight refresh and API base URL.
-// No invented detail, school-list or AI-generation endpoints.
+// CMS administration routes are protected by the backend role guard.
 export const cmsApi = {
+  getModule: (id: string) =>
+    api
+      .get<MasterModule>(`/cms/modules/${encodeURIComponent(id)}`)
+      .then((response) => response.data),
+  getSchoolPublications: () =>
+    api
+      .get<MasterModule[]>("/cms/publications/schools")
+      .then((response) => list(response.data)),
   getDrafts: () =>
     api
       .get<MasterModule[]>("/cms/drafts")

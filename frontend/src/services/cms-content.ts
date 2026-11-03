@@ -74,7 +74,7 @@ export function parseCmsContent(value: unknown) {
         : "");
     return {
       prompt:
-        text(q.question ?? q.questionText ?? q.prompt ?? q.text) ||
+        text(q.question_text ?? q.question ?? q.questionText ?? q.prompt ?? q.text) ||
         "No question text supplied",
       answer: answer || "No answer supplied",
       options,
@@ -83,7 +83,7 @@ export function parseCmsContent(value: unknown) {
   return {
     valid:
       parsed !== null && typeof parsed === "object" && !Array.isArray(parsed),
-    theory: bodyText(content.theory),
+    theory: bodyText(content.theory_text ?? content.theory),
     assets,
     questions,
   };

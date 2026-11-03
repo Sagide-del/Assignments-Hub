@@ -36,6 +36,8 @@ Provider totalTokens is stored when present, otherwise a valid promptTokens + co
 - PATCH `/api/v1/cms/drafts/:id/approve`: approve a draft.
 - POST `/api/v1/cms/publish`: publish an approved module to STORE or SCHOOL, with optional stream labels.
 - GET `/api/v1/cms/store`: public published-store metadata.
+- GET `/api/v1/cms/modules/:id`: platform-admin module content and delivery details.
+- GET `/api/v1/cms/publications/schools`: platform-admin school-publication list.
 
 Generation never auto-approves or publishes a module and does not populate the older Question Bank automatically.
 
@@ -44,3 +46,5 @@ Generation never auto-approves or publishes a module and does not populate the o
 Run `npm test -- --runInBand src/cms` and `npm run build` from backend. HTTP tests use the real NestJS/JWT/role guards and validation with mocked DeepSeek and persistence; they do not charge the API or verify production database writes.
 
 The frontend Generate button and its parser are intentionally unchanged for this backend-only task. The current frontend still shows its pending state. Wiring it requires the new metadata-only POST contract and support for theory_text/question_text/correct_answer in the review parser. A live UI/database smoke test also requires the paused CMS migration and configured DeepSeek access.
+
+The additive CMS migration is included. The optional PostgreSQL integration suite uses CMS_TEST_DATABASE_URL, accepts only a disposable localhost database named cms_publish_test, and is skipped unless explicitly configured. It proves that publishing creates ModuleAssignment rows, including under concurrent retries.

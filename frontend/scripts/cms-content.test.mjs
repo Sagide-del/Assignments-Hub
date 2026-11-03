@@ -26,3 +26,14 @@ test('CMS preview retains potentially hostile strings as inert text and deduplic
   const view=parseCmsContent({theory:hostile,assets:['/model.glb','/model.glb'],questions:[{question:hostile,answer:hostile}]});
   assert.equal(view.theory,hostile); assert.equal(view.questions[0].answer,hostile); assert.deepEqual(view.assets,['/model.glb']);
 });
+
+test('CMS preview reads the strict AI theory_text/question_text contract', () => {
+  const view=parseCmsContent({theory_text:'Lift opposes weight.',questions:[{question_text:'Which force acts upward?',options:['Lift','Weight','Thrust','Drag'],correct_answer:'Lift',explanation:'Aerodynamic lift acts upward.'}]});
+  assert.equal(view.theory,'Lift opposes weight.');assert.equal(view.questions[0].prompt,'Which force acts upward?');assert.equal(view.questions[0].answer,'Lift');
+});
+const { cmsSchoolStreams } = await loadTypeScript(new URL('../src/services/cms-streams.ts', import.meta.url));
+test('school stream choices exclude other schools, grades, staff and inactive learners', () => {
+  const user=(extra={})=>({id:1,name:'Learner',email:null,admissionNumber:null,role:'STUDENT',grade:'Grade 11',isActive:true,schoolId:2,studentProfile:{stream:'1A',className:null,grade:'Grade 11'},...extra});
+  const rows=[user(),user(),user({studentProfile:{stream:'1B'}}),user({schoolId:3,studentProfile:{stream:'Other school'}}),user({grade:'Grade 9',studentProfile:{stream:'Other grade'}}),user({role:'TEACHER',studentProfile:{stream:'Staff'}}),user({isActive:false,studentProfile:{stream:'Inactive'}}),user({studentProfile:{stream:null,className:'1C'}})];
+  assert.deepEqual(cmsSchoolStreams(rows,2,11),['1A','1B','1C']);
+});

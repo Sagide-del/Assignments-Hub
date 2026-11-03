@@ -263,6 +263,8 @@ describe("Master Content Library HTTP API", () => {
     const id = randomUUID();
     for (const [path, method, body] of [
       ["/drafts", "GET", undefined],
+      ["/publications/schools", "GET", undefined],
+      [`/modules/${id}`, "GET", undefined],
       ["/drafts", "POST", draft],
       [`/drafts/${id}/approve`, "PATCH", undefined],
       ["/publish", "POST", { module_id: id, target_type: "STORE" }],
@@ -468,6 +470,46 @@ describe("Master Content Library HTTP API", () => {
     expect(assignments.map((row) => row.stream_id)).toEqual(["1B", "1C"]);
     expect(assignments.find((row) => row.stream_id === "1B").id).toBe(retained);
     expect((await request("/store")).data).toHaveLength(0);
+  });
+  it("lets only administrators retrieve school publications and full module details", async () => {
+    const module = await approved();
+    const detail = await request(
+      `/modules/${module.id}`,
+      "GET",
+      undefined,
+      "PLATFORM_ADMIN",
+    );
+    expect(detail.status).toBe(200);
+    expect(detail.data.content_json.questions).toHaveLength(30);
+    await request(
+      "/publish",
+      "POST",
+      {
+        module_id: module.id,
+        target_type: "SCHOOL",
+        target_id: "1",
+        stream_ids: ["1A"],
+      },
+      "PLATFORM_ADMIN",
+    );
+    const list = await request(
+      "/publications/schools",
+      "GET",
+      undefined,
+      "PLATFORM_ADMIN",
+    );
+    expect(list.status).toBe(200);
+    expect(list.data.map((row: any) => row.id)).toContain(module.id);
+    expect(
+      (
+        await request(
+          `/modules/${randomUUID()}`,
+          "GET",
+          undefined,
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(404);
   });
   it("supports school-wide publication without stream assignments", async () => {
     const module = await approved();

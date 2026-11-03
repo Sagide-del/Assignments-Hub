@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useLocation, Link } from "react-router-dom";
 import {
   ArrowRight,
   BookOpen,
@@ -9,8 +9,9 @@ import {
   Plus,
   Search,
   Store,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader, EmptyState } from "../../../components/ui/Saas";
 import { apiErrorMessage } from "../../../api/axios";
 import { cmsApi, type CmsStatus } from "../../../services/cmsApi";
@@ -29,6 +30,17 @@ const TABS = [
 
 export default function CmsDashboard() {
   const userId = useAuthStore((state) => state.user?.id);
+  const location = useLocation();
+  const [toast, setToast] = useState<string | null>(() =>
+    typeof location.state?.cmsPublication === "string"
+      ? location.state.cmsPublication
+      : null,
+  );
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 7000);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
   const [params, setParams] = useSearchParams();
   const status =
     TABS.find((tab) => tab.status === params.get("status"))?.status ?? "DRAFT";
@@ -45,7 +57,18 @@ export default function CmsDashboard() {
     enabled: status === "PUBLISHED_STORE",
     retry: false,
   });
-  const query = status === "PUBLISHED_STORE" ? store : pending;
+  const schoolPublications = useQuery({
+    queryKey: ["cms", userId, "school-publications"],
+    queryFn: cmsApi.getSchoolPublications,
+    enabled: status === "PUBLISHED_SCHOOL",
+    retry: false,
+  });
+  const query =
+    status === "PUBLISHED_STORE"
+      ? store
+      : status === "PUBLISHED_SCHOOL"
+        ? schoolPublications
+        : pending;
   const items = (query.data ?? []).filter(
     (item) =>
       item.status === status &&
@@ -59,6 +82,27 @@ export default function CmsDashboard() {
   }
   return (
     <div className="mx-auto max-w-6xl space-y-5">
+      {toast && (
+        <div
+          role="status"
+          className="fixed bottom-5 right-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-lg"
+        >
+          <CheckCircle2
+            size={18}
+            className="shrink-0 text-emerald-600"
+            aria-hidden="true"
+          />
+          <span>{toast}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            aria-label="Dismiss publication notification"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-50"
+          >
+            <X size={15} aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <PageHeader
         title="Content Library"
         actions={
@@ -117,133 +161,121 @@ export default function CmsDashboard() {
         aria-labelledby={`cms-tab-${status}`}
         className="space-y-4"
       >
-        {status === "PUBLISHED_SCHOOL" ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-500" role="status">
+            {query.isPending
+              ? "Loading content…"
+              : query.isError
+                ? "Library unavailable"
+                : `${items.length} ${items.length === 1 ? "module" : "modules"}`}
+          </p>
+          <label className="relative w-full sm:max-w-xs">
+            <span className="sr-only">Search content</span>
+            <Search
+              size={16}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-3 text-slate-400"
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search topic or subject"
+              className="min-h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm"
+            />
+          </label>
+        </div>
+        {query.isPending ? (
+          <div
+            role="status"
+            aria-label="Loading content library"
+            className="space-y-3"
+          >
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-24 animate-pulse rounded-xl bg-slate-100"
+              />
+            ))}
+          </div>
+        ) : query.isError ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
+          >
+            <p>
+              {apiErrorMessage(
+                query.error,
+                "Content could not be loaded. Try again.",
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => query.refetch()}
+              className="mt-2 min-h-10 font-semibold underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : !items.length ? (
           <EmptyState
-            title="School publication list is not connected yet"
+            title={
+              search
+                ? "No matching content"
+                : status === "DRAFT"
+                  ? "No drafts yet"
+                  : status === "APPROVED"
+                    ? "No approved modules yet"
+                    : status === "PUBLISHED_SCHOOL"
+                      ? "No school publications yet"
+                      : "No store publications yet"
+            }
             action={
-              <p className="mx-auto max-w-md text-sm leading-6 text-slate-500">
-                The publishing API supports school delivery. A
-                school-publication listing endpoint is still needed to display
-                those records here.
-              </p>
+              status === "DRAFT" && !search ? (
+                <Link
+                  to="/platform/cms/create"
+                  className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-800"
+                >
+                  Create your first module
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              ) : undefined
             }
           />
         ) : (
-          <>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-slate-500" role="status">
-                {query.isPending
-                  ? "Loading content…"
-                  : query.isError
-                    ? "Library unavailable"
-                    : `${items.length} ${items.length === 1 ? "module" : "modules"}`}
-              </p>
-              <label className="relative w-full sm:max-w-xs">
-                <span className="sr-only">Search content</span>
-                <Search
-                  size={16}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-3 text-slate-400"
-                />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search topic or subject"
-                  className="min-h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm"
-                />
-              </label>
-            </div>
-            {query.isPending ? (
-              <div
-                role="status"
-                aria-label="Loading content library"
-                className="space-y-3"
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+            {items.map((item) => (
+              <article
+                key={item.id}
+                className="flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5"
               >
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-24 animate-pulse rounded-xl bg-slate-100"
-                  />
-                ))}
-              </div>
-            ) : query.isError ? (
-              <div
-                role="alert"
-                className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
-              >
-                <p>
-                  {apiErrorMessage(
-                    query.error,
-                    "Content could not be loaded. Try again.",
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => query.refetch()}
-                  className="mt-2 min-h-10 font-semibold underline"
+                <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f1f5e5] text-[#526b10] sm:flex">
+                  <BookOpen size={19} aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-slate-500">
+                    Grade {item.grade} · {item.subject}
+                  </p>
+                  <h2 className="mt-1 break-words text-base font-semibold text-slate-900">
+                    {item.topic}
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {[item.pathway, item.track].filter(Boolean).join(" · ") ||
+                      item.level}
+                  </p>
+                </div>
+                <Link
+                  to={`/platform/cms/review/${encodeURIComponent(item.id)}`}
+                  className="inline-flex min-h-10 shrink-0 items-center gap-2 self-start rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 sm:self-auto"
                 >
-                  Try again
-                </button>
-              </div>
-            ) : !items.length ? (
-              <EmptyState
-                title={
-                  search
-                    ? "No matching content"
-                    : status === "DRAFT"
-                      ? "No drafts yet"
-                      : status === "APPROVED"
-                        ? "No approved modules yet"
-                        : "No store publications yet"
-                }
-                action={
-                  status === "DRAFT" && !search ? (
-                    <Link
-                      to="/platform/cms/create"
-                      className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-800"
-                    >
-                      Create your first module
-                      <ArrowRight size={15} aria-hidden="true" />
-                    </Link>
-                  ) : undefined
-                }
-              />
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
-                {items.map((item) => (
-                  <article
-                    key={item.id}
-                    className="flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5"
-                  >
-                    <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f1f5e5] text-[#526b10] sm:flex">
-                      <BookOpen size={19} aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-slate-500">
-                        Grade {item.grade} · {item.subject}
-                      </p>
-                      <h2 className="mt-1 break-words text-base font-semibold text-slate-900">
-                        {item.topic}
-                      </h2>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {[item.pathway, item.track]
-                          .filter(Boolean)
-                          .join(" · ") || item.level}
-                      </p>
-                    </div>
-                    <Link
-                      to={`/platform/cms/review/${encodeURIComponent(item.id)}`}
-                      className="inline-flex min-h-10 shrink-0 items-center gap-2 self-start rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 sm:self-auto"
-                    >
-                      {status === "PUBLISHED_STORE" ? "View summary" : "Review"}
-                      <ArrowRight size={14} aria-hidden="true" />
-                    </Link>
-                  </article>
-                ))}
-              </div>
-            )}
-          </>
+                  {status === "PUBLISHED_STORE" || status === "PUBLISHED_SCHOOL"
+                    ? "View module"
+                    : "Review"}
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Link>
+              </article>
+            ))}
+          </div>
         )}
       </section>
     </div>
