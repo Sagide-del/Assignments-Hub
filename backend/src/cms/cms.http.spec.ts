@@ -1,0 +1,473 @@
+import {
+  Injectable,
+  INestApplication,
+  Module,
+  ValidationPipe,
+} from "@nestjs/common";
+import { NestFactory, Reflector } from "@nestjs/core";
+import { JwtService } from "@nestjs/jwt";
+import { PassportModule, PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { randomUUID } from "crypto";
+import { ContentStatus } from "@prisma/client";
+import { CmsController } from "./cms.controller";
+import { CmsService } from "./cms.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../common/guards/roles.guard";
+import { TenantGuard } from "../common/guards/tenant.guard";
+import { IndependentTrialGuard } from "../common/guards/independent-trial.guard";
+
+// The HTTP layer uses real JWT/role/tenant guards and validation. Only storage
+// is replaced; these tests neither connect to nor migrate a database.
+const TEST_SECRET = "cms-api-test-only-secret";
+const rows = new Map<string, any>();
+let assignments: any[] = [];
+let failAssignmentWrite = false;
+let serial: Promise<unknown> = Promise.resolve();
+const copy = <T>(value: T): T => structuredClone(value);
+const project = (row: any, select?: Record<string, boolean>) =>
+  select
+    ? Object.fromEntries(
+        Object.keys(select)
+          .filter((key) => select[key])
+          .map((key) => [key, row[key]]),
+      )
+    : copy(row);
+const db: any = {
+  $queryRaw: jest.fn().mockResolvedValue([]),
+  masterModule: {
+    create: jest.fn(async ({ data }) => {
+      const row = {
+        id: randomUUID(),
+        pathway: null,
+        track: null,
+        tenant_id: null,
+        generation_cost_tokens: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+        ...data,
+      };
+      rows.set(row.id, row);
+      return copy(row);
+    }),
+    findUnique: jest.fn(async ({ where }) =>
+      rows.has(where.id) ? copy(rows.get(where.id)) : null,
+    ),
+    findMany: jest.fn(async ({ where, select }) =>
+      [...rows.values()]
+        .filter((row) => {
+          if (where.status?.in && !where.status.in.includes(row.status))
+            return false;
+          if (typeof where.status === "string" && row.status !== where.status)
+            return false;
+          return (
+            where.tenant_id === undefined || row.tenant_id === where.tenant_id
+          );
+        })
+        .map((row) => project(row, select)),
+    ),
+    update: jest.fn(async ({ where, data }) => {
+      const row = { ...rows.get(where.id), ...data, updated_at: new Date() };
+      rows.set(row.id, row);
+      return copy(row);
+    }),
+  },
+  school: {
+    findUnique: jest.fn(async ({ where }) =>
+      [1, 2].includes(where.id) ? { id: where.id } : null,
+    ),
+  },
+  moduleAssignment: {
+    findMany: jest.fn(async ({ where, select }) =>
+      assignments
+        .filter((row) => row.module_id === where.module_id)
+        .map((row) => project(row, select)),
+    ),
+    deleteMany: jest.fn(async ({ where }) => {
+      const before = assignments.length;
+      assignments = assignments.filter(
+        (row) =>
+          row.module_id !== where.module_id ||
+          where.stream_id.notIn.includes(row.stream_id),
+      );
+      return { count: before - assignments.length };
+    }),
+    createMany: jest.fn(async ({ data }) => {
+      if (failAssignmentWrite)
+        throw Error("Simulated assignment storage failure");
+      assignments.push(
+        ...data.map((item: any) => ({
+          id: randomUUID(),
+          published_at: new Date(),
+          due_date: null,
+          ...item,
+        })),
+      );
+      return { count: data.length };
+    }),
+  },
+};
+db.$transaction = jest.fn((run: (tx: any) => Promise<unknown>) => {
+  const task = serial.then(async () => {
+    const savedRows = copy([...rows]),
+      savedAssignments = copy(assignments);
+    try {
+      return await run(db);
+    } catch (error) {
+      rows.clear();
+      for (const [id, row] of savedRows) rows.set(id, row);
+      assignments = savedAssignments;
+      throw error;
+    }
+  });
+  serial = task.catch(() => undefined);
+  return task;
+});
+
+@Injectable()
+class TestJwtStrategy extends PassportStrategy(Strategy) {
+  constructor() {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: TEST_SECRET,
+    });
+  }
+  validate(payload: unknown) {
+    return payload;
+  }
+}
+@Module({
+  imports: [PassportModule],
+  controllers: [CmsController],
+  providers: [
+    CmsService,
+    TestJwtStrategy,
+    { provide: PrismaService, useValue: db },
+  ],
+})
+class CmsHttpTestModule {}
+
+const draft = {
+  level: "Senior School",
+  grade: 11,
+  pathway: "STEM",
+  track: "Technical and Engineering",
+  subject: "Aviation Technology",
+  topic: "Four Forces of Flight",
+  content_json: {
+    theory: "Lift, weight, thrust and drag.",
+    questions: [{ question: "Name an upward force.", correctAnswer: "Lift" }],
+    assets: [],
+  },
+};
+const jwt = new JwtService({ secret: TEST_SECRET });
+const token = (role: string) =>
+  jwt.sign({
+    id: 42,
+    schoolId: 1,
+    role,
+    grade: "Grade 11",
+    isIndependentTrial: false,
+  });
+
+describe("Master Content Library HTTP API", () => {
+  let app: INestApplication, base: string;
+  const request = async (
+    path: string,
+    method = "GET",
+    body?: unknown,
+    role?: string,
+  ) => {
+    const response = await fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(role ? { Authorization: `Bearer ${token(role)}` } : {}),
+      },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+    return { status: response.status, data: (await response.json()) as any };
+  };
+  const create = async () => {
+    const result = await request("/drafts", "POST", draft, "PLATFORM_ADMIN");
+    expect(result.status).toBe(201);
+    return result.data;
+  };
+  const approved = async () => {
+    const module = await create();
+    expect(
+      (
+        await request(
+          `/drafts/${module.id}/approve`,
+          "PATCH",
+          undefined,
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(200);
+    return module;
+  };
+  beforeAll(async () => {
+    app = await NestFactory.create(CmsHttpTestModule, { logger: false });
+    const reflector = app.get(Reflector);
+    app.useGlobalGuards(
+      new JwtAuthGuard(reflector),
+      new RolesGuard(reflector),
+      new TenantGuard(),
+      new IndependentTrialGuard(reflector),
+    );
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    app.setGlobalPrefix("api/v1");
+    await app.listen(0, "127.0.0.1");
+    base = `${await app.getUrl()}/api/v1/cms`;
+  });
+  beforeEach(() => {
+    rows.clear();
+    assignments = [];
+    failAssignmentWrite = false;
+    jest.clearAllMocks();
+  });
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it("requires authentication and PLATFORM_ADMIN for every management route", async () => {
+    const id = randomUUID();
+    for (const [path, method, body] of [
+      ["/drafts", "GET", undefined],
+      ["/drafts", "POST", draft],
+      [`/drafts/${id}/approve`, "PATCH", undefined],
+      ["/publish", "POST", { module_id: id, target_type: "STORE" }],
+    ] as const) {
+      expect((await request(path, method, body)).status).toBe(401);
+      for (const role of ["TEACHER", "SCHOOL_ADMIN", "STUDENT"])
+        expect((await request(path, method, body, role)).status).toBe(403);
+    }
+    expect((await request("/store")).status).toBe(200);
+    expect(db.masterModule.create).not.toHaveBeenCalled();
+  });
+  it("creates drafts, lists pending content and approves idempotently", async () => {
+    const module = await create();
+    expect(module.status).toBe("DRAFT");
+    expect(module.generation_cost_tokens).toBe(0);
+    expect(module.tenant_id).toBeNull();
+    expect(
+      (await request("/drafts", "GET", undefined, "PLATFORM_ADMIN")).data,
+    ).toHaveLength(1);
+    for (let i = 0; i < 2; i++)
+      expect(
+        (
+          await request(
+            `/drafts/${module.id}/approve`,
+            "PATCH",
+            undefined,
+            "PLATFORM_ADMIN",
+          )
+        ).data.status,
+      ).toBe("APPROVED");
+    expect(
+      (await request("/drafts", "GET", undefined, "PLATFORM_ADMIN")).data[0]
+        .status,
+    ).toBe("APPROVED");
+  });
+  it("validates drafts and prevents callers from injecting status or token totals", async () => {
+    for (const body of [
+      { ...draft, grade: 0 },
+      { ...draft, grade: "11" },
+      { ...draft, content_json: [] },
+      { ...draft, content_json: {} },
+      { ...draft, subject: " " },
+      { ...draft, status: "PUBLISHED_STORE" },
+      { ...draft, generation_cost_tokens: 999 },
+    ])
+      expect(
+        (await request("/drafts", "POST", body, "PLATFORM_ADMIN")).status,
+      ).toBe(400);
+    expect(rows.size).toBe(0);
+  });
+  it("publishes approved content to a public catalogue without exposing payloads or draft/school content", async () => {
+    const module = await approved();
+    await create();
+    expect(
+      (
+        await request(
+          "/publish",
+          "POST",
+          { module_id: module.id, target_type: "STORE" },
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(201);
+    const publicStore = await request("/store");
+    expect(publicStore.data).toHaveLength(1);
+    expect(publicStore.data[0].id).toBe(module.id);
+    for (const key of [
+      "content_json",
+      "generation_cost_tokens",
+      "tenant_id",
+      "assignments",
+    ])
+      expect(publicStore.data[0]).not.toHaveProperty(key);
+    expect(
+      (await request("/drafts", "GET", undefined, "PLATFORM_ADMIN")).data,
+    ).toHaveLength(1);
+    expect(assignments).toHaveLength(0);
+  });
+  it("delivers to a real school and synchronizes streams without duplicate assignment records", async () => {
+    const module = await approved(),
+      body = {
+        module_id: module.id,
+        target_type: "SCHOOL",
+        target_id: "1",
+        stream_ids: ["1A", "1B"],
+      };
+    const results = await Promise.all([
+      request("/publish", "POST", body, "PLATFORM_ADMIN"),
+      request("/publish", "POST", body, "PLATFORM_ADMIN"),
+    ]);
+    expect(results.every((result) => result.status === 201)).toBe(true);
+    expect(assignments).toHaveLength(2);
+    expect(rows.get(module.id).tenant_id).toBe("1");
+    const retained = assignments.find((row) => row.stream_id === "1B").id;
+    expect(
+      (
+        await request(
+          "/publish",
+          "POST",
+          { ...body, stream_ids: ["1B", "1C"] },
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(201);
+    expect(assignments.map((row) => row.stream_id)).toEqual(["1B", "1C"]);
+    expect(assignments.find((row) => row.stream_id === "1B").id).toBe(retained);
+    expect((await request("/store")).data).toHaveLength(0);
+  });
+  it("supports school-wide publication without stream assignments", async () => {
+    const module = await approved();
+    const result = await request(
+      "/publish",
+      "POST",
+      { module_id: module.id, target_type: "SCHOOL", target_id: "2" },
+      "PLATFORM_ADMIN",
+    );
+    expect(result.data.status).toBe("PUBLISHED_SCHOOL");
+    expect(result.data.assignments).toEqual([]);
+  });
+  it("rejects invalid targets, duplicates, unapproved content and audience reassignment", async () => {
+    const module = await create(),
+      body = { module_id: module.id, target_type: "SCHOOL", target_id: "1" };
+    expect(
+      (await request("/publish", "POST", body, "PLATFORM_ADMIN")).status,
+    ).toBe(409);
+    await request(
+      `/drafts/${module.id}/approve`,
+      "PATCH",
+      undefined,
+      "PLATFORM_ADMIN",
+    );
+    for (const target of [
+      { module_id: module.id, target_type: "OTHER" },
+      { module_id: module.id, target_type: "SCHOOL" },
+      { ...body, target_id: "unknown" },
+      { ...body, stream_ids: ["1A", " 1A "] },
+      { ...body, stream_ids: [" "] },
+      { ...body, target_type: "STORE" },
+    ])
+      expect(
+        (await request("/publish", "POST", target, "PLATFORM_ADMIN")).status,
+      ).toBe(400);
+    expect(
+      (
+        await request(
+          "/publish",
+          "POST",
+          { ...body, target_id: "999" },
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(404);
+    await request("/publish", "POST", body, "PLATFORM_ADMIN");
+    expect(
+      (
+        await request(
+          "/publish",
+          "POST",
+          { module_id: module.id, target_type: "STORE" },
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await request(
+          "/publish",
+          "POST",
+          { ...body, target_id: "2" },
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await request(
+          `/drafts/${module.id}/approve`,
+          "PATCH",
+          undefined,
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(409);
+  });
+  it("rolls back publication if stream delivery fails", async () => {
+    const module = await approved();
+    failAssignmentWrite = true;
+    expect(
+      (
+        await request(
+          "/publish",
+          "POST",
+          {
+            module_id: module.id,
+            target_type: "SCHOOL",
+            target_id: "1",
+            stream_ids: ["1A"],
+          },
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(500);
+    expect(rows.get(module.id).status).toBe(ContentStatus.APPROVED);
+    expect(rows.get(module.id).tenant_id).toBeNull();
+    expect(assignments).toHaveLength(0);
+  });
+  it("rejects malformed UUIDs and returns 404 for missing modules", async () => {
+    expect(
+      (
+        await request(
+          "/drafts/not-an-id/approve",
+          "PATCH",
+          undefined,
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(
+          `/drafts/${randomUUID()}/approve`,
+          "PATCH",
+          undefined,
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(404);
+  });
+});

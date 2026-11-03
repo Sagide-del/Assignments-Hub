@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { CmsModule } from './cms/cms.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { SchoolsModule } from './schools/schools.module';
@@ -67,6 +68,8 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
     ]),
 
     PrismaModule,
+
+    CmsModule,
 
     AuditModule,
 
