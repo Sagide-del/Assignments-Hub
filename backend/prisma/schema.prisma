@@ -2752,3 +2752,39 @@ model QuestionGenerationBatch {
   questions QuestionBank[]
   @@map("question_generation_batches")
 }
+
+// Master content is authored centrally; ModuleAssignment records delivery.
+enum ContentStatus {
+  DRAFT
+  APPROVED
+  PUBLISHED_STORE
+  PUBLISHED_SCHOOL
+  ARCHIVED
+}
+
+model MasterModule {
+  id                     String        @id @default(uuid())
+  level                  String
+  grade                  Int
+  pathway                String?
+  track                  String?
+  subject                String
+  topic                  String
+  content_json           Json
+  status                 ContentStatus @default(DRAFT)
+  created_at             DateTime      @default(now())
+  updated_at             DateTime      @updatedAt
+  tenant_id              String?
+  generation_cost_tokens Int           @default(0)
+
+  assignments ModuleAssignment[]
+}
+
+model ModuleAssignment {
+  id           String       @id @default(uuid())
+  module_id    String
+  module       MasterModule @relation(fields: [module_id], references: [id])
+  stream_id    String
+  published_at DateTime     @default(now())
+  due_date     DateTime?
+}
