@@ -1,5 +1,9 @@
-import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { cmsApi } from "../../../services/cmsApi";
+import { apiErrorMessage } from "../../../api/axios";
+import { useAuthStore } from "../../../store/auth.store";
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Box, FileQuestion, Sparkles } from "lucide-react";
 import { PageHeader } from "../../../components/ui/Saas";
 
@@ -8,10 +12,33 @@ export default function CmsCreatePage() {
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [pathway, setPathway] = useState("");
-  const [notice, setNotice] = useState(false);
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const userId = useAuthStore((state) => state.user?.id);
+  const busy = useRef(false);
+  const generate = useMutation({
+    mutationFn: () =>
+      cmsApi.createDraft({
+        grade: Number(grade),
+        subject: subject.trim(),
+        topic: topic.trim(),
+        ...(pathway ? { pathway } : {}),
+      }),
+    onSettled: () => {
+      busy.current = false;
+    },
+    onSuccess: (module) => {
+      client.setQueryData(["cms", userId, "module", module.id], module);
+      void client.invalidateQueries({ queryKey: ["cms", userId, "drafts"] });
+      navigate(`/platform/cms/review/${encodeURIComponent(module.id)}`);
+    },
+  });
   function submit(event: FormEvent) {
     event.preventDefault();
-    setNotice(true);
+    if (!busy.current && subject.trim() && topic.trim()) {
+      busy.current = true;
+      generate.mutate();
+    }
   }
   const control =
     "mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200";
@@ -35,11 +62,12 @@ export default function CmsCreatePage() {
               Grade
               <select
                 className={control}
+                disabled={generate.isPending}
                 aria-label="Grade"
                 value={grade}
                 onChange={(event) => {
                   setGrade(event.target.value);
-                  setNotice(false);
+                  generate.reset();
                 }}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
@@ -54,11 +82,12 @@ export default function CmsCreatePage() {
               <span className="font-normal text-slate-400">(optional)</span>
               <select
                 className={control}
+                disabled={generate.isPending}
                 aria-label="Pathway"
                 value={pathway}
                 onChange={(event) => {
                   setPathway(event.target.value);
-                  setNotice(false);
+                  generate.reset();
                 }}
               >
                 <option value="">Select pathway</option>
@@ -73,12 +102,13 @@ export default function CmsCreatePage() {
           <label className="block text-sm font-medium text-slate-700">
             Subject
             <input
+              disabled={generate.isPending}
               required
               maxLength={160}
               value={subject}
               onChange={(event) => {
                 setSubject(event.target.value);
-                setNotice(false);
+                generate.reset();
               }}
               className={control}
               placeholder="e.g. Aviation Technology"
@@ -87,12 +117,13 @@ export default function CmsCreatePage() {
           <label className="block text-sm font-medium text-slate-700">
             Topic
             <input
+              disabled={generate.isPending}
               required
               maxLength={240}
               value={topic}
               onChange={(event) => {
                 setTopic(event.target.value);
-                setNotice(false);
+                generate.reset();
               }}
               className={control}
               placeholder="e.g. Four Forces of Flight"
@@ -101,24 +132,25 @@ export default function CmsCreatePage() {
           <div className="border-t border-slate-100 pt-5">
             <button
               type="submit"
-              disabled={!subject.trim() || !topic.trim()}
+              disabled={generate.isPending || !subject.trim() || !topic.trim()}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#101820] px-5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             >
               <Sparkles size={16} aria-hidden="true" />
-              Generate with AI
+              {generate.isPending ? "Generating draft…" : "Generate with AI"}
             </button>
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              AI generation is not connected to the CMS yet. This form will not
-              start a paid request.
+              Drafts are saved for review before publishing.
             </p>
           </div>
-          {notice && (
+          {generate.isError && (
             <p
-              role="status"
+              role="alert"
               className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950"
             >
-              Generation is not available yet. Your selections are unchanged; no
-              content has been generated or saved.
+              {apiErrorMessage(
+                generate.error,
+                "Generation could not be completed. Your selections are kept; try again.",
+              )}
             </p>
           )}
         </form>

@@ -95,7 +95,10 @@ export default function PublishModal({
           streams.every((stream) => choices.includes(stream)))));
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (ready && !busy.current) publish.mutate();
+    if (ready && !busy.current) {
+      busy.current = true;
+      publish.mutate();
+    }
   }
   return (
     <dialog

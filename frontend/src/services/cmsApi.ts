@@ -25,13 +25,12 @@ export interface MasterModule {
   }[];
 }
 export interface CreateCmsDraft {
-  level: string;
+  level?: string;
   grade: number;
   pathway?: string;
   track?: string;
   subject: string;
   topic: string;
-  content_json: Record<string, unknown>;
 }
 export interface PublishCmsModule {
   module_id: string;
