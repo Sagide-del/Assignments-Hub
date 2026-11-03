@@ -66,7 +66,9 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
 
   const helpText = loginType === 'independent'
     ? 'Use your username or email. Existing Student IDs still work.'
-    : 'Forgot your credentials? Contact your school administrator.';
+    : loginType === 'staff'
+      ? 'Use the email address and password issued for your staff account.'
+      : 'Forgot your credentials? Contact your school administrator.';
 
   return (
     <div className="w-full">
@@ -76,14 +78,19 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
 
       <header className="mt-7 text-center lg:mt-0 lg:text-left">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#657d12]">Secure learning access</p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-[#101820] sm:text-4xl">Sign in to continue</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">Choose your account type, then enter the details provided by your school or account setup.</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-[#101820] sm:text-4xl">{loginType === 'staff' ? 'School staff sign in' : 'Sign in to continue'}</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-500">{loginType === 'staff' ? 'Use the staff account issued by your school or Assignment Hub administrator.' : 'Choose how you learn, then enter the details provided by your school or account setup.'}</p>
       </header>
 
-      {!fixedSchoolCode ? (
+      {!fixedSchoolCode && loginType !== 'staff' ? (
         <div className="mt-7">
           <LoginTabs loginType={loginType} setLoginType={(type) => { setLoginType(type); setError(null); setShowSecret(false); }} />
+          <button type="button" onClick={() => { setLoginType('staff'); setError(null); setShowSecret(false); }} className="mt-3 inline-flex min-h-11 items-center px-1 text-sm font-semibold text-slate-600 underline decoration-slate-300 underline-offset-4 hover:text-[#536D00]">
+            School staff or administrator? Sign in here
+          </button>
         </div>
+      ) : !fixedSchoolCode && loginType === 'staff' ? (
+        <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"><button type="button" onClick={() => { setLoginType('student'); setError(null); setShowSecret(false); }} className="font-semibold text-[#536D00] underline underline-offset-4">Return to learner sign in</button></div>
       ) : (
         <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-lime-200 bg-lime-50 px-3 py-2">
           <SchoolIcon />
@@ -189,6 +196,8 @@ export function LoginCard({ loginType, setLoginType, fixedSchoolCode }: Props) {
       <div className="mt-7 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
         {fixedSchoolCode ? (
           <Link to="/login" className="font-semibold text-[#536D00] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D]">Use another school or account type</Link>
+        ) : loginType === 'staff' ? (
+          <>Are you a learner? <button type="button" onClick={() => setLoginType('student')} className="font-semibold text-[#536D00] hover:underline">Return to learner sign in</button></>
         ) : loginType === 'independent' ? (
           <>New individual learner?<Link to="/register" className="ml-1 font-semibold text-[#536D00] hover:underline">Create an account</Link></>
         ) : (
