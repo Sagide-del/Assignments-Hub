@@ -1,11 +1,13 @@
 import { CheckCircle2, CircleAlert, Trophy } from "lucide-react";
-import type { LabSession } from "../../../../types";
+import type { LabSession } from "../../../types";
+
+type LabAnswer = NonNullable<LabSession["answers"]>[number];
 
 export function LabQuizFeedback({ session }: { session?: LabSession | null }) {
   if (!session || session.score == null || session.maxScore == null) return null;
 
-  const graded = (session.answers ?? []).filter((answer) => answer.isCorrect != null);
-  const correct = graded.filter((answer) => answer.isCorrect).length;
+  const graded = (session.answers ?? []).filter((answer: LabAnswer) => answer.isCorrect != null);
+  const correct = graded.filter((answer: LabAnswer) => answer.isCorrect).length;
   const percentage = session.maxScore > 0
     ? Math.round((session.score / session.maxScore) * 100)
     : 0;

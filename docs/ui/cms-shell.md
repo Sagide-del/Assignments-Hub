@@ -16,12 +16,12 @@ Current API boundaries:
 - Review uses protected GET `/cms/modules/:id`, including for school publications. It recognizes both legacy fields and the strict AI theory_text/question_text contract.
 - Draft approval and store publication use the existing PATCH approval and POST publication endpoints. The preview requires theory and 30 questions before enabling its approval button.
 - School publication uses POST `/cms/publish` and its tab loads protected GET `/cms/publications/schools`. The Publish modal loads real schools and grade-matching stream labels from learner profiles. Success shows a toast and returns to the corresponding dashboard tab.
-- POST `/cms/drafts` now supports AI generation from grade, subject, topic and optional context. The frontend form is deliberately unchanged and still makes no generation request. Next frontend work must update the request contract (metadata only, no client content_json) and preview parsing for theory_text/question_text before connecting the button.
+- POST `/cms/drafts` now supports AI generation from grade, subject, topic and optional context. The create form now sends metadata only (no client content_json), preserves inputs on errors and opens the saved draft for review. The parser supports theory_text/question_text and the legacy fields. Generation never auto-approves or publishes the draft.
 - Global reporting has no API contract yet; no analytics totals are invented.
 
 Assets render in div placeholders, never image tags, embeds or remote model viewers. Lesson and question text is rendered as React text, without executing HTML from the payload. Missing answers and malformed JSON are shown explicitly.
 
-Verification: `npm run test:cms`, Vite production bundling and Playwright checks with API fixtures. Existing unrelated TypeScript errors, including BookOpenCheck in MyResources, are intentionally unchanged. The database migration remains pending; real API-backed use requires those tables first.
+Verification: `npm run test:cms`, Vite production bundling and Playwright checks with API fixtures. The five previously reported frontend type errors were fixed only after publishing verification. TypeScript and all pre-deployment checks are now blocking. The database migration remains pending; real API-backed use requires those tables first.
 
 The canonical CMS URLs use the super-admin `/platform/cms` namespace. Previous `/admin/cms/*` links redirect inside the same PLATFORM_ADMIN guard, preserving query strings. The school-admin navigation and routes do not include CMS access.
 

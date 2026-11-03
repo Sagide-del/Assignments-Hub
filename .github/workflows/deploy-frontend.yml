@@ -5,6 +5,7 @@ on:
     paths:
       - 'frontend/**'
       - 'backend/src/kjsea/**'
+      - 'backend/src/cms/**'
       - 'backend/src/submissions/**'
       - 'backend/src/labs/**'
       - 'backend/src/ai-content/**'
@@ -40,14 +41,13 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - name: Verify learning activities
-        run: npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
+        run: npm run test:cms && npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
         working-directory: frontend
       - name: Type check frontend
-        continue-on-error: true
         run: npx tsc -b
         working-directory: frontend
       - name: Build static frontend
-        run: npm run prebuild && npx vite build --config vite.config.ts
+        run: npm run build
         working-directory: frontend
         env:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
@@ -59,34 +59,27 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Verify assessment backend
-        continue-on-error: true
         working-directory: backend
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
           NODE_OPTIONS: --max-old-space-size=3072
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/cms src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
       - name: Wait for assessment API capabilities
-        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
       - name: Wait for immersive lab API and catalogue
-        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-stem-api.mjs
       - name: Wait for curriculum library API
-        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-curriculum-api.mjs
       - name: Wait for Tuma payment API and migration
-        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-tuma-api.mjs
       - name: Wait for username registration API
-        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-auth-api.mjs
       - name: Wait for central content library
-        continue-on-error: true
         working-directory: frontend
         run: node scripts/check-content-api.mjs
       - name: Connect to AWS without stored access keys

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BrainCircuit,
+  BookOpenCheck,
   CalendarDays,
   Clock3,
   Download,
