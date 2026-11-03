@@ -20,7 +20,7 @@ export default function CmsAnalyticsPage() {
           generation-cost reports.
         </p>
         <Link
-          to="/admin/cms"
+          to="/platform/cms"
           className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-slate-200 px-4 text-xs font-semibold text-slate-700"
         >
           Content Library

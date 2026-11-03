@@ -56,6 +56,11 @@ import { LiveActivity } from '../../features/platform-admin/LiveActivity';
 import { EarlyYearsStudio } from '../../features/platform-admin/EarlyYearsStudio';
 
 
+function CmsLegacyRedirect() {
+  const location = useLocation();
+  return <Navigate to={location.pathname.replace(/^\/admin\/cms/, '/platform/cms') + location.search} replace />;
+}
+
 const CmsDashboard = lazy(() => import('../../pages/admin/cms'));
 const CmsCreatePage = lazy(() => import('../../pages/admin/cms/create'));
 const CmsReviewPage = lazy(() => import('../../pages/admin/cms/review/[id]'));
@@ -209,7 +214,7 @@ const schoolAdminNav = [
 
 const platformAdminNav = [
  {to:'/platform',label:'Dashboard'},
- {to:'/admin/cms',label:'Content Library'},
+ {to:'/platform/cms',label:'Content Library'},
  {to:'/platform/analytics',label:'Global Analytics'},
  {to:'/platform/question-bank',label:'Question Bank'},
  {to:'/platform/early-years',label:'Early Years Studio'},
@@ -486,9 +491,10 @@ export const router = createBrowserRouter([
             path: '/platform',
             element: <PlatformOverview />,
           },
-          { path: '/admin/cms', element: <CmsDashboard /> },
-          { path: '/admin/cms/create', element: <CmsCreatePage /> },
-          { path: '/admin/cms/review/:id', element: <CmsReviewPage /> },
+          { path: '/platform/cms', element: <CmsDashboard /> },
+          { path: '/platform/cms/create', element: <CmsCreatePage /> },
+          { path: '/platform/cms/review/:id', element: <CmsReviewPage /> },
+          { path: '/admin/cms/*', element: <CmsLegacyRedirect /> },
           { path: '/platform/analytics', element: <CmsAnalyticsPage /> },
 
           {

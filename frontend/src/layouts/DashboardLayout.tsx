@@ -86,7 +86,7 @@ function SidebarSectionLabel({ children }: { children: ReactNode }) {
 
 function iconForNavigation(path: string): LucideIcon {
   if (path.includes("/activity")) return Activity;
-  if (path.includes("/admin/cms")) return LibraryBig;
+  if (path.includes("/platform/cms")) return LibraryBig;
   if (
     path.includes("my-assignments") ||
     path.includes("independent-assignments")
@@ -179,7 +179,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
       ? "Assignment Hub"
       : (school?.name ?? "Assignment Hub");
   const subtitle = isPlatformAdmin
-    ? "Platform console"
+    ? "Super Admin console"
     : isStudent
       ? "Student workspace"
       : (school?.code ?? "School workspace");

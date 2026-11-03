@@ -63,7 +63,7 @@ export default function CmsDashboard() {
         title="Content Library"
         actions={
           <Link
-            to="/admin/cms/create"
+            to="/platform/cms/create"
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#101820] px-4 text-sm font-semibold text-white hover:bg-slate-800"
           >
             <Plus size={17} aria-hidden="true" />
@@ -200,7 +200,7 @@ export default function CmsDashboard() {
                 action={
                   status === "DRAFT" && !search ? (
                     <Link
-                      to="/admin/cms/create"
+                      to="/platform/cms/create"
                       className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-800"
                     >
                       Create your first module
@@ -233,7 +233,7 @@ export default function CmsDashboard() {
                       </p>
                     </div>
                     <Link
-                      to={`/admin/cms/review/${encodeURIComponent(item.id)}`}
+                      to={`/platform/cms/review/${encodeURIComponent(item.id)}`}
                       className="inline-flex min-h-10 shrink-0 items-center gap-2 self-start rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 sm:self-auto"
                     >
                       {status === "PUBLISHED_STORE" ? "View summary" : "Review"}

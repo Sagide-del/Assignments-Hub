@@ -18,7 +18,7 @@ export default function CmsCreatePage() {
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <Link
-        to="/admin/cms"
+        to="/platform/cms"
         className="inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900"
       >
         <ArrowLeft size={15} aria-hidden="true" />

@@ -93,12 +93,12 @@ export default function CmsReviewPage() {
         client.invalidateQueries({ queryKey: ["cms", userId, "drafts"] }),
         client.invalidateQueries({ queryKey: ["cms", userId, "store"] }),
       ]);
-      navigate("/admin/cms?status=PUBLISHED_STORE");
+      navigate("/platform/cms?status=PUBLISHED_STORE");
     },
   });
   const back = (
     <Link
-      to="/admin/cms"
+      to="/platform/cms"
       className="inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900"
     >
       <ArrowLeft size={15} aria-hidden="true" />
