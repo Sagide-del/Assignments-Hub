@@ -16,7 +16,7 @@ Current API boundaries:
 - Review locates modules in the existing lists. There is no invented GET `/cms/:id` request.
 - Draft approval and store publication use the existing PATCH approval and POST publication endpoints. The preview requires theory and 30 questions before enabling its approval button.
 - School publication has a POST endpoint but no listing/detail endpoint. Its tab explicitly says that the list is not connected, rather than showing a misleading empty result.
-- No CMS AI-generation endpoint exists yet. The form retains its visible selections and explains that generation is pending; clicking Generate with AI makes no paid request, creates no fake questions and saves no empty module.
+- POST `/cms/drafts` now supports AI generation from grade, subject, topic and optional context. The frontend form is deliberately unchanged and still makes no generation request. Next frontend work must update the request contract (metadata only, no client content_json) and preview parsing for theory_text/question_text before connecting the button.
 - Global reporting has no API contract yet; no analytics totals are invented.
 
 Assets render in div placeholders, never image tags, embeds or remote model viewers. Lesson and question text is rendered as React text, without executing HTML from the payload. Missing answers and malformed JSON are shown explicitly.

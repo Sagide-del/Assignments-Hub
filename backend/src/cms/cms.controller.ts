@@ -12,7 +12,9 @@ import { Public } from "../common/decorators/public.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { Role } from "../common/enums/role.enum";
 import { CmsService } from "./cms.service";
-import { CreateDraftDto } from "./dto/create-draft.dto";
+import { GenerateAiContentDto } from "./dto/generate-ai-content.dto";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { PublishDto } from "./dto/publish.dto";
 
 @Controller("cms")
@@ -22,8 +24,11 @@ export class CmsController {
   @Post("drafts")
   @Roles(Role.PLATFORM_ADMIN)
   @AuditAction("cms.draft_created")
-  createDraft(@Body() dto: CreateDraftDto) {
-    return this.cms.createDraft(dto);
+  createDraft(
+    @Body() dto: GenerateAiContentDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.cms.generateAiContent(dto, actor);
   }
 
   @Get("drafts")

@@ -2,6 +2,7 @@ import {
   Injectable,
   INestApplication,
   Module,
+  ServiceUnavailableException,
   ValidationPipe,
 } from "@nestjs/common";
 import { NestFactory, Reflector } from "@nestjs/core";
@@ -10,6 +11,7 @@ import { PassportModule, PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { randomUUID } from "crypto";
 import { ContentStatus } from "@prisma/client";
+import { AiProviderRouterService } from "../ai/ai-provider-router.service";
 import { CmsController } from "./cms.controller";
 import { CmsService } from "./cms.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -19,7 +21,7 @@ import { TenantGuard } from "../common/guards/tenant.guard";
 import { IndependentTrialGuard } from "../common/guards/independent-trial.guard";
 
 // The HTTP layer uses real JWT/role/tenant guards and validation. Only storage
-// is replaced; these tests neither connect to nor migrate a database.
+// and AI are replaced; these tests neither charge a provider nor migrate a database.
 const TEST_SECRET = "cms-api-test-only-secret";
 const rows = new Map<string, any>();
 let assignments: any[] = [];
@@ -34,9 +36,28 @@ const project = (row: any, select?: Record<string, boolean>) =>
           .map((key) => [key, row[key]]),
       )
     : copy(row);
+const aiContent = {
+  theory_text: Array.from({ length: 300 }, () => "flight").join(" "),
+  equations: ["L = \\frac{1}{2} \\rho v^2 S C_L"],
+  illustration_prompt:
+    "A labelled graph of lift against airspeed, with units on each axis.",
+  questions: Array.from({ length: 30 }, (_, i) => ({
+    question_text: `Identify the upward force in flight scenario ${i + 1}.`,
+    options: ["Lift", "Weight", "Thrust", "Drag"],
+    correct_answer: "Lift",
+    explanation: "Lift is the upward aerodynamic force opposing weight.",
+  })),
+};
+const ai = { generateAssignment: jest.fn() };
+const aiResult = () => ({
+  content: copy(aiContent),
+  model: "deepseek-test",
+  usage: { promptTokens: 400, completionTokens: 1440, totalTokens: 1840 },
+});
 const db: any = {
   $queryRaw: jest.fn().mockResolvedValue([]),
   masterModule: {
+    count: jest.fn().mockResolvedValue(0),
     create: jest.fn(async ({ data }) => {
       const row = {
         id: randomUUID(),
@@ -144,6 +165,7 @@ class TestJwtStrategy extends PassportStrategy(Strategy) {
     CmsService,
     TestJwtStrategy,
     { provide: PrismaService, useValue: db },
+    { provide: AiProviderRouterService, useValue: ai },
   ],
 })
 class CmsHttpTestModule {}
@@ -155,11 +177,6 @@ const draft = {
   track: "Technical and Engineering",
   subject: "Aviation Technology",
   topic: "Four Forces of Flight",
-  content_json: {
-    theory: "Lift, weight, thrust and drag.",
-    questions: [{ question: "Name an upward force.", correctAnswer: "Lift" }],
-    assets: [],
-  },
 };
 const jwt = new JwtService({ secret: TEST_SECRET });
 const token = (role: string) =>
@@ -233,6 +250,10 @@ describe("Master Content Library HTTP API", () => {
     assignments = [];
     failAssignmentWrite = false;
     jest.clearAllMocks();
+    ai.generateAssignment
+      .mockReset()
+      .mockImplementation(async () => aiResult());
+    db.masterModule.count.mockResolvedValue(0);
   });
   afterAll(async () => {
     await app?.close();
@@ -256,7 +277,7 @@ describe("Master Content Library HTTP API", () => {
   it("creates drafts, lists pending content and approves idempotently", async () => {
     const module = await create();
     expect(module.status).toBe("DRAFT");
-    expect(module.generation_cost_tokens).toBe(0);
+    expect(module.generation_cost_tokens).toBe(1840);
     expect(module.tenant_id).toBeNull();
     expect(
       (await request("/drafts", "GET", undefined, "PLATFORM_ADMIN")).data,
@@ -290,6 +311,104 @@ describe("Master Content Library HTTP API", () => {
       expect(
         (await request("/drafts", "POST", body, "PLATFORM_ADMIN")).status,
       ).toBe(400);
+    expect(rows.size).toBe(0);
+  });
+  it("generates the requested Aviation module and derives level, strict payload and provider token usage", async () => {
+    const result = await request(
+      "/drafts",
+      "POST",
+      {
+        grade: 11,
+        subject: "Aviation",
+        topic: "Four Forces of Flight",
+        pathway: "STEM",
+      },
+      "PLATFORM_ADMIN",
+    );
+    expect(result.status).toBe(201);
+    expect(result.data).toMatchObject({
+      level: "Senior School",
+      grade: 11,
+      subject: "Aviation",
+      topic: "Four Forces of Flight",
+      status: "DRAFT",
+      generation_cost_tokens: 1840,
+    });
+    expect(result.data.content_json.questions).toHaveLength(30);
+    expect(result.data.content_json.theory_text.split(/\s+/)).toHaveLength(300);
+    expect(rows.get(result.data.id).content_json).toEqual(aiContent);
+    expect(ai.generateAssignment).toHaveBeenCalledTimes(1);
+    const [prompt, actor] = ai.generateAssignment.mock.calls[0];
+    expect(prompt).toContain(
+      'Grade 11, Subject "Aviation", Topic "Four Forces of Flight"',
+    );
+    expect(prompt).toContain("exactly 30 objects");
+    expect(actor).toEqual({ userId: 42, schoolId: 1 });
+  });
+  it("rejects malformed JSON and invalid generated schemas without storing or repairing them through another AI call", async () => {
+    const invalid = [
+      "not JSON",
+      "```json\n{}\n```",
+      { ...copy(aiContent), theory_text: "Too short" },
+      { ...copy(aiContent), questions: aiContent.questions.slice(0, 29) },
+      { ...copy(aiContent), equations: "not an array" },
+      {
+        ...copy(aiContent),
+        questions: aiContent.questions.map((q, i) =>
+          i ? q : { ...q, correct_answer: "A" },
+        ),
+      },
+      {
+        ...copy(aiContent),
+        questions: aiContent.questions.map((q, i) =>
+          i ? q : { ...q, options: ["Lift", "Lift", "Weight", "Drag"] },
+        ),
+      },
+    ];
+    for (const content of invalid) {
+      ai.generateAssignment.mockResolvedValueOnce({ ...aiResult(), content });
+      const result = await request("/drafts", "POST", draft, "PLATFORM_ADMIN");
+      expect(result.status).toBe(400);
+      expect(result.data.message).toBe("AI Generation failed, try again.");
+    }
+    expect(ai.generateAssignment).toHaveBeenCalledTimes(invalid.length);
+    expect(db.masterModule.create).not.toHaveBeenCalled();
+    expect(rows.size).toBe(0);
+  });
+  it("converts provider invalid-JSON errors to 400 while preserving configuration and balance errors", async () => {
+    ai.generateAssignment.mockRejectedValueOnce(
+      new ServiceUnavailableException(
+        "AI generation failed (INVALID_RESPONSE). Invalid JSON.",
+      ),
+    );
+    const invalid = await request("/drafts", "POST", draft, "PLATFORM_ADMIN");
+    expect(invalid.status).toBe(400);
+    expect(invalid.data.message).toBe("AI Generation failed, try again.");
+    ai.generateAssignment.mockRejectedValueOnce(
+      new ServiceUnavailableException(
+        "AI generation failed (INSUFFICIENT_BALANCE). Top up DeepSeek.",
+      ),
+    );
+    expect(
+      (await request("/drafts", "POST", draft, "PLATFORM_ADMIN")).status,
+    ).toBe(503);
+    expect(rows.size).toBe(0);
+  });
+  it("does not spend provider credit when CMS storage is unavailable", async () => {
+    db.masterModule.count.mockRejectedValueOnce(Error("Missing CMS table"));
+    const result = await request("/drafts", "POST", draft, "PLATFORM_ADMIN");
+    expect(result.status).toBe(503);
+    expect(result.data.message).toContain("apply the CMS migration");
+    expect(ai.generateAssignment).not.toHaveBeenCalled();
+    expect(rows.size).toBe(0);
+  });
+  it("does not retry AI or misreport a storage failure as invalid generated content", async () => {
+    db.masterModule.create.mockRejectedValueOnce(
+      Error("Simulated CMS write failure"),
+    );
+    const result = await request("/drafts", "POST", draft, "PLATFORM_ADMIN");
+    expect(result.status).toBe(500);
+    expect(ai.generateAssignment).toHaveBeenCalledTimes(1);
     expect(rows.size).toBe(0);
   });
   it("publishes approved content to a public catalogue without exposing payloads or draft/school content", async () => {
