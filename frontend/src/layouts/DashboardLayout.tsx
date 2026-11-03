@@ -86,6 +86,7 @@ function SidebarSectionLabel({ children }: { children: ReactNode }) {
 
 function iconForNavigation(path: string): LucideIcon {
   if (path.includes("/activity")) return Activity;
+  if (path.includes("/admin/cms")) return LibraryBig;
   if (
     path.includes("my-assignments") ||
     path.includes("independent-assignments")
