@@ -55,7 +55,6 @@ import { ResourceMarketplaceAdminPage } from '../../features/platform-admin/Reso
 import { LiveActivity } from '../../features/platform-admin/LiveActivity';
 import { EarlyYearsStudio } from '../../features/platform-admin/EarlyYearsStudio';
 
-import { ParentPortal } from '../../features/parent/ParentPortal';
 
 const ExamPlayer = lazy(() =>
   import('../../features/student/ExamPlayer').then((module) => ({ default: module.ExamPlayer })),
@@ -244,12 +243,6 @@ export const router = createBrowserRouter([
     path: '/platform-console',
     element: <Navigate to="/login?account=staff" replace />,
   },
-
-  {
-    path: '/parent',
-    element: <ParentPortal />,
-  },
-
 
   {
     element: <ProtectedRoute allow={['STUDENT']} />,

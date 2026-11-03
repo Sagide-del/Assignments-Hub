@@ -1,6 +1,7 @@
 // Mirrors backend/src/common/enums/role.enum.ts (re-exported from Prisma).
 // PARENT deliberately does not exist yet — the backend has no parent role,
-// login endpoint, or parent-scoped data. See src/features/parent/ParentPortal.tsx.
+// login endpoint, or parent-scoped data. The platform intentionally has no
+// parent portal route; guardians can receive student-shared reports instead.
 export type Role = 'PLATFORM_ADMIN' | 'SCHOOL_ADMIN' | 'TEACHER' | 'STUDENT';
 
 // Mirrors backend/src/auth/interfaces/authenticated-user.interface.ts —
