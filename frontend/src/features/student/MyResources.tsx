@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Clock3,
   Download,
-  FileText,
   LibraryBig,
   Package,
   Search,
@@ -30,7 +29,6 @@ import { learningCoachApi, type LearningPlan } from '../../api/learning-coach.ap
 const TYPES: Array<{ value: ResourceListingType | 'ALL'; label: string }> = [
   { value: 'ALL', label: 'All' },
   { value: 'NOTES', label: 'Notes' },
-  { value: 'ESSAY', label: 'Essays' },
   { value: 'REVISION_GUIDE', label: 'Revision' },
   { value: 'STUDY_GUIDE', label: 'Study guides' },
   { value: 'TOOLKIT', label: 'Toolkits' },
@@ -199,7 +197,7 @@ function ViewButton({ active, onClick, icon: Icon, label }: { active: boolean; o
 }
 
 function ResourceCard({ resource, owned, onSelect, onDownload }: { resource: ResourceListing; owned: boolean; onSelect: () => void; onDownload: () => void }) {
-  const Icon = resource.fulfillment === 'PHYSICAL_DELIVERY' ? Package : resource.type === 'ESSAY' ? FileText : BookOpenCheck;
+  const Icon = resource.fulfillment === 'PHYSICAL_DELIVERY' ? Package : BookOpenCheck;
   const pending = resource.purchaseStatus === 'AWAITING_VERIFICATION';
   return (
     <article className="flex min-w-0 max-w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(16,24,32,0.035)] transition hover:border-slate-300 sm:p-5">

@@ -10,6 +10,7 @@ import {
   Prisma,
   ResourceFulfillment,
   ResourceListingStatus,
+  ResourceListingType,
   ResourcePurchaseStatus,
 } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
@@ -48,6 +49,11 @@ export class ResourcesService {
     actor: AuthenticatedUser,
     filters: { type?: string; subject?: string; search?: string },
   ) {
+    // Assignment Hub is a learning and assessment platform, not an
+    // assignment-writing marketplace. Historical ESSAY listings remain
+    // visible to their owners/admins for administration, but never surface
+    // to learners or independent buyers.
+    if (actor.role === Role.STUDENT && filters.type === ResourceListingType.ESSAY) return [];
     const ownSellerFilter = actor.role === Role.TEACHER ? [{ sellerId: actor.id }] : [];
     const listings = await this.prisma.resourceListing.findMany({
       where: {
@@ -55,6 +61,7 @@ export class ResourcesService {
           ? undefined
           : [{ status: ResourceListingStatus.PUBLISHED }, ...ownSellerFilter],
         ...(filters.type ? { type: filters.type as any } : {}),
+        ...(actor.role === Role.STUDENT ? { NOT: { type: ResourceListingType.ESSAY } } : {}),
         ...(filters.subject ? { subject: { equals: filters.subject, mode: 'insensitive' } } : {}),
         ...(filters.search
           ? {
@@ -90,6 +97,9 @@ export class ResourcesService {
       },
     });
     if (!listing) throw new NotFoundException('Resource not found');
+    if (actor.role === Role.STUDENT && listing.type === ResourceListingType.ESSAY) {
+      throw new NotFoundException('Resource not found');
+    }
     if (
       listing.status !== ResourceListingStatus.PUBLISHED
       && actor.role !== Role.PLATFORM_ADMIN
@@ -221,6 +231,9 @@ export class ResourcesService {
       where: { id, status: ResourceListingStatus.PUBLISHED },
     });
     if (!listing) throw new NotFoundException('Resource not found');
+    if (listing.type === ResourceListingType.ESSAY) {
+      throw new NotFoundException('Resource not found');
+    }
     if (listing.sellerId === actor.id) throw new BadRequestException('You cannot purchase your own resource');
     if (listing.fulfillment === ResourceFulfillment.PHYSICAL_DELIVERY) {
       if (!dto.deliveryName || !dto.deliveryPhone || !dto.deliveryAddress) {
@@ -340,6 +353,9 @@ export class ResourcesService {
   }
 
   private validateListing(dto: CreateResourceDto) {
+    if (dto.type === ResourceListingType.ESSAY) {
+      throw new BadRequestException('Essay listings are not supported. Publish original learning resources, revision guides, project templates, or toolkits instead.');
+    }
     if (dto.fulfillment === ResourceFulfillment.DIGITAL_DOWNLOAD && (!dto.assetKey || !dto.fileName)) {
       throw new BadRequestException('Upload a PDF before publishing this resource');
     }

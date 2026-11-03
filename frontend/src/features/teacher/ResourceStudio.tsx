@@ -90,7 +90,7 @@ export function ResourceStudioPage() {
         <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <Input label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
-            <Select label="Type" value={form.type} onChange={(value) => setForm({ ...form, type: value as ResourceListingType })} options={['NOTES', 'ESSAY', 'REVISION_GUIDE', 'STUDY_GUIDE', 'TOOLKIT']} />
+            <Select label="Type" value={form.type} onChange={(value) => setForm({ ...form, type: value as ResourceListingType })} options={['NOTES', 'REVISION_GUIDE', 'STUDY_GUIDE', 'TOOLKIT']} />
             <Select label="Delivery" value={form.fulfillment} onChange={(value) => setForm({ ...form, fulfillment: value as ResourceFulfillment })} options={['DIGITAL_DOWNLOAD', 'PHYSICAL_DELIVERY']} />
             <Input label="Price (KES)" type="number" value={String(form.priceKES)} onChange={(value) => setForm({ ...form, priceKES: Math.max(0, Number(value) || 0) })} />
             <Input label="Subject" value={form.subject ?? ''} onChange={(value) => setForm({ ...form, subject: value })} />
