@@ -22,6 +22,7 @@ export class CslService {
     });
     return {
       cslVersion: 1,
+      storage_diagnostic_version: 1,
       target_hours: CSL_TARGET,
       photo_storage_configured: this.photos.configured(),
     };

@@ -1,3 +1,4 @@
+import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 import {
   BadRequestException,
   Injectable,
@@ -100,42 +101,73 @@ export class CslPhotoService {
     }
     return Buffer.concat(parts);
   }
-  async verifyStorage(school: number, actor: number) {
-    const bytes = await sharp({
-      create: { width: 2, height: 2, channels: 3, background: "#BBD125" },
-    })
-      .jpeg()
-      .toBuffer();
-    const url = await this.store(
-      {
-        buffer: bytes,
-        originalname: "csl-storage-check.jpg",
-        mimetype: "image/jpeg",
-      } as Express.Multer.File,
-      school,
-      actor,
-    );
-    if (!url)
-      throw new ServiceUnavailableException(
-        "Private CSL evidence storage is unavailable.",
-      );
-    let cleanup = true;
+  async storageContext() {
+    let principal: string | null = null;
     try {
-      const loaded = await this.image(url, school, actor);
-      if (!loaded.length)
-        throw new ServiceUnavailableException(
-          "Evidence read verification failed.",
-        );
+      const sts = new STSClient({
+        region: this.config.get<string>("AWS_REGION"),
+        credentials: this.client?.config.credentials,
+      });
+      principal =
+        (
+          await sts.send(new GetCallerIdentityCommand({}), {
+            abortSignal: AbortSignal.timeout(10000),
+          })
+        ).Arn ?? null;
+      sts.destroy();
+    } catch {}
+    return {
+      principal_arn: principal,
+      bucket: this.bucket,
+      region: this.config.get<string>("AWS_REGION") ?? null,
+      prefix: "marketplace-private/csl/",
+    };
+  }
+  async verifyStorage(school: number, actor: number) {
+    let url: string | null = null,
+      stage = "UPLOAD",
+      read = false,
+      cleanup = true,
+      failed = false;
+    try {
+      const bytes = await sharp({
+        create: { width: 2, height: 2, channels: 3, background: "#BBD125" },
+      })
+        .jpeg()
+        .toBuffer();
+      url = await this.store(
+        {
+          buffer: bytes,
+          originalname: "csl-storage-check.jpg",
+          mimetype: "image/jpeg",
+        } as Express.Multer.File,
+        school,
+        actor,
+      );
+      if (!url) throw Error();
+      stage = "READ";
+      read = (await this.image(url, school, actor)).length > 0;
+      if (!read) throw Error();
+    } catch {
+      failed = true;
     } finally {
-      try {
-        await this.remove(url, school, actor);
-      } catch {
-        cleanup = false;
+      if (url) {
+        try {
+          await this.remove(url, school, actor);
+        } catch {
+          cleanup = false;
+        }
       }
     }
     return {
-      photo_storage_verified: true,
+      photo_storage_verified: read && !failed,
       diagnostic_cleanup_verified: cleanup,
+      ...(failed || !cleanup
+        ? {
+            failure_stage: failed ? stage : "DELETE",
+            storage_diagnostic: await this.storageContext(),
+          }
+        : {}),
     };
   }
   configured() {

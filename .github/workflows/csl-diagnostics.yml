@@ -19,6 +19,9 @@ jobs:
           const base='https://assignments-hub-api.onrender.com/api/v1';
           const request=(path,opts={})=>fetch(base+path,{...opts,signal:AbortSignal.timeout(20000)});
           try {
+            let ready=false;
+            for(let i=0;i<60;i++){try{const cap=await request('/csl/capabilities');if(cap.ok&&(await cap.json()).storage_diagnostic_version===1){ready=true;break;}}catch{}if(i<59)await new Promise(r=>setTimeout(r,5000));}
+            if(!ready)throw Error('Updated storage diagnostics are not live yet.');
             const login=await request('/auth/staff/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({schoolCode:'DEMO-001',email:'otieno@demo.co.ke',password:process.env.DEMO_TEACHER_PASSWORD})});
             if(!login.ok)throw Error(`Teacher login: HTTP ${login.status}`);
             const auth=await login.json();const headers={Authorization:`Bearer ${auth.accessToken}`};
@@ -29,7 +32,7 @@ jobs:
             }
             const storage=await request('/csl/storage-check',{method:'POST',headers});
             const body=await storage.json().catch(()=>({}));
-            const report={http:storage.status,upload_read_verified:body.photo_storage_verified===true,cleanup_verified:body.diagnostic_cleanup_verified===true,message:typeof body.message==='string'?body.message.slice(0,250):null};
+            const report={http:storage.status,upload_read_verified:body.photo_storage_verified===true,cleanup_verified:body.diagnostic_cleanup_verified===true,failure_stage:body.failure_stage??null,storage_diagnostic:body.storage_diagnostic??null,message:typeof body.message==='string'?body.message.slice(0,250):null};
             console.log('::notice title=CSL storage result::'+JSON.stringify(report));
             if(!storage.ok||!report.upload_read_verified)throw Error('Private photo upload/read failed: '+JSON.stringify(report));
             if(!report.cleanup_verified)throw Error('Photo upload/read passed, but diagnostic cleanup is not permitted.');
