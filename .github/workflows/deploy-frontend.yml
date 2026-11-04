@@ -32,7 +32,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 supports Noble; avoid ubuntu-latest moving to 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       postgres:
