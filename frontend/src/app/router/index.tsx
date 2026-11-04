@@ -131,7 +131,7 @@ const studentNav = [
     to: '/student/my-pathway',
     label: 'My Pathway',
   },
-  { to: '/student/csl', label: 'My CSL Impact' },
+  { to: '/student/csl', label: 'CSL Journey' },
   {
     to: '/student/resources',
     label: 'My Study Hub',
