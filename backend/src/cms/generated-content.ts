@@ -4,6 +4,9 @@ export interface CmsGeneratedContent {
   theory_text: string;
   equations: string[];
   illustration_prompt: string;
+  offline_activity?: string;
+  diagram_description?: string;
+  asset_url?: string | null;
   questions: {
     question_text: string;
     options: string[];
@@ -34,23 +37,57 @@ const normalized = (value: string) =>
 export function validateCmsGeneratedContent(
   value: unknown,
   expectedQuestions = 30,
+  profile?: {
+    theoryWords: number;
+    extra: "offline_activity" | "diagram_description" | "asset_url";
+    assetUrl?: string | null;
+  },
 ): CmsGeneratedContent {
   const raw =
     typeof value === "string" ? (JSON.parse(value) as unknown) : value;
   const content = object(raw);
-  exactKeys(content, [
-    "theory_text",
-    "equations",
-    "illustration_prompt",
-    "questions",
-  ]);
+  const extra = profile?.extra;
+  const keys =
+    extra === "offline_activity" || extra === "diagram_description"
+      ? ["theory_text", "questions", extra]
+      : [
+          "theory_text",
+          "equations",
+          "illustration_prompt",
+          "questions",
+          ...(extra ? [extra] : []),
+        ];
+  exactKeys(content, keys);
   const theory_text = text(content.theory_text, 30000);
-  if (theory_text.split(/\s+/).length !== 300)
-    throw Error("Theory must contain exactly 300 words");
-  if (!Array.isArray(content.equations) || content.equations.length > 30)
+  const words = profile?.theoryWords ?? 300;
+  if (theory_text.split(/\s+/).length !== words)
+    throw Error(`Theory must contain exactly ${words} words`);
+  const rawEquations =
+    extra === "offline_activity" || extra === "diagram_description"
+      ? []
+      : content.equations;
+  if (!Array.isArray(rawEquations) || rawEquations.length > 30)
     throw Error("Invalid equations");
-  const equations = content.equations.map((value) => text(value, 1000));
-  const illustration_prompt = text(content.illustration_prompt, 3000);
+  const equations = rawEquations.map((value) => text(value, 1000));
+  const illustration_prompt =
+    extra === "offline_activity"
+      ? ""
+      : extra === "diagram_description"
+        ? text(content.diagram_description, 3000)
+        : text(content.illustration_prompt, 3000);
+  const extras: Pick<
+    CmsGeneratedContent,
+    "offline_activity" | "diagram_description" | "asset_url"
+  > = {};
+  if (extra === "offline_activity")
+    extras.offline_activity = text(content.offline_activity, 3000);
+  if (extra === "diagram_description")
+    extras.diagram_description = text(content.diagram_description, 3000);
+  if (extra === "asset_url") {
+    if (content.asset_url !== (profile?.assetUrl ?? null))
+      throw Error("Unverified asset URL");
+    extras.asset_url = profile?.assetUrl ?? null;
+  }
   if (
     !Array.isArray(content.questions) ||
     content.questions.length !== expectedQuestions
@@ -83,7 +120,7 @@ export function validateCmsGeneratedContent(
       explanation: text(question.explanation, 3000),
     };
   });
-  return { theory_text, equations, illustration_prompt, questions };
+  return { theory_text, equations, illustration_prompt, questions, ...extras };
 }
 
 export function cmsGenerationTokens(usage: AiGenerationUsage): number {

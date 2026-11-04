@@ -2788,3 +2788,20 @@ model ModuleAssignment {
   published_at DateTime     @default(now())
   due_date     DateTime?
 }
+
+// Supplied taxonomy is kept separate from reviewed curriculum outcomes.
+model CurriculumTaxonomy {
+  id String @id
+  level String
+  grade Int
+  pathway String?
+  track String?
+  subject String
+  topics String[]
+  source String @default("USER_PROVIDED")
+  verified Boolean @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([grade, pathway, track, subject])
+}

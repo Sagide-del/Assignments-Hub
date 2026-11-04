@@ -11,6 +11,16 @@ export function CmsTheory({ content }: { content: unknown }) {
           Practice Set (Partial)
         </span>
       )}
+      {view.offlineActivity && (
+        <details className="rounded-lg border border-slate-200 bg-white p-4">
+          <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+            Offline activity
+          </summary>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+            {view.offlineActivity}
+          </p>
+        </details>
+      )}
       {view.theory && (
         <details className="rounded-lg border border-slate-200 bg-white p-4">
           <summary className="cursor-pointer text-xs font-semibold text-slate-700">

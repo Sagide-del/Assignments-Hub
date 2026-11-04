@@ -13,6 +13,7 @@ import { randomUUID } from "crypto";
 import { ContentStatus } from "@prisma/client";
 import { AiProviderRouterService } from "../ai/ai-provider-router.service";
 import { CmsController } from "./cms.controller";
+import { TAXONOMY_SEED } from "../scripts/seed-taxonomy";
 import { CmsService } from "./cms.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
@@ -37,6 +38,7 @@ const project = (row: any, select?: Record<string, boolean>) =>
       )
     : copy(row);
 const aiContent = {
+  asset_url: null,
   theory_text: Array.from({ length: 300 }, () => "flight").join(" "),
   equations: ["L = \\frac{1}{2} \\rho v^2 S C_L"],
   illustration_prompt:
@@ -56,6 +58,18 @@ const aiResult = () => ({
 });
 const db: any = {
   $queryRaw: jest.fn().mockResolvedValue([]),
+  curriculumTaxonomy: {
+    findMany: jest.fn(async ({ where }) =>
+      TAXONOMY_SEED.filter((row) => row.grade === where.grade).map(
+        (row, i) => ({
+          id: `tax-${i}`,
+          source: "USER_PROVIDED",
+          verified: false,
+          ...row,
+        }),
+      ),
+    ),
+  },
   masterModule: {
     count: jest.fn().mockResolvedValue(0),
     create: jest.fn(async ({ data }) => {
@@ -176,7 +190,7 @@ const draft = {
   pathway: "STEM",
   track: "Technical and Engineering",
   subject: "Aviation Technology",
-  topic: "Four Forces of Flight",
+  topic: "Aerodynamics",
 };
 const jwt = new JwtService({ secret: TEST_SECRET });
 const token = (role: string) =>
@@ -263,6 +277,7 @@ describe("Master Content Library HTTP API", () => {
     const id = randomUUID();
     for (const [path, method, body] of [
       ["/drafts", "GET", undefined],
+      ["/taxonomy?grade=12", "GET", undefined],
       ["/publications/schools", "GET", undefined],
       [`/modules/${id}`, "GET", undefined],
       ["/drafts", "POST", draft],
@@ -286,6 +301,44 @@ describe("Master Content Library HTTP API", () => {
       for (const role of ["TEACHER", "SCHOOL_ADMIN", "PLATFORM_ADMIN"])
         expect((await request(path, method, undefined, role)).status).toBe(403);
     }
+  });
+  it("returns exact grade-specific taxonomy and validates the grade query", async () => {
+    const senior = await request(
+      "/taxonomy?grade=12",
+      "GET",
+      undefined,
+      "PLATFORM_ADMIN",
+    );
+    expect(senior.status).toBe(200);
+    expect(senior.data).toHaveLength(20);
+    expect(
+      senior.data.every(
+        (row: any) => row.grade === 12 && row.pathway && row.track,
+      ),
+    ).toBe(true);
+    const junior = await request(
+      "/taxonomy?grade=7",
+      "GET",
+      undefined,
+      "PLATFORM_ADMIN",
+    );
+    expect(
+      junior.data.every(
+        (row: any) => row.pathway === null && row.track === null,
+      ),
+    ).toBe(true);
+    expect(
+      (await request("/taxonomy?grade=6", "GET", undefined, "PLATFORM_ADMIN"))
+        .data,
+    ).toEqual([]);
+    for (const path of [
+      "/taxonomy",
+      "/taxonomy?grade=13",
+      "/taxonomy?grade=7.5",
+    ])
+      expect(
+        (await request(path, "GET", undefined, "PLATFORM_ADMIN")).status,
+      ).toBe(400);
   });
   it("creates drafts, lists pending content and approves idempotently", async () => {
     const module = await create();
@@ -332,8 +385,8 @@ describe("Master Content Library HTTP API", () => {
       "POST",
       {
         grade: 11,
-        subject: "Aviation",
-        topic: "Four Forces of Flight",
+        subject: "Aviation Technology",
+        topic: "Aerodynamics",
         pathway: "STEM",
       },
       "PLATFORM_ADMIN",
@@ -342,20 +395,20 @@ describe("Master Content Library HTTP API", () => {
     expect(result.data).toMatchObject({
       level: "Senior School",
       grade: 11,
-      subject: "Aviation",
-      topic: "Four Forces of Flight",
+      subject: "Aviation Technology",
+      topic: "Aerodynamics",
       status: "DRAFT",
       generation_cost_tokens: 1840,
     });
     expect(result.data.content_json.questions).toHaveLength(30);
     expect(result.data.content_json.theory_text.split(/\s+/)).toHaveLength(300);
-    expect(rows.get(result.data.id).content_json).toEqual(aiContent);
+    expect(rows.get(result.data.id).content_json).toMatchObject(aiContent);
     expect(ai.generateAssignment).toHaveBeenCalledTimes(1);
     const [prompt, actor] = ai.generateAssignment.mock.calls[0];
     expect(prompt).toContain(
-      'Grade 11, Subject "Aviation", Topic "Four Forces of Flight"',
+      'Grade 11 module for Subject "Aviation Technology", Topic "Aerodynamics"',
     );
-    expect(prompt).toContain("exactly 30 objects");
+    expect(prompt).toContain("exactly 30 distinct");
     expect(actor).toEqual({ userId: 42, schoolId: 1 });
   });
   it("rejects malformed JSON and invalid generated schemas without storing or repairing them through another AI call", async () => {

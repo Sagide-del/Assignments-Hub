@@ -1,0 +1,1120 @@
+[
+  {
+    "level": "Early Years",
+    "grade": 1,
+    "pathway": null,
+    "track": null,
+    "subject": "Literacy Activities",
+    "topics": [
+      "Listening and Speaking",
+      "Reading Readiness",
+      "Writing Readiness",
+      "Pre-Braille Activities"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 1,
+    "pathway": null,
+    "track": null,
+    "subject": "Mathematical Activities",
+    "topics": [
+      "Numbers and Counting",
+      "Shapes and Space",
+      "Measurements",
+      "Patterns and Relationships"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 1,
+    "pathway": null,
+    "track": null,
+    "subject": "Environmental Activities",
+    "topics": [
+      "My Immediate Environment",
+      "Living and Non-Living Things",
+      "Weather and Seasons",
+      "Safety and Hygiene"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 1,
+    "pathway": null,
+    "track": null,
+    "subject": "Psychomotor and Creative Activities",
+    "topics": [
+      "Movement and Coordination",
+      "Music and Rhythm",
+      "Drawing and Colouring"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 1,
+    "pathway": null,
+    "track": null,
+    "subject": "Religious Education Activities",
+    "topics": [
+      "Creation",
+      "Family and Community",
+      "Moral Values"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "English",
+    "topics": [
+      "Listening and Speaking",
+      "Reading Comprehension",
+      "Grammar and Vocabulary",
+      "Writing Composition"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Kiswahili",
+    "topics": [
+      "Kusikiliza na Kuzungumza",
+      "Kusoma",
+      "Sarufi",
+      "Kuandika"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Mathematics",
+    "topics": [
+      "Numbers and Operations",
+      "Fractions and Decimals",
+      "Geometry",
+      "Measurement",
+      "Data Handling"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Science and Technology",
+    "topics": [
+      "Living Things",
+      "Matter and Its Properties",
+      "Force and Energy",
+      "Earth and Space",
+      "Technology and Innovation"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Social Studies",
+    "topics": [
+      "My Community",
+      "Kenyan Geography",
+      "Historical Events",
+      "Citizenship and Governance"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Home Science",
+    "topics": [
+      "Personal Hygiene",
+      "Food and Nutrition",
+      "Clothing and Textiles",
+      "First Aid",
+      "Home Care"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Agriculture",
+    "topics": [
+      "Soil and Water",
+      "Crop Production",
+      "Animal Keeping",
+      "Farm Tools and Equipment"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Creative Arts",
+    "topics": [
+      "Visual Arts (Drawing and Painting)",
+      "Performing Arts (Music and Dance)",
+      "Craft and Design"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 4,
+    "pathway": null,
+    "track": null,
+    "subject": "Physical and Health Education",
+    "topics": [
+      "Physical Fitness",
+      "Sports Skills",
+      "Health Education",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Integrated Science",
+    "topics": [
+      "Scientific Investigation",
+      "Mixtures, Elements and Compounds",
+      "Living Things and Their Environment",
+      "Force and Energy",
+      "Earth and Space"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Pre-Technical and Pre-Career Education",
+    "topics": [
+      "Foundations of Pre-Technical Studies",
+      "Communication and Collaboration",
+      "Materials and Tools",
+      "Basic Electrical Principles",
+      "Woodwork and Metalwork"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Health Education",
+    "topics": [
+      "Personal Hygiene",
+      "Nutrition and Diet",
+      "Communicable Diseases",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Social Studies",
+    "topics": [
+      "Kenyan Geography",
+      "Historical Events",
+      "Citizenship and Governance",
+      "Economic Activities"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Business Studies",
+    "topics": [
+      "Introduction to Business",
+      "Financial Literacy",
+      "Entrepreneurship",
+      "Record Keeping"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Agriculture",
+    "topics": [
+      "Soil and Water Conservation",
+      "Crop Production",
+      "Livestock Production",
+      "Farm Tools and Equipment"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Life Skills",
+    "topics": [
+      "Self-Awareness",
+      "Interpersonal Relationships",
+      "Decision Making",
+      "Coping with Emotions"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 7,
+    "pathway": null,
+    "track": null,
+    "subject": "Sports and Physical Education",
+    "topics": [
+      "Physical Fitness",
+      "Sports Skills",
+      "Health Education",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Mathematics",
+    "topics": [
+      "Numbers and Algebra",
+      "Geometry and Trigonometry",
+      "Calculus",
+      "Statistics and Probability"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Physics",
+    "topics": [
+      "Mechanics",
+      "Waves and Optics",
+      "Electricity and Magnetism",
+      "Thermodynamics"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Chemistry",
+    "topics": [
+      "Atomic Structure and Bonding",
+      "Chemical Reactions",
+      "Organic Chemistry",
+      "Acids, Bases and Salts"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Biology",
+    "topics": [
+      "Cell Biology and Genetics",
+      "Transport in Plants and Animals",
+      "Respiration and Gaseous Exchange",
+      "Excretion and Homeostasis",
+      "Reproduction and Growth"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Aviation Technology",
+    "topics": [
+      "Principles of Flight",
+      "Aircraft Structures and Materials",
+      "Aircraft Powerplants",
+      "Flight Instruments and Navigation",
+      "Aviation Safety and Regulations"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Electrical Technology",
+    "topics": [
+      "Electrical Safety and Tools",
+      "Fundamentals of Electricity",
+      "Electrical Circuits",
+      "Electromagnetism",
+      "Electrical Installation and Maintenance"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Building Construction",
+    "topics": [
+      "Construction Materials",
+      "Building Drawing and Design",
+      "Foundation and Masonry",
+      "Roofing and Finishing",
+      "Construction Safety"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Agriculture",
+    "topics": [
+      "Soil and Water Conservation",
+      "Crop Production",
+      "Livestock Production",
+      "Agricultural Economics",
+      "Agribusiness"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Computer Science",
+    "topics": [
+      "Computer Systems",
+      "Problem Solving and Algorithms",
+      "Programming (Python)",
+      "Data Representation",
+      "Computer Networks"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Foods and Nutrition",
+    "topics": [
+      "Food Science and Technology",
+      "Nutrition and Dietetics",
+      "Food Safety and Hygiene",
+      "Meal Planning and Management"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Career and Technology Studies (CTS)",
+    "subject": "Culinary Arts",
+    "topics": [
+      "Kitchen Safety and Hygiene",
+      "Food Preparation Techniques",
+      "Baking and Pastry",
+      "Menu Planning and Costing",
+      "Food Presentation"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "STEM",
+    "track": "Career and Technology Studies (CTS)",
+    "subject": "Plumbing and Ceramics",
+    "topics": [
+      "Plumbing Tools and Materials",
+      "Water Supply Systems",
+      "Drainage Systems",
+      "Ceramic Materials and Techniques"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "History and Citizenship",
+    "topics": [
+      "Colonialism in Kenya",
+      "Struggle for Independence",
+      "Post-Independence Kenya",
+      "Regional and International Cooperation",
+      "Citizenship and Human Rights"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "Geography",
+    "topics": [
+      "Physical Geography",
+      "Human Geography",
+      "Fieldwork and Statistics",
+      "Environmental Conservation"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "Business Studies",
+    "topics": [
+      "Forms of Business Ownership",
+      "Business Finance",
+      "Marketing",
+      "Entrepreneurship",
+      "Business Ethics and Social Responsibility"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Social Sciences",
+    "track": "Languages",
+    "subject": "English",
+    "topics": [
+      "Listening and Speaking",
+      "Reading and Comprehension",
+      "Grammar and Usage",
+      "Writing and Composition"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Social Sciences",
+    "track": "Languages",
+    "subject": "Kiswahili",
+    "topics": [
+      "Kusikiliza na Kuzungumza",
+      "Kusoma na Ufahamu",
+      "Sarufi na Matumizi ya Lugha",
+      "Kuandika na Utungaji"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Arts and Sports Science",
+    "track": "Performing Arts",
+    "subject": "Music",
+    "topics": [
+      "Music Theory and Notation",
+      "African Traditional Music",
+      "Western Music History",
+      "Performance and Composition",
+      "Music Technology"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Arts and Sports Science",
+    "track": "Performing Arts",
+    "subject": "Dance",
+    "topics": [
+      "Dance Techniques",
+      "Choreography",
+      "Dance History and Culture",
+      "Performance and Appreciation"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Arts and Sports Science",
+    "track": "Visual Arts",
+    "subject": "Fine Art",
+    "topics": [
+      "Drawing and Painting",
+      "Sculpture",
+      "Printmaking",
+      "Art History and Appreciation"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 10,
+    "pathway": "Arts and Sports Science",
+    "track": "Sports Science",
+    "subject": "Human Physiology, Anatomy and Nutrition",
+    "topics": [
+      "Skeletal and Muscular Systems",
+      "Cardiovascular and Respiratory Systems",
+      "Sports Nutrition",
+      "Exercise Physiology",
+      "Injury Prevention and First Aid"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Mathematics",
+    "topics": [
+      "Surds and Logarithms",
+      "Trigonometry",
+      "Calculus (Differentiation)",
+      "Calculus (Integration)",
+      "Statistics and Probability"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Physics",
+    "topics": [
+      "Advanced Mechanics",
+      "Waves and Optics",
+      "Electricity and Magnetism",
+      "Modern Physics"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Chemistry",
+    "topics": [
+      "Chemical Kinetics",
+      "Equilibrium",
+      "Organic Chemistry",
+      "Inorganic Chemistry"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Biology",
+    "topics": [
+      "Genetics and Evolution",
+      "Ecology",
+      "Human Physiology",
+      "Biotechnology"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Aviation Technology",
+    "topics": [
+      "Aerodynamics",
+      "Aircraft Systems",
+      "Aviation Meteorology",
+      "Air Traffic Control",
+      "Aviation Law"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Electrical Technology",
+    "topics": [
+      "AC and DC Circuits",
+      "Transformers",
+      "Electrical Machines",
+      "Power Systems",
+      "Electronics"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Building Construction",
+    "topics": [
+      "Structural Design",
+      "Concrete Technology",
+      "Steel Construction",
+      "Quantity Surveying",
+      "Project Management"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Agriculture",
+    "topics": [
+      "Advanced Crop Production",
+      "Advanced Livestock Production",
+      "Agricultural Engineering",
+      "Farm Management",
+      "Agricultural Marketing"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Computer Science",
+    "topics": [
+      "Advanced Programming",
+      "Database Management",
+      "Software Engineering",
+      "Computer Networks",
+      "Cybersecurity"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Foods and Nutrition",
+    "topics": [
+      "Advanced Nutrition",
+      "Food Technology",
+      "Food Service Management",
+      "Diet Therapy"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Career and Technology Studies (CTS)",
+    "subject": "Culinary Arts",
+    "topics": [
+      "Advanced Culinary Techniques",
+      "International Cuisine",
+      "Food and Beverage Management",
+      "Culinary Entrepreneurship"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "STEM",
+    "track": "Career and Technology Studies (CTS)",
+    "subject": "Plumbing and Ceramics",
+    "topics": [
+      "Advanced Plumbing Systems",
+      "Ceramic Design",
+      "Ceramic Technology",
+      "Plumbing and Ceramics Entrepreneurship"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "History and Citizenship",
+    "topics": [
+      "World History",
+      "African History",
+      "Kenyan History",
+      "Governance and Human Rights"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "Geography",
+    "topics": [
+      "Advanced Physical Geography",
+      "Advanced Human Geography",
+      "Geographical Techniques",
+      "Environmental Management"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "Business Studies",
+    "topics": [
+      "Advanced Business Finance",
+      "Advanced Marketing",
+      "Business Law",
+      "Strategic Management"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Social Sciences",
+    "track": "Languages",
+    "subject": "English",
+    "topics": [
+      "Advanced Composition",
+      "Literature in English",
+      "Language and Style",
+      "Public Speaking"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Social Sciences",
+    "track": "Languages",
+    "subject": "Kiswahili",
+    "topics": [
+      "Fasihi ya Kiswahili",
+      "Lugha ya Kiswahili",
+      "Utamaduni wa Kiswahili",
+      "Uandishi wa Kina"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Arts and Sports Science",
+    "track": "Performing Arts",
+    "subject": "Music",
+    "topics": [
+      "Advanced Music Theory",
+      "Music Composition",
+      "Music Performance",
+      "Music Business"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Arts and Sports Science",
+    "track": "Visual Arts",
+    "subject": "Fine Art",
+    "topics": [
+      "Advanced Drawing and Painting",
+      "Advanced Sculpture",
+      "Digital Art",
+      "Art Portfolio Development"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 11,
+    "pathway": "Arts and Sports Science",
+    "track": "Sports Science",
+    "subject": "Human Physiology, Anatomy and Nutrition",
+    "topics": [
+      "Advanced Exercise Physiology",
+      "Sports Psychology",
+      "Sports Nutrition and Dietetics",
+      "Sports Injury Management"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Mathematics",
+    "topics": [
+      "Advanced Calculus",
+      "Complex Numbers",
+      "Vectors and Matrices",
+      "Probability and Statistics",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Physics",
+    "topics": [
+      "Quantum Physics",
+      "Nuclear Physics",
+      "Electronics",
+      "Astrophysics",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Chemistry",
+    "topics": [
+      "Advanced Organic Chemistry",
+      "Analytical Chemistry",
+      "Electrochemistry",
+      "Industrial Chemistry",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Pure Sciences",
+    "subject": "Biology",
+    "topics": [
+      "Advanced Genetics",
+      "Evolutionary Biology",
+      "Biotechnology and Ethics",
+      "Environmental Biology",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Aviation Technology",
+    "topics": [
+      "Advanced Aircraft Systems",
+      "Aviation Management",
+      "Flight Planning and Navigation",
+      "Aviation Safety Investigations",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Electrical Technology",
+    "topics": [
+      "Power Electronics",
+      "Renewable Energy Systems",
+      "Industrial Automation",
+      "Electrical Project Management",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Technical and Engineering",
+    "subject": "Building Construction",
+    "topics": [
+      "Advanced Structural Engineering",
+      "Construction Project Management",
+      "Sustainable Building Practices",
+      "Building Services",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Agriculture",
+    "topics": [
+      "Advanced Agribusiness Management",
+      "Agricultural Research and Extension",
+      "Sustainable Agriculture",
+      "Agricultural Policy",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Computer Science",
+    "topics": [
+      "Advanced Algorithms and Data Structures",
+      "Artificial Intelligence and Machine Learning",
+      "Software Project Management",
+      "Emerging Technologies",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subject": "Foods and Nutrition",
+    "topics": [
+      "Advanced Dietetics",
+      "Food Product Development",
+      "Community Nutrition",
+      "Food Service Systems",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Career and Technology Studies (CTS)",
+    "subject": "Culinary Arts",
+    "topics": [
+      "Advanced Menu Engineering",
+      "Culinary Business Management",
+      "Specialized Cuisines",
+      "Food Safety Management Systems",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "STEM",
+    "track": "Career and Technology Studies (CTS)",
+    "subject": "Plumbing and Ceramics",
+    "topics": [
+      "Advanced Plumbing Design",
+      "Ceramic Engineering",
+      "Entrepreneurship in Plumbing and Ceramics",
+      "Project Management",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "History and Citizenship",
+    "topics": [
+      "Contemporary World History",
+      "Kenyan Foreign Policy",
+      "Conflict Resolution and Peace Studies",
+      "Advanced Citizenship",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "Geography",
+    "topics": [
+      "Advanced Geospatial Technologies",
+      "Climate Change and Adaptation",
+      "Urban and Regional Planning",
+      "Resource Management",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Social Sciences",
+    "track": "Humanities",
+    "subject": "Business Studies",
+    "topics": [
+      "Advanced Financial Management",
+      "International Business",
+      "Business Strategy",
+      "Entrepreneurship and Innovation",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Social Sciences",
+    "track": "Languages",
+    "subject": "English",
+    "topics": [
+      "Advanced Literary Analysis",
+      "Academic Writing and Research",
+      "Advanced Public Speaking",
+      "Language and Society",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Social Sciences",
+    "track": "Languages",
+    "subject": "Kiswahili",
+    "topics": [
+      "Fasihi ya Kiswahili (Kina)",
+      "Utafiti wa Lugha",
+      "Uandishi wa Kitaaluma",
+      "Lugha na Jamii",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Arts and Sports Science",
+    "track": "Performing Arts",
+    "subject": "Music",
+    "topics": [
+      "Advanced Music Composition",
+      "Music Production and Technology",
+      "Music Business and Law",
+      "Performance Masterclass",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Arts and Sports Science",
+    "track": "Visual Arts",
+    "subject": "Fine Art",
+    "topics": [
+      "Advanced Studio Practice",
+      "Art Curatorship",
+      "Digital Media Arts",
+      "Portfolio and Exhibition",
+      "KCBE Mock Exam Practice"
+    ]
+  },
+  {
+    "level": "Senior School",
+    "grade": 12,
+    "pathway": "Arts and Sports Science",
+    "track": "Sports Science",
+    "subject": "Human Physiology, Anatomy and Nutrition",
+    "topics": [
+      "Advanced Sports Medicine",
+      "Biomechanics",
+      "Sports Psychology",
+      "Sports Management",
+      "KCBE Mock Exam Practice"
+    ]
+  }
+]

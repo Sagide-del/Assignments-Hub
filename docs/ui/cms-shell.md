@@ -4,7 +4,7 @@ The React Router pages live under `frontend/src/pages/admin/cms/`; this is a Vit
 
 Routes:
 - `/platform/cms`: Content Library with Drafts, Approved, Published to Store and Published to Schools tabs.
-- `/platform/cms/create`: grade, subject, topic and pathway generation form.
+- `/platform/cms/create`: cascading grade, pathway, track, subject and topic selectors sourced from CurriculumTaxonomy.
 - `/platform/cms/review/:id`: theory, inert 3D asset URL placeholders, the first three questions with answers, and an expandable list of remaining questions.
 - `/platform/analytics`: explicit reporting-pending shell.
 
@@ -14,7 +14,7 @@ Current API boundaries:
 - Drafts and Approved use GET `/cms/drafts` and filter by returned status.
 - Store uses GET `/cms/store`; this is metadata only. Administrators open the protected module-detail endpoint for full content.
 - Review uses protected GET `/cms/modules/:id`, including for school publications. It recognizes both legacy fields and the strict AI theory_text/question_text contract.
-- Draft approval and store publication use the existing PATCH approval and POST publication endpoints. The preview requires theory and 30 questions before enabling its approval button.
+- Draft approval and store publication use the existing PATCH approval and POST publication endpoints. The preview requires theory and the grade-band question count (5, 10 or 30) before enabling its approval button.
 - School publication uses POST `/cms/publish` and its tab loads protected GET `/cms/publications/schools`. The Publish modal loads real schools and grade-matching stream labels from learner profiles. Success shows a toast and returns to the corresponding dashboard tab.
 - POST `/cms/drafts` now supports AI generation from grade, subject, topic and optional context. The create form now sends metadata only (no client content_json), preserves inputs on errors and opens the saved draft for review. The parser supports theory_text/question_text and the legacy fields. Generation never auto-approves or publishes the draft.
 - Global reporting has no API contract yet; no analytics totals are invented.

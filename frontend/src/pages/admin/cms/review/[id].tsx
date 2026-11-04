@@ -15,6 +15,7 @@ import { apiErrorMessage } from "../../../../api/axios";
 import { cmsApi } from "../../../../services/cmsApi";
 import {
   parseCmsContent,
+  cmsLearningContent,
   type CmsQuestionPreview,
 } from "../../../../services/cms-content";
 import { useAuthStore } from "../../../../store/auth.store";
@@ -76,6 +77,7 @@ export default function CmsReviewPage() {
   });
   const module = detail.data;
   const content = parseCmsContent(module?.content_json);
+  const learning = cmsLearningContent(module?.content_json);
   const approve = useMutation({
     mutationFn: () => cmsApi.approveModule(id!),
     onSuccess: async () => {
@@ -149,7 +151,9 @@ export default function CmsReviewPage() {
     );
   const hasPayload = module.content_json !== undefined;
   const complete =
-    content.valid && content.questions.length >= 30 && !!content.theory.trim();
+    content.valid &&
+    content.questions.length >= learning.expectedCount &&
+    !!content.theory.trim();
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       {publishing && (
@@ -253,8 +257,28 @@ export default function CmsReviewPage() {
             >
               {!content.valid
                 ? "The content payload could not be read."
-                : `This module has ${content.questions.length} questions. Enrich this set with theory and at least 30 questions before approval.`}
+                : `This module has ${content.questions.length} questions. Enrich this set with theory and at least ${learning.expectedCount} questions before approval.`}
             </p>
+          )}
+          {learning.offlineActivity && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Offline activity
+              </h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-600">
+                {learning.offlineActivity}
+              </p>
+            </section>
+          )}
+          {learning.diagramDescription && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Diagram brief
+              </h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-600">
+                {learning.diagramDescription}
+              </p>
+            </section>
           )}
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
             <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">

@@ -46,3 +46,11 @@ test('learner content hides legacy theory, labels partial sets and safely ignore
   assert.equal(cmsLearningContent({questions:Array(35).fill({})}).partial,false);
   assert.equal(cmsLearningContent({theory_text:'New theory',question_count:30,equations:[]}).theory,'New theory');
 });
+
+test('complete grade-band formative and CAT sets are not mislabeled as partial 30-question mocks',()=>{
+  const primary=cmsLearningContent({theory_text:'Age-appropriate theory',question_count:5,expected_question_count:5,assessment_type:'FORMATIVE',offline_activity:'Count stones.'});
+  assert.equal(primary.partial,false);assert.equal(primary.label,'Formative Practice');assert.equal(primary.offlineActivity,'Count stones.');
+  assert.equal(cmsLearningContent({question_count:10,expected_question_count:10,assessment_type:'CAT'}).label,'CAT Practice');
+  assert.equal(cmsLearningContent({question_count:4,expected_question_count:5}).partial,true);
+  assert.equal(cmsLearningContent({question_count:10}).partial,true); // Historical sets keep their original rule.
+});

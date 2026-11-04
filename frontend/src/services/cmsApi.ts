@@ -24,6 +24,17 @@ export interface MasterModule {
     due_date?: string | null;
   }[];
 }
+export interface CurriculumTaxonomy {
+  id: string;
+  level: string;
+  grade: number;
+  pathway: string | null;
+  track: string | null;
+  subject: string;
+  topics: string[];
+  source: string;
+  verified: boolean;
+}
 export interface CreateCmsDraft {
   level?: string;
   grade: number;
@@ -47,6 +58,10 @@ const list = (value: unknown): MasterModule[] => {
 // Reuse the app's token attachment, single-flight refresh and API base URL.
 // CMS administration routes are protected by the backend role guard.
 export const cmsApi = {
+  getTaxonomy: (grade: number) =>
+    api
+      .get<CurriculumTaxonomy[]>("/cms/taxonomy", { params: { grade } })
+      .then((response) => response.data),
   getModule: (id: string) =>
     api
       .get<MasterModule>(`/cms/modules/${encodeURIComponent(id)}`)

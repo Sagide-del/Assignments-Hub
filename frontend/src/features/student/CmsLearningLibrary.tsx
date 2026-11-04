@@ -10,6 +10,8 @@ interface LearningModule {
   subject: string;
   topic: string;
   question_count: number;
+  expected_question_count?: number;
+  assessment_type?: string;
 }
 export function CmsLearningLibrary({
   subject,
@@ -90,9 +92,13 @@ export function CmsLearningLibrary({
               </span>
               <span className="mt-2 block text-xs text-slate-500">
                 {module.question_count} questions ·{" "}
-                {module.question_count < 30
+                {module.question_count < (module.expected_question_count ?? 30)
                   ? "Practice Set (Partial)"
-                  : "Practice Set"}
+                  : module.assessment_type === "FORMATIVE"
+                    ? "Formative Practice"
+                    : module.assessment_type === "CAT"
+                      ? "CAT Practice"
+                      : "Practice Set"}
               </span>
             </span>
             <ArrowRight size={16} aria-hidden="true" />

@@ -107,6 +107,17 @@ export function cmsLearningContent(value: unknown) {
     typeof content.question_count === "number"
       ? content.question_count
       : questions.length;
+  const expectedCount = [5, 10, 30].includes(
+    Number(content.expected_question_count),
+  )
+    ? Number(content.expected_question_count)
+    : 30;
+  const assessmentLabel =
+    content.assessment_type === "FORMATIVE"
+      ? "Formative Practice"
+      : content.assessment_type === "CAT"
+        ? "CAT Practice"
+        : "Practice Set";
   return {
     theory: theory === "Legacy content migrated from old system." ? "" : theory,
     equations: Array.isArray(content.equations)
@@ -114,7 +125,13 @@ export function cmsLearningContent(value: unknown) {
           (item): item is string => typeof item === "string" && !!item.trim(),
         )
       : [],
-    partial: count > 0 && count < 30,
-    label: count > 0 && count < 30 ? "Practice Set (Partial)" : "Practice Set",
+    expectedCount,
+    offlineActivity: text(content.offline_activity),
+    diagramDescription: text(content.diagram_description),
+    partial: count > 0 && count < expectedCount,
+    label:
+      count > 0 && count < expectedCount
+        ? "Practice Set (Partial)"
+        : assessmentLabel,
   };
 }

@@ -1,3 +1,5 @@
+import { Role } from "../common/enums/role.enum";
+import { seedTaxonomy } from "../scripts/seed-taxonomy";
 import { PrismaClient } from "@prisma/client";
 import { CmsService } from "./cms.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -21,9 +23,11 @@ integration("CMS PostgreSQL delivery records", () => {
       );
     prisma = new PrismaClient({ datasources: { db: { url: url.toString() } } });
     await prisma.$connect();
+    await seedTaxonomy(prisma);
     const ai = {
       generateAssignment: jest.fn().mockResolvedValue({
         content: {
+          asset_url: null,
           theory_text: Array.from({ length: 300 }, () => "flight").join(" "),
           equations: [],
           illustration_prompt: "Graph of lift against speed.",
@@ -62,8 +66,8 @@ integration("CMS PostgreSQL delivery records", () => {
     schoolIds.push(school.id);
     const draft = await service.generateAiContent({
       grade: 11,
-      subject: "Aviation",
-      topic: "Four Forces of Flight",
+      subject: "Aviation Technology",
+      topic: "Aerodynamics",
     });
     moduleIds.push(draft.id);
     expect(
@@ -109,8 +113,8 @@ integration("CMS PostgreSQL delivery records", () => {
   it("publishes store metadata without creating stream delivery rows or exposing answer payloads", async () => {
     const draft = await service.generateAiContent({
       grade: 11,
-      subject: "Aviation",
-      topic: "Airflow",
+      subject: "Aviation Technology",
+      topic: "Aerodynamics",
     });
     moduleIds.push(draft.id);
     await service.approveModule(draft.id);
@@ -127,5 +131,83 @@ integration("CMS PostgreSQL delivery records", () => {
     expect(entry.status).toBe("PUBLISHED_STORE");
     expect(entry).not.toHaveProperty("content_json");
     expect((await service.getModule(draft.id)).content_json).toBeDefined();
+  });
+  it("delivers a complete five-question primary module without treating it as a partial mock", async () => {
+    const school = await prisma.school.create({
+      data: {
+        name: "Primary CMS fixture",
+        code: `PRIMARY${Date.now()}`,
+        subscriptionStatus: "ACTIVE",
+      },
+    });
+    schoolIds.push(school.id);
+    const learner = await prisma.user.create({
+      data: {
+        name: "Primary learner fixture",
+        role: "STUDENT",
+        schoolId: school.id,
+        grade: "Grade 1",
+      },
+    });
+    const primaryAi = {
+      generateAssignment: jest.fn().mockResolvedValue({
+        content: {
+          theory_text: Array(150).fill("Learning").join(" "),
+          offline_activity: "Count five safe objects with a caregiver.",
+          questions: Array.from({ length: 5 }, (_, i) => ({
+            question_text: `Count scenario ${i}`,
+            options: ["One", "Two", "Three", "Four"],
+            correct_answer: "One",
+            explanation: "There is one object.",
+          })),
+        },
+        usage: { totalTokens: 50 },
+      }),
+    };
+    const primaryService = new CmsService(
+      prisma as unknown as PrismaService,
+      primaryAi as unknown as AiProviderRouterService,
+    );
+    const module = await primaryService.generateAiContent({
+      grade: 1,
+      subject: "Mathematical Activities",
+      topic: "Numbers and Counting",
+    });
+    moduleIds.push(module.id);
+    await primaryService.approveModule(module.id);
+    await primaryService.publishModule({
+      module_id: module.id,
+      target_type: PublishTargetType.STORE,
+    });
+    const actor = {
+      id: learner.id,
+      schoolId: school.id,
+      grade: "Grade 1",
+      role: Role.STUDENT,
+      name: learner.name,
+      email: null,
+      admissionNumber: null,
+      isIndependentTrial: false,
+    };
+    const catalogue = await primaryService.getLearningModules(actor);
+    expect(catalogue.find((item) => item.id === module.id)).toMatchObject({
+      question_count: 5,
+      expected_question_count: 5,
+      assessment_type: "FORMATIVE",
+    });
+    const started = await primaryService.startLearningModule(module.id, actor);
+    const assignment = await prisma.assignment.findUniqueOrThrow({
+      where: { id: started.id },
+      include: { questions: true },
+    });
+    expect(assignment.questions).toHaveLength(5);
+    expect((assignment.rawJson as any).cms_content).toMatchObject({
+      expected_question_count: 5,
+      assessment_type: "FORMATIVE",
+      offline_activity: "Count five safe objects with a caregiver.",
+    });
+    expect((assignment.rawJson as any).cms_content).not.toHaveProperty(
+      "questions",
+    );
   });
 });

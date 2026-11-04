@@ -1,3 +1,4 @@
+import { TaxonomyQueryDto } from "./dto/taxonomy-query.dto";
 import {
   Body,
   Controller,
@@ -6,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 import { AuditAction } from "../common/decorators/audit.decorator";
 import { Public } from "../common/decorators/public.decorator";
@@ -29,6 +31,12 @@ export class CmsController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.cms.generateAiContent(dto, actor);
+  }
+
+  @Get("taxonomy")
+  @Roles(Role.PLATFORM_ADMIN)
+  getTaxonomy(@Query() query: TaxonomyQueryDto) {
+    return this.cms.getTaxonomy(query.grade);
   }
 
   @Get("drafts")
