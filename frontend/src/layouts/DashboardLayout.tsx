@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ClipboardCheck,
+  HeartHandshake,
   BarChart3,
   Activity,
   BookMarked,
@@ -87,6 +88,7 @@ function SidebarSectionLabel({ children }: { children: ReactNode }) {
 
 function iconForNavigation(path: string): LucideIcon {
   if (path.endsWith("/sba")) return ClipboardCheck;
+  if (path.endsWith("/csl")) return HeartHandshake;
   if (path.includes("/activity")) return Activity;
   if (path.includes("/platform/cms")) return LibraryBig;
   if (
@@ -193,6 +195,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const gradeScopedNav = isStudent
     ? nav.filter((item) => {
         if (isEarlyYearsGrade(user?.grade)) return item.to === '/student';
+        if (item.to === '/student/csl') return gradeTier(user?.grade) === 'senior';
         if (item.to === '/student/kjsea-mock-test') return isKjseaGrade(user?.grade);
         if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(user?.grade) || gradeTier(user?.grade) === 'senior';
         return true;

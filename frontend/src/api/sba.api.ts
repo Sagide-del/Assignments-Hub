@@ -9,6 +9,7 @@ export interface SbaRecord {
   updated_at: string;
 }
 export interface SbaRow {
+  csl_hours: number;
   student_id: number;
   name: string;
   admission_number: string | null;
@@ -30,12 +31,14 @@ export interface SbaRow {
 export interface SbaReport {
   rows: SbaRow[];
   summary: {
+    csl_completion_rate: number;
     students: number;
     complete: number;
     average_projected: number | null;
     below50: number;
     top_performers: number;
   };
+  csl_target?: number;
   projection_note: string;
   teaching_class?: {
     id: string;

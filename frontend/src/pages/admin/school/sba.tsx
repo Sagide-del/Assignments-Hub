@@ -7,6 +7,7 @@ import {
   TrendingUp,
   TriangleAlert,
   Award,
+  HeartHandshake,
 } from "lucide-react";
 import { useAuthStore } from "../../../store/auth.store";
 import { sbaApi } from "../../../api/sba.api";
@@ -25,6 +26,7 @@ export function SbaScore({ value }: { value: number | null }) {
   );
 }
 export default function SchoolSbaDashboard() {
+  const [below50, setBelow50] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const actor = useAuthStore((s) => s.user);
   const report = useQuery({
@@ -40,11 +42,13 @@ export default function SchoolSbaDashboard() {
   });
   const [exporting, setExporting] = useState(false),
     [error, setError] = useState("");
-  const rows = (report.data?.rows ?? []).filter((row) =>
-    Object.entries(filters).every(
-      ([key, value]) =>
-        !value || String(row[key as keyof typeof row] ?? "") === value,
-    ),
+  const rows = (report.data?.rows ?? []).filter(
+    (row) =>
+      (!below50 || (row.csl_hours ?? 0) < 50) &&
+      Object.entries(filters).every(
+        ([key, value]) =>
+          !value || String(row[key as keyof typeof row] ?? "") === value,
+      ),
   );
   const complete = rows.filter((r) => r.projected !== null);
   const mean = complete.length
@@ -54,10 +58,10 @@ export default function SchoolSbaDashboard() {
     setExporting(true);
     setError("");
     try {
-      const blob = await sbaApi.csv(
-        actor!.schoolId,
-        Object.fromEntries(Object.entries(filters).filter(([, v]) => v)),
-      );
+      const blob = await sbaApi.csv(actor!.schoolId, {
+        ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)),
+        ...(below50 ? { csl_below50: "true" } : {}),
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -114,8 +118,13 @@ export default function SchoolSbaDashboard() {
           </button>
         </div>
       )}
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
+          {
+            title: "School-wide CSL completion",
+            value: `${report.data?.summary.csl_completion_rate ?? 0}%`,
+            icon: HeartHandshake,
+          },
           {
             title: "Average projected score",
             value: mean === null ? "—" : `${mean.toFixed(1)}%`,
@@ -184,6 +193,14 @@ export default function SchoolSbaDashboard() {
           <span>
             {rows.length} learners · {complete.length} complete projections
           </span>
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={below50}
+              onChange={(e) => setBelow50(e.target.checked)}
+            />
+            Students below 50 CSL hours
+          </label>
           <span>G10 SBA 15% · G11 SBA 15% · Grade 12 mock 70%</span>
         </div>
         {report.isLoading ? (
@@ -218,6 +235,7 @@ export default function SchoolSbaDashboard() {
                     "Best Mock",
                     "Projected",
                     "Indicative band",
+                    "CSL Hours",
                   ].map((h) => (
                     <th
                       key={h}
@@ -266,6 +284,11 @@ export default function SchoolSbaDashboard() {
                     </td>
                     <td className="px-5 py-4 font-medium">
                       {r.predicted_grade ?? "—"}
+                    </td>
+                    <td
+                      className={`whitespace-nowrap px-5 py-4 text-xs font-medium ${(r.csl_hours ?? 0) < 50 ? "text-red-700" : "text-emerald-700"}`}
+                    >
+                      {r.csl_hours ?? 0}/{report.data?.csl_target ?? 135}
                     </td>
                   </tr>
                 ))}

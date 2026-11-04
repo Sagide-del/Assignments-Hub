@@ -99,6 +99,9 @@ const SkillStudio = lazy(() =>
   import('../../features/platform-admin/SkillStudio').then((module) => ({ default: module.SkillStudio })),
 );
 
+const StudentCsl = lazy(() => import("../../pages/student/csl"));
+const TeacherCsl = lazy(() => import("../../pages/teacher/csl"));
+
 const studentNav = [
   {
     to: '/student',
@@ -128,6 +131,7 @@ const studentNav = [
     to: '/student/my-pathway',
     label: 'My Pathway',
   },
+  { to: '/student/csl', label: 'My CSL Impact' },
   {
     to: '/student/resources',
     label: 'My Study Hub',
@@ -158,8 +162,8 @@ const teacherNav = [
     label: 'Marking',
   },
   {
-    to: '/teacher/csl-review',
-    label: 'CSL Review',
+    to: '/teacher/csl',
+    label: 'CSL Approvals',
   },
   {
     to: '/teacher/pathways-stats',
@@ -333,6 +337,10 @@ export const router = createBrowserRouter([
             element: <Navigate to="/student/resources" replace />,
           },
           {
+            path: '/student/csl',
+            element: <StudentCsl />,
+          },
+          {
             path: '/student/resources',
             element: <MyResourcesPage />,
           },
@@ -412,6 +420,10 @@ export const router = createBrowserRouter([
           {
             path: '/teacher/marking',
             element: <Marking />,
+          },
+          {
+            path: '/teacher/csl',
+            element: <TeacherCsl />,
           },
           {
             path: '/teacher/csl-review',

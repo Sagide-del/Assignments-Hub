@@ -229,7 +229,7 @@ export class SbaService {
           })),
         }
       : {};
-    const [students, records, attempts, external] = await Promise.all([
+    const [students, records, attempts, external, csl] = await Promise.all([
       db.user.findMany({
         where,
         select: {
@@ -291,6 +291,16 @@ export class SbaService {
         },
         orderBy: { academic_year: "desc" },
       }),
+      db.cSL_Logbook.groupBy({
+        by: ["student_id"],
+        where: {
+          school_id: schoolId,
+          teacher_approved: true,
+          review_status: "APPROVED",
+          student: { is: where },
+        },
+        _sum: { hours_logged: true },
+      }),
     ]);
     const byStudent = new Map<number, typeof records>();
     for (const record of records)
@@ -347,6 +357,9 @@ export class SbaService {
         pathway:
           student.studentProfile?.pathway ?? selection?.pathway.name ?? null,
         track: selection?.name ?? null,
+        csl_hours: round(
+          csl.find((r) => r.student_id === student.id)?._sum.hours_logged ?? 0,
+        )!,
         grade10_sba: round(g10),
         grade11_sba: round(g11),
         internal_mock: round(mock),
@@ -364,12 +377,19 @@ export class SbaService {
     return {
       rows,
       summary: {
+        csl_completion_rate: rows.length
+          ? Math.round(
+              (rows.filter((r) => r.csl_hours >= 135).length / rows.length) *
+                100,
+            )
+          : 0,
         students: rows.length,
         complete: complete.length,
         average_projected: round(average(complete.map((r) => r.projected!))),
         below50: complete.filter((r) => r.projected! < 50).length,
         top_performers: complete.filter((r) => r.projected! >= 70).length,
       },
+      csl_target: 135,
       weights: SBA_WEIGHTS,
       projection_note:
         "Internal 15/15/70 planning estimate using the higher of external and internal Grade 12 mock averages. Not an official KCBE result or KNEC submission format.",
@@ -381,7 +401,13 @@ export class SbaService {
     filters: SbaFiltersDto = {},
   ) {
     this.assertSchool(actor, schoolId);
-    return this.report(schoolId, this.studentsWhere(schoolId, filters));
+    const report = await this.report(
+      schoolId,
+      this.studentsWhere(schoolId, filters),
+    );
+    if (filters.csl_below50)
+      report.rows = report.rows.filter((r) => r.csl_hours < 50);
+    return report;
   }
   async student(id: number, actor: AuthenticatedUser) {
     const student = await this.db.user.findUnique({
@@ -499,6 +525,7 @@ export class SbaService {
       "Best Mock %",
       "Projected Final %",
       "Predicted Grade",
+      "CSL Hours",
     ];
     return (
       "\uFEFF" +
@@ -516,6 +543,7 @@ export class SbaService {
           r.kcbe_mock,
           r.projected,
           r.predicted_grade,
+          r.csl_hours,
         ]),
       ]
         .map((row) => row.map(csvCell).join(","))

@@ -1,3 +1,4 @@
+import { CslModule } from "./csl/csl.module";
 import { SbaModule } from "./sba/sba.module";
 import { TeacherScopeModule } from "./teacher-scope/teacher-scope.module";
 import { Module } from '@nestjs/common';
@@ -72,6 +73,7 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
     PrismaModule,
     TeacherScopeModule,
     SbaModule,
+    CslModule,
 
     CmsModule,
 

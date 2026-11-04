@@ -1,6 +1,7 @@
 import { Type, Transform } from "class-transformer";
 import {
   IsIn,
+  IsBoolean,
   IsInt,
   IsNumber,
   IsOptional,
@@ -29,6 +30,10 @@ export class RecordSbaDto {
   academic_year?: number;
 }
 export class SbaFiltersDto {
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === "true")
+  @IsBoolean()
+  csl_below50?: boolean;
   @IsOptional() @IsIn(["Grade 10", "Grade 11", "Grade 12"]) grade?: string;
   @IsOptional() @IsString() @Length(1, 40) stream?: string;
   @IsOptional() @IsString() @Length(1, 120) pathway?: string;

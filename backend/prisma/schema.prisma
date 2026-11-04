@@ -318,6 +318,7 @@ enum InstitutionType {
 }
 
 model School {
+  cslLogbook CSL_Logbook[]
   externalMocks ExternalMock_Record[]
   sbaProjections SBA_Projection[]
   sbaRecords SBA_Record[]
@@ -380,6 +381,9 @@ model School {
 }
 
 model User {
+  cslHourLogs CSL_Logbook[] @relation("CslHourStudent")
+  cslHourApprovals CSL_Logbook[] @relation("CslHourApprover")
+  cslHourReviews CSL_Logbook[] @relation("CslHourReviewer")
   externalMocks ExternalMock_Record[] @relation("ExternalMockStudent")
   importedMocks ExternalMock_Record[] @relation("ExternalMockImporter")
   sbaProjections SBA_Projection[]
@@ -2942,4 +2946,37 @@ model SBA_Projection {
   school          School   @relation(fields: [school_id], references: [id], onDelete: Restrict)
 
   @@index([school_id])
+}
+
+model CSL_Logbook {
+ id String @id @default(uuid())
+ student_id Int
+ school_id Int
+ activity_name String
+ description String @db.Text
+ photo_url String?
+ hours_logged Float
+ activity_date DateTime @db.Date
+ competency_tags String[] @default([])
+ teacher_approved Boolean @default(false)
+ approved_by Int?
+ approved_at DateTime?
+ review_status String @default("PENDING")
+ rejection_comment String? @db.Text
+ reviewed_by Int?
+ reviewed_at DateTime?
+ submission_key String
+ ai_status String @default("PENDING")
+ ai_attempts Int @default(0)
+ ai_claimed_at DateTime?
+ ai_retry_at DateTime @default(now())
+ created_at DateTime @default(now())
+ student User @relation("CslHourStudent", fields: [student_id,school_id], references: [id,schoolId], onDelete: Restrict)
+ school School @relation(fields:[school_id],references:[id],onDelete: Restrict)
+ approver User? @relation("CslHourApprover",fields:[approved_by,school_id],references:[id,schoolId],onDelete: Restrict)
+ reviewer User? @relation("CslHourReviewer",fields:[reviewed_by,school_id],references:[id,schoolId],onDelete: Restrict)
+ @@unique([student_id, submission_key])
+ @@index([student_id, school_id])
+ @@index([school_id, review_status, created_at])
+ @@index([ai_status, ai_retry_at])
 }

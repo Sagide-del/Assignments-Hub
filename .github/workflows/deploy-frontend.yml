@@ -7,6 +7,10 @@ on:
       - 'backend/src/kjsea/**'
       - 'backend/src/cms/**'
       - 'backend/src/sba/**'
+      - 'backend/src/csl/**'
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+      - 'backend/src/__tests__/csl.spec.ts'
       - 'backend/src/__tests__/sba.spec.ts'
       - 'backend/src/__tests__/sba-import.spec.ts'
       - 'backend/src/__tests__/exam.spec.ts'
@@ -91,13 +95,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
           NODE_OPTIONS: --max-old-space-size=3072
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/cms src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards src/teacher-scope src/assignments src/reports src/sba src/__tests__/exam.spec.ts src/__tests__/sba.spec.ts src/__tests__/sba-import.spec.ts && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/cms src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards src/teacher-scope src/assignments src/reports src/sba src/__tests__/exam.spec.ts src/__tests__/sba.spec.ts src/__tests__/sba-import.spec.ts src/__tests__/csl.spec.ts && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
       - name: Verify teacher data isolation against PostgreSQL
         working-directory: backend
         env:
           DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
-        run: npx prisma db push --skip-generate && npm test -- --runInBand src/__tests__/rbac.spec.ts src/scripts/operations/demo-academy.database.spec.ts src/__tests__/sba.spec.ts src/__tests__/sba-import.spec.ts
+        run: npx prisma db push --skip-generate && npm test -- --runInBand src/__tests__/rbac.spec.ts src/scripts/operations/demo-academy.database.spec.ts src/__tests__/sba.spec.ts src/__tests__/sba-import.spec.ts src/__tests__/csl.spec.ts
+      - name: Wait for CSL logbook API and photo storage
+        working-directory: frontend
+        run: node scripts/check-csl-api.mjs
       - name: Wait for SBA and SVG blueprint schema
         working-directory: frontend
         run: node scripts/check-sba-api.mjs
@@ -130,6 +137,12 @@ jobs:
       - name: Verify live SBA import access restrictions
         working-directory: frontend
         run: node scripts/check-sba-import-access.mjs
+        env:
+          DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
+          RBAC_ALICE_ID: ${{ vars.RBAC_DEMO_ALICE_ID }}
+      - name: Verify live CSL access restrictions
+        working-directory: frontend
+        run: node scripts/check-csl-access.mjs
         env:
           DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
           RBAC_ALICE_ID: ${{ vars.RBAC_DEMO_ALICE_ID }}
