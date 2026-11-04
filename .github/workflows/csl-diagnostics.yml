@@ -1,0 +1,39 @@
+name: Diagnose CSL live readiness
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/csl-diagnostics.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check live CSL without learner writes
+        env:
+          DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
+          RBAC_ALICE_ID: ${{ vars.RBAC_DEMO_ALICE_ID }}
+        run: |
+          node --input-type=module <<'JS'
+          const base='https://assignments-hub-api.onrender.com/api/v1';
+          const request=(path,opts={})=>fetch(base+path,{...opts,signal:AbortSignal.timeout(20000)});
+          try {
+            const login=await request('/auth/staff/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({schoolCode:'DEMO-001',email:'otieno@demo.co.ke',password:process.env.DEMO_TEACHER_PASSWORD})});
+            if(!login.ok)throw Error(`Teacher login: HTTP ${login.status}`);
+            const auth=await login.json();const headers={Authorization:`Bearer ${auth.accessToken}`};
+            for(const [path,want] of [['/csl/pending',200],[`/csl/${Number(process.env.RBAC_ALICE_ID)}/logbook-pdf`,403],['/csl/my-hours',403]]){
+              const r=await request(path,{headers});
+              console.log(`::notice title=CSL route check::${path}: HTTP ${r.status}, expected ${want}`);
+              if(r.status!==want)throw Error(`${path}: HTTP ${r.status}, expected ${want}`);
+            }
+            const storage=await request('/csl/storage-check',{method:'POST',headers});
+            const body=await storage.json().catch(()=>({}));
+            const report={http:storage.status,upload_read_verified:body.photo_storage_verified===true,cleanup_verified:body.diagnostic_cleanup_verified===true,message:typeof body.message==='string'?body.message.slice(0,250):null};
+            console.log('::notice title=CSL storage result::'+JSON.stringify(report));
+            if(!storage.ok||!report.upload_read_verified)throw Error('Private photo upload/read failed: '+JSON.stringify(report));
+            if(!report.cleanup_verified)throw Error('Photo upload/read passed, but diagnostic cleanup is not permitted.');
+          } catch(e) {
+            console.log('::error title=CSL live diagnosis::'+String(e.message).replace(/[\r\n]/g,' '));process.exitCode=1;
+          }
+          JS
