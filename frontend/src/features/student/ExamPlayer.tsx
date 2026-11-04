@@ -1,3 +1,4 @@
+import { NextModuleBatch } from './NextModuleBatch';
 import { DiagramRenderer } from "../../components/ExamDiagrams/DiagramRenderer";
 import { MathText } from "../../components/ExamDiagrams/MathText";
 import { CmsTheory } from "./CmsTheory";
@@ -446,10 +447,10 @@ function ExamWorkspace() {
 
     return (
       <div className={workspaceClassName}>
-        <NextTopicSet
+        {assignment.rawJson?.cms_module_id ? <NextModuleBatch key={assignment.id} subject={assignment.subject} topic={assignment.title}/> : <NextTopicSet
           subject={assignment.subject}
           topic={assignmentTopic(assignment)}
-        />
+        />}
         {resultsReleased && loadingReleasedResults ? (
           <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
             Loading released results...
@@ -734,7 +735,7 @@ function ExamWorkspace() {
           </aside>
         )}
         <div className="min-w-0 space-y-4">
-          <CmsTheory content={assignment.rawJson?.cms_content} />
+          <CmsTheory content={assignment.rawJson?.cms_content} title={assignment.title} />
           {assignment.description && (
             <details className="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <summary className="cursor-pointer text-xs font-medium text-slate-600">

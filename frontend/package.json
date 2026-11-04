@@ -10,6 +10,7 @@
     "preview": "vite preview --config vite.config.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "prebuild": "node scripts/generate-revision.mjs",
+    "test:cheatsheet": "node --test scripts/cheatsheet.test.mjs",
     "test:student-scope": "node --test scripts/student-scope.test.mjs",
     "test:revision": "node --test scripts/revision.test.mjs",
     "test:assignments": "node --test scripts/assignment-list.test.mjs scripts/assignment-catalogue.test.mjs scripts/review-presentation.test.mjs",

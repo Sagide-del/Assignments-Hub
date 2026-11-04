@@ -238,6 +238,7 @@ export class StudentScopeService {
       )
       .map((m) => ({
         id: m.id,
+        batch_number: m.batch_number,
         grade: m.grade,
         pathway: m.pathway,
         track: m.track,

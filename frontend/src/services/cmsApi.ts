@@ -4,6 +4,8 @@ export type CmsStatus =
   "DRAFT" | "APPROVED" | "PUBLISHED_STORE" | "PUBLISHED_SCHOOL" | "ARCHIVED";
 export interface MasterModule {
   id: string;
+  batch_number?: number;
+  theory_cheatsheet?: unknown;
   level: string;
   grade: number;
   pathway?: string | null;

@@ -1,3 +1,4 @@
+import { TheoryCheatsheet } from "../../../../features/student/TheoryCheatsheet";
 import { DiagramRenderer } from "../../../../components/ExamDiagrams/DiagramRenderer";
 import { useState } from "react";
 import PublishModal from "../PublishModal";
@@ -62,7 +63,11 @@ function Question({
           {question.answer}
         </p>
       </div>
-      {question.explanation && <p className="mt-3 text-sm leading-6 text-slate-600">{question.explanation}</p>}
+      {question.explanation && (
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          {question.explanation}
+        </p>
+      )}
     </article>
   );
 }
@@ -284,23 +289,34 @@ export default function CmsReviewPage() {
             </section>
           )}
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-            <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-              <h2 className="text-base font-semibold text-slate-900">Theory</h2>
-              <div className="mt-4 space-y-4 text-sm leading-7 text-slate-600">
-                {content.theory ? (
-                  content.theory.split(/\n\s*\n/).map((paragraph, i) => (
-                    <p
-                      key={i}
-                      className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-                    >
-                      {paragraph}
-                    </p>
-                  ))
-                ) : (
-                  <p>No theory text supplied.</p>
-                )}
-              </div>
-            </section>
+            {module.theory_cheatsheet &&
+            typeof module.theory_cheatsheet === "object" &&
+            Object.keys(module.theory_cheatsheet).length ? (
+              <TheoryCheatsheet
+                value={module.theory_cheatsheet}
+                title={module.topic}
+              />
+            ) : (
+              <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                <h2 className="text-base font-semibold text-slate-900">
+                  Theory
+                </h2>
+                <div className="mt-4 space-y-4 text-sm leading-7 text-slate-600">
+                  {content.theory ? (
+                    content.theory.split(/\n\s*\n/).map((paragraph, i) => (
+                      <p
+                        key={i}
+                        className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+                      >
+                        {paragraph}
+                      </p>
+                    ))
+                  ) : (
+                    <p>No theory text supplied.</p>
+                  )}
+                </div>
+              </section>
+            )}
             <aside className="min-w-0 space-y-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <Box size={17} aria-hidden="true" />

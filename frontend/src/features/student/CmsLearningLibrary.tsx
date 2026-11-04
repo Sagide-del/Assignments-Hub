@@ -6,6 +6,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { catalogueKey } from "./assignment-catalogue";
 interface LearningModule {
   id: string;
+  batch_number?: number;
   grade: number;
   subject: string;
   topic: string;
@@ -91,7 +92,7 @@ export function CmsLearningLibrary({
                 {module.topic}
               </span>
               <span className="mt-2 block text-xs text-slate-500">
-                {module.question_count} questions ·{" "}
+                Batch {module.batch_number ?? 1} · {module.question_count} questions ·{" "}
                 {module.question_count < (module.expected_question_count ?? 30)
                   ? "Practice Set (Partial)"
                   : module.assessment_type === "FORMATIVE"

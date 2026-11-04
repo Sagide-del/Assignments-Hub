@@ -2777,6 +2777,8 @@ enum ContentStatus {
 }
 
 model MasterModule {
+  batch_number Int @default(1)
+  theory_cheatsheet Json @default("{}")
   id                     String        @id @default(uuid())
   level                  String
   grade                  Int

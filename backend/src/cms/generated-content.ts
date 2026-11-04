@@ -41,7 +41,7 @@ export function validateCmsGeneratedContent(
   expectedQuestions = 30,
   profile?: {
     theoryWords: number;
-    extra: "offline_activity" | "diagram_description" | "asset_url";
+    extra?: "offline_activity" | "diagram_description" | "asset_url";
     assetUrl?: string | null;
   },
 ): CmsGeneratedContent {
