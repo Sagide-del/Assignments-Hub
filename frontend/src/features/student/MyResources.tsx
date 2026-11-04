@@ -23,7 +23,7 @@ import {
   type ResourceListingType,
 } from '../../api/resources.api';
 import { EmptyState, PageHeader } from '../../components/ui/Saas';
-import { StudentStudyPlan } from './StudentStudyPlan';
+import WeeklyTimetable from '../../pages/study-hub/timetable';
 import { academicResultsApi } from '../../api/academic-results.api';
 import { learningCoachApi, type LearningPlan } from '../../api/learning-coach.api';
 
@@ -123,7 +123,7 @@ export function MyResourcesPage() {
 
       {status && (view==='MARKETPLACE'||view==='LIBRARY') ? <p role="status" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{status}</p> : null}
 
-      {view === 'REVIEW' ? <ReviewPlan /> : view === 'STUDY_PLAN' ? <StudentStudyPlan /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
+      {view === 'REVIEW' ? <ReviewPlan /> : view === 'STUDY_PLAN' ? <WeeklyTimetable embedded /> : listingsQuery.isLoading || purchasesQuery.isLoading ? (
         <EmptyState title="Loading resources..." />
       ) : listingsQuery.isError || purchasesQuery.isError ? (
         <EmptyState title="Resources are temporarily unavailable." />

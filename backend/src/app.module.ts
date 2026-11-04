@@ -1,3 +1,4 @@
+import {StudyHubModule} from "./study-hub/study-hub.module";
 import { CslModule } from "./csl/csl.module";
 import { SbaModule } from "./sba/sba.module";
 import { TeacherScopeModule } from "./teacher-scope/teacher-scope.module";
@@ -137,6 +138,7 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
     PresenceModule,
 
     LearningCoachModule,
+    StudyHubModule,
 
     EarlyYearsModule,
 

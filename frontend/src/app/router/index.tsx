@@ -99,6 +99,10 @@ const SkillStudio = lazy(() =>
   import('../../features/platform-admin/SkillStudio').then((module) => ({ default: module.SkillStudio })),
 );
 
+const WeeklyTimetable = lazy(() => import("../../pages/study-hub/timetable"));
+const TimetableRecall = lazy(() => import("../../pages/study-hub/recall"));
+const PreviousStudyPlans = lazy(() => import("../../features/student/StudentStudyPlan").then(m=>({default:m.StudentStudyPlan})));
+
 const StudentCsl = lazy(() => import("../../pages/student/csl"));
 const TeacherCsl = lazy(() => import("../../pages/teacher/csl"));
 
@@ -344,6 +348,9 @@ export const router = createBrowserRouter([
             path: '/student/resources',
             element: <MyResourcesPage />,
           },
+          { path: '/student/study-hub/timetable', element: <WeeklyTimetable /> },
+          { path: '/student/study-hub/timetable/:id/recall/:blockId', element: <TimetableRecall /> },
+          { path: '/student/study-hub/previous-plans', element: <PreviousStudyPlans /> },
           {
             // Friendly route for new links while preserving existing library bookmarks.
             path: '/student/study-hub',

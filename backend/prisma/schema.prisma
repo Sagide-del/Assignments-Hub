@@ -318,6 +318,8 @@ enum InstitutionType {
 }
 
 model School {
+  weeklyTimetables Study_Timetable[]
+  studySchedules Study_School_Schedule[]
   cslLogbook CSL_Logbook[]
   externalMocks ExternalMock_Record[]
   sbaProjections SBA_Projection[]
@@ -381,6 +383,7 @@ model School {
 }
 
 model User {
+  weeklyTimetables Study_Timetable[]
   cslHourLogs CSL_Logbook[] @relation("CslHourStudent")
   cslHourApprovals CSL_Logbook[] @relation("CslHourApprover")
   cslHourReviews CSL_Logbook[] @relation("CslHourReviewer")
@@ -2979,4 +2982,30 @@ model CSL_Logbook {
  @@index([student_id, school_id])
  @@index([school_id, review_status, created_at])
  @@index([ai_status, ai_retry_at])
+}
+
+model Study_Timetable {
+ id String @id @default(uuid())
+ student_id Int
+ school_id Int
+ week_start DateTime @db.Date
+ plan_json Json
+ generated_at DateTime @default(now())
+ generation_token String?
+ generation_started_at DateTime?
+ generation_count Int @default(0)
+ student User @relation(fields:[student_id,school_id],references:[id,schoolId],onDelete:Restrict)
+ school School @relation(fields:[school_id],references:[id],onDelete:Restrict)
+ @@unique([student_id,week_start])
+ @@index([school_id,week_start])
+}
+model Study_School_Schedule {
+ id String @id @default(uuid())
+ school_id Int
+ grade String
+ stream String @default("")
+ blocks_json Json
+ updated_at DateTime @updatedAt
+ school School @relation(fields:[school_id],references:[id],onDelete:Restrict)
+ @@unique([school_id,grade,stream])
 }

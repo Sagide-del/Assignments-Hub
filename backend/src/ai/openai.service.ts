@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { AiProviderError } from "./errors/ai-provider.error";
 import {
   AiGenerationResult,
+  AiRequestLimits,
   AiProviderService,
 } from "./interfaces/ai-provider.interface";
 
@@ -41,7 +42,10 @@ export class OpenaiService implements AiProviderService {
       : null;
   }
 
-  async generateAssignment(prompt: string): Promise<AiGenerationResult> {
+  async generateAssignment(
+    prompt: string,
+    limits?: AiRequestLimits,
+  ): Promise<AiGenerationResult> {
     if (!this.client) {
       throw new AiProviderError(
         "OPENAI",
@@ -54,22 +58,38 @@ export class OpenaiService implements AiProviderService {
     let completion: OpenAI.Chat.Completions.ChatCompletion;
 
     try {
-      completion = await this.client.chat.completions.create({
-        model: this.model,
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an educational assessment generator. Return only valid JSON.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
+      completion = await this.client.chat.completions.create(
+        {
+          model: this.model,
+          ...(limits
+            ? {
+                max_tokens: Math.min(
+                  12000,
+                  Math.max(1000, limits.maxOutputTokens),
+                ),
+              }
+            : {}),
+          temperature: 0.7,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an educational assessment generator. Return only valid JSON.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        },
+        limits
+          ? {
+              timeout: Math.min(60000, Math.max(10000, limits.timeoutMs)),
+              maxRetries: Math.min(1, Math.max(0, limits.maxRetries)),
+            }
+          : undefined,
+      );
     } catch (err) {
       throw this.classifyError(err);
     }

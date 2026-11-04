@@ -18,11 +18,18 @@ export interface AiGenerationResult {
   usage: AiGenerationUsage;
 }
 
-export type AiProviderName = 'OPENAI';
+export type AiProviderName = "OPENAI";
 
 export interface AiProviderService {
   /** Used for log messages and (later) usage-tracking rows. */
   readonly providerName: AiProviderName;
 
   generateAssignment(prompt: string): Promise<AiGenerationResult>;
+}
+
+/** Per-call limits for bounded interactive planning; existing generation defaults stay unchanged. */
+export interface AiRequestLimits {
+  maxOutputTokens: number;
+  timeoutMs: number;
+  maxRetries: number;
 }

@@ -370,7 +370,11 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                         (item.to !== "/student" &&
                           location.pathname.startsWith(item.to + "/")),
                     )?.label ??
-                    (location.pathname.startsWith("/student/assignments/")
+                    (location.pathname.startsWith("/student/study-hub/timetable")
+                      ? "Timetable"
+                      : location.pathname.startsWith("/student/study-hub/previous-plans")
+                        ? "Saved study plans"
+                        : location.pathname.startsWith("/student/assignments/")
                       ? "My Assignments"
                       : "Overview")}
                 </span>

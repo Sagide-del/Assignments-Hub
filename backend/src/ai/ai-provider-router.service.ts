@@ -11,7 +11,10 @@ import {
   AiProviderError,
   AiProviderErrorReason,
 } from "./errors/ai-provider.error";
-import { AiGenerationResult } from "./interfaces/ai-provider.interface";
+import {
+  AiGenerationResult,
+  AiRequestLimits,
+} from "./interfaces/ai-provider.interface";
 
 /**
  * Optional caller context, used only for AI usage logging (AiUsageService).
@@ -58,6 +61,7 @@ export class AiProviderRouterService {
   async generateAssignment(
     prompt: string,
     context?: GenerateAssignmentContext,
+    limits?: AiRequestLimits,
   ): Promise<AiGenerationResult> {
     if (context?.schoolId != null) {
       // Throws ForbiddenException if this school is already at its monthly
@@ -68,7 +72,9 @@ export class AiProviderRouterService {
     }
 
     try {
-      const result = await this.openaiService.generateAssignment(prompt);
+      const result = limits
+        ? await this.openaiService.generateAssignment(prompt, limits)
+        : await this.openaiService.generateAssignment(prompt);
 
       void this.aiUsageService.record({
         schoolId: context?.schoolId,
