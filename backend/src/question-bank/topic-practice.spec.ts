@@ -45,9 +45,9 @@ function fixture(rows: any[]) {
   return { tx, p, service: new PracticeService(p) };
 }
 describe("Assignment topic practice", () => {
-  it("opens a topic set with at least 20 distinct questions scoped to the learner grade", async () => {
+  it("opens a topic set with exactly 30 distinct questions scoped to the learner grade", async () => {
     const { service, tx } = fixture(
-      Array.from({ length: 20 }, (_, i) => make(i + 1)),
+      Array.from({ length: 30 }, (_, i) => make(i + 1)),
     );
     expect(await service.start("Mathematics", actor, "Fractions")).toEqual({
       id: "topic",
@@ -85,7 +85,7 @@ describe("Assignment topic practice", () => {
     ]);
     expect(tx.kjseaMockAttempt.create.mock.calls[0][0].data).toMatchObject({
       source: "PRACTICE",
-      coverage: { topic: "Fractions", questionCount: 20 },
+      coverage: { topic: "Fractions", questionCount: 30 },
     });
   });
   it("resumes only the matching topic and exposes a subject/topic catalogue", async () => {
@@ -98,7 +98,7 @@ describe("Assignment topic practice", () => {
         count: 2,
         remainingCount: 2,
         nextSetSize: 0,
-        minimumQuestions: 20,
+        minimumQuestions: 30,
       },
     ]);
     tx.kjseaMockAttempt.findFirst.mockResolvedValue({ id: "existing" });
@@ -111,10 +111,10 @@ describe("Assignment topic practice", () => {
     ]);
   });
   it("rejects undersized topics and does not silently repeat a completed set", async () => {
-    const small = fixture(Array.from({ length: 19 }, (_, i) => make(i + 1)));
+    const small = fixture(Array.from({ length: 29 }, (_, i) => make(i + 1)));
     await expect(
       small.service.start("Mathematics", actor, "Fractions"),
-    ).rejects.toThrow("At least 20");
+    ).rejects.toThrow("At least 30");
     expect(small.tx.kjseaMockAttempt.create).not.toHaveBeenCalled();
     const f = fixture(Array.from({ length: 60 }, (_, i) => make(i + 1)));
     const history: any[] = [];
@@ -141,14 +141,14 @@ describe("Assignment topic practice", () => {
     ).rejects.toThrow("0 unseen");
     expect(f.tx.kjseaMockAttempt.create).toHaveBeenCalledTimes(2);
   });
-  it("remembers questions from legacy assignment variants and keeps unseen sets at least 20", async () => {
-    const f = fixture(Array.from({ length: 50 }, (_, i) => make(i + 1)));
+  it("remembers questions from legacy assignment variants and keeps unseen sets exactly 30", async () => {
+    const f = fixture(Array.from({ length: 60 }, (_, i) => make(i + 1)));
     f.tx.submission.findMany.mockResolvedValue([
       {
         completedAt: new Date(),
         assignment: {
           subject: "Mathematics",
-          questions: Array.from({ length: 50 }, (_, i) => ({
+          questions: Array.from({ length: 60 }, (_, i) => ({
             id: i + 101,
             questionText: `Question ${i + 1}`,
           })),
@@ -160,18 +160,18 @@ describe("Assignment topic practice", () => {
     ]);
     await f.service.start("Mathematics", actor, "Fractions");
     const paper = f.tx.kjseaMockAttempt.create.mock.calls[0][0].data.questions;
-    expect(paper).toHaveLength(20);
+    expect(paper).toHaveLength(30);
     expect(paper.every((q: any) => q.sourceQuestionId > 30)).toBe(true);
     expect(
       f.tx.submission.findMany.mock.calls[0][0].where.assignment.schoolId,
     ).toBe(actor.schoolId);
   });
-  it("splits a 40-question pool into two fresh sets of 20", async () => {
+  it("draws a full 30-question set from a larger 40-question pool", async () => {
     const f = fixture(Array.from({ length: 40 }, (_, i) => make(i + 1)));
     await f.service.start("Mathematics", actor, "Fractions");
     expect(
       f.tx.kjseaMockAttempt.create.mock.calls[0][0].data.questions,
-    ).toHaveLength(20);
+    ).toHaveLength(30);
   });
   it("uses text/numeric responses and preserves essays as explicitly ungraded self-review", () => {
     const rows = [
@@ -205,7 +205,7 @@ describe("Assignment topic practice", () => {
   });
   it("requires both an active subscription and bank activation for school students", async () => {
     const { p, service, tx } = fixture(
-      Array.from({ length: 20 }, (_, i) => make(i + 1)),
+      Array.from({ length: 30 }, (_, i) => make(i + 1)),
     );
     p.school.findUnique.mockResolvedValue({ code: "SCHOOL" });
     await expect(

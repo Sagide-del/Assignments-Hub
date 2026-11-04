@@ -237,7 +237,7 @@ describe("Bounded content generation queue", () => {
   it("bounds concurrency configuration and supports a smaller worker", () => {
     for (const value of ["0", "100", "bad", "2.5"]) {
       process.env.CONTENT_GENERATION_CONCURRENCY = value;
-      expect(generationConcurrency()).toBe(3);
+      expect(generationConcurrency()).toBe(4);
     }
     process.env.CONTENT_GENERATION_CONCURRENCY = "1";
     expect(generationConcurrency()).toBe(1);

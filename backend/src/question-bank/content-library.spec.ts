@@ -193,9 +193,9 @@ describe("Independent practice allocation", () => {
     });
   });
   it("does not generate undersized batches or allow school users into independent allocation", async () => {
-    const small = setup(null, 19);
+    const small = setup(null, 29);
     await expect(small.service.start("Mathematics", actor)).rejects.toThrow(
-      "At least 20",
+      "At least 30",
     );
     const school = setup();
     (school.prisma as any).subscription={findFirst:jest.fn().mockResolvedValue(null)};

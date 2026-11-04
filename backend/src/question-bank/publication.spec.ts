@@ -243,14 +243,14 @@ describe("Explicit question-bank publication", () => {
   });
   it("publishes real grade/subject/topic assignments to both audiences and skips repeat copies", async () => {
     const f = fixture([
-      ...Array.from({ length: 35 }, (_, i) => q(i + 1)),
-      ...Array.from({ length: 20 }, (_, i) =>
-        q(36 + i, { subject: "English", topic: "Reading", points: 2 }),
+      ...Array.from({ length: 30 }, (_, i) => q(i + 1)),
+      ...Array.from({ length: 30 }, (_, i) =>
+        q(31 + i, { subject: "English", topic: "Reading", points: 2 }),
       ),
-      ...Array.from({ length: 20 }, (_, i) =>
-        q(56 + i, { grade: "Grade 8", topic: "Angles" }),
+      ...Array.from({ length: 30 }, (_, i) =>
+        q(61 + i, { grade: "Grade 8", topic: "Angles" }),
       ),
-      q(76, { status: "GENERATED" }),
+      q(91, { status: "GENERATED" }),
     ]);
     await f.service.queuePublication(
       { scope: "IDS", ids: f.questions.map((q) => q.id), audience: "BOTH" },
@@ -259,7 +259,7 @@ describe("Explicit question-bank publication", () => {
     const dto = f.jobs[0].input;
     expect(await f.service.publishContent(dto, actor, "job1")).toMatchObject({
       assignmentsCreated: 9,
-      questionCopies: 225,
+      questionCopies: 270,
       independentPublished: true,
       schoolCount: 2,
       failures: [],
@@ -279,20 +279,17 @@ describe("Explicit question-bank publication", () => {
         description: "Topic: Angles\nPublished from Question Bank",
       });
     }
-    expect(f.deliveries).toHaveLength(3);
-    expect(
-      f.deliveries.every((d) => d.questionCount === 30 && d.poolSize === 35),
-    ).toBe(true);
+    expect(f.deliveries).toHaveLength(0); // Fixed 30-question sets do not create rotating-pool configs.
     expect(await f.service.publishContent(dto, actor, "job1")).toMatchObject({
       assignmentsCreated: 0,
-      alreadyPublished: 225,
+      alreadyPublished: 270,
     });
     expect(f.assignments).toHaveLength(9);
-    expect(f.usages).toHaveLength(225);
+    expect(f.usages).toHaveLength(270);
     expect(f.sms.getStudentRecipients).not.toHaveBeenCalled();
   });
   it("does not deliver school-only content to independent learners or other schools", async () => {
-    const f = fixture(Array.from({ length: 20 }, (_, i) => q(i + 1)));
+    const f = fixture(Array.from({ length: 30 }, (_, i) => q(i + 1)));
     await f.service.queuePublication(
       {
         scope: "IDS",
@@ -309,8 +306,8 @@ describe("Explicit question-bank publication", () => {
   });
   it("publishes two generations of the same topic into distinct numbered assignments", async () => {
     const f = fixture(
-      Array.from({ length: 40 }, (_, i) =>
-        q(i + 1, { batchId: i < 20 ? 1 : 2 }),
+      Array.from({ length: 60 }, (_, i) =>
+        q(i + 1, { batchId: i < 30 ? 1 : 2 }),
       ),
     );
     const result = await f.service.publishContent(
@@ -328,13 +325,13 @@ describe("Explicit question-bank publication", () => {
       "Mathematics · Fractions · Batch 2",
     ]);
     expect(f.assignments.map((a) => a.questions.create.length)).toEqual([
-      20, 20,
+      30, 30,
     ]);
   });
   it("publishes only the selected saved batch when selecting across pages", async () => {
     const f = fixture(
-      Array.from({ length: 40 }, (_, i) =>
-        q(i + 1, { batchId: i < 20 ? 1 : 2 }),
+      Array.from({ length: 60 }, (_, i) =>
+        q(i + 1, { batchId: i < 30 ? 1 : 2 }),
       ),
     );
     await f.service.publishContent(
@@ -348,7 +345,7 @@ describe("Explicit question-bank publication", () => {
       "pub",
     );
     expect(f.usages.map((u) => u.questionBankId)).toEqual(
-      Array.from({ length: 20 }, (_, i) => i + 21),
+      Array.from({ length: 30 }, (_, i) => i + 31),
     );
   });
   it("keeps images, grading configuration and essay marking semantics", async () => {
@@ -359,7 +356,7 @@ describe("Explicit question-bank publication", () => {
       }),
       q(2, { questionType: "ESSAY", points: 10, correctAnswer: "Model essay" }),
       q(3, { questionType: "NUMERIC", correctAnswer: "12", config: null }),
-      ...Array.from({ length: 17 }, (_, i) => q(i + 4)),
+      ...Array.from({ length: 27 }, (_, i) => q(i + 4)),
     ]);
     await f.service.publishContent(
       {
@@ -394,7 +391,7 @@ describe("Explicit question-bank publication", () => {
     expect(f.assignments).toHaveLength(0);
   });
   it("rolls back assignment creation if provenance fails, then retries without duplicates", async () => {
-    const f = fixture(Array.from({ length: 20 }, (_, i) => q(i + 1)));
+    const f = fixture(Array.from({ length: 30 }, (_, i) => q(i + 1)));
     f.tx.questionBankUsage.createMany.mockRejectedValueOnce(
       Error("Database interruption"),
     );
@@ -413,7 +410,7 @@ describe("Explicit question-bank publication", () => {
     expect(f.assignments).toHaveLength(1);
   });
   it("retains short topics in the bank with an actionable publication issue", async () => {
-    const f = fixture(Array.from({ length: 19 }, (_, i) => q(i + 1)));
+    const f = fixture(Array.from({ length: 29 }, (_, i) => q(i + 1)));
     const result = await f.service.publishContent(
       {
         scope: "IDS",
@@ -424,11 +421,11 @@ describe("Explicit question-bank publication", () => {
       "short",
     );
     expect(result.assignmentsCreated).toBe(0);
-    expect(result.issues[0].reason).toContain("at least 20");
+    expect(result.issues[0].reason).toContain("exactly 30");
     expect(f.usages).toHaveLength(0);
-    expect(f.questions).toHaveLength(19);
+    expect(f.questions).toHaveLength(29);
   });
-  it("balances mixed-mark partitions so no assignment contains fewer than 20 questions", async () => {
+  it("publishes exact 30-question mixed-mark sets and preserves the incomplete remainder", async () => {
     const f = fixture(
       Array.from({ length: 61 }, (_, i) => q(i + 1, { points: (i % 2) + 1 })),
     );
@@ -442,8 +439,11 @@ describe("Explicit question-bank publication", () => {
       "mixed",
     );
     expect(f.assignments.map((a) => a.questions.create.length)).toEqual([
-      20, 20, 21,
+      30, 30,
     ]);
+    expect(f.questions).toHaveLength(61);
+    expect(f.usages).toHaveLength(60);
+    expect(f.usages.some((usage) => usage.questionBankId === 61)).toBe(false);
   });
   it("enforces admin permissions and validates audience selections", async () => {
     const f = fixture([q(1)]);
