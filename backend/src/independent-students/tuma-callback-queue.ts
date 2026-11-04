@@ -32,7 +32,31 @@ export class TumaCallbackQueue implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
   }
-  async enqueue(reference: string, token: string, payload: unknown) {
+  async enqueue(
+    reference: string,
+    token: string,
+    payload: unknown,
+    raw?: Buffer,
+  ) {
+    const payment = await this.payments.authenticateCallback(reference, token);
+    // Commit the original body independently, before parsing or settlement.
+    // An authenticated duplicate must never replace the first audit body.
+    if (raw) {
+      await this.prisma.mpesaRawCallbackEvent.createMany({
+        data: [
+          {
+            legacy_tuma_id: payment.id,
+            payload_hash: createHash("sha256").update(raw).digest("hex"),
+            raw_payload: raw.toString("utf8"),
+          },
+        ],
+        skipDuplicates: true,
+      });
+      await this.prisma.payment.updateMany({
+        where: { legacy_tuma_id: payment.id, raw_payload: null },
+        data: { raw_payload: raw.toString("utf8") },
+      });
+    }
     const { body } = await this.payments.validateCallback(
       reference,
       token,
@@ -51,10 +75,15 @@ export class TumaCallbackQueue implements OnModuleInit, OnModuleDestroy {
       update: {},
     });
   }
-  async acknowledge(reference: string, token: string, payload: unknown) {
+  async acknowledge(
+    reference: string,
+    token: string,
+    payload: unknown,
+    raw?: Buffer,
+  ) {
     // Only authenticate and save an inbox row here; no invoice/access work.
     try {
-      await this.enqueue(reference, token, payload);
+      await this.enqueue(reference, token, payload, raw);
     } catch (error) {
       if (
         error instanceof BadRequestException ||
@@ -67,7 +96,7 @@ export class TumaCallbackQueue implements OnModuleInit, OnModuleDestroy {
       // Always acknowledge the provider. Never activate from an unpersisted job.
       const retry = setTimeout(
         () =>
-          void this.enqueue(reference, token, payload).catch(() =>
+          void this.enqueue(reference, token, payload, raw).catch(() =>
             this.logger.error(
               "Callback persistence retry failed; reconcile pending Tuma payments.",
             ),

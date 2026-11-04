@@ -1,3 +1,5 @@
+import { ScheduleModule } from "@nestjs/schedule";
+import { TumaReconciliationService } from "./tuma-reconciliation.service";
 import { TumaCallbackQueue } from "./tuma-callback-queue";
 import { MpesaCallbackController } from "./mpesa-callback.controller";
 import { TumaPaymentProvider } from "./tuma-payment.provider";
@@ -10,7 +12,7 @@ import { UsersModule } from "../users/users.module";
 import { SmsModule } from "../sms/sms.module";
 
 @Module({
-  imports: [UsersModule, SmsModule],
+  imports: [UsersModule, SmsModule, ScheduleModule.forRoot()],
   controllers: [
     IndependentStudentsController,
     TumaPaymentsController,
@@ -21,6 +23,7 @@ import { SmsModule } from "../sms/sms.module";
     TumaPaymentProvider,
     TumaPaymentsService,
     TumaCallbackQueue,
+    TumaReconciliationService,
   ],
   exports: [IndependentStudentsService],
 })

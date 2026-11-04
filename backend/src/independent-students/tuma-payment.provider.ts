@@ -24,6 +24,19 @@ export class TumaPaymentProvider {
   private expires = 0;
   private authenticating: Promise<string> | null = null;
   constructor(private readonly config: ConfigService) {}
+  statusQueryConfigured(): boolean {
+    return false;
+  }
+
+  async queryTransactionStatus(
+    _checkoutRequestId: string,
+  ): Promise<{ payload: unknown }> {
+    // No documented Tuma endpoint was supplied. Never guess a financial API.
+    throw new ServiceUnavailableException(
+      "Tuma transaction-status contract is not configured.",
+    );
+  }
+
   apiBase() {
     const environment = this.config.get<string>("TUMA_ENV") || "production";
     if (environment === "production") return "https://api.tuma.co.ke";

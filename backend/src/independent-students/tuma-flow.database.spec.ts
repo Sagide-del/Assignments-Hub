@@ -1,3 +1,4 @@
+import { TumaReconciliationService } from "./tuma-reconciliation.service";
 import {
   INestApplication,
   Module,
@@ -121,7 +122,10 @@ integration(
         ],
       })
       class FixtureModule {}
-      app = await NestFactory.create(FixtureModule, { logger: false });
+      app = await NestFactory.create(FixtureModule, {
+        logger: false,
+        rawBody: true,
+      });
       const reflector = app.get(Reflector);
       app.useGlobalGuards(
         new JwtAuthGuard(reflector),
@@ -246,6 +250,25 @@ integration(
           where: { studentId: userId },
         }),
       ).toBe(0);
+      const audited = await p.payment.findUniqueOrThrow({
+        where: { legacy_tuma_id: row.id },
+      });
+      expect(audited.raw_payload).toBe(JSON.stringify(body));
+      await expect(
+        p.payment.update({
+          where: { id: audited.id },
+          data: { raw_payload: "tampered" },
+        }),
+      ).rejects.toThrow("immutable");
+      const auditEvent = await p.mpesaRawCallbackEvent.findFirstOrThrow({
+        where: { legacy_tuma_id: row.id },
+      });
+      await expect(
+        p.mpesaRawCallbackEvent.update({
+          where: { id: auditEvent.id },
+          data: { raw_payload: "tampered" },
+        }),
+      ).rejects.toThrow("append-only");
       await queue.drain();
       const activated = await p.user.findUniqueOrThrow({
         where: { id: userId },
@@ -280,7 +303,7 @@ integration(
           .subscriptionExpiresAt,
       ).toEqual(activated.subscriptionExpiresAt);
     });
-    it("keeps cancelled payments failed and never activates on forged or mismatched amounts", async () => {
+    it("keeps cancelled payments cancelled and never activates on forged or mismatched amounts", async () => {
       const before = (await p.user.findUniqueOrThrow({ where: { id: userId } }))
         .subscriptionExpiresAt;
       const { row, url } = await start();
@@ -314,12 +337,55 @@ integration(
       await queue.drain();
       expect(
         await p.payment.findUnique({ where: { legacy_tuma_id: row.id } }),
-      ).toMatchObject({ status: "FAILED" });
+      ).toMatchObject({ status: "CANCELLED" });
       expect(
         await p.independentStudentInvoice.count({
           where: { studentId: userId },
         }),
       ).toBe(1);
+    });
+    it("recovers a missing callback through shared settlement exactly once", async () => {
+      const { row } = await start();
+      await p.payment.update({
+        where: { legacy_tuma_id: row.id },
+        data: { created_at: new Date(Date.now() - 16 * 60000) },
+      });
+      const countBefore = await p.independentStudentInvoice.count({
+        where: { studentId: userId },
+      });
+      const provider = {
+        statusQueryConfigured: () => true,
+        queryTransactionStatus: jest
+          .fn()
+          .mockResolvedValue({ payload: success(row, "RECOVERED001") }),
+      };
+      const job = new TumaReconciliationService(
+        p as any,
+        provider as any,
+        app.get(TumaPaymentsService),
+      );
+      await job.reconcile();
+      await job.reconcile();
+      const settled = await p.payment.findUniqueOrThrow({
+        where: { legacy_tuma_id: row.id },
+      });
+      expect(settled.status).toBe("SUCCESS");
+      expect(settled.raw_payload).toBeNull(); // Query responses never pretend to be callbacks.
+      expect(provider.queryTransactionStatus).toHaveBeenCalledTimes(1);
+      expect(
+        await p.independentStudentInvoice.count({
+          where: { studentId: userId },
+        }),
+      ).toBe(countBefore + 1);
+      // A late callback must not activate a second time.
+      await app
+        .get(TumaPaymentsService)
+        .processStoredCallback(row.reference, success(row, "RECOVERED001"));
+      expect(
+        await p.independentStudentInvoice.count({
+          where: { studentId: userId },
+        }),
+      ).toBe(countBefore + 1);
     });
   },
 );

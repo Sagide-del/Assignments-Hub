@@ -1,3 +1,5 @@
+import { Req, RawBodyRequest } from "@nestjs/common";
+import { Request } from "express";
 import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -42,9 +44,10 @@ export class TumaPaymentsController {
     @Param("reference") reference: string,
     @Param("token") token: string,
     @Body() payload: unknown,
+    @Req() request: RawBodyRequest<Request>,
   ) {
     return this.callbacks
-      .acknowledge(reference, token, payload)
+      .acknowledge(reference, token, payload, request.rawBody)
       .then(() => ({ ResultCode: 0, ResultDesc: "Accepted" }));
   }
 }

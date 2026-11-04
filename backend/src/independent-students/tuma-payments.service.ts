@@ -105,9 +105,11 @@ export class TumaPaymentsService {
     const status =
       payment.status === "CONFIRMED"
         ? "SUCCESS"
-        : ["FAILED", "CANCELLED", "REJECTED"].includes(payment.status)
-          ? "FAILED"
-          : "PENDING";
+        : payment.status === "CANCELLED"
+          ? "CANCELLED"
+          : ["FAILED", "REJECTED"].includes(payment.status)
+            ? "FAILED"
+            : "PENDING";
     const data = {
       user_id: payment.studentId,
       school_id: null,
@@ -339,7 +341,7 @@ export class TumaPaymentsService {
       }),
     );
   }
-  async validateCallback(reference: string, token: string, payload: unknown) {
+  async authenticateCallback(reference: string, token: string) {
     const p = await this.prisma.independentTumaPayment.findUnique({
       where: { reference },
     });
@@ -352,7 +354,11 @@ export class TumaPaymentsService {
       )
     )
       throw new ForbiddenException("Invalid payment callback.");
-    return { payment: p, body: parseCallback(payload) };
+    return p;
+  }
+  async validateCallback(reference: string, token: string, payload: unknown) {
+    const payment = await this.authenticateCallback(reference, token);
+    return { payment, body: parseCallback(payload) };
   }
   async callback(reference: string, token: string, payload: unknown) {
     const { payment, body } = await this.validateCallback(

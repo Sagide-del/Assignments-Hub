@@ -1,3 +1,5 @@
+import { Req, RawBodyRequest } from "@nestjs/common";
+import { Request } from "express";
 import { SkipThrottle } from "@nestjs/throttler";
 import { Body, Controller, HttpCode, Post, Query } from "@nestjs/common";
 import { Public } from "../common/decorators/public.decorator";
@@ -13,9 +15,15 @@ export class MpesaCallbackController {
     @Query("reference") reference: string,
     @Query("token") token: string,
     @Body() payload: unknown,
+    @Req() request: RawBodyRequest<Request>,
   ) {
     if (typeof reference === "string" && typeof token === "string")
-      await this.callbacks.acknowledge(reference, token, payload);
+      await this.callbacks.acknowledge(
+        reference,
+        token,
+        payload,
+        request.rawBody,
+      );
     return { ResultCode: 0, ResultDesc: "Accepted" };
   }
 }
