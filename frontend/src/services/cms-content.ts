@@ -2,6 +2,8 @@ export interface CmsQuestionPreview {
   prompt: string;
   answer: string;
   options: string[];
+  illustration?: unknown;
+  explanation?: string;
 }
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -79,6 +81,8 @@ export function parseCmsContent(value: unknown) {
         ) || "No question text supplied",
       answer: answer || "No answer supplied",
       options,
+      ...(q.illustration !== undefined ? { illustration: q.illustration } : {}),
+      ...(typeof q.explanation === "string" ? { explanation: q.explanation } : {}),
     };
   });
   return {

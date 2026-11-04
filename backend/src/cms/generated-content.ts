@@ -1,3 +1,4 @@
+import { validateIllustration, DiagramIllustration } from "./diagram-blueprint";
 import type { AiGenerationUsage } from "../ai/interfaces/ai-provider.interface";
 
 export interface CmsGeneratedContent {
@@ -12,6 +13,7 @@ export interface CmsGeneratedContent {
     options: string[];
     correct_answer: string;
     explanation: string;
+    illustration?: DiagramIllustration | null;
   }[];
 }
 const object = (value: unknown): Record<string, unknown> => {
@@ -101,6 +103,7 @@ export function validateCmsGeneratedContent(
       "options",
       "correct_answer",
       "explanation",
+      ...(Object.prototype.hasOwnProperty.call(question, "illustration") ? ["illustration"] : []),
     ]);
     const question_text = text(question.question_text, 3000);
     if (seen.has(normalized(question_text))) throw Error("Duplicate questions");
@@ -118,6 +121,7 @@ export function validateCmsGeneratedContent(
       options,
       correct_answer,
       explanation: text(question.explanation, 3000),
+      ...(Object.prototype.hasOwnProperty.call(question, "illustration") ? { illustration: validateIllustration(question.illustration) } : {}),
     };
   });
   return { theory_text, equations, illustration_prompt, questions, ...extras };

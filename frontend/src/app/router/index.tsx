@@ -1,3 +1,5 @@
+import SchoolSbaDashboard from "../../pages/admin/school/sba";
+import TeacherSba from "../../pages/teacher/sba";
 import { TeacherAssignments } from "../../features/school-admin/TeacherAssignments";
 import { lazy } from 'react';
 import { createBrowserRouter, Link, Navigate, useLocation } from 'react-router-dom';
@@ -134,6 +136,7 @@ const studentNav = [
 
 
 const teacherNav = [
+  { to: "/teacher/sba", label: "SBA scorebook" },
   {
     to: '/teacher',
     label: 'Dashboard',
@@ -182,6 +185,7 @@ const teacherNav = [
 
 
 const schoolAdminNav = [
+  { to: "/school-admin/sba", label: "School assessments" },
   { to: "/school-admin/teaching-assignments", label: "Teaching assignments" },
   {
     to: '/school-admin',
@@ -402,6 +406,10 @@ export const router = createBrowserRouter([
             element: <Navigate to="/teacher/question-bank" replace />,
           },
           {
+            path: '/teacher/sba',
+            element: <TeacherSba />,
+          },
+          {
             path: '/teacher/marking',
             element: <Marking />,
           },
@@ -444,6 +452,10 @@ export const router = createBrowserRouter([
           {
             path: '/school-admin',
             element: <SchoolAdminDashboard />,
+          },
+          {
+            path: '/school-admin/sba',
+            element: <SchoolSbaDashboard />,
           },
           {
             path: '/school-admin/teaching-assignments',

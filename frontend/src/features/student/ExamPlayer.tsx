@@ -1,3 +1,5 @@
+import { DiagramRenderer } from "../../components/ExamDiagrams/DiagramRenderer";
+import { MathText } from "../../components/ExamDiagrams/MathText";
 import { CmsTheory } from "./CmsTheory";
 import { NextTopicSet } from "./NextTopicSet";
 import { assignmentTopic } from "./assignment-catalogue";
@@ -998,6 +1000,7 @@ function QuestionInput({
 
   return (
     <div className="min-w-0 space-y-5">
+      <DiagramRenderer illustration={question.illustration} />
       <div className="min-w-0">
         {question.contentHtml ? (
           <div className="min-w-0">
@@ -1012,9 +1015,9 @@ function QuestionInput({
             </div>
           </div>
         ) : (
-          <p className="break-words text-base font-semibold leading-7 text-[#101820] [overflow-wrap:anywhere] sm:text-lg sm:leading-8">
-            {index + 1}. {question.questionText}
-          </p>
+          <div className="break-words text-base font-semibold leading-7 text-[#101820] [overflow-wrap:anywhere] sm:text-lg sm:leading-8">
+            <MathText text={`${index + 1}. ${question.questionText}`} />
+          </div>
         )}
         {question.hint ? (
           <p className="mt-3 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-3 text-sm text-slate-500">
@@ -1063,7 +1066,7 @@ function QuestionInput({
                     {String.fromCharCode(65 + optionIndex)}
                   </span>
                   <span className="min-w-0 break-words text-base leading-7 text-slate-700 [overflow-wrap:anywhere]">
-                    {opt}
+                    <MathText text={opt} />
                   </span>
                 </div>
               </label>

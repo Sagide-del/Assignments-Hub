@@ -18,7 +18,8 @@
     "test:curriculum": "node --test scripts/curriculum.test.mjs",
     "test:recall": "node --test scripts/recall-visual.test.mjs",
     "test:kjsea": "node --test scripts/kjsea.test.mjs scripts/kjsea-api-contract.test.mjs",
-    "test:cms": "node --test scripts/cms-content.test.mjs"
+    "test:cms": "node --test scripts/cms-content.test.mjs",
+    "test:exam-diagrams": "node --test scripts/exam-diagrams.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

@@ -192,6 +192,7 @@ export interface AnswerInput {
 }
 
 export interface Question {
+  illustration?: unknown;
   id: number;
   assignmentId: number;
   sectionId: number | null;

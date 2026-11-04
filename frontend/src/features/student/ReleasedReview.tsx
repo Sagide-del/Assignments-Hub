@@ -1,3 +1,5 @@
+import { DiagramRenderer } from "../../components/ExamDiagrams/DiagramRenderer";
+import { MathText } from "../../components/ExamDiagrams/MathText";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -183,6 +185,7 @@ function AnswerReview({
             : "Awaiting review"}
         </span>
       </div>
+      <DiagramRenderer illustration={q?.illustration} />
       <div className="mt-5">
         {q?.contentHtml ? (
           <RichContent
@@ -190,9 +193,9 @@ function AnswerReview({
             className="assessment-question-copy"
           />
         ) : (
-          <p className="break-words text-lg font-semibold leading-8 text-slate-900 [overflow-wrap:anywhere]">
-            {q?.questionText ?? "Question text unavailable"}
-          </p>
+          <div className="break-words text-lg font-semibold leading-8 text-slate-900 [overflow-wrap:anywhere]">
+            <MathText text={q?.questionText ?? "Question text unavailable"} />
+          </div>
         )}
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
@@ -300,7 +303,7 @@ function AnswerReview({
                 return (
                   <li
                     key={i}
-                    className={`flex min-h-14 items-start gap-3 border-l-2 px-3 py-3 ${correct ? "border-emerald-400 bg-emerald-50/30" : chosen ? "border-slate-400 bg-slate-50" : "border-transparent"}`}
+                    className={`flex min-h-14 items-start gap-3 border-l-2 px-3 py-3 ${correct ? "border-emerald-400 bg-emerald-50/30" : chosen ? "border-rose-300 bg-rose-50/40" : "border-transparent"}`}
                   >
                     <span className="mt-0.5 text-xs font-medium text-slate-400">
                       {String.fromCharCode(65 + i)}
@@ -367,7 +370,7 @@ function AnswerReview({
               <ExplanationText text={feedback} />
             </section>
           )}
-          {explanation.body && (
+          {(
             <section className="mt-6 rounded-xl bg-sky-50/70 p-4 sm:p-5">
               <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
                 <Lightbulb
@@ -377,7 +380,7 @@ function AnswerReview({
                 />
                 Why this works
               </h3>
-              <ExplanationText text={explanation.body} />
+              {explanation.body ? <ExplanationText text={explanation.body} /> : <p className="text-sm text-slate-500">An explanation has not yet been added for this question.</p>}
             </section>
           )}
           {explanation.practice && (

@@ -318,6 +318,7 @@ enum InstitutionType {
 }
 
 model School {
+  sbaRecords SBA_Record[]
   streams Stream[]
   paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
@@ -377,6 +378,8 @@ model School {
 }
 
 model User {
+  sbaScores SBA_Record[] @relation("SbaStudent")
+  enteredSbaScores SBA_Record[] @relation("SbaEnteredBy")
   teacherAssignments TeacherAssignment[]
   paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
@@ -1036,6 +1039,7 @@ model Section {
 }
 
 model Question {
+  illustration Json?
   id           Int        @id @default(autoincrement())
   assignmentId Int        @map("assignment_id")
   assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
@@ -2873,4 +2877,24 @@ model TeacherAssignment {
   stream Stream @relation(fields: [stream_id, school_id], references: [id, school_id], onDelete: Cascade)
   @@unique([teacher_id, subject, stream_id])
   @@index([school_id, teacher_id])
+}
+
+model SBA_Record {
+  id String @id @default(uuid())
+  student_id Int
+  school_id Int
+  subject String
+  grade_level Int
+  term String
+  academic_year Int
+  score Float
+  entered_by Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  student User @relation("SbaStudent", fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school School @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  teacher User @relation("SbaEnteredBy", fields: [entered_by, school_id], references: [id, schoolId], onDelete: Restrict)
+  @@unique([student_id, subject, grade_level, term, academic_year])
+  @@index([student_id, subject, grade_level])
+  @@index([school_id, grade_level])
 }

@@ -1,3 +1,4 @@
+import { DiagramRenderer } from "../../../../components/ExamDiagrams/DiagramRenderer";
 import { useState } from "react";
 import PublishModal from "../PublishModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ function Question({
 }) {
   return (
     <article className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+      <DiagramRenderer illustration={question.illustration} />
       <div className="flex items-start gap-3">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-600">
           {number}
@@ -60,6 +62,7 @@ function Question({
           {question.answer}
         </p>
       </div>
+      {question.explanation && <p className="mt-3 text-sm leading-6 text-slate-600">{question.explanation}</p>}
     </article>
   );
 }
