@@ -1,3 +1,4 @@
+import { useStudentContentScope } from '../../hooks/useStudentContentScope';
 import { PageHeader } from "../../components/ui/Saas";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -108,6 +109,7 @@ function presentation(lab: Lab) {
   };
 }
 export function StemLabsPage() {
+  const contentScope = useStudentContentScope();
   const user = useAuthStore((s) => s.user),
     [search, setSearch] = useState(""),
     [subject, setSubject] = useState(""),
@@ -164,7 +166,7 @@ export function StemLabsPage() {
   );
   return (
     <div className="mx-auto max-w-6xl space-y-4 text-slate-800">
-      <PageHeader title="STEM Labs" actions={<span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{user?.grade} aligned · {labs.length} practicals</span>} />
+      <PageHeader title="STEM Labs" actions={<span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade} aligned · {labs.length} practicals</span>} />
       <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#375000]">These investigations are filtered to your grade. Junior School labs build safe inquiry and measurement; Senior School labs deepen pathway and subject practice.</p>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav
@@ -236,9 +238,9 @@ export function StemLabsPage() {
         </div>
       ) : !visible.length ? (
         <div className="rounded-xl border bg-white p-7">
-          <h2 className="font-semibold">No labs in this view</h2>
+          <h2 className="font-semibold">{labs.length ? "No labs in this view" : "No labs published yet"}</h2>
           <p className="mt-2 text-sm text-slate-500">
-            Choose another subject or clear your search.
+            {labs.length ? "Choose another subject or clear your search." : "Your teacher hasn’t published content for this yet. Check back soon."}
           </p>
           <button
             onClick={() => {

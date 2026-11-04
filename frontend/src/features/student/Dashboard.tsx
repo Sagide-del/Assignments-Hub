@@ -1,3 +1,4 @@
+import { useStudentContentScope, studentToolAvailable } from '../../hooks/useStudentContentScope';
 import { subjectAppearance } from "./subject-appearance";
 import { groupAssignments } from "./assignment-catalogue";
 import { LearningTitle, FullLearningTitle } from "./LearningTitle";
@@ -201,6 +202,7 @@ function AssignmentRow({
 }
 
 export function StudentDashboard() {
+  const contentScope = useStudentContentScope();
   const user = useAuthStore((state) => state.user);
   const [subject, setSubject] = useState("");
   const [status, setStatus] = useState<AssignmentState | "ALL">("ALL");
@@ -284,6 +286,7 @@ export function StudentDashboard() {
   }
   return (
     <div className="student-overview mx-auto max-w-7xl space-y-4 pb-6">
+      {contentScope.data?.setup_required && <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">Your pathway and track are not set. <Link to="/student/my-pathway" className="font-medium underline">Confirm your senior pathway</Link> to see your specialist subjects.</p>}
       <header className="flex flex-wrap items-center justify-between gap-4 pb-1">
         <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-slate-900">
           <span className="h-7 w-1 rounded-full bg-[#b5df18]" aria-hidden="true" />
@@ -540,8 +543,9 @@ export function StudentDashboard() {
           </div>
           <div className="divide-y divide-slate-100 px-3">
             {(user?.isIndependentTrial ? [] : TOOLS.filter((tool) => {
-              if (tool.href === '/student/kjsea-mock-test') return isKjseaGrade(user?.grade);
-              if (tool.href === '/student/my-pathway') return isPathwayGuidanceGrade(user?.grade);
+              if (!studentToolAvailable(tool.href, contentScope.data)) return false;
+              if (tool.href === '/student/kjsea-mock-test') return isKjseaGrade(contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade);
+              if (tool.href === '/student/my-pathway') return isPathwayGuidanceGrade(contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade);
               return true;
             })).map(
               ({ title, href, Icon }) => (

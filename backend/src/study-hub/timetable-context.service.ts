@@ -1,3 +1,8 @@
+import { StudentScopeService } from "../student/student-scope.service";
+import {
+  contentMatches,
+  allowedSubject,
+} from "../student/student-scope.policy";
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CmsService } from "../cms/cms.service";
@@ -70,10 +75,15 @@ export class TimetableContextService {
   }
   async modules(actor: AuthenticatedUser) {
     try {
+      const scope = await new StudentScopeService(this.db).getStudentScope(
+        actor.id,
+        actor.schoolId,
+      );
       const allowed = await this.cms.getLearningModules(actor);
-      return this.db.masterModule.findMany({
+      const rows = await this.db.masterModule.findMany({
         where: { id: { in: allowed.map((m) => m.id) } },
       });
+      return rows.filter((m) => contentMatches(scope, m));
     } catch (e) {
       if (e instanceof ForbiddenException) return [];
       throw e;
@@ -86,7 +96,6 @@ export class TimetableContextService {
       user.pathwaySelections[0]?.track.pathway.name ??
       user.studentProfile?.pathway ??
       null;
-    const track = user.pathwaySelections[0]?.track.name ?? null;
     const [
       marks,
       submissions,
@@ -174,6 +183,10 @@ export class TimetableContextService {
         where: { schoolId: actor.schoolId, studentId: actor.id },
       }),
     ]);
+    const scope = await new StudentScopeService(this.db).getStudentScope(
+      actor.id,
+      actor.schoolId,
+    );
     const warnings: string[] = [];
     if (reportFiles && !marks.length)
       warnings.push(
@@ -183,25 +196,12 @@ export class TimetableContextService {
       warnings.push(
         "No school timetable is connected; the default after-school and weekend windows are used.",
       );
-    const core = new Set([
-      "english",
-      "kiswahili",
-      "mathematics",
-      "core mathematics",
-      "essential mathematics",
-      "physical education",
-      "community service learning",
-    ]);
-    const allowedTaxonomy = taxonomy.filter(
-      (t) =>
-        grade < 10 ||
-        !t.pathway ||
-        core.has(normalize(t.subject)) ||
-        (pathway &&
-          normalize(t.pathway) === normalize(pathway) &&
-          (!track || !t.track || normalize(t.track) === normalize(track))),
+    const allowedTaxonomy = taxonomy.filter((t) =>
+      allowedSubject(scope, t.subject),
     );
     const names = new Map<string, string>();
+    for (const subject of scope.subjects)
+      names.set(normalize(subject), subject);
     for (const t of allowedTaxonomy)
       names.set(normalize(t.subject), t.subject.trim());
     if (!names.size) {

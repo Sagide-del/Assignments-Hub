@@ -334,7 +334,9 @@ export function LearnSkillsPage() {
               ? 'Try another topic or clear your filters.'
               : activeView === 'completed'
                 ? 'Complete the lessons in a course, then return here to revisit them.'
-                : 'Explore the available courses and open a lesson when you are ready.'}
+                : !courses.length
+                  ? "Your teacher hasn’t published content for this yet. Check back soon."
+                  : 'Explore the available courses and open a lesson when you are ready.'}
           </p>
           {filtering ? (
             <button

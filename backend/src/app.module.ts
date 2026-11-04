@@ -1,10 +1,13 @@
+import { StudentModule } from './student/student.module';
+import { StudentCurriculumGuard } from './student/student-curriculum.guard';
+import { StudentCurriculumInterceptor } from './student/student-curriculum.interceptor';
 import {StudyHubModule} from "./study-hub/study-hub.module";
 import { CslModule } from "./csl/csl.module";
 import { SbaModule } from "./sba/sba.module";
 import { TeacherScopeModule } from "./teacher-scope/teacher-scope.module";
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { CmsModule } from './cms/cms.module';
@@ -139,6 +142,7 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
 
     LearningCoachModule,
     StudyHubModule,
+    StudentModule,
 
     EarlyYearsModule,
 
@@ -167,6 +171,8 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
       provide: APP_GUARD,
       useClass: IndependentTrialGuard,
     },
+    { provide: APP_GUARD, useClass: StudentCurriculumGuard },
+    { provide: APP_INTERCEPTOR, useClass: StudentCurriculumInterceptor },
   ],
 })
 export class AppModule {}

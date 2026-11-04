@@ -93,6 +93,7 @@ function TrackDetailModal({ track, tier, onClose }: { track: Track; tier: GradeT
       setStatus('Track selected.');
       queryClient.invalidateQueries({ queryKey: ['my-pathway-summary'] });
       queryClient.invalidateQueries({ queryKey: ['my-pathway-selections'] });
+      queryClient.invalidateQueries({ queryKey: ['student-content-scope'] });
     },
     onError: (err) => setStatus(apiErrorMessage(err, 'Could not select track')),
   });

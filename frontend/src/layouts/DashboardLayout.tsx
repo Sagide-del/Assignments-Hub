@@ -1,7 +1,8 @@
+import { useStudentContentScope, studentToolAvailable } from '../hooks/useStudentContentScope';
 import "../workspace.css";
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ClipboardCheck,
   HeartHandshake,
@@ -129,6 +130,12 @@ function iconForNavigation(path: string): LucideIcon {
 
 export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const user = useAuthStore((s) => s.user);
+  const contentScope = useStudentContentScope();
+  const queryCache=useQueryClient();
+  const scopeIdentity=contentScope.data ? JSON.stringify([contentScope.data.grade,contentScope.data.pathway,contentScope.data.track]) : '';
+  useEffect(()=>{
+    if(user?.role==='STUDENT'&&scopeIdentity) void queryCache.resetQueries({predicate:q=>!['student-content-scope','school'].includes(String(q.queryKey[0]))});
+  },[scopeIdentity,user?.role,queryCache]);
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const clearSession = useAuthStore((s) => s.clearSession);
 
@@ -173,10 +180,12 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
       } catch {}
     }
 
+    if (user?.role === "STUDENT") queryCache.clear();
     clearSession();
     navigate("/login", { replace: true });
   }
 
+  const studentGrade=contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade;
   const independent = school?.name === "Independent Students";
   const brandTitle =
     isPlatformAdmin || independent
@@ -189,15 +198,16 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
       : (school?.code ?? "School workspace");
   const logoSrc = isPlatformAdmin || independent ? null : school?.logoUrl;
   const footerMeta = isStudent
-    ? (user?.grade ?? "Grade not set")
+    ? (studentGrade ?? "Grade not set")
     : user?.role.replace("_", " ");
   const isStudentPortal = nav.some((item) => item.to.startsWith("/student"));
   const gradeScopedNav = isStudent
     ? nav.filter((item) => {
-        if (isEarlyYearsGrade(user?.grade)) return item.to === '/student';
-        if (item.to === '/student/csl') return gradeTier(user?.grade) === 'senior';
-        if (item.to === '/student/kjsea-mock-test') return isKjseaGrade(user?.grade);
-        if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(user?.grade) || gradeTier(user?.grade) === 'senior';
+        if (!studentToolAvailable(item.to, contentScope.data)) return false;
+        if (isEarlyYearsGrade(studentGrade)) return item.to === '/student';
+        if (item.to === '/student/csl') return gradeTier(studentGrade) === 'senior';
+        if (item.to === '/student/kjsea-mock-test') return isKjseaGrade(studentGrade);
+        if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(studentGrade) || gradeTier(studentGrade) === 'senior';
         return true;
       })
     : nav;
@@ -328,7 +338,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                     strokeWidth={1.75}
                     aria-hidden="true"
                   />
-                  <span className="truncate">{item.to === '/student/my-pathway' && gradeTier(user?.grade) === 'senior' ? 'My Senior Journey' : item.label}</span>
+                  <span className="truncate">{item.to === '/student/my-pathway' && gradeTier(studentGrade) === 'senior' ? 'My Senior Journey' : item.label}</span>
                 </NavLink>
               );
             })}

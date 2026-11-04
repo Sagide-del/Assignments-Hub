@@ -1,3 +1,4 @@
+import { useStudentContentScope } from '../../hooks/useStudentContentScope';
 import { CmsLearningLibrary } from "./CmsLearningLibrary";
 import { cmsLearningContent } from "../../services/cms-content";
 import { PageHeader } from "../../components/ui/Saas";
@@ -236,6 +237,7 @@ function AssignmentCard({
   );
 }
 export function MyAssignmentsPage() {
+  const contentScope = useStudentContentScope();
   const user = useAuthStore((s) => s.user);
   const [params, setParams] = useSearchParams();
   const subjectKey = params.get("subject") ?? "";
@@ -455,7 +457,7 @@ export function MyAssignmentsPage() {
         actions={
           user?.grade ? (
             <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-              {user.grade}
+              {contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user.grade}
             </span>
           ) : null
         }

@@ -83,6 +83,7 @@ function AssessmentCard() {
     onSuccess: () => {
       setStatus('Track selected from your recommendation.');
       queryClient.invalidateQueries({ queryKey: ['my-pathway-selections'] });
+      queryClient.invalidateQueries({ queryKey: ['student-content-scope'] });
       queryClient.invalidateQueries({ queryKey: ['my-pathway-summary'] });
     },
   });

@@ -1,3 +1,4 @@
+import { useStudentContentScope } from '../../../hooks/useStudentContentScope';
 import { PageHeader } from "../../../components/ui/Saas";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,12 +55,13 @@ const subjectKey = (value: string) =>
     .replace(/[^a-z]/g, "");
 export function KjseaMockTestPage() {
   const user = useAuthStore((s) => s.user);
+  const scope=useStudentContentScope();
   const client = useQueryClient();
   const navigate = useNavigate();
   const profileGrade = user?.grade
     ?.trim()
     .match(/^(?:grade\s*)?(6|7|8|9|10|11|12)$/i)?.[1];
-  const [grade, setGrade] = useState(`Grade ${profileGrade ?? "9"}`);
+  const grade = `Grade ${scope.data?.grade ?? profileGrade ?? "9"}`;
   const [subjectId, setSubjectId] = useState("generated-mathematics");
   const subjects = useQuery({
     queryKey: ["kjsea-subjects", user?.id, grade],
@@ -72,7 +74,7 @@ export function KjseaMockTestPage() {
     subjects.data?.[0];
   const junior = Number(grade.split(" ")[1]) <= 9;
   const title = "KJSEA Mock Test";
-  const missingSubjects = (junior ? JUNIOR_SUBJECTS : SENIOR_SUBJECTS).filter(
+  const missingSubjects = (scope.data?.subjects ?? (junior ? JUNIOR_SUBJECTS : SENIOR_SUBJECTS)).filter(
     (name) =>
       !subjects.data?.some(
         (item) => subjectKey(item.subject) === subjectKey(name),
@@ -140,23 +142,10 @@ export function KjseaMockTestPage() {
                 aria-label="Grade"
                 id="mock-grade"
                 value={grade}
-                disabled={generate.isPending}
-                onChange={(e) => {
-                  setGrade(e.target.value);
-                  setSubjectId("generated-mathematics");
-                  generate.reset();
-                }}
+                disabled
                 className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-normal"
               >
-                {[
-                  "Grade 6",
-                  "Grade 7",
-                  "Grade 8",
-                  "Grade 9",
-                  "Grade 10",
-                  "Grade 11",
-                  "Grade 12",
-                ].map((g) => (
+                {[`Grade ${scope.data?.grade ?? profileGrade ?? "9"}`].map((g) => (
                   <option key={g}>{g}</option>
                 ))}
               </select>
