@@ -8,7 +8,8 @@ for (let attempt = 1; attempt <= 24; attempt++) {
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const d = await r.json();
-    if (d.tumaPaymentsVersion !== 1) throw new Error("Tuma API not ready");
+    if (!Number.isInteger(d.tumaPaymentsVersion) || d.tumaPaymentsVersion < 2 || !Number.isInteger(d.callbackQueueVersion) || d.callbackQueueVersion < 1)
+      throw new Error("Tuma payment ledger and callback inbox migration are not ready");
     console.log(
       `PASS: Tuma API and migration ready. Credentials configured: ${d.configured === true}`,
     );

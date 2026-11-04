@@ -1,3 +1,4 @@
+import { submissionScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
@@ -43,7 +44,7 @@ export class AnalyticsService {
     // DRAFT submissions are still in progress — excluding them here matches
     // SubmissionsService.findAll's own rule for teacher/admin-facing views.
     const submissions = await this.prisma.submission.findMany({
-      where: { assignmentId, status: { not: SubmissionStatus.DRAFT } },
+      where: { assignmentId, status: { not: SubmissionStatus.DRAFT }, AND: [await submissionScope(this.prisma, actor)] },
       include: {
         student: {
           select: {

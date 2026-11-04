@@ -24,8 +24,10 @@
     "cms:migrate-legacy": "ts-node src/scripts/migrate-question-bank.ts",
     "fix:grades": "ts-node prisma/fix-grade-format.ts",
     "fix:assignment-grades": "ts-node prisma/fix-assignment-lab-grades.ts",
+    "test:mpesa": "ts-node scripts/test-mpesa.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "seed:teacher-demo": "ts-node src/scripts/seed-teacher-demo.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.840.0",
@@ -39,6 +41,7 @@
     "@nestjs/mapped-types": "^2.0.6",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.0",
+    "@nestjs/schedule": "^4.1.2",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/throttler": "^5.2.0",
     "@prisma/client": "^5.22.0",

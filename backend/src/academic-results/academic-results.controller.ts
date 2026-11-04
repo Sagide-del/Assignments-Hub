@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import {
   BadRequestException,
   Body,
@@ -21,6 +23,7 @@ import { Role } from '../common/enums/role.enum';
 import { AcademicResultsService } from './academic-results.service';
 import { ImportAcademicResultsDto } from './dto/import-academic-results.dto';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('academic-results')
 export class AcademicResultsController {
   constructor(private readonly academicResults: AcademicResultsService) {}

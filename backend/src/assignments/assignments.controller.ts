@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import {
   BadRequestException,
   Body,
@@ -23,6 +25,7 @@ import { CreateSubmissionDto } from '../submissions/dto/create-submission.dto';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 import { AllowIndependentTrial } from '../common/decorators/allow-independent-trial.decorator';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('assignments')
 export class AssignmentsController {
   constructor(

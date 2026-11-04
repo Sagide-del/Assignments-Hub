@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
+import { RequestMethod, ValidationPipe } from "@nestjs/common";
 import * as express from "express";
 import { join } from "path";
 import helmet from "helmet";
@@ -48,7 +48,7 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // API prefix
-  app.setGlobalPrefix("api/v1");
+  app.setGlobalPrefix("api/v1", { exclude: [{ path: "api/payments/mpesa/callback", method: RequestMethod.POST }] });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle("Assignment Hub API")

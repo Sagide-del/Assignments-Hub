@@ -12,6 +12,6 @@ export class CreateMpesaPaymentDto {
   payerPhone: string;
 
   @IsOptional()
-  @IsIn(['monthly', 'annual'])
+  @IsIn(['annual'])
   interval?: string;
 }

@@ -1,16 +1,22 @@
+import { Req, RawBodyRequest } from "@nestjs/common";
+import { Request } from "express";
 import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
-import { Throttle } from "@nestjs/throttler";
+import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { AllowIndependentTrial } from "../common/decorators/allow-independent-trial.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Role } from "../common/enums/role.enum";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { TumaCallbackQueue } from "./tuma-callback-queue";
 import { TumaPaymentsService } from "./tuma-payments.service";
 import { StartTumaPaymentDto } from "./dto/start-tuma-payment.dto";
 @Controller("independent-students/tuma")
 export class TumaPaymentsController {
-  constructor(private readonly payments: TumaPaymentsService) {}
+  constructor(
+    private readonly payments: TumaPaymentsService,
+    private readonly callbacks: TumaCallbackQueue,
+  ) {}
   @Get("capabilities") @Public() capabilities() {
     return this.payments.capabilities();
   }
@@ -33,12 +39,15 @@ export class TumaPaymentsController {
   @Post("callback/:reference/:token")
   @Public()
   @HttpCode(200)
-  @Throttle({ default: { limit: 300, ttl: 60000 } })
+  @SkipThrottle()
   callback(
     @Param("reference") reference: string,
     @Param("token") token: string,
     @Body() payload: unknown,
+    @Req() request: RawBodyRequest<Request>,
   ) {
-    return this.payments.callback(reference, token, payload);
+    return this.callbacks
+      .acknowledge(reference, token, payload, request.rawBody)
+      .then(() => ({ ResultCode: 0, ResultDesc: "Accepted" }));
   }
 }

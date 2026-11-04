@@ -1,3 +1,4 @@
+import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpsertTalentProfileDto } from './dto/upsert-talent-profile.dto';
@@ -55,19 +56,20 @@ export class TalentsService {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
 
+    await assertStudentScope(this.prisma, actor, studentId);
     const profile = await this.prisma.studentTalentProfile.findUnique({ where: { studentId } });
     return { student, profile };
   }
 
   // TEACHER/SCHOOL_ADMIN/PLATFORM_ADMIN listing — school-scoped, for a
   // "who has filled in a talent profile" staff view.
-  findAll(actor: AuthenticatedUser, filters: { schoolId?: number; grade?: string } = {}) {
+  async findAll(actor: AuthenticatedUser, filters: { schoolId?: number; grade?: string } = {}) {
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? filters.schoolId : actor.schoolId;
 
     return this.prisma.studentTalentProfile.findMany({
       where: {
         schoolId: targetSchoolId,
-        student: filters.grade ? { grade: filters.grade } : undefined,
+        student: { is: { AND: [filters.grade ? { grade: filters.grade } : {}, await studentScope(this.prisma, actor)] } },
       },
       include: { student: { select: { id: true, name: true, grade: true } } },
       orderBy: { updatedAt: 'desc' },

@@ -41,7 +41,7 @@ export class PaymentController {
   @Get("tiers")
   @Public()
   getTiers() {
-    return { tiers: PLAN_TIERS };
+    return { tiers: PLAN_TIERS, interval: "ANNUAL", annualRatePerLearnerKES: 200, individualMonthlyKES: 300 };
   }
 
   // What a specific school would pay right now, computed live from its
@@ -134,7 +134,7 @@ export class PaymentController {
     return this.paymentService.createSubscription(
       dto.email,
       dto.schoolId,
-      dto.interval || "monthly",
+      dto.interval || "annual",
     );
   }
 

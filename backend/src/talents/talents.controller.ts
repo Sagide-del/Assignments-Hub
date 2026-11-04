@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { TalentsService } from './talents.service';
 import { UpsertTalentProfileDto } from './dto/upsert-talent-profile.dto';
@@ -8,6 +10,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { AuditAction } from '../common/decorators/audit.decorator';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('talents')
 export class TalentsController {
   constructor(private readonly talentsService: TalentsService) {}

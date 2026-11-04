@@ -73,7 +73,7 @@ function parseCallback(value: unknown): Callback {
   if (
     code === 0 &&
     (v.status !== "completed" ||
-      !Number.isFinite(amount) ||
+      !Number.isSafeInteger(amount) ||
       amount! <= 0 ||
       typeof v.mpesa_receipt_number !== "string" ||
       !/^[A-Z0-9]{8,20}$/.test(v.mpesa_receipt_number))
@@ -98,9 +98,48 @@ export class TumaPaymentsService {
     private readonly provider: TumaPaymentProvider,
     private readonly independent: IndependentStudentsService,
   ) {}
+  private async syncLedger(
+    tx: Prisma.TransactionClient,
+    payment: IndependentTumaPayment,
+  ) {
+    const status =
+      payment.status === "CONFIRMED"
+        ? "SUCCESS"
+        : payment.status === "CANCELLED"
+          ? "CANCELLED"
+          : ["FAILED", "REJECTED"].includes(payment.status)
+            ? "FAILED"
+            : "PENDING";
+    const data = {
+      user_id: payment.studentId,
+      school_id: null,
+      amount: payment.amountKES,
+      phone: payment.phone,
+      checkout_request_id: payment.checkoutRequestId,
+      mpesa_receipt: payment.receiptNumber,
+      status,
+    } as const;
+    await tx.payment.upsert({
+      where: { legacy_tuma_id: payment.id },
+      create: { ...data, legacy_tuma_id: payment.id },
+      update: data,
+    });
+  }
   async capabilities() {
-    await this.prisma.independentTumaPayment.count({ where: { id: 0 } });
-    return { tumaPaymentsVersion: 1, configured: this.provider.isConfigured() };
+    await Promise.all([
+      this.prisma.independentTumaPayment.count({ where: { id: 0 } }),
+      this.prisma.payment.count({
+        where: { id: "00000000-0000-0000-0000-000000000000" },
+      }),
+      this.prisma.mpesaCallbackInbox.count({
+        where: { id: "00000000-0000-0000-0000-000000000000" },
+      }),
+    ]);
+    return {
+      tumaPaymentsVersion: 2,
+      callbackQueueVersion: 1,
+      configured: this.provider.isConfigured(),
+    };
   }
   private async learner(actor: AuthenticatedUser) {
     const student = await this.prisma.user.findUnique({
@@ -218,7 +257,8 @@ export class TumaPaymentsService {
       const active = await tx.independentTumaPayment.findFirst({
         where: {
           studentId: actor.id,
-          status: { in: ["PENDING", "PROCESSING"] },
+          status: { in: ["PENDING", "PROCESSING", "AWAITING_VERIFICATION"] },
+          expiresAt: { gt: now },
         },
       });
       if (active) {
@@ -231,7 +271,7 @@ export class TumaPaymentsService {
       const payment = await tx.independentTumaPayment.create({
         data: {
           studentId: actor.id,
-          reference: `AH-TUMA-${randomUUID()}`,
+          reference: `AH${randomBytes(5).toString("hex").toUpperCase()}`,
           idempotencyKey: key,
           phone,
           interval: dto.interval,
@@ -240,6 +280,7 @@ export class TumaPaymentsService {
           expiresAt: new Date(now.getTime() + 15 * 60000),
         },
       });
+      await this.syncLedger(tx, payment);
       return { payment, send: true };
     });
     if (!result.send) return this.view(result.payment);
@@ -248,15 +289,25 @@ export class TumaPaymentsService {
       const ids = await this.provider.initiate({
         amount: amountKES,
         phone,
-        callbackUrl: `${this.provider.callbackBase()}/${p.reference}/${token}`,
+        callbackUrl: this.provider.callbackUrl(p.reference, token),
         reference: p.reference,
       });
       const current = await this.prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id"=${actor.id} FOR UPDATE`;
-        return tx.independentTumaPayment.update({
+        const latest = await tx.independentTumaPayment.findUniqueOrThrow({
           where: { id: p.id },
-          data: { ...ids, status: "PROCESSING" },
         });
+        const saved = await tx.independentTumaPayment.update({
+          where: { id: p.id },
+          data: {
+            ...ids,
+            ...(latest.status === "CONFIRMED"
+              ? {}
+              : { status: "PROCESSING" as const }),
+          },
+        });
+        await this.syncLedger(tx, saved);
+        return saved;
       });
       if (current?.callbackPayload)
         await this.apply(p.id, parseCallback(current.callbackPayload));
@@ -265,14 +316,23 @@ export class TumaPaymentsService {
         error instanceof ServiceUnavailableException ||
         error instanceof TumaRequestRejectedException
       );
-      await this.prisma.independentTumaPayment.updateMany({
-        where: { id: p.id, status: { not: "CONFIRMED" } },
-        data: {
-          status: uncertain ? "AWAITING_VERIFICATION" : "FAILED",
-          failureReason: uncertain
-            ? "The request could not be confirmed. Check your phone and M-Pesa messages before retrying; contact support if charged."
-            : "M-Pesa is temporarily unavailable. Please try again later.",
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id"=${actor.id} FOR UPDATE`;
+        await tx.independentTumaPayment.updateMany({
+          where: { id: p.id, status: { not: "CONFIRMED" } },
+          data: {
+            status: uncertain ? "AWAITING_VERIFICATION" : "FAILED",
+            failureReason: uncertain
+              ? "The request could not be confirmed. Check your phone and M-Pesa messages before retrying; contact support if charged."
+              : "M-Pesa is temporarily unavailable. Please try again later.",
+          },
+        });
+        await this.syncLedger(
+          tx,
+          await tx.independentTumaPayment.findUniqueOrThrow({
+            where: { id: p.id },
+          }),
+        );
       });
     }
     return this.view(
@@ -281,7 +341,7 @@ export class TumaPaymentsService {
       }),
     );
   }
-  async callback(reference: string, token: string, payload: unknown) {
+  async authenticateCallback(reference: string, token: string) {
     const p = await this.prisma.independentTumaPayment.findUnique({
       where: { reference },
     });
@@ -294,8 +354,33 @@ export class TumaPaymentsService {
       )
     )
       throw new ForbiddenException("Invalid payment callback.");
-    await this.apply(p.id, parseCallback(payload));
+    return p;
+  }
+  async validateCallback(reference: string, token: string, payload: unknown) {
+    const payment = await this.authenticateCallback(reference, token);
+    return { payment, body: parseCallback(payload) };
+  }
+  async callback(reference: string, token: string, payload: unknown) {
+    const { payment, body } = await this.validateCallback(
+      reference,
+      token,
+      payload,
+    );
+    await this.apply(payment.id, body);
     return { received: true };
+  }
+  async processStoredCallback(reference: string, payload: unknown) {
+    const payment = await this.prisma.independentTumaPayment.findUniqueOrThrow({
+      where: { reference },
+    });
+    await this.apply(payment.id, parseCallback(payload));
+    const current = await this.prisma.independentTumaPayment.findUniqueOrThrow({
+      where: { id: payment.id },
+    });
+    if (!current.checkoutRequestId)
+      throw new ConflictException(
+        "Waiting for initiation request identifiers.",
+      );
   }
   private async apply(id: number, body: Callback) {
     const initial = await this.prisma.independentTumaPayment.findUniqueOrThrow({
@@ -329,7 +414,7 @@ export class TumaPaymentsService {
         return;
       }
       if (body.result_code !== 0) {
-        await tx.independentTumaPayment.update({
+        const failed = await tx.independentTumaPayment.update({
           where: { id },
           data: {
             status: body.result_code === 1032 ? "CANCELLED" : "FAILED",
@@ -342,6 +427,7 @@ export class TumaPaymentsService {
             callbackPayload: body as unknown as Prisma.InputJsonValue,
           },
         });
+        await this.syncLedger(tx, failed);
         return;
       }
       const student = await tx.user.findUniqueOrThrow({
@@ -358,7 +444,7 @@ export class TumaPaymentsService {
             ? student.subscriptionExpiresAt
             : now,
         periodEnd = tumaPeriodEnd(periodStart, p.interval);
-      await tx.independentTumaPayment.update({
+      const confirmed = await tx.independentTumaPayment.update({
         where: { id },
         data: {
           status: PaymentStatus.CONFIRMED,
@@ -368,6 +454,7 @@ export class TumaPaymentsService {
           callbackPayload: body as unknown as Prisma.InputJsonValue,
         },
       });
+      await this.syncLedger(tx, confirmed);
       await tx.independentStudentInvoice.create({
         data: {
           studentId: p.studentId,

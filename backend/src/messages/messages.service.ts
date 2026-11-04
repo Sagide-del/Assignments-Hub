@@ -1,3 +1,4 @@
+import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -40,6 +41,7 @@ export class MessagesService {
         other.school.code === INDEPENDENT_SCHOOL_CODE;
       conversationSchoolId = other.schoolId;
     } else if (actor.role === Role.TEACHER) {
+      await assertStudentScope(this.prisma, actor, otherUserId);
       allowed =
         other.role === Role.STUDENT &&
         other.schoolId === actor.schoolId;
@@ -94,6 +96,7 @@ export class MessagesService {
           : { schoolId: actor.schoolId, role: Role.TEACHER, isActive: true };
     } else {
       contactWhere = {
+        ...(actor.role === Role.TEACHER ? await studentScope(this.prisma, actor) : {}),
         schoolId: actor.schoolId,
         role: Role.STUDENT,
         isActive: true,
@@ -154,9 +157,9 @@ export class MessagesService {
       });
   }
 
-  getUnreadCount(actor: AuthenticatedUser) {
+  async getUnreadCount(actor: AuthenticatedUser) {
     return this.prisma.message
-      .count({ where: { recipientId: actor.id, readAt: null } })
+      .count({ where: { recipientId: actor.id, readAt: null, ...(actor.role === Role.TEACHER ? { sender: { is: await studentScope(this.prisma, actor) } } : {}) } })
       .then((count) => ({ count }));
   }
 

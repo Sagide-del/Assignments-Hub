@@ -2,6 +2,7 @@ import {
   Injectable,
   ServiceUnavailableException,
   BadGatewayException,
+  BadRequestException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios from "axios";
@@ -23,11 +24,52 @@ export class TumaPaymentProvider {
   private expires = 0;
   private authenticating: Promise<string> | null = null;
   constructor(private readonly config: ConfigService) {}
+  statusQueryConfigured(): boolean {
+    return false;
+  }
+
+  async queryTransactionStatus(
+    _checkoutRequestId: string,
+  ): Promise<{ payload: unknown }> {
+    // No documented Tuma endpoint was supplied. Never guess a financial API.
+    throw new ServiceUnavailableException(
+      "Tuma transaction-status contract is not configured.",
+    );
+  }
+
+  apiBase() {
+    const environment = this.config.get<string>("TUMA_ENV") || "production";
+    if (environment === "production") return "https://api.tuma.co.ke";
+    if (environment !== "sandbox") return null;
+    // Only a vendor-confirmed sandbox may be configured; never relabel live as test.
+    const base = this.config.get<string>("TUMA_API_BASE_URL");
+    if (this.config.get<string>("TUMA_SANDBOX_CONFIRMED") !== "true" || !base)
+      return null;
+    try {
+      const url = new URL(base);
+      return url.protocol === "https:" &&
+        url.hostname !== "api.tuma.co.ke" &&
+        url.pathname === "/" &&
+        !url.search &&
+        !url.hash
+        ? url.origin
+        : null;
+    } catch {
+      return null;
+    }
+  }
+  callbackUrl(reference: string, token: string) {
+    const base = this.callbackBase()!;
+    return base.endsWith("/independent-students/tuma/callback")
+      ? `${base}/${reference}/${token}`
+      : `${base}?reference=${encodeURIComponent(reference)}&token=${encodeURIComponent(token)}`;
+  }
   isConfigured() {
     return Boolean(
       this.config.get<string>("TUMA_API_KEY")?.trim() &&
       this.config.get<string>("TUMA_BUSINESS_EMAIL")?.trim() &&
-      this.callbackBase(),
+      this.callbackBase() &&
+      this.apiBase(),
     );
   }
   callbackBase() {
@@ -38,7 +80,8 @@ export class TumaPaymentProvider {
       return u.protocol === "https:" &&
         !u.search &&
         !u.hash &&
-        u.pathname.endsWith("/independent-students/tuma/callback")
+        (u.pathname.endsWith("/independent-students/tuma/callback") ||
+          u.pathname === "/api/payments/mpesa/callback")
         ? u.toString().replace(/\/$/, "")
         : null;
     } catch {
@@ -51,7 +94,7 @@ export class TumaPaymentProvider {
     this.authenticating = (async () => {
       try {
         const { data } = await axios.post(
-          "https://api.tuma.co.ke/auth/token",
+          `${this.apiBase()}/auth/token`,
           {
             email: this.config.get<string>("TUMA_BUSINESS_EMAIL")?.trim(),
             api_key: this.config.get<string>("TUMA_API_KEY")?.trim(),
@@ -92,10 +135,25 @@ export class TumaPaymentProvider {
       throw new ServiceUnavailableException(
         "M-Pesa payments are not configured yet.",
       );
+    if (
+      !Number.isSafeInteger(input.amount) ||
+      input.amount < 1 ||
+      input.amount > 2147483647
+    )
+      throw new BadRequestException(
+        "M-Pesa amounts must be positive whole shillings.",
+      );
+    if (
+      !normalizeMpesaPhone(input.phone) ||
+      input.phone !== normalizeMpesaPhone(input.phone)
+    )
+      throw new BadRequestException(
+        "A normalized Kenyan mobile number is required.",
+      );
     const token = await this.accessToken();
     try {
       const { data } = await axios.post(
-        "https://api.tuma.co.ke/payment/stk-push",
+        `${this.apiBase()}/payment/stk-push`,
         {
           amount: input.amount,
           phone: input.phone,

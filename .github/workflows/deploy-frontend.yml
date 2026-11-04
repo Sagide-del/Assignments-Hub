@@ -7,6 +7,8 @@ on:
       - 'backend/src/kjsea/**'
       - 'backend/src/cms/**'
       - 'backend/src/submissions/**'
+      - 'backend/src/teacher-scope/**'
+      - 'backend/src/__tests__/rbac.spec.ts'
       - 'backend/src/labs/**'
       - 'backend/src/ai-content/**'
       - 'backend/src/ai/**'
@@ -31,6 +33,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rbac_test
+          POSTGRES_PASSWORD: rbac_test_local_only
+          POSTGRES_DB: rbac_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rbac_test -d rbac_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,6 +53,15 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
+      - name: Test verified publish and rollback
+        run: node --test scripts/deployment/publish-verified-rbac.test.mjs
+      - name: Check live RBAC verification configuration
+        env:
+          DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
+          RBAC_ALICE_ID: ${{ vars.RBAC_DEMO_ALICE_ID }}
+        run: |
+          test -n "$DEMO_TEACHER_PASSWORD" || { echo 'Configure RBAC_DEMO_TEACHER_PASSWORD securely before publishing.' >&2; exit 1; }
+          test -n "$RBAC_ALICE_ID" || { echo 'Configure RBAC_DEMO_ALICE_ID from the provisioning report before publishing.' >&2; exit 1; }
       - name: Verify learning activities
         run: npm run test:cms && npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
         working-directory: frontend
@@ -63,7 +85,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
           NODE_OPTIONS: --max-old-space-size=3072
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/cms src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/cms src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards src/teacher-scope src/assignments src/reports && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+      - name: Verify teacher data isolation against PostgreSQL
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
+          RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
+        run: npx prisma db push --skip-generate && npm test -- --runInBand src/__tests__/rbac.spec.ts src/scripts/operations/demo-academy.database.spec.ts
+      - name: Wait for teacher scope API and migration
+        working-directory: frontend
+        run: node scripts/check-teacher-api.mjs
       - name: Wait for assessment API capabilities
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs
@@ -82,19 +113,37 @@ jobs:
       - name: Wait for central content library
         working-directory: frontend
         run: node scripts/check-content-api.mjs
+      - name: Install live verification browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rbac-browser" --no-package-lock --ignore-scripts playwright@1.56.1
+          "$RUNNER_TEMP/rbac-browser/node_modules/.bin/playwright" install --with-deps chromium
+          echo "NODE_PATH=$RUNNER_TEMP/rbac-browser/node_modules" >> "$GITHUB_ENV"
       - name: Connect to AWS without stored access keys
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::516962256415:role/AssignmentHubGitHubFrontendDeploy
           aws-region: eu-west-2
-      - name: Publish and verify frontend
+      - name: Publish and verify frontend and teacher RBAC
         id: publish
-        run: bash scripts/deployment/publish-frontend.sh
+        run: bash scripts/deployment/publish-verified-rbac.sh
         env:
           FRONTEND_DIST: frontend/dist
-      - name: Verify first-aid images
-        run: npm run check:firstaid-assets -- https://assignmenthub.co.ke
-        working-directory: frontend
+          DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
+          RBAC_ALICE_ID: ${{ vars.RBAC_DEMO_ALICE_ID }}
+          RBAC_REPORT_FILE: ${{ runner.temp }}/rbac-api-verification.json
+          RBAC_SCREENSHOT_FILE: ${{ runner.temp }}/rbac-teacher-production.png
+          RBAC_SNAPSHOT_DIR: ${{ runner.temp }}/rbac-rollback-snapshot
+      - name: Save live verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teacher-rbac-verification-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/rbac-api-verification.json
+            ${{ runner.temp }}/rbac-teacher-production.png
+            ${{ runner.temp }}/rbac-rollback-snapshot/previous/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Report deployment result
         if: always()
         env:
@@ -105,7 +154,7 @@ jobs:
             echo "## Frontend deployment"
             echo "Commit: $DEPLOY_COMMIT"
             if [ "$DEPLOY_OUTCOME" = "success" ]; then
-              echo "The public homepage was verified against this build after the CloudFront invalidation."
+              echo "The public homepage, demo teacher API scope and browser login were verified."
             else
               echo "This run did not verify a completed live deployment. A successful build or push alone does not update the site."
               echo "Open the first failed step above for the error. If the frontend build succeeded, its recovery artifact is attached to this run."

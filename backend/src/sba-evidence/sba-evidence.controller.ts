@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -10,6 +12,7 @@ import { CreateSbaEvidenceDto } from './dto/create-sba-evidence.dto';
 import { ReviewSbaEvidenceDto } from './dto/review-sba-evidence.dto';
 import { SbaEvidenceService } from './sba-evidence.service';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('sba-evidence')
 export class SbaEvidenceController {
   constructor(private readonly evidence: SbaEvidenceService) {}

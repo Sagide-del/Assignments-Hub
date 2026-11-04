@@ -1,3 +1,4 @@
+import { assignmentStream, submissionScope } from "../teacher-scope/scope";
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
@@ -62,6 +63,7 @@ export class AssignmentsService {
     schoolId: number,
     tx: Prisma.TransactionClient = this.prisma,
   ) {
+    if (actor.role === Role.TEACHER) dto = { ...dto, targetStream: (await assignmentStream(this.prisma, actor, dto)) ?? undefined };
     this.validateQuestionConfigs(dto.questions);
     const rubricTotal = dto.rubric?.reduce((sum, c) => sum + (c.points || 0), 0) ?? 0;
     // Normalize free-text grade input ("12", "grade12") to the canonical
@@ -281,7 +283,7 @@ export class AssignmentsService {
           : {}),
       },
       include: {
-        _count: { select: { questions: true, submissions: true } },
+        _count: { select: { questions: true, submissions: actor.role === Role.TEACHER ? { where: await submissionScope(this.prisma, actor) } : true } },
         deliveryConfig: { select: { enabled: true, questionCount: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -315,7 +317,7 @@ export class AssignmentsService {
         sections: { orderBy: { order: 'asc' } },
         rubric: true,
         deliveryConfig: true,
-        _count: { select: { questions: true, submissions: true } },
+        _count: { select: { questions: true, submissions: actor.role === Role.TEACHER ? { where: await submissionScope(this.prisma, actor) } : true } },
       },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
@@ -626,6 +628,7 @@ export class AssignmentsService {
    * both FKs explicitly and still rolls back atomically if anything fails.
    */
   async createFromJson(dto: AssignmentJsonDto, computedTotalMarks: number, actor: AuthenticatedUser) {
+    if (actor.role === Role.TEACHER) dto = { ...dto, targetStream: (await assignmentStream(this.prisma, actor, dto)) ?? undefined };
     const assignmentId = await this.prisma.$transaction(async (tx) => {
       const assignment = await tx.assignment.create({
         data: {
@@ -692,6 +695,7 @@ export class AssignmentsService {
 
   async update(id: number, dto: UpdateAssignmentDto, actor: AuthenticatedUser) {
     const assignment = await this.findOne(id, actor);
+    if (actor.role === Role.TEACHER) dto = { ...dto, targetStream: (await assignmentStream(this.prisma, actor, { grade: dto.grade ?? assignment.grade, subject: dto.subject ?? assignment.subject, targetStream: dto.targetStream ?? assignment.targetStream })) ?? undefined };
     this.assertCanModify(assignment, actor);
     this.validateQuestionConfigs(dto.questions);
 

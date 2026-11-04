@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query } from '@nestjs/common';
 import { SubmissionsService } from './submissions.service';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
@@ -8,6 +10,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { AuditAction } from '../common/decorators/audit.decorator';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('submissions')
 export class SubmissionsController {
   constructor(private readonly submissionsService: SubmissionsService) {}

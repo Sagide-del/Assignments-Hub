@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import {
   BadRequestException,
   Body,
@@ -30,6 +32,7 @@ const EXCEL_MIMETYPES = new Set([
   'application/vnd.ms-excel',
 ]);
 
+@UseGuards(TeacherScopeGuard)
 @Controller('users')
 export class UsersController {
   constructor(

@@ -1,3 +1,4 @@
+import { resultScope } from "../teacher-scope/scope";
 import {
   BadRequestException,
   ForbiddenException,
@@ -132,30 +133,26 @@ export class AcademicResultsService {
   }
 
   async batches(actor: AuthenticatedUser) {
-    const user = actor.role === Role.TEACHER
-      ? await this.prisma.user.findUnique({ where: { id: actor.id }, select: { assignedClass: true } })
-      : null;
-    return this.prisma.academicResultBatch.findMany({
+    const batches = await this.prisma.academicResultBatch.findMany({
       where: {
         ...(actor.role === Role.PLATFORM_ADMIN ? {} : { schoolId: actor.schoolId }),
-        ...(actor.role === Role.TEACHER && user?.assignedClass
-          ? { OR: [{ className: user.assignedClass }, { grade: user.assignedClass }] }
-          : {}),
+        ...(actor.role === Role.TEACHER ? { results: { some: await resultScope(this.prisma, actor) } } : {}),
       },
-      include: { school: { select: { name: true, code: true } }, _count: { select: { results: true } } },
+      include: { school: { select: { name: true, code: true } }, _count: { select: { results: actor.role === Role.TEACHER ? { where: await resultScope(this.prisma, actor) } : true } } },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+    return actor.role === Role.TEACHER ? batches.map(({ errors, ...batch }) => ({ ...batch, rowCount: batch._count.results })) : batches;
   }
 
   async analysis(id: number, actor: AuthenticatedUser) {
     const access = await this.assertBatchAccess(id, actor);
     const rows = await this.prisma.studentAcademicResult.findMany({
-      where: { batchId: id, ...(access.subject ? { subject: { equals: access.subject, mode: 'insensitive' } } : {}) },
+      where: { batchId: id, AND: [await resultScope(this.prisma, actor)] },
       include: { student: { select: { id: true, name: true, admissionNumber: true, studentProfile: { select: { className: true, stream: true } } } } },
       orderBy: [{ subject: 'asc' }, { percentage: 'desc' }],
     });
-    return this.buildAnalysis(access.batch, rows);
+    return this.buildAnalysis(actor.role === Role.TEACHER ? { ...access.batch, errors: null, rowCount: rows.length } : access.batch, rows);
   }
 
   async studentPlan(actor: AuthenticatedUser) {
@@ -267,9 +264,7 @@ export class AcademicResultsService {
     if (actor.role !== Role.PLATFORM_ADMIN && batch.schoolId !== actor.schoolId) throw new ForbiddenException("You cannot access another school's results");
     let subject: string | null = null;
     if (actor.role === Role.TEACHER) {
-      const teacher = await this.prisma.user.findUnique({ where: { id: actor.id }, select: { subject: true, assignedClass: true } });
-      if (teacher?.assignedClass && batch.className && teacher.assignedClass.toLowerCase() !== batch.className.toLowerCase()) throw new ForbiddenException('This result batch is outside your assigned class');
-      subject = teacher?.subject ?? null;
+      if (!await this.prisma.studentAcademicResult.findFirst({ where: { batchId: id, AND: [await resultScope(this.prisma, actor)] }, select: { id: true } })) throw new ForbiddenException('This result batch is outside your assigned classes.');
     }
     return { batch, subject };
   }

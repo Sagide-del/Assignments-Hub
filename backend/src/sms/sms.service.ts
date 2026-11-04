@@ -1,3 +1,5 @@
+import { studentScope } from "../teacher-scope/scope";
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
@@ -290,6 +292,7 @@ export class SmsService {
     grade?: string,
     targetClass?: string | null,
     targetStream?: string | null,
+    actor?: AuthenticatedUser,
   ): Promise<SmsRecipient[]> {
     const students = await this.prisma.user.findMany({
       where: {
@@ -297,6 +300,7 @@ export class SmsService {
         role: Role.STUDENT,
         isActive: true,
         parentPhone: { not: null },
+        ...(actor?.role === Role.TEACHER ? { AND: [await studentScope(this.prisma, actor)] } : {}),
         ...(grade ? { grade } : {}),
         ...(targetClass || targetStream
           ? {
@@ -317,9 +321,9 @@ export class SmsService {
   }
 
   /** Recent SMS send history for a school, newest first — used by the School Admin messaging tab. */
-  async getLogs(schoolId: number, take = 100) {
+  async getLogs(schoolId: number, take = 100, actor?: AuthenticatedUser) {
     return this.prisma.smsLog.findMany({
-      where: { schoolId },
+      where: { schoolId, ...(actor?.role === Role.TEACHER ? { sentById: actor.id, student: { is: await studentScope(this.prisma, actor) } } : {}) },
       orderBy: { createdAt: 'desc' },
       take,
       include: {

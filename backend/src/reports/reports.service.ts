@@ -1,3 +1,4 @@
+import { studentScope, submissionScope, assertStudentScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
@@ -6,7 +7,7 @@ import { AiUsageStatus, SubmissionStatus, SubscriptionStatus } from '@prisma/cli
 import { resolveAiMonthlyLimit } from '../common/config/ai-limits';
 
 // Subscription rows created via PaymentService.activateSubscription() store
-// the actual amountKES charged (a snapshot of student count x tier rate at
+// the actual amountKES charged (a snapshot of annual school billing; annual snapshots are divided by 12 for this monthly revenue estimate at
 // the time), so revenue is a straight sum of that — not a plan-name lookup.
 // Rows predating this pricing model (or created manually with no payment,
 // e.g. the seeded demo trial) have amountKES === null and contribute 0.
@@ -87,8 +88,8 @@ export class ReportsService {
 
     const where = targetSchoolId ? { schoolId: targetSchoolId } : undefined;
     const assignments = await this.prisma.assignment.findMany({
-      where,
-      include: { submissions: { select: { score: true, completedAt: true } }, school: { select: { id: true, name: true, code: true } } },
+      where: { ...where, ...(actor.role === Role.TEACHER ? { createdById: actor.id } : {}) },
+      include: { submissions: { where: await submissionScope(this.prisma, actor), select: { score: true, completedAt: true } }, school: { select: { id: true, name: true, code: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -127,7 +128,7 @@ export class ReportsService {
 
     const where = targetSchoolId ? { schoolId: targetSchoolId } : undefined;
     const sessions = await this.prisma.labSession.findMany({
-      where,
+      where: { ...where, ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}) },
       include: { student: { select: { id: true, name: true, grade: true } } },
       orderBy: { completedAt: 'desc' },
     });
@@ -179,7 +180,7 @@ export class ReportsService {
     });
 
     const activeSubs = subscriptions.filter((s) => s.status === SubscriptionStatus.ACTIVE);
-    const estimatedMonthlyRevenueKES = activeSubs.reduce((sum, s) => sum + (s.amountKES ?? 0), 0);
+    const estimatedMonthlyRevenueKES = activeSubs.reduce((sum, s) => sum + (s.amountKES ?? 0) / (s.interval === 'ANNUAL' ? 12 : 1), 0);
 
     const schoolsBySubscriptionStatus = subscriptions.reduce<Record<string, number>>((acc, s) => {
       acc[s.status] = (acc[s.status] ?? 0) + 1;
@@ -190,7 +191,7 @@ export class ReportsService {
       type: 'financial',
       generatedAt,
       scope: targetSchoolId ? 'school' : 'platform',
-      note: 'Revenue sums the amountKES recorded on each active subscription at the time it was activated (student count x tier rate). Older/manually-created rows with no recorded amount contribute 0.',
+      note: 'Revenue sums the amountKES recorded on each active subscription at the time it was activated (annual school billing; annual snapshots are divided by 12 for this monthly revenue estimate). Older/manually-created rows with no recorded amount contribute 0.',
       estimatedMonthlyRevenueKES,
       activeSubscriptions: activeSubs.length,
       totalSubscriptionRecords: subscriptions.length,
@@ -321,11 +322,12 @@ export class ReportsService {
     if (!student || student.role !== Role.STUDENT) throw new NotFoundException('Student not found');
 
     this.assertCanViewStudent(student.schoolId, studentId, actor);
+    await assertStudentScope(this.prisma, actor, studentId);
 
     const submissions = await this.prisma.submission.findMany({
       // Excludes DRAFT — an in-progress, not-yet-submitted exam shouldn't
       // appear on a report card or count toward submittedCount below.
-      where: { studentId, status: { not: SubmissionStatus.DRAFT } },
+      where: { studentId, status: { not: SubmissionStatus.DRAFT }, AND: [await submissionScope(this.prisma, actor)] },
       include: { assignment: { select: { title: true, subject: true, grade: true, type: true } } },
       orderBy: { createdAt: 'desc' },
     });

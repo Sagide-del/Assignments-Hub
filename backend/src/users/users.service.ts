@@ -1,3 +1,4 @@
+import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import {
   ConflictException,
   ForbiddenException,
@@ -100,11 +101,11 @@ export class UsersService {
     });
   }
 
-  findAll(actor: AuthenticatedUser, schoolId?: number) {
+  async findAll(actor: AuthenticatedUser, schoolId?: number) {
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
 
     return this.prisma.user.findMany({
-      where: targetSchoolId ? { schoolId: targetSchoolId } : undefined,
+      where: actor.role === Role.TEACHER ? await studentScope(this.prisma, actor) : targetSchoolId ? { schoolId: targetSchoolId } : undefined,
       select: SAFE_SELECT,
       orderBy: { name: 'asc' },
     });
@@ -114,6 +115,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id }, select: SAFE_SELECT });
     if (!user) throw new NotFoundException('User not found');
     this.assertSameTenant(user.schoolId, actor);
+    if (actor.role === Role.TEACHER && actor.id !== id) await assertStudentScope(this.prisma, actor, id);
 
     // Students may only view their own profile, not classmates'.
     if (actor.role === Role.STUDENT && actor.id !== id) {

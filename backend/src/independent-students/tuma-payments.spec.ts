@@ -70,7 +70,9 @@ function setup() {
             ? r[k] !== v.not
             : v.lte
               ? r[k] <= v.lte
-              : false
+              : v.gt
+                ? r[k] > v.gt
+                : false
         : r[k] === v,
     );
   const ledger = {
@@ -123,6 +125,7 @@ function setup() {
   };
   const prisma: any = {
     independentTumaPayment: ledger,
+    payment: { upsert: jest.fn().mockResolvedValue({}) },
     user: {
       findUnique: jest.fn(async ({ where }) => users.get(where.id)),
       findUniqueOrThrow: jest.fn(async ({ where }) => users.get(where.id)),
@@ -161,6 +164,8 @@ function setup() {
   });
   const provider = {
     isConfigured: jest.fn(() => true),
+    callbackUrl: (reference: string, token: string) =>
+      `https://api.example/api/v1/independent-students/tuma/callback/${reference}/${token}`,
     callbackBase: () =>
       "https://api.example/api/v1/independent-students/tuma/callback",
     initiate: jest.fn(async (input: any) => ({
@@ -172,7 +177,7 @@ function setup() {
     prisma,
     provider as any,
     {
-      getPaymentInfo: () => ({ monthlyAmountKES: 250, annualAmountKES: 2500 }),
+      getPaymentInfo: () => ({ monthlyAmountKES: 300, annualAmountKES: 3600 }),
     } as any,
   );
   const callback = (row = rows[0], receipt = "UBNGT7QNYB") => ({
@@ -203,9 +208,9 @@ describe("Individual Tuma STK payments", () => {
   it("uses server pricing and protects callback secrets from the student response", async () => {
     const { service, provider, rows } = setup();
     const p = await service.start(actor, { ...dto, amountKES: 1 } as any);
-    expect(p.amountKES).toBe(250);
+    expect(p.amountKES).toBe(300);
     expect(provider.initiate).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 250, phone: "254712345678" }),
+      expect.objectContaining({ amount: 300, phone: "254712345678" }),
     );
     expect(JSON.stringify(p)).not.toContain("callback");
     expect(rows[0].callbackTokenHash).toHaveLength(64);
@@ -292,7 +297,7 @@ describe("Individual Tuma STK payments", () => {
           merchant_request_id: ids.merchantRequestId,
           checkout_request_id: ids.checkoutRequestId,
           result_code: 0,
-          amount: 250,
+          amount: 300,
           mpesa_receipt_number: "EARLY12345",
         },
       );
@@ -327,6 +332,12 @@ describe("Individual Tuma STK payments", () => {
       "AWAITING_VERIFICATION",
     );
     expect(invoices).toHaveLength(0);
+    await service.start(actor, {
+      ...dto,
+      idempotencyKey: "new-uncertain-key-123456789",
+    });
+    expect(provider.initiate).toHaveBeenCalledTimes(1);
+    expect(rows).toHaveLength(1);
     rows[0].expiresAt = new Date(Date.now() - 1000);
     await service.start(actor, {
       ...dto,

@@ -2,6 +2,7 @@ import { Role } from '../../common/enums/role.enum';
 
 /** Shape attached to `req.user` after JwtAuthGuard runs. */
 export interface AuthenticatedUser {
+  allowed_streams?: { stream_id: string; subject: string }[];
   id: number;
   schoolId: number;
   role: Role;

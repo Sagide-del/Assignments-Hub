@@ -15,6 +15,6 @@ export class CreateEquityPaymentDto {
   payerPhone: string;
 
   @IsOptional()
-  @IsIn(['monthly', 'annual'])
+  @IsIn(['annual'])
   interval?: string;
 }

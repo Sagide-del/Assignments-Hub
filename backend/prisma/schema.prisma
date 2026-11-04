@@ -318,6 +318,8 @@ enum InstitutionType {
 }
 
 model School {
+  streams Stream[]
+  paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
   id                 Int                 @id @default(autoincrement())
   name               String
@@ -375,6 +377,8 @@ model School {
 }
 
 model User {
+  teacherAssignments TeacherAssignment[]
+  paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
   id       Int    @id @default(autoincrement())
   schoolId Int    @map("school_id")
@@ -485,6 +489,7 @@ model User {
   reviewedSbaEvidence              StudentSbaEvidence[] @relation("SbaEvidenceReviewer")
   presenceSessions                 UserPresenceSession[]
 
+  @@unique([id, schoolId])
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
   @@index([schoolId])
@@ -1179,15 +1184,8 @@ model Subscription {
   schoolId Int    @map("school_id")
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  // `plan` is now the auto-resolved tier name (Free/Starter/Standard/
-  // Premium/Enterprise) at the time this subscription was created/paid —
-  // see backend/src/common/config/plans.ts. It's no longer something a
-  // client selects; PaymentService computes it from the school's live
-  // student count + type. amountKES/studentCount/schoolType are a snapshot
-  // of the numbers that produced that amount, kept for accurate revenue
-  // reporting even as a school's enrollment changes later. All three are
-  // nullable so older rows (created before this pricing model existed, e.g.
-  // the seeded demo trial) remain valid.
+  // New school payments snapshot "School Annual" at KES 200/learner/year.
+  // Legacy plan names, amounts and monthly periods remain historical records.
   plan               String
   status             SubscriptionStatus   @default(TRIAL)
   amountKES          Int?                 @map("amount_kes")
@@ -2804,4 +2802,75 @@ model CurriculumTaxonomy {
   updated_at DateTime @updatedAt
 
   @@index([grade, pathway, track, subject])
+}
+
+// Financial ledger: Tuma orders retain their existing operational state/history.
+enum MpesaLedgerStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+model Payment {
+  id String @id @default(uuid())
+  user_id Int
+  user User @relation(fields:[user_id],references:[id],onDelete:Restrict)
+  school_id Int?
+  school School? @relation(fields:[school_id],references:[id],onDelete:Restrict)
+  amount Int
+  phone String
+  checkout_request_id String? @unique
+  mpesa_receipt String? @unique
+  status MpesaLedgerStatus @default(PENDING)
+  raw_payload String? @db.Text
+  reconciliation_after DateTime @default(now())
+  legacy_tuma_id Int @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  @@index([user_id,status])
+  @@index([status,created_at,reconciliation_after])
+}
+model MpesaCallbackInbox {
+  id String @id @default(uuid())
+  event_key String @unique
+  reference String
+  payload Json
+  attempts Int @default(0)
+  next_attempt_at DateTime @default(now())
+  processed_at DateTime?
+  last_error String?
+  created_at DateTime @default(now())
+  @@index([processed_at,next_attempt_at])
+}
+
+// Append-only distinct authenticated callback bodies, including invalid payloads.
+model MpesaRawCallbackEvent {
+  id String @id @default(uuid())
+  legacy_tuma_id Int
+  payload_hash String
+  raw_payload String @db.Text
+  created_at DateTime @default(now())
+  @@unique([legacy_tuma_id,payload_hash])
+}
+
+model Stream {
+  id String @id @default(uuid())
+  school_id Int
+  school School @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  grade String
+  name String
+  assignments TeacherAssignment[]
+  @@unique([id, school_id])
+  @@unique([school_id, grade, name])
+}
+model TeacherAssignment {
+  id String @id @default(uuid())
+  teacher_id Int
+  school_id Int
+  subject String
+  stream_id String
+  teacher User @relation(fields: [teacher_id, school_id], references: [id, schoolId], onDelete: Cascade)
+  stream Stream @relation(fields: [stream_id, school_id], references: [id, school_id], onDelete: Cascade)
+  @@unique([teacher_id, subject, stream_id])
+  @@index([school_id, teacher_id])
 }

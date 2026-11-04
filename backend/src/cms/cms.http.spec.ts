@@ -330,7 +330,7 @@ describe("Master Content Library HTTP API", () => {
     expect(
       (await request("/taxonomy?grade=6", "GET", undefined, "PLATFORM_ADMIN"))
         .data,
-    ).toEqual([]);
+    ).toHaveLength(9);
     for (const path of [
       "/taxonomy",
       "/taxonomy?grade=13",

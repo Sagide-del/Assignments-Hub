@@ -1,9 +1,7 @@
 import { IsEmail, IsIn, IsInt, IsOptional } from 'class-validator';
 
-// Same no-client-plan/amount rule as CreatePaymentDto — see that file's
-// comment. `interval` is purely a label for how long the checkout is framed
-// as covering (encoded into api_ref for future recurring-billing use); it
-// does not change the amount charged, which is always one month's price.
+// New school checkout accepts annual billing only. Amount is computed from
+// the live learner count at KES 200/learner/year, never supplied by the client.
 export class CreateSubscriptionPaymentDto {
   @IsInt()
   schoolId: number;
@@ -12,6 +10,6 @@ export class CreateSubscriptionPaymentDto {
   email: string;
 
   @IsOptional()
-  @IsIn(['monthly', 'annual'])
+  @IsIn(['annual'])
   interval?: string;
 }
