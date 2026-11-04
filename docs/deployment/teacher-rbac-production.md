@@ -6,6 +6,16 @@
 
 The existing `/workspace/artifacts/teacher-test-login.txt` is explicitly local-only. It is not a production credential confirmation.
 
+## Render Shell entrypoint
+
+All required provisioning and API verification files now ship inside Render's `backend` root directory. After the latest backend deployment is Live, run from `~/project/src/backend`:
+
+```
+bash scripts/deployment/provision-demo-academy.sh
+```
+
+The old `../scripts/...` entrypoint is kept for full repository checkouts only. No migration, secret or seed is needed merely to check the running revision: `printenv RENDER_GIT_COMMIT` prints the deployment commit ID.
+
 ## Controlled release sequence
 
 1. Connect production database/service access securely, permit the live API/frontend and GitHub API hosts, and ensure a known previous frontend is recoverable. Never copy a local .env into production. Inspect the intended deployment diff: 2b3d5af includes earlier taxonomy, pricing and callback commits as ancestors.
@@ -22,7 +32,7 @@ The existing `/workspace/artifacts/teacher-test-login.txt` is explicitly local-o
 With secrets supplied through the environment, from the repository root:
 
 ```
-node scripts/deployment/verify-rbac-live.mjs
+node backend/scripts/deployment/verify-rbac-live.mjs
 node scripts/deployment/verify-rbac-browser.cjs
 ```
 

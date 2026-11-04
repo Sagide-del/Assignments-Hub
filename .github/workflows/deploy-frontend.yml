@@ -8,6 +8,7 @@ on:
       - 'backend/src/cms/**'
       - 'backend/src/submissions/**'
       - 'backend/src/teacher-scope/**'
+      - 'backend/scripts/deployment/**'
       - 'backend/src/__tests__/rbac.spec.ts'
       - 'backend/src/labs/**'
       - 'backend/src/ai-content/**'
@@ -54,7 +55,7 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - name: Test verified publish and rollback
-        run: node --test scripts/deployment/publish-verified-rbac.test.mjs
+        run: node --test scripts/deployment/publish-verified-rbac.test.mjs backend/scripts/deployment/provision-demo-academy.test.mjs
       - name: Check live RBAC verification configuration
         env:
           DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
