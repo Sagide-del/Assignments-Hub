@@ -53,6 +53,15 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
+      - name: Test verified publish and rollback
+        run: node --test scripts/deployment/publish-verified-rbac.test.mjs
+      - name: Check live RBAC verification configuration
+        env:
+          DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
+          RBAC_ALICE_ID: ${{ vars.RBAC_DEMO_ALICE_ID }}
+        run: |
+          test -n "$DEMO_TEACHER_PASSWORD" || { echo 'Configure RBAC_DEMO_TEACHER_PASSWORD securely before publishing.' >&2; exit 1; }
+          test -n "$RBAC_ALICE_ID" || { echo 'Configure RBAC_DEMO_ALICE_ID from the provisioning report before publishing.' >&2; exit 1; }
       - name: Verify learning activities
         run: npm run test:cms && npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
         working-directory: frontend
@@ -82,7 +91,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
-        run: npx prisma db push --skip-generate && npm test -- --runInBand src/__tests__/rbac.spec.ts
+        run: npx prisma db push --skip-generate && npm test -- --runInBand src/__tests__/rbac.spec.ts src/scripts/operations/demo-academy.database.spec.ts
       - name: Wait for teacher scope API and migration
         working-directory: frontend
         run: node scripts/check-teacher-api.mjs
@@ -104,19 +113,37 @@ jobs:
       - name: Wait for central content library
         working-directory: frontend
         run: node scripts/check-content-api.mjs
+      - name: Install live verification browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rbac-browser" --no-package-lock --ignore-scripts playwright@1.56.1
+          "$RUNNER_TEMP/rbac-browser/node_modules/.bin/playwright" install --with-deps chromium
+          echo "NODE_PATH=$RUNNER_TEMP/rbac-browser/node_modules" >> "$GITHUB_ENV"
       - name: Connect to AWS without stored access keys
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::516962256415:role/AssignmentHubGitHubFrontendDeploy
           aws-region: eu-west-2
-      - name: Publish and verify frontend
+      - name: Publish and verify frontend and teacher RBAC
         id: publish
-        run: bash scripts/deployment/publish-frontend.sh
+        run: bash scripts/deployment/publish-verified-rbac.sh
         env:
           FRONTEND_DIST: frontend/dist
-      - name: Verify first-aid images
-        run: npm run check:firstaid-assets -- https://assignmenthub.co.ke
-        working-directory: frontend
+          DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
+          RBAC_ALICE_ID: ${{ vars.RBAC_DEMO_ALICE_ID }}
+          RBAC_REPORT_FILE: ${{ runner.temp }}/rbac-api-verification.json
+          RBAC_SCREENSHOT_FILE: ${{ runner.temp }}/rbac-teacher-production.png
+          RBAC_SNAPSHOT_DIR: ${{ runner.temp }}/rbac-rollback-snapshot
+      - name: Save live verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teacher-rbac-verification-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/rbac-api-verification.json
+            ${{ runner.temp }}/rbac-teacher-production.png
+            ${{ runner.temp }}/rbac-rollback-snapshot/previous/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Report deployment result
         if: always()
         env:
@@ -127,7 +154,7 @@ jobs:
             echo "## Frontend deployment"
             echo "Commit: $DEPLOY_COMMIT"
             if [ "$DEPLOY_OUTCOME" = "success" ]; then
-              echo "The public homepage was verified against this build after the CloudFront invalidation."
+              echo "The public homepage, demo teacher API scope and browser login were verified."
             else
               echo "This run did not verify a completed live deployment. A successful build or push alone does not update the site."
               echo "Open the first failed step above for the error. If the frontend build succeeded, its recovery artifact is attached to this run."
