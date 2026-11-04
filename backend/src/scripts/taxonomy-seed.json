@@ -1116,5 +1116,581 @@
       "Sports Management",
       "KCBE Mock Exam Practice"
     ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 2,
+    "pathway": null,
+    "track": null,
+    "subject": "Literacy Activities",
+    "topics": [
+      "Listening and Speaking",
+      "Reading Readiness",
+      "Writing Readiness",
+      "Pre-Braille Activities"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 2,
+    "pathway": null,
+    "track": null,
+    "subject": "Mathematical Activities",
+    "topics": [
+      "Numbers and Counting (1-50)",
+      "Shapes and Space",
+      "Measurements (Length and Mass)",
+      "Patterns and Relationships"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 2,
+    "pathway": null,
+    "track": null,
+    "subject": "Environmental Activities",
+    "topics": [
+      "My Immediate Environment",
+      "Living and Non-Living Things",
+      "Weather and Seasons",
+      "Safety and Hygiene"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 2,
+    "pathway": null,
+    "track": null,
+    "subject": "Psychomotor and Creative Activities",
+    "topics": [
+      "Movement and Coordination",
+      "Music and Rhythm",
+      "Drawing and Colouring"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 2,
+    "pathway": null,
+    "track": null,
+    "subject": "Religious Education Activities",
+    "topics": [
+      "Creation",
+      "Family and Community",
+      "Moral Values"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 3,
+    "pathway": null,
+    "track": null,
+    "subject": "Literacy Activities",
+    "topics": [
+      "Listening and Speaking",
+      "Reading Readiness",
+      "Writing Readiness",
+      "Pre-Braille Activities"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 3,
+    "pathway": null,
+    "track": null,
+    "subject": "Mathematical Activities",
+    "topics": [
+      "Numbers and Counting (1-100)",
+      "Shapes and Space",
+      "Measurements (Length, Mass, Capacity)",
+      "Patterns and Relationships"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 3,
+    "pathway": null,
+    "track": null,
+    "subject": "Environmental Activities",
+    "topics": [
+      "My Immediate Environment",
+      "Living and Non-Living Things",
+      "Weather and Seasons",
+      "Safety and Hygiene"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 3,
+    "pathway": null,
+    "track": null,
+    "subject": "Psychomotor and Creative Activities",
+    "topics": [
+      "Movement and Coordination",
+      "Music and Rhythm",
+      "Drawing and Colouring"
+    ]
+  },
+  {
+    "level": "Early Years",
+    "grade": 3,
+    "pathway": null,
+    "track": null,
+    "subject": "Religious Education Activities",
+    "topics": [
+      "Creation",
+      "Family and Community",
+      "Moral Values"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "English",
+    "topics": [
+      "Listening and Speaking",
+      "Reading Comprehension",
+      "Grammar and Vocabulary",
+      "Writing Composition"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Kiswahili",
+    "topics": [
+      "Kusikiliza na Kuzungumza",
+      "Kusoma",
+      "Sarufi",
+      "Kuandika"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Mathematics",
+    "topics": [
+      "Numbers and Operations",
+      "Fractions and Decimals",
+      "Geometry",
+      "Measurement",
+      "Data Handling"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Science and Technology",
+    "topics": [
+      "Living Things",
+      "Matter and Its Properties",
+      "Force and Energy",
+      "Earth and Space",
+      "Technology and Innovation"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Social Studies",
+    "topics": [
+      "My Community",
+      "Kenyan Geography",
+      "Historical Events",
+      "Citizenship and Governance"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Home Science",
+    "topics": [
+      "Personal Hygiene",
+      "Food and Nutrition",
+      "Clothing and Textiles",
+      "First Aid",
+      "Home Care"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Agriculture",
+    "topics": [
+      "Soil and Water",
+      "Crop Production",
+      "Animal Keeping",
+      "Farm Tools and Equipment"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Creative Arts",
+    "topics": [
+      "Visual Arts (Drawing and Painting)",
+      "Performing Arts (Music and Dance)",
+      "Craft and Design"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 5,
+    "pathway": null,
+    "track": null,
+    "subject": "Physical and Health Education",
+    "topics": [
+      "Physical Fitness",
+      "Sports Skills",
+      "Health Education",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "English",
+    "topics": [
+      "Listening and Speaking",
+      "Reading Comprehension",
+      "Grammar and Vocabulary",
+      "Writing Composition"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Kiswahili",
+    "topics": [
+      "Kusikiliza na Kuzungumza",
+      "Kusoma",
+      "Sarufi",
+      "Kuandika"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Mathematics",
+    "topics": [
+      "Numbers and Operations",
+      "Fractions and Decimals",
+      "Geometry",
+      "Measurement",
+      "Data Handling"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Science and Technology",
+    "topics": [
+      "Living Things",
+      "Matter and Its Properties",
+      "Force and Energy",
+      "Earth and Space",
+      "Technology and Innovation"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Social Studies",
+    "topics": [
+      "My Community",
+      "Kenyan Geography",
+      "Historical Events",
+      "Citizenship and Governance"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Home Science",
+    "topics": [
+      "Personal Hygiene",
+      "Food and Nutrition",
+      "Clothing and Textiles",
+      "First Aid",
+      "Home Care"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Agriculture",
+    "topics": [
+      "Soil and Water",
+      "Crop Production",
+      "Animal Keeping",
+      "Farm Tools and Equipment"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Creative Arts",
+    "topics": [
+      "Visual Arts (Drawing and Painting)",
+      "Performing Arts (Music and Dance)",
+      "Craft and Design"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 6,
+    "pathway": null,
+    "track": null,
+    "subject": "Physical and Health Education",
+    "topics": [
+      "Physical Fitness",
+      "Sports Skills",
+      "Health Education",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Integrated Science",
+    "topics": [
+      "Scientific Investigation",
+      "Mixtures, Elements and Compounds",
+      "Living Things and Their Environment",
+      "Force and Energy",
+      "Earth and Space"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Pre-Technical and Pre-Career Education",
+    "topics": [
+      "Foundations of Pre-Technical Studies",
+      "Communication and Collaboration",
+      "Materials and Tools",
+      "Basic Electrical Principles",
+      "Woodwork and Metalwork"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Health Education",
+    "topics": [
+      "Personal Hygiene",
+      "Nutrition and Diet",
+      "Communicable Diseases",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Social Studies",
+    "topics": [
+      "Kenyan Geography",
+      "Historical Events",
+      "Citizenship and Governance",
+      "Economic Activities"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Business Studies",
+    "topics": [
+      "Introduction to Business",
+      "Financial Literacy",
+      "Entrepreneurship",
+      "Record Keeping"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Agriculture",
+    "topics": [
+      "Soil and Water Conservation",
+      "Crop Production",
+      "Livestock Production",
+      "Farm Tools and Equipment"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Life Skills",
+    "topics": [
+      "Self-Awareness",
+      "Interpersonal Relationships",
+      "Decision Making",
+      "Coping with Emotions"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 8,
+    "pathway": null,
+    "track": null,
+    "subject": "Sports and Physical Education",
+    "topics": [
+      "Physical Fitness",
+      "Sports Skills",
+      "Health Education",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Integrated Science",
+    "topics": [
+      "Scientific Investigation",
+      "Mixtures, Elements and Compounds",
+      "Living Things and Their Environment",
+      "Force and Energy",
+      "Earth and Space"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Pre-Technical and Pre-Career Education",
+    "topics": [
+      "Foundations of Pre-Technical Studies",
+      "Communication and Collaboration",
+      "Materials and Tools",
+      "Basic Electrical Principles",
+      "Woodwork and Metalwork"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Health Education",
+    "topics": [
+      "Personal Hygiene",
+      "Nutrition and Diet",
+      "Communicable Diseases",
+      "First Aid and Safety"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Social Studies",
+    "topics": [
+      "Kenyan Geography",
+      "Historical Events",
+      "Citizenship and Governance",
+      "Economic Activities"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Business Studies",
+    "topics": [
+      "Introduction to Business",
+      "Financial Literacy",
+      "Entrepreneurship",
+      "Record Keeping"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Agriculture",
+    "topics": [
+      "Soil and Water Conservation",
+      "Crop Production",
+      "Livestock Production",
+      "Farm Tools and Equipment"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Life Skills",
+    "topics": [
+      "Self-Awareness",
+      "Interpersonal Relationships",
+      "Decision Making",
+      "Coping with Emotions"
+    ]
+  },
+  {
+    "level": "Middle School",
+    "grade": 9,
+    "pathway": null,
+    "track": null,
+    "subject": "Sports and Physical Education",
+    "topics": [
+      "Physical Fitness",
+      "Sports Skills",
+      "Health Education",
+      "First Aid and Safety"
+    ]
   }
 ]

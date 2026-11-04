@@ -60,13 +60,9 @@ export function validateTaxonomySeed(rows = TAXONOMY_SEED) {
   }
   return rows;
 }
-export async function seedTaxonomy(
-  prisma: PrismaClient,
-  options: { missingOnly?: boolean } = {},
-) {
+export async function seedTaxonomy(prisma: PrismaClient) {
   const rows = validateTaxonomySeed();
   let created = 0,
-    updated = 0,
     skipped = 0;
   await prisma.$transaction(
     async (tx) => {
@@ -82,31 +78,31 @@ export async function seedTaxonomy(
             ]),
           )
           .digest("hex");
-        const existing = await tx.curriculumTaxonomy.findUnique({
-          where: { id },
+        // Match by stable seed ID OR semantic identity so curated/imported
+        // records with another ID are preserved instead of duplicated.
+        const existing = await tx.curriculumTaxonomy.findFirst({
+          where: {
+            OR: [
+              { id },
+              {
+                grade: row.grade,
+                pathway: row.pathway,
+                track: row.track,
+                subject: row.subject,
+              },
+            ],
+          },
         });
-        if (
-          existing &&
-          (options.missingOnly ||
-            existing.verified ||
-            (existing.source === "USER_PROVIDED" &&
-              existing.level === row.level &&
-              existing.grade === row.grade &&
-              existing.pathway === row.pathway &&
-              existing.track === row.track &&
-              existing.subject === row.subject &&
-              JSON.stringify(existing.topics) === JSON.stringify(row.topics)))
-        ) {
+        if (existing) {
           skipped++;
           continue;
-        } // Never downgrade administrator-verified rows.
+        }
         await tx.curriculumTaxonomy.upsert({
           where: { id },
           create: { id, ...row, source: "USER_PROVIDED", verified: false },
-          update: { ...row, source: "USER_PROVIDED" },
+          update: {}, // Insert-only, including a concurrent seed retry.
         });
-        if (existing) updated++;
-        else created++;
+        created++;
       }
     },
     { timeout: 60000 },
@@ -117,13 +113,15 @@ export async function seedTaxonomy(
   console.log(
     `Taxonomy seed complete: ${rows.length} subject entries, ${rows.reduce((sum, row) => sum + row.topics.length, 0)} topics. Grades: ${grades.join(", ")}. Supplied data; official verification pending.`,
   );
-  console.log(`Created: ${created}; updated: ${updated}; skipped: ${skipped}.`);
+  console.log(`Created: ${created}; updated: 0; skipped: ${skipped}.`);
   console.log(
-    `Unseeded grades: ${Array.from({ length: 12 }, (_, i) => i + 1)
-      .filter((grade) => !grades.includes(grade))
-      .join(", ")}. No existing curriculum, questions or modules deleted.`,
+    `Unseeded grades: ${
+      Array.from({ length: 12 }, (_, i) => i + 1)
+        .filter((grade) => !grades.includes(grade))
+        .join(", ") || "none"
+    }. No existing curriculum, questions or modules deleted.`,
   );
-  return { created, updated, skipped };
+  return { created, updated: 0, skipped };
 }
 if (require.main === module) {
   if (process.argv.slice(2).some((arg) => arg !== "--missing-only")) {
@@ -131,9 +129,8 @@ if (require.main === module) {
     process.exitCode = 1;
   } else {
     const prisma = new PrismaClient();
-    seedTaxonomy(prisma, {
-      missingOnly: process.argv.includes("--missing-only"),
-    })
+    // --missing-only remains a compatible alias; every seed is insert-only.
+    seedTaxonomy(prisma)
       .catch((error) => {
         console.error("Taxonomy seed stopped:", error.message);
         process.exitCode = 1;

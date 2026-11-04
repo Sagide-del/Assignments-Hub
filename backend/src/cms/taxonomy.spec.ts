@@ -50,13 +50,13 @@ function setup() {
 }
 describe("Supplied curriculum taxonomy and grade bands", () => {
   it("retains the exact supplied coverage including all 20 Grade 12 subjects", () => {
-    expect(validateTaxonomySeed()).toHaveLength(83);
+    expect(validateTaxonomySeed()).toHaveLength(127);
     expect(TAXONOMY_SEED.reduce((sum, row) => sum + row.topics.length, 0)).toBe(
-      371,
+      551,
     );
-    expect([...new Set(TAXONOMY_SEED.map((row) => row.grade))]).toEqual([
-      1, 4, 7, 10, 11, 12,
-    ]);
+    expect(
+      [...new Set(TAXONOMY_SEED.map((row) => row.grade))].sort((a, b) => a - b),
+    ).toEqual(Array.from({ length: 12 }, (_, i) => i + 1));
     expect(TAXONOMY_SEED.filter((row) => row.grade === 12)).toHaveLength(20);
     expect(
       TAXONOMY_SEED.find(
@@ -101,8 +101,14 @@ describe("Supplied curriculum taxonomy and grade bands", () => {
   );
   it.each([
     [1, "Literacy Activities", "Listening and Speaking"],
+    [2, "Mathematical Activities", "Numbers and Counting (1-50)"],
+    [3, "Mathematical Activities", "Numbers and Counting (1-100)"],
     [4, "English", "Grammar and Vocabulary"],
+    [5, "English", "Reading Comprehension"],
+    [6, "Mathematics", "Geometry"],
     [7, "Integrated Science", "Scientific Investigation"],
+    [8, "Integrated Science", "Scientific Investigation"],
+    [9, "Business Studies", "Entrepreneurship"],
     [10, "Biology", "Respiration and Gaseous Exchange"],
     [11, "Aviation Technology", "Aerodynamics"],
     [12, "Mathematics", "Advanced Calculus"],
@@ -135,7 +141,7 @@ describe("Supplied curriculum taxonomy and grade bands", () => {
       expect(prisma.masterModule.create).toHaveBeenCalledTimes(1);
     },
   );
-  it("rejects missing grades, arbitrary topics and wrong pathway/track before spending AI credit", async () => {
+  it("rejects arbitrary topics and wrong pathway/track before spending AI credit", async () => {
     const { service, ai } = setup();
     for (const dto of [
       { grade: 6, subject: "English", topic: "Reading" },
@@ -160,6 +166,18 @@ describe("Supplied curriculum taxonomy and grade bands", () => {
       },
     ])
       await expect(service.generateAiContent(dto)).rejects.toThrow();
+    expect(ai.generateAssignment).not.toHaveBeenCalled();
+  });
+  it("still blocks an unseeded database grade before spending AI credit", async () => {
+    const { service, prisma, ai } = setup();
+    prisma.curriculumTaxonomy.findMany.mockResolvedValueOnce([]);
+    await expect(
+      service.generateAiContent({
+        grade: 6,
+        subject: "English",
+        topic: "Reading Comprehension",
+      }),
+    ).rejects.toThrow("no seeded taxonomy");
     expect(ai.generateAssignment).not.toHaveBeenCalled();
   });
   it("strictly validates band-specific extras, counts and verified 3D assets", () => {
