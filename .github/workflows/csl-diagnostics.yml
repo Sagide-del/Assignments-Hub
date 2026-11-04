@@ -2,7 +2,7 @@ name: Diagnose CSL live readiness
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/csl-diagnostics.yml']
+    paths: ['.github/workflows/csl-diagnostics.yml', 'frontend/scripts/check-csl-access.mjs']
   workflow_dispatch:
 permissions:
   contents: read

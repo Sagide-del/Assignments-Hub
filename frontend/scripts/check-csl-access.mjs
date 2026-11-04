@@ -13,6 +13,11 @@ const alice=Number(process.env.RBAC_ALICE_ID);if(!Number.isSafeInteger(alice)||a
 if((await request(`/csl/${alice}/logbook-pdf`,{headers})).status!==403)throw Error('Cross-stream CSL PDF access was not denied.');
 if((await request('/csl/my-hours',{headers})).status!==403)throw Error('Teacher access to learner-only logbook route was not denied.');
 const storage=await request('/csl/storage-check',{method:'POST',headers});
-const storageResult=storage.ok?await storage.json():null;
-if(storageResult?.photo_storage_verified!==true||storageResult?.diagnostic_cleanup_verified!==true)throw Error('Live private CSL photo upload/read/cleanup verification failed.');
+const storageResult=await storage.json().catch(()=>null);
+if(storageResult?.photo_storage_verified!==true||storageResult?.diagnostic_cleanup_verified!==true){
+ const stage=storageResult?.failure_stage||'UNKNOWN';
+ const message=`Live private CSL photo verification failed (HTTP ${storage.status}, stage ${stage}).`;
+ console.error(`::error title=CSL photo storage::${message}`);
+ throw Error(message);
+}
 console.log('Verified live private photo upload/read and CSL assigned-stream queue, cross-stream PDF denial and role restrictions. No learner data changed.');
