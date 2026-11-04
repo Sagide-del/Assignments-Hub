@@ -59,6 +59,11 @@ export function subjectKey(v: unknown) {
     (
       {
         math: "mathematics",
+        mathematic: "mathematics",
+        cre: "christianreligiouseducation",
+        ire: "islamicreligiouseducation",
+        hre: "hindureligiouseducation",
+        pe: "physicaleducation",
         maths: "mathematics",
         coremathematics: "mathematics",
         essentialmathematics: "mathematics",

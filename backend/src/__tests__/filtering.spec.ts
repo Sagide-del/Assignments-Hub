@@ -78,6 +78,21 @@ describe("Student curriculum policy", () => {
         track: null,
       }),
     ).toBe(true);
+    expect(contentMatches(scope, { grade: 10, subject: "Mathematic" })).toBe(
+      true,
+    );
+    expect(
+      contentMatches(
+        {
+          ...scope,
+          grade: 8,
+          pathway: null,
+          track: null,
+          subjects: ["Christian Religious Education"],
+        },
+        { grade: 8, subject: "CRE" },
+      ),
+    ).toBe(true);
     for (const c of [
       { grade: 12, subject: "Mathematics" },
       { grade: 10, subject: "Physics", pathway: "Social Sciences" },

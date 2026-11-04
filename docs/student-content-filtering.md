@@ -22,4 +22,6 @@ Legacy Lab.pathway sometimes stores a track label (e.g. Pure Sciences); the adap
 
 ## Verification
 
-`src/__tests__/filtering.spec.ts` exercises real PostgreSQL/JWT and existing controllers, including Technical/Pure/Grade 8 lists, direct URL denials, enrolment bypasses, publishing audiences, grade changes and unchanged school-admin responses. Frontend policy tests cover navigation availability and senior-only CSL. Browser checks cover actual conditional navigation/dashboard rendering, responsive layouts, the locked mock grade and empty/setup states. Deployment waits for `/student/content-capabilities` version 1 and performs read-only role checks before publication.
+`src/__tests__/filtering.spec.ts` exercises real PostgreSQL/JWT and existing controllers, including Technical/Pure/Grade 8 lists, direct URL denials, enrolment bypasses, publishing audiences, grade changes and unchanged school-admin responses. Frontend policy tests cover navigation availability and senior-only CSL. Browser checks cover actual conditional navigation/dashboard rendering, responsive layouts, the locked mock grade and empty/setup states. Deployment waits for `/student/content-capabilities` version 2 and performs read-only role checks before publication.
+
+Legacy subject abbreviations (including Mathematic, Math/Maths, CRE/IRE/HRE and PE) normalise to canonical subjects. Normalisation does not bypass grade, pathway or track checks.

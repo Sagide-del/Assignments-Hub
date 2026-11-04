@@ -9,7 +9,7 @@ import { StudentScopeService } from "./student-scope.service";
 export class StudentContentController {
   constructor(private readonly scopes: StudentScopeService) {}
   @Get("content-capabilities") @Public() capabilities() {
-    return { studentFilteringVersion: 1 };
+    return { studentFilteringVersion: 2 };
   }
   @Get("content-scope") @Roles(Role.STUDENT) async scope(
     @CurrentUser() actor: AuthenticatedUser,
