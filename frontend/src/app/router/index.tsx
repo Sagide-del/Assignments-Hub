@@ -2,6 +2,7 @@ import SchoolSbaDashboard from "../../pages/admin/school/sba";
 import TeacherSba from "../../pages/teacher/sba";
 import { TeacherAssignments } from "../../features/school-admin/TeacherAssignments";
 import { lazy } from 'react';
+const StudentLibrary = lazy(() => import('../../pages/study-hub/library'));
 import { createBrowserRouter, Link, Navigate, useLocation } from 'react-router-dom';
 
 import { DashboardLayout } from '../../layouts/DashboardLayout';
@@ -348,6 +349,7 @@ export const router = createBrowserRouter([
             path: '/student/resources',
             element: <MyResourcesPage />,
           },
+          { path: '/student/study-hub/library', element: <StudentLibrary /> },
           { path: '/student/study-hub/timetable', element: <WeeklyTimetable /> },
           { path: '/student/study-hub/timetable/:id/recall/:blockId', element: <TimetableRecall /> },
           { path: '/student/study-hub/previous-plans', element: <PreviousStudyPlans /> },

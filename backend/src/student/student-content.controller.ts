@@ -1,9 +1,10 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Query } from "@nestjs/common";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { Role } from "../common/enums/role.enum";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { LibraryService } from "./library.service";
 import { StudentScopeService } from "./student-scope.service";
 @Controller("student")
 export class StudentContentController {
@@ -61,8 +62,15 @@ export class StudentContentController {
 @Controller("library")
 @Roles(Role.STUDENT)
 export class StudentLibraryController {
-  constructor(private readonly scopes: StudentScopeService) {}
-  @Get() async library(@CurrentUser() a: AuthenticatedUser) {
+  constructor(
+    private readonly scopes: StudentScopeService,
+    private readonly libraryService: LibraryService,
+  ) {}
+  @Get() async library(
+    @CurrentUser() a: AuthenticatedUser,
+    @Query("grouped") grouped?: string,
+  ) {
+    if (grouped === "true") return this.libraryService.catalogue(a);
     return this.scopes.modules(
       await this.scopes.getStudentScope(a.id, a.schoolId),
     );

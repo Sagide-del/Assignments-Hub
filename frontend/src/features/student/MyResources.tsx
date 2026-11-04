@@ -101,6 +101,8 @@ export function MyResourcesPage() {
     <div className="min-w-0 space-y-4 pb-12 sm:space-y-5">
       <PageHeader title="My Study Hub" meta={view === 'MARKETPLACE' ? `${listings.length} available` : view === 'LIBRARY' ? `${ownedIds.size} in your library` : view === 'REVIEW' ? 'Your next best study step' : undefined} />
 
+      <Link to="/student/study-hub/library" className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-900"><span className="flex items-center gap-3"><BookOpenCheck size={19} className="text-[#71851b]" />Learning library</span><span className="text-xs font-normal text-slate-500">Topics & cheat sheets →</span></Link>
+
       <nav aria-label="Study Hub sections" className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_8px_24px_rgba(16,24,32,0.04)] sm:grid-cols-4">
           <ViewButton active={view === 'REVIEW'} onClick={() => setView('REVIEW')} icon={BrainCircuit} label="Review plan" />
           <ViewButton active={view === 'STUDY_PLAN'} onClick={() => setView('STUDY_PLAN')} icon={CalendarDays} label="Timetable" />
