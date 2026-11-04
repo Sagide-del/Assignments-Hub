@@ -318,6 +318,8 @@ enum InstitutionType {
 }
 
 model School {
+  externalMocks ExternalMock_Record[]
+  sbaProjections SBA_Projection[]
   sbaRecords SBA_Record[]
   streams Stream[]
   paymentLedger Payment[]
@@ -378,6 +380,9 @@ model School {
 }
 
 model User {
+  externalMocks ExternalMock_Record[] @relation("ExternalMockStudent")
+  importedMocks ExternalMock_Record[] @relation("ExternalMockImporter")
+  sbaProjections SBA_Projection[]
   sbaScores SBA_Record[] @relation("SbaStudent")
   enteredSbaScores SBA_Record[] @relation("SbaEnteredBy")
   teacherAssignments TeacherAssignment[]
@@ -2897,4 +2902,44 @@ model SBA_Record {
   @@unique([student_id, subject, grade_level, term, academic_year])
   @@index([student_id, subject, grade_level])
   @@index([school_id, grade_level])
+}
+
+model ExternalMock_Record {
+  id            String   @id @default(uuid())
+  student_id    Int
+  school_id     Int
+  subject       String
+  grade_level   Int
+  term          String
+  academic_year Int
+  score         Float
+  source        String
+  imported_by   Int
+  imported_at   DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  student       User     @relation("ExternalMockStudent", fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school        School   @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  importer      User     @relation("ExternalMockImporter", fields: [imported_by, school_id], references: [id, schoolId], onDelete: Restrict)
+
+  @@unique([student_id, subject, grade_level, term, academic_year, source])
+  @@index([student_id, subject, grade_level])
+  @@index([school_id, grade_level, academic_year])
+}
+
+model SBA_Projection {
+  id              String   @id @default(uuid())
+  student_id      Int      @unique
+  school_id       Int
+  grade10_sba     Float?
+  grade11_sba     Float?
+  internal_mock   Float?
+  external_mock   Float?
+  kcbe_mock_final Float?
+  projected       Float?
+  predicted_grade String?
+  calculated_at   DateTime @default(now())
+  student         User     @relation(fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school          School   @relation(fields: [school_id], references: [id], onDelete: Restrict)
+
+  @@index([school_id])
 }

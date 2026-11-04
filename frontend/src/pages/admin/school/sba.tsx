@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Download,
+  Upload,
   ClipboardCheck,
   TrendingUp,
   TriangleAlert,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../../store/auth.store";
 import { sbaApi } from "../../../api/sba.api";
+import { ExternalMocksModal } from "./external-mocks-modal";
 import { apiErrorMessage } from "../../../api/axios";
 
 export function SbaScore({ value }: { value: number | null }) {
@@ -23,6 +25,7 @@ export function SbaScore({ value }: { value: number | null }) {
   );
 }
 export default function SchoolSbaDashboard() {
+  const [importOpen, setImportOpen] = useState(false);
   const actor = useAuthStore((s) => s.user);
   const report = useQuery({
     queryKey: ["sba-school", actor?.schoolId, actor?.id],
@@ -78,14 +81,23 @@ export default function SchoolSbaDashboard() {
             Senior school · SBA and mock projections
           </p>
         </div>
-        <button
-          onClick={() => void download()}
-          disabled={exporting || !report.data || report.isError}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#101820] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-        >
-          <Download size={16} aria-hidden="true" />
-          {exporting ? "Exporting…" : "Export CSV"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium"
+          >
+            <Upload size={16} aria-hidden="true" />
+            Import External Mocks
+          </button>
+          <button
+            onClick={() => void download()}
+            disabled={exporting || !report.data || report.isError}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#101820] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+          >
+            <Download size={16} aria-hidden="true" />
+            {exporting ? "Exporting…" : "Export CSV"}
+          </button>
+        </div>
       </header>
       {(report.error || error) && (
         <div
@@ -201,7 +213,9 @@ export default function SchoolSbaDashboard() {
                     "Grade / stream",
                     "G10 SBA",
                     "G11 SBA",
-                    "G12 mock",
+                    "Internal Mock",
+                    "External Mock",
+                    "Best Mock",
                     "Projected",
                     "Indicative band",
                   ].map((h) => (
@@ -233,6 +247,12 @@ export default function SchoolSbaDashboard() {
                       <SbaScore value={r.grade11_sba} />
                     </td>
                     <td className="px-5 py-4">
+                      <SbaScore value={r.internal_mock ?? null} />
+                    </td>
+                    <td className="px-5 py-4">
+                      <SbaScore value={r.external_mock ?? null} />
+                    </td>
+                    <td className="px-5 py-4">
                       <SbaScore value={r.kcbe_mock} />
                     </td>
                     <td className="px-5 py-4">
@@ -254,6 +274,16 @@ export default function SchoolSbaDashboard() {
           </div>
         )}
       </section>
+      <p className="text-xs text-slate-500">
+        Calculated using best of External Mock OR Internal Mock (Grade 12
+        averages).
+      </p>
+      {importOpen && (
+        <ExternalMocksModal
+          onClose={() => setImportOpen(false)}
+          onImported={() => void report.refetch()}
+        />
+      )}
       <p className="text-xs leading-5 text-slate-500">
         Internal planning projection, not an official KCBE result. Missing
         evidence is excluded, never treated as zero. The CSV is an internal

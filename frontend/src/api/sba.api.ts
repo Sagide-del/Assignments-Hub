@@ -18,6 +18,8 @@ export interface SbaRow {
   track: string | null;
   grade10_sba: number | null;
   grade11_sba: number | null;
+  internal_mock: number | null;
+  external_mock: number | null;
   kcbe_mock: number | null;
   projected: number | null;
   predicted_grade: string | null;
@@ -62,4 +64,39 @@ export const sbaApi = {
         responseType: "blob",
       })
       .then((r) => r.data as Blob),
+};
+
+export interface MockImportSummary {
+  total_rows: number;
+  imported: number;
+  failed: number;
+  skipped: number;
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  errors: { row: number; admission_number: string; message: string }[];
+  merge: { students: number; complete: number } | null;
+}
+export const sbaImportApi = {
+  template: () =>
+    api
+      .get("/sba/import/template", { responseType: "blob" })
+      .then((r) => r.data as Blob),
+  upload: (file: File, source: string, academicYear: number) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("source", source);
+    form.append("academic_year", String(academicYear));
+    return api
+      .post<MockImportSummary>("/sba/import/upload", form, { timeout: 120000 })
+      .then((r) => r.data);
+  },
+  merge: () =>
+    api
+      .post<{ students: number; complete: number }>(
+        "/sba/import/merge",
+        {},
+        { timeout: 120000 },
+      )
+      .then((r) => r.data),
 };

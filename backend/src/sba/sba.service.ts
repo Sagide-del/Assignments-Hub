@@ -24,12 +24,25 @@ export class SbaService {
   constructor(private readonly db: PrismaService) {}
   async capabilities() {
     await Promise.all([
-      this.db.sBA_Record.count({ where: { id: '00000000-0000-0000-0000-000000000000' } }),
-      this.db.question.findFirst({ where: { id: -1 }, select: { illustration: true } }),
+      this.db.sBA_Record.count({
+        where: { id: "00000000-0000-0000-0000-000000000000" },
+      }),
+      this.db.question.findFirst({
+        where: { id: -1 },
+        select: { illustration: true },
+      }),
     ]);
-    return { sbaVersion: 1, questionBlueprintVersion: 1 };
+    await Promise.all([
+      this.db.externalMock_Record.count({
+        where: { id: "00000000-0000-0000-0000-000000000000" },
+      }),
+      this.db.sBA_Projection.count({
+        where: { id: "00000000-0000-0000-0000-000000000000" },
+      }),
+    ]);
+    return { sbaVersion: 1, questionBlueprintVersion: 1, sbaImportVersion: 1 };
   }
-  private assertSchool(actor: AuthenticatedUser, schoolId: number) {
+  assertSchool(actor: AuthenticatedUser, schoolId: number) {
     if (
       ![Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN].includes(actor.role as any) ||
       (actor.role !== Role.PLATFORM_ADMIN && actor.schoolId !== schoolId)
@@ -207,6 +220,7 @@ export class SbaService {
     schoolId: number,
     where: Prisma.UserWhereInput,
     subjects?: string[],
+    db: Prisma.TransactionClient = this.db,
   ) {
     const subjectFilter = subjects
       ? {
@@ -215,8 +229,8 @@ export class SbaService {
           })),
         }
       : {};
-    const [students, records, attempts] = await Promise.all([
-      this.db.user.findMany({
+    const [students, records, attempts, external] = await Promise.all([
+      db.user.findMany({
         where,
         select: {
           id: true,
@@ -237,7 +251,7 @@ export class SbaService {
         },
         orderBy: [{ grade: "asc" }, { name: "asc" }],
       }),
-      this.db.sBA_Record.findMany({
+      db.sBA_Record.findMany({
         where: {
           school_id: schoolId,
           student: { is: where },
@@ -249,7 +263,7 @@ export class SbaService {
           { subject: "asc" },
         ],
       }),
-      this.db.kjseaMockAttempt.findMany({
+      db.kjseaMockAttempt.findMany({
         where: {
           schoolId,
           student: { is: where },
@@ -267,6 +281,15 @@ export class SbaService {
           source: true,
           coverage: true,
         },
+      }),
+      db.externalMock_Record.findMany({
+        where: {
+          school_id: schoolId,
+          student: { is: where },
+          grade_level: 12,
+          ...subjectFilter,
+        },
+        orderBy: { academic_year: "desc" },
       }),
     ]);
     const byStudent = new Map<number, typeof records>();
@@ -300,7 +323,20 @@ export class SbaService {
       const g10 = gradeAverage(10),
         g11 = gradeAverage(11),
         mock = average(mockByStudent.get(student.id) ?? []);
-      const projected = projectedScore(g10, g11, mock);
+      const imported = external.filter((r) => r.student_id === student.id);
+      const latestExternalYear = imported[0]?.academic_year;
+      const externalAverage = average(
+        imported
+          .filter((r) => r.academic_year === latestExternalYear)
+          .map((r) => r.score),
+      );
+      const best =
+        mock === null
+          ? externalAverage
+          : externalAverage === null
+            ? mock
+            : Math.max(mock, externalAverage);
+      const projected = projectedScore(g10, g11, best);
       const selection = student.pathwaySelections[0]?.track;
       return {
         student_id: student.id,
@@ -313,12 +349,15 @@ export class SbaService {
         track: selection?.name ?? null,
         grade10_sba: round(g10),
         grade11_sba: round(g11),
-        kcbe_mock: round(mock),
+        internal_mock: round(mock),
+        external_mock: round(externalAverage),
+        kcbe_mock: round(best),
         projected,
         predicted_grade: predictedGrade(projected),
-        evidence_components: [g10, g11, mock].filter((v) => v !== null).length,
+        evidence_components: [g10, g11, best].filter((v) => v !== null).length,
         mock_attempt_count: (mockByStudent.get(student.id) ?? []).length,
         records: history,
+        external_records: imported,
       };
     });
     const complete = rows.filter((r) => r.projected !== null);
@@ -333,7 +372,7 @@ export class SbaService {
       },
       weights: SBA_WEIGHTS,
       projection_note:
-        "Internal 15/15/70 planning estimate using completed Grade 12 mock attempts. Not an official KCBE result or KNEC submission format.",
+        "Internal 15/15/70 planning estimate using the higher of external and internal Grade 12 mock averages. Not an official KCBE result or KNEC submission format.",
     };
   }
   async school(
@@ -406,6 +445,42 @@ export class SbaService {
       },
     };
   }
+  async persistProjections(
+    schoolId: number,
+    actor: AuthenticatedUser,
+    db: Prisma.TransactionClient = this.db,
+  ) {
+    this.assertSchool(actor, schoolId);
+    const report = await this.report(
+      schoolId,
+      this.studentsWhere(schoolId),
+      undefined,
+      db,
+    );
+    for (const r of report.rows) {
+      const data = {
+        school_id: schoolId,
+        grade10_sba: r.grade10_sba,
+        grade11_sba: r.grade11_sba,
+        internal_mock: r.internal_mock,
+        external_mock: r.external_mock,
+        kcbe_mock_final: r.kcbe_mock,
+        projected: r.projected,
+        predicted_grade: r.predicted_grade,
+        calculated_at: new Date(),
+      };
+      await db.sBA_Projection.upsert({
+        where: { student_id: r.student_id },
+        create: { student_id: r.student_id, ...data },
+        update: data,
+      });
+    }
+    return {
+      students: report.rows.length,
+      complete: report.summary.complete,
+      calculated_at: new Date().toISOString(),
+    };
+  }
   async csv(
     schoolId: number,
     actor: AuthenticatedUser,
@@ -419,7 +494,9 @@ export class SbaService {
       "Stream",
       "Grade 10 SBA %",
       "Grade 11 SBA %",
-      "KCBE Mock %",
+      "Internal Mock %",
+      "External Mock %",
+      "Best Mock %",
       "Projected Final %",
       "Predicted Grade",
     ];
@@ -434,6 +511,8 @@ export class SbaService {
           r.stream,
           r.grade10_sba,
           r.grade11_sba,
+          r.internal_mock,
+          r.external_mock,
           r.kcbe_mock,
           r.projected,
           r.predicted_grade,
