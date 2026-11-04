@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { CslSubmissionsService } from './csl-submissions.service';
 import { CreateCslSubmissionDto } from './dto/create-csl-submission.dto';
@@ -9,6 +11,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { AuditAction } from '../common/decorators/audit.decorator';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('csl-submissions')
 export class CslSubmissionsController {
   constructor(private readonly cslSubmissionsService: CslSubmissionsService) {}

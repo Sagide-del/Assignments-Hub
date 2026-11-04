@@ -1,3 +1,4 @@
+import { TeacherScopeModule } from "./teacher-scope/teacher-scope.module";
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -68,6 +69,7 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
     ]),
 
     PrismaModule,
+    TeacherScopeModule,
 
     CmsModule,
 

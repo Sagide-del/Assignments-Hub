@@ -1,3 +1,4 @@
+import { studentScope, submissionScope, assertStudentScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
@@ -87,8 +88,8 @@ export class ReportsService {
 
     const where = targetSchoolId ? { schoolId: targetSchoolId } : undefined;
     const assignments = await this.prisma.assignment.findMany({
-      where,
-      include: { submissions: { select: { score: true, completedAt: true } }, school: { select: { id: true, name: true, code: true } } },
+      where: { ...where, ...(actor.role === Role.TEACHER ? { createdById: actor.id } : {}) },
+      include: { submissions: { where: await submissionScope(this.prisma, actor), select: { score: true, completedAt: true } }, school: { select: { id: true, name: true, code: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -127,7 +128,7 @@ export class ReportsService {
 
     const where = targetSchoolId ? { schoolId: targetSchoolId } : undefined;
     const sessions = await this.prisma.labSession.findMany({
-      where,
+      where: { ...where, ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}) },
       include: { student: { select: { id: true, name: true, grade: true } } },
       orderBy: { completedAt: 'desc' },
     });
@@ -321,11 +322,12 @@ export class ReportsService {
     if (!student || student.role !== Role.STUDENT) throw new NotFoundException('Student not found');
 
     this.assertCanViewStudent(student.schoolId, studentId, actor);
+    await assertStudentScope(this.prisma, actor, studentId);
 
     const submissions = await this.prisma.submission.findMany({
       // Excludes DRAFT — an in-progress, not-yet-submitted exam shouldn't
       // appear on a report card or count toward submittedCount below.
-      where: { studentId, status: { not: SubmissionStatus.DRAFT } },
+      where: { studentId, status: { not: SubmissionStatus.DRAFT }, AND: [await submissionScope(this.prisma, actor)] },
       include: { assignment: { select: { title: true, subject: true, grade: true, type: true } } },
       orderBy: { createdAt: 'desc' },
     });

@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
@@ -12,6 +14,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 // runs (see backend/src/common/guards/roles.guard.ts).
 @ApiTags('Analytics')
 @ApiBearerAuth()
+@UseGuards(TeacherScopeGuard)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analytics: AnalyticsService) {}

@@ -1,3 +1,4 @@
+import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmitSupportAssessmentDto } from './dto/submit-support-assessment.dto';
@@ -238,6 +239,7 @@ export class SupportNeedsService {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
 
+    await assertStudentScope(this.prisma, actor, studentId);
     const history = await this.prisma.studentSupportAssessment.findMany({
       where: { studentId },
       orderBy: { createdAt: 'desc' },
@@ -258,7 +260,7 @@ export class SupportNeedsService {
    * filtered by grade or disability category, for the teacher-dashboard
    * table view.
    */
-  findAssessments(actor: AuthenticatedUser, filters: { schoolId?: number; grade?: string; category?: string } = {}) {
+  async findAssessments(actor: AuthenticatedUser, filters: { schoolId?: number; grade?: string; category?: string } = {}) {
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? filters.schoolId : actor.schoolId;
 
     return this.prisma.studentSupportAssessment.findMany({
@@ -266,7 +268,7 @@ export class SupportNeedsService {
         schoolId: targetSchoolId,
         isActive: true,
         category: filters.category as any,
-        student: filters.grade ? { grade: filters.grade } : undefined,
+        student: { is: { AND: [filters.grade ? { grade: filters.grade } : {}, await studentScope(this.prisma, actor)] } },
       },
       include: {
         student: { select: { id: true, name: true, grade: true } },
@@ -282,7 +284,7 @@ export class SupportNeedsService {
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
 
     const active = await this.prisma.studentSupportAssessment.findMany({
-      where: { schoolId: targetSchoolId, isActive: true },
+      where: { schoolId: targetSchoolId, isActive: true, ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}) },
     });
 
     const byCategory = new Map<string, { category: string; label: string; count: number }>();

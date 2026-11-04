@@ -1,3 +1,4 @@
+import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCslSubmissionDto } from './dto/create-csl-submission.dto';
@@ -55,7 +56,7 @@ export class CslSubmissionsService {
     });
   }
 
-  findAll(
+  async findAll(
     actor: AuthenticatedUser,
     filters: { studentId?: number; cslActivityId?: number; schoolId?: number } = {},
   ) {
@@ -71,6 +72,7 @@ export class CslSubmissionsService {
 
     return this.prisma.cslSubmission.findMany({
       where: {
+        ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}),
         schoolId: targetSchoolId,
         studentId: filters.studentId,
         cslActivityId: filters.cslActivityId,
@@ -95,6 +97,7 @@ export class CslSubmissionsService {
       throw new ForbiddenException("You cannot access another school's data");
     }
 
+    await assertStudentScope(this.prisma, actor, submission.studentId);
     return submission;
   }
 

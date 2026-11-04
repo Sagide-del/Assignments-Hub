@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -6,6 +8,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}

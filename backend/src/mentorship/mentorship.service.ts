@@ -1,3 +1,4 @@
+import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMentorshipRequestDto } from './dto/create-mentorship-request.dto';
@@ -108,7 +109,7 @@ export class MentorshipService {
    * SCHOOL_ADMIN/PLATFORM_ADMIN: every request at the school (or, for
    * PLATFORM_ADMIN, a specific school via `schoolId`).
    */
-  findRequests(actor: AuthenticatedUser, filters: { schoolId?: number; status?: string } = {}) {
+  async findRequests(actor: AuthenticatedUser, filters: { schoolId?: number; status?: string } = {}) {
     if (actor.role === Role.STUDENT) {
       return this.prisma.mentorshipRequest.findMany({
         where: { studentId: actor.id },
@@ -119,7 +120,7 @@ export class MentorshipService {
 
     if (actor.role === Role.TEACHER) {
       return this.prisma.mentorshipRequest.findMany({
-        where: { mentorProfile: { teacherId: actor.id }, status: filters.status as any },
+        where: { schoolId: actor.schoolId, mentorProfile: { teacherId: actor.id }, status: filters.status as any, student: { is: await studentScope(this.prisma, actor) } },
         include: REQUEST_INCLUDE,
         orderBy: { createdAt: 'desc' },
       });
@@ -140,6 +141,7 @@ export class MentorshipService {
   async updateStatus(id: number, status: string, actor: AuthenticatedUser) {
     const request = await this.prisma.mentorshipRequest.findUnique({ where: { id }, include: { mentorProfile: true } });
     if (!request) throw new NotFoundException('Mentorship request not found');
+    await assertStudentScope(this.prisma, actor, request.studentId);
 
     if (actor.role === Role.TEACHER && request.mentorProfile.teacherId !== actor.id) {
       throw new ForbiddenException('You can only respond to your own mentorship requests');
@@ -160,6 +162,7 @@ export class MentorshipService {
   async addLogEntry(id: number, note: string, actor: AuthenticatedUser) {
     const request = await this.prisma.mentorshipRequest.findUnique({ where: { id }, include: { mentorProfile: true } });
     if (!request) throw new NotFoundException('Mentorship request not found');
+    await assertStudentScope(this.prisma, actor, request.studentId);
 
     const isStudentParty = actor.role === Role.STUDENT && request.studentId === actor.id;
     const isMentorParty = actor.role === Role.TEACHER && request.mentorProfile.teacherId === actor.id;
@@ -183,7 +186,7 @@ export class MentorshipService {
     const targetSchoolId = actor.role === Role.PLATFORM_ADMIN ? schoolId : actor.schoolId;
 
     const [requests, totalMentors] = await Promise.all([
-      this.prisma.mentorshipRequest.findMany({ where: { schoolId: targetSchoolId } }),
+      this.prisma.mentorshipRequest.findMany({ where: { schoolId: targetSchoolId, ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}) } }),
       this.prisma.user.count({ where: { schoolId: targetSchoolId, role: Role.TEACHER, isActive: true } }),
     ]);
 

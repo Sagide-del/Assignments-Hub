@@ -1,3 +1,4 @@
+import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTrackDto } from './dto/create-track.dto';
@@ -237,7 +238,7 @@ export class PathwaysService {
    * `includeHistory` is explicitly requested (e.g. viewing one student's
    * timeline).
    */
-  findSelections(
+  async findSelections(
     actor: AuthenticatedUser,
     filters: { studentId?: number; schoolId?: number; grade?: string; includeHistory?: boolean } = {},
   ) {
@@ -256,7 +257,7 @@ export class PathwaysService {
         schoolId: targetSchoolId,
         studentId: filters.studentId,
         isActive: filters.includeHistory ? undefined : true,
-        student: filters.grade ? { grade: filters.grade } : undefined,
+        student: { is: { AND: [filters.grade ? { grade: filters.grade } : {}, await studentScope(this.prisma, actor)] } },
       },
       include: {
         track: { include: TRACK_INCLUDE },
@@ -281,6 +282,7 @@ export class PathwaysService {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
 
+    await assertStudentScope(this.prisma, actor, selection.studentId);
     return selection;
   }
 
@@ -304,6 +306,7 @@ export class PathwaysService {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
 
+    await assertStudentScope(this.prisma, actor, studentId);
     const history = await this.prisma.studentPathwaySelection.findMany({
       where: { studentId },
       include: { track: { include: TRACK_INCLUDE } },
@@ -325,7 +328,7 @@ export class PathwaysService {
 
     const [active, totalSeniorStudents] = await Promise.all([
       this.prisma.studentPathwaySelection.findMany({
-        where: { schoolId: targetSchoolId, isActive: true },
+        where: { schoolId: targetSchoolId, isActive: true, ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}) },
         include: { track: { include: TRACK_INCLUDE } },
       }),
       this.prisma.user.count({
@@ -333,6 +336,7 @@ export class PathwaysService {
           schoolId: targetSchoolId,
           role: Role.STUDENT,
           grade: { in: SENIOR_SCHOOL_GRADES },
+          AND: [await studentScope(this.prisma, actor)],
         },
       }),
     ]);

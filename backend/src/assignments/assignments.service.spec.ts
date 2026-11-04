@@ -7,6 +7,7 @@ describe('AssignmentsService academic scoping', () => {
   function createService() {
     const prisma = {
       studentProfile: { findUnique: jest.fn() },
+      teacherAssignment: { findMany: jest.fn().mockResolvedValue([{ subject: "Mathematics", stream_id: "stream-1", stream: { name: "1B", grade: "Grade 11" } }]) },
       assignment: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
     };
     const sms = { getStudentRecipients: jest.fn(), notifyNewAssignment: jest.fn() };

@@ -318,6 +318,7 @@ enum InstitutionType {
 }
 
 model School {
+  streams Stream[]
   paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
   id                 Int                 @id @default(autoincrement())
@@ -376,6 +377,7 @@ model School {
 }
 
 model User {
+  teacherAssignments TeacherAssignment[]
   paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
   id       Int    @id @default(autoincrement())
@@ -487,6 +489,7 @@ model User {
   reviewedSbaEvidence              StudentSbaEvidence[] @relation("SbaEvidenceReviewer")
   presenceSessions                 UserPresenceSession[]
 
+  @@unique([id, schoolId])
   @@unique([schoolId, email])
   @@unique([schoolId, admissionNumber])
   @@index([schoolId])
@@ -2848,4 +2851,26 @@ model MpesaRawCallbackEvent {
   raw_payload String @db.Text
   created_at DateTime @default(now())
   @@unique([legacy_tuma_id,payload_hash])
+}
+
+model Stream {
+  id String @id @default(uuid())
+  school_id Int
+  school School @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  grade String
+  name String
+  assignments TeacherAssignment[]
+  @@unique([id, school_id])
+  @@unique([school_id, grade, name])
+}
+model TeacherAssignment {
+  id String @id @default(uuid())
+  teacher_id Int
+  school_id Int
+  subject String
+  stream_id String
+  teacher User @relation(fields: [teacher_id, school_id], references: [id, schoolId], onDelete: Cascade)
+  stream Stream @relation(fields: [stream_id, school_id], references: [id, school_id], onDelete: Cascade)
+  @@unique([teacher_id, subject, stream_id])
+  @@index([school_id, teacher_id])
 }

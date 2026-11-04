@@ -26,7 +26,8 @@
     "fix:assignment-grades": "ts-node prisma/fix-assignment-lab-grades.ts",
     "test:mpesa": "ts-node scripts/test-mpesa.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "seed:teacher-demo": "ts-node src/scripts/seed-teacher-demo.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.840.0",

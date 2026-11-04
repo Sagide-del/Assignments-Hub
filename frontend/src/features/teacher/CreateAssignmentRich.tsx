@@ -1,3 +1,5 @@
+import { teacherApi } from "../../api/teacher.api";
+import { useAuthStore } from "../../store/auth.store";
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -330,6 +332,9 @@ export function CreateAssignmentRich({
 } = {}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const teacherUser = useAuthStore(s => s.user);
+  const teacher = teacherUser?.role === 'TEACHER';
+  const { data: teachingClasses = [] } = useQuery({ queryKey: ['teaching-classes', teacherUser?.id], queryFn: teacherApi.classes, enabled: teacher, retry: false });
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState(initialAssignment?.title ?? '');
   const [description, setDescription] = useState(initialAssignment?.description ?? '');
@@ -617,6 +622,7 @@ export function CreateAssignmentRich({
         }
       />
 
+      {teacher && <section className="rounded-xl border border-slate-200 bg-white p-4"><label htmlFor="assignment-teaching-class" className="mb-2 block text-sm font-medium">My classes</label><select id="assignment-teaching-class" className="w-full rounded-lg border border-slate-300 p-2.5 text-sm" value={teachingClasses.find(c => c.subject === subject && gradeValue(c.stream.grade) === grade && c.stream.name === targetStream)?.id ?? ''} onChange={e => { const selected = teachingClasses.find(c => c.id === e.target.value); if (selected) { setSubject(selected.subject); setGrade(gradeValue(selected.stream.grade)); setTargetStream(selected.stream.name); setTargetClass(''); } }}><option value="">Choose an assigned class</option>{teachingClasses.map(c => <option key={c.id} value={c.id}>{c.subject} · {c.stream.grade} · {c.stream.name}</option>)}</select></section>}
       <AudienceBanner target={target} />
       {questionsLocked ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

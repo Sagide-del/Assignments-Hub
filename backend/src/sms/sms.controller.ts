@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { SmsService } from './sms.service';
 import { BroadcastSmsDto } from './dto/broadcast-sms.dto';
@@ -8,6 +10,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditAction } from '../common/decorators/audit.decorator';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('sms')
 export class SmsController {
   constructor(
@@ -22,7 +25,7 @@ export class SmsController {
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN, Role.TEACHER)
   @AuditAction('sms.broadcast')
   async broadcast(@Body() dto: BroadcastSmsDto, @CurrentUser() actor: AuthenticatedUser) {
-    const recipients = await this.smsService.getStudentRecipients(actor.schoolId, dto.grade);
+    const recipients = await this.smsService.getStudentRecipients(actor.schoolId, dto.grade, undefined, undefined, actor);
     const summary = await this.smsService.broadcast({
       schoolId: actor.schoolId,
       message: dto.message,
@@ -48,7 +51,8 @@ export class SmsController {
       throw new ForbiddenException('You cannot access another school\'s data');
     }
 
-    const recipients = await this.smsService.getStudentRecipients(assignment.schoolId, assignment.grade);
+    if (actor.role === Role.TEACHER && assignment.createdById !== actor.id) throw new ForbiddenException("You can only notify your own assignments.");
+    const recipients = await this.smsService.getStudentRecipients(assignment.schoolId, assignment.grade, assignment.targetClass, assignment.targetStream, actor);
     const summary = await this.smsService.notifyNewAssignment({
       schoolId: assignment.schoolId,
       assignmentId: assignment.id,
@@ -66,6 +70,6 @@ export class SmsController {
   @Get('logs')
   @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN, Role.TEACHER)
   async logs(@CurrentUser() actor: AuthenticatedUser) {
-    return this.smsService.getLogs(actor.schoolId);
+    return this.smsService.getLogs(actor.schoolId, 100, actor);
   }
 }

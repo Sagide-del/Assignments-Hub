@@ -1,3 +1,4 @@
+import { submissionScope, assertStudentScope } from "../teacher-scope/scope";
 import {
   BadRequestException,
   ConflictException,
@@ -270,6 +271,7 @@ export class SubmissionsService {
 
     return this.prisma.submission.findMany({
       where: {
+        AND: [await submissionScope(this.prisma, actor)],
         assignmentId: filters.assignmentId,
         assignment: targetSchoolId
           ? {
@@ -328,6 +330,7 @@ export class SubmissionsService {
       throw new ForbiddenException('You can only review submissions for assignments you created');
     }
 
+    if (actor.role === Role.TEACHER) await assertStudentScope(this.prisma, actor, submission.studentId, submission.assignment.subject);
     return submission;
   }
 

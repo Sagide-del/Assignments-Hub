@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { TeacherScopeGuard } from "../teacher-scope/teacher-scope.guard";
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { LabSessionsService } from './lab-sessions.service';
 import { CreateLabSessionDto } from './dto/create-lab-session.dto';
@@ -8,6 +10,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { AuditAction } from '../common/decorators/audit.decorator';
 import { OptionalParseIntPipe } from '../common/pipes/optional-parse-int.pipe';
 
+@UseGuards(TeacherScopeGuard)
 @Controller('lab-sessions')
 export class LabSessionsController {
   constructor(private readonly labSessionsService: LabSessionsService) {}

@@ -7,6 +7,8 @@ on:
       - 'backend/src/kjsea/**'
       - 'backend/src/cms/**'
       - 'backend/src/submissions/**'
+      - 'backend/src/teacher-scope/**'
+      - 'backend/src/__tests__/rbac.spec.ts'
       - 'backend/src/labs/**'
       - 'backend/src/ai-content/**'
       - 'backend/src/ai/**'
@@ -31,6 +33,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rbac_test
+          POSTGRES_PASSWORD: rbac_test_local_only
+          POSTGRES_DB: rbac_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rbac_test -d rbac_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -63,7 +76,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://schema_check:unused@127.0.0.1:5432/schema_check
           NODE_OPTIONS: --max-old-space-size=3072
-        run: npm ci && npx prisma validate && npm test -- --runInBand src/cms src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+        run: npm ci && npx prisma validate && npm test -- --runInBand src/cms src/kjsea src/submissions src/lab-sessions src/question-bank src/mnemonic-cards src/teacher-scope src/assignments src/reports && npm test -- --runInBand src/ai-content src/ai/openai.service.spec.ts src/ai/ai-provider-router.service.spec.ts && npm test -- --runInBand src/independent-students src/payment src/auth && npm run build
+      - name: Verify teacher data isolation against PostgreSQL
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
+          RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
+        run: npx prisma db push --skip-generate && npm test -- --runInBand src/__tests__/rbac.spec.ts
+      - name: Wait for teacher scope API and migration
+        working-directory: frontend
+        run: node scripts/check-teacher-api.mjs
       - name: Wait for assessment API capabilities
         working-directory: frontend
         run: node scripts/check-kjsea-api.mjs

@@ -1,3 +1,4 @@
+import { studentScope } from "../teacher-scope/scope";
 import { assessStudio } from "../labs/studio-engine";
 import {
   practicalFor,
@@ -219,7 +220,7 @@ export class LabSessionsService {
     });
   }
 
-  findAll(
+  async findAll(
     actor: AuthenticatedUser,
     filters: { studentId?: number; schoolId?: number } = {},
   ) {
@@ -235,6 +236,7 @@ export class LabSessionsService {
 
     return this.prisma.labSession.findMany({
       where: {
+        ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}),
         schoolId: targetSchoolId,
         studentId: filters.studentId,
       },

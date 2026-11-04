@@ -1,3 +1,4 @@
+import { TeacherAssignments } from "../../features/school-admin/TeacherAssignments";
 import { lazy } from 'react';
 import { createBrowserRouter, Link, Navigate, useLocation } from 'react-router-dom';
 
@@ -181,6 +182,7 @@ const teacherNav = [
 
 
 const schoolAdminNav = [
+  { to: "/school-admin/teaching-assignments", label: "Teaching assignments" },
   {
     to: '/school-admin',
     label: 'Dashboard',
@@ -442,6 +444,10 @@ export const router = createBrowserRouter([
           {
             path: '/school-admin',
             element: <SchoolAdminDashboard />,
+          },
+          {
+            path: '/school-admin/teaching-assignments',
+            element: <TeacherAssignments />,
           },
           {
             path: '/school-admin/branding',

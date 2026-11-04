@@ -12,6 +12,7 @@ describe('PresenceService', () => {
     email: null,
     admissionNumber: 'MBA001',
     grade: 'Grade 7',
+    isIndependentTrial: false,
   };
 
   function setup() {
