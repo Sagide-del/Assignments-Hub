@@ -30,8 +30,8 @@ jobs:
               console.log(`::notice title=CSL route check::${path}: HTTP ${r.status}, expected ${want}`);
               if(r.status!==want)throw Error(`${path}: HTTP ${r.status}, expected ${want}`);
             }
-            const storage=await request('/csl/storage-check',{method:'POST',headers});
-            const body=await storage.json().catch(()=>({}));
+            let storage,body;
+            for(let i=0;i<10;i++){storage=await request('/csl/storage-check',{method:'POST',headers});body=await storage.json().catch(()=>({}));if(body.storage_diagnostic||body.photo_storage_verified||storage.status!==503)break;await new Promise(r=>setTimeout(r,3000));}
             const report={http:storage.status,upload_read_verified:body.photo_storage_verified===true,cleanup_verified:body.diagnostic_cleanup_verified===true,failure_stage:body.failure_stage??null,storage_diagnostic:body.storage_diagnostic??null,message:typeof body.message==='string'?body.message.slice(0,250):null};
             console.log('::notice title=CSL storage result::'+JSON.stringify(report));
             if(!storage.ok||!report.upload_read_verified)throw Error('Private photo upload/read failed: '+JSON.stringify(report));

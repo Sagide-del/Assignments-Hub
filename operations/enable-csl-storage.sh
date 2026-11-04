@@ -28,7 +28,7 @@ p=Path(sys.argv[1]);auth=json.loads((p/'login.json').read_text())
 if auth.get('user',{}).get('role')!='TEACHER' or not auth.get('accessToken'): raise SystemExit('Demo teacher login failed. No AWS settings changed.')
 h=p/'headers';h.write_text('Authorization: Bearer '+auth['accessToken']+'\n');h.chmod(0o600)
 PY
-curl -fsS --max-time 45 -X POST -H "@$CSL_WORK/headers" "$CSL_API/csl/storage-check" -o "$CSL_WORK/storage.json"
+curl -sS --max-time 45 -X POST -H "@$CSL_WORK/headers" "$CSL_API/csl/storage-check" -o "$CSL_WORK/storage.json"
 python3 - "$CSL_WORK" <<'PY'
 import json,sys,re
 from pathlib import Path
@@ -69,7 +69,7 @@ case "$CSL_RESOURCE" in
 esac
 CSL_VERIFIED=false
 for CSL_ATTEMPT in 1 2 3 4 5 6; do
-  curl -fsS --max-time 45 -X POST -H "@$CSL_WORK/headers" "$CSL_API/csl/storage-check" -o "$CSL_WORK/verified.json"
+  curl -sS --max-time 45 -X POST -H "@$CSL_WORK/headers" "$CSL_API/csl/storage-check" -o "$CSL_WORK/verified.json"
   if python3 - "$CSL_WORK/verified.json" <<'PY'
 import json,sys
 p=json.load(open(sys.argv[1]));sys.exit(0 if p.get('photo_storage_verified') and p.get('diagnostic_cleanup_verified') else 1)
