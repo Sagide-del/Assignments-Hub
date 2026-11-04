@@ -46,7 +46,7 @@ export function SchoolAdminBilling() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<string | null>(null);
   const [billingEmail, setBillingEmail] = useState(user?.email ?? '');
-  const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
+  const [interval, setInterval] = useState<'annual'>('annual');
   const [payerName, setPayerName] = useState(user?.name ?? '');
   const [payerPhone, setPayerPhone] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
@@ -188,7 +188,7 @@ export function SchoolAdminBilling() {
               {current?.school.name ?? 'School'} • {current?.pricing.studentCount ?? 0} learners
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-              <SummaryTile label="Monthly amount" value={formatCurrency(current?.pricing.amountKES)} />
+              <SummaryTile label="Annual amount" value={formatCurrency(current?.pricing.amountKES)} />
               <SummaryTile
                 label="Renewal"
                 value={formatDate(current?.subscription?.currentPeriodEnd ?? current?.subscription?.expiresAt)}
@@ -212,7 +212,7 @@ export function SchoolAdminBilling() {
           icon={<BuildingIcon />}
         />
         <MetricCard
-          label="Monthly Due"
+          label="Annual Due"
           value={formatCurrency(current?.pricing.amountKES)}
           icon={<InvoiceIcon />}
         />
@@ -393,8 +393,8 @@ export function SchoolAdminBilling() {
 
 function ProviderCard(props: {
   provider: BillingProviderConfig;
-  interval: 'monthly' | 'annual';
-  setInterval: (value: 'monthly' | 'annual') => void;
+  interval: 'annual';
+  setInterval: (value: 'annual') => void;
   billingEmail: string;
   setBillingEmail: (value: string) => void;
   payerName: string;
@@ -438,10 +438,9 @@ function ProviderCard(props: {
           <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Billing interval</label>
           <select
             value={props.interval}
-            onChange={(event) => props.setInterval(event.target.value as 'monthly' | 'annual')}
+            onChange={(event) => props.setInterval(event.target.value as 'annual')}
             className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-[#101820]"
           >
-            <option value="monthly">Monthly</option>
             <option value="annual">Annual</option>
           </select>
         </div>

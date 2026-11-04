@@ -19,7 +19,7 @@ import PDFDocument = require("pdfkit");
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { Role } from "../common/enums/role.enum";
 import {
-  computeMonthlyPriceKES,
+  computeAnnualPriceKES,
   ComputedPricing,
   SchoolType,
 } from "../common/config/plans";
@@ -81,10 +81,14 @@ export class PaymentService {
     return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
   }
 
-  private normalizeInterval(interval?: string): SubscriptionInterval {
-    return interval?.toLowerCase() === "annual"
-      ? SubscriptionInterval.ANNUAL
-      : SubscriptionInterval.MONTHLY;
+  private normalizeInterval(_interval?: string): SubscriptionInterval {
+    if (_interval && _interval.toLowerCase() !== "annual")
+      throw new BadRequestException(
+        "School subscriptions are billed annually at KES 200 per learner.",
+      );
+    // New school invoices always cover one year. Legacy invoice intervals
+    // remain unchanged when already-issued invoices are settled.
+    return SubscriptionInterval.ANNUAL;
   }
 
   private buildCurrentPeriodEnd(
@@ -92,11 +96,15 @@ export class PaymentService {
     interval: SubscriptionInterval,
   ): Date {
     const end = new Date(start);
-    if (interval === SubscriptionInterval.ANNUAL) {
-      end.setFullYear(end.getFullYear() + 1);
-    } else {
-      end.setMonth(end.getMonth() + 1);
-    }
+    const day = end.getUTCDate();
+    end.setUTCDate(1);
+    if (interval === SubscriptionInterval.ANNUAL)
+      end.setUTCFullYear(end.getUTCFullYear() + 1);
+    else end.setUTCMonth(end.getUTCMonth() + 1);
+    const last = new Date(
+      Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    end.setUTCDate(Math.min(day, last));
     return end;
   }
 
@@ -313,7 +321,7 @@ export class PaymentService {
     const studentCount = await this.prisma.user.count({
       where: { schoolId, role: Role.STUDENT },
     });
-    return computeMonthlyPriceKES(studentCount, school.type as SchoolType);
+    return computeAnnualPriceKES(studentCount, school.type as SchoolType);
   }
 
   async getPricingForSchool(schoolId: number): Promise<ComputedPricing> {
@@ -324,7 +332,9 @@ export class PaymentService {
     await this.ensureProviderConfigs();
     const configs = await this.prisma.paymentProviderConfig.findMany({
       // Exclude retired methods from new payment choices.
-      where: { method: { not: PaymentMethod.PAYSTACK } },
+      where: {
+        method: { notIn: [PaymentMethod.PAYSTACK, PaymentMethod.MPESA] },
+      },
       orderBy: { displayName: "asc" },
     });
     return configs.map((config) => this.mapProviderConfig(config));
@@ -341,6 +351,11 @@ export class PaymentService {
     });
     if (!school) throw new NotFoundException("School not found");
 
+    if (pricing.studentCount < 1)
+      throw new BadRequestException(
+        "Register at least one learner before requesting an annual invoice.",
+      );
+    interval = SubscriptionInterval.ANNUAL;
     const now = new Date();
     const dueAt = this.buildCurrentPeriodEnd(now, interval);
 
@@ -404,41 +419,6 @@ export class PaymentService {
     };
   }
 
-  private async completeFreeTierActivation(
-    schoolId: number,
-    pricing: ComputedPricing,
-    interval: SubscriptionInterval,
-    invoiceId: number,
-    paymentTransactionId: number,
-    paymentMethod: PaymentMethod = PaymentMethod.INTASEND,
-  ) {
-    if (pricing.amountKES > 0) return null;
-
-    await this.activateSubscription(schoolId, {
-      planName: pricing.tier.name,
-      amountKES: pricing.amountKES,
-      studentCount: pricing.studentCount,
-      schoolType: pricing.schoolType,
-      interval,
-      paymentMethod,
-      invoiceId,
-      paymentTransactionId,
-      rawPayload: {
-        provider: paymentMethod,
-        freeTier: true,
-      },
-    });
-
-    return {
-      free: true,
-      tier: pricing.tier.name,
-      studentCount: pricing.studentCount,
-      invoiceId,
-      paymentTransactionId,
-      message: `This school qualifies for the Free tier (${pricing.studentCount} students) â€” activated with no payment required.`,
-    };
-  }
-
   private async finalizeCheckoutFailure(
     invoiceId: number,
     paymentTransactionId: number,
@@ -484,17 +464,6 @@ export class PaymentService {
       PaymentMethod.INTASEND,
       interval,
     );
-
-    const freeTierResponse = await this.completeFreeTierActivation(
-      schoolId,
-      pricing,
-      interval,
-      invoice.id,
-      paymentTransaction.id,
-    );
-    if (freeTierResponse) {
-      return freeTierResponse;
-    }
 
     try {
       const checkout = await this.intaSendProvider.createCheckout({
@@ -548,14 +517,14 @@ export class PaymentService {
       "SCHOOL",
       email,
       schoolId,
-      SubscriptionInterval.MONTHLY,
+      SubscriptionInterval.ANNUAL,
     );
   }
 
   async createSubscription(
     email: string,
     schoolId: number,
-    interval: string = "monthly",
+    interval: string = "annual",
   ) {
     return this.startIntaSendCheckout(
       "SUB",
@@ -618,64 +587,17 @@ export class PaymentService {
   }
 
   async createMpesaPayment(
-    actor: AuthenticatedUser,
-    input: {
+    _actor: AuthenticatedUser,
+    _input: {
       schoolId?: number;
       payerName: string;
       payerPhone: string;
       interval?: string;
     },
   ) {
-    const schoolId = this.resolveTargetSchoolId(actor, input.schoolId);
-    const provider = await this.getProviderConfig(PaymentMethod.MPESA);
-    if (!provider.isActive) {
-      throw new BadRequestException("M-Pesa payments are currently disabled");
-    }
-
-    const pricing = await this.computePricingForSchool(schoolId);
-    const interval = this.normalizeInterval(input.interval);
-    const { invoice, paymentTransaction } = await this.createBillingRecords(
-      schoolId,
-      pricing,
-      PaymentMethod.MPESA,
-      interval,
+    throw new BadRequestException(
+      "Schools use annual bank-payment onboarding. Tuma STK access is available to individual learners.",
     );
-
-    const providerResponse = await this.mpesaProvider.createCheckout({
-      email: input.payerPhone,
-      amountKES: pricing.amountKES,
-      currency: "KES",
-      apiRef: this.buildApiRef(
-        "SUB",
-        schoolId,
-        pricing,
-        invoice.id,
-        paymentTransaction.id,
-        interval,
-      ),
-      host: this.configService.get("APP_URL") || undefined,
-      redirectUrl: this.configService.get("PAYMENT_REDIRECT_URL") || undefined,
-    });
-
-    const updatedTransaction = await this.prisma.paymentTransaction.update({
-      where: { id: paymentTransaction.id },
-      data: {
-        status: PaymentStatus.PENDING,
-        payerName: input.payerName,
-        payerPhone: input.payerPhone,
-        metadata: this.toJsonValue({
-          providerResponse: providerResponse.rawResponse,
-          providerReady: false,
-        }),
-      },
-    });
-
-    return {
-      invoice,
-      paymentTransaction: updatedTransaction,
-      provider: this.mapProviderConfig(provider),
-      providerResponse: providerResponse.rawResponse,
-    };
   }
 
   verifyWebhookChallenge(payload: any): boolean {
@@ -894,7 +816,7 @@ export class PaymentService {
     });
 
     this.logger.log(
-      `Activated "${data.planName}" subscription for school ${schoolId} (KES ${data.amountKES}/mo, ${data.studentCount} students, ${data.schoolType}, expires ${expiresAt.toISOString()})`,
+      `Activated "${data.planName}" subscription for school ${schoolId} (KES ${data.amountKES} per ${data.interval === "ANNUAL" ? "year" : "historical month"}, ${data.studentCount} students, ${data.schoolType}, expires ${expiresAt.toISOString()})`,
     );
   }
 
@@ -1341,6 +1263,11 @@ export class PaymentService {
     doc.text(`School: ${invoice.school.name}`);
     doc.text(`Plan: ${invoice.planSnapshot ?? "Subscription"}`);
     doc.text(`Student Count Snapshot: ${invoice.studentCountSnapshot ?? 0}`);
+    doc.text(
+      `Billing period: ${invoice.interval === "ANNUAL" ? "Annual" : "Historical monthly invoice"}`,
+    );
+    if (invoice.planSnapshot === "School Annual")
+      doc.text("Annual rate: KES 200 per learner per year");
     doc.text(`Amount Due: KES ${invoice.amountKES.toLocaleString()}`);
     doc.text(`Payment Method: ${invoice.paymentMethod ?? "Pending selection"}`);
     doc.text(

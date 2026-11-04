@@ -95,3 +95,31 @@ describe("Tuma documented API contract", () => {
     );
   });
 });
+
+it("rejects fractional shillings before contacting Tuma and keeps descriptions within 13 characters", async () => {
+  await expect(setup().initiate({ ...input, amount: 1.5 })).rejects.toThrow(
+    "whole shillings",
+  );
+  expect(http.post).not.toHaveBeenCalled();
+  http.post
+    .mockResolvedValueOnce({ data: { success: true, token: "token" } })
+    .mockResolvedValueOnce({ data: response });
+  await setup().initiate({ ...input, amount: 1 });
+  expect(
+    (http.post.mock.calls[1][1] as { description: string }).description.length,
+  ).toBeLessThanOrEqual(13);
+});
+it("refuses to disguise the production Tuma API as a sandbox", () => {
+  const p = new TumaPaymentProvider({
+    get: (key: string) =>
+      (
+        ({
+          ...config,
+          TUMA_ENV: "sandbox",
+          TUMA_SANDBOX_CONFIRMED: "true",
+          TUMA_API_BASE_URL: "https://api.tuma.co.ke",
+        }) as any
+      )[key],
+  } as any);
+  expect(p.isConfigured()).toBe(false);
+});

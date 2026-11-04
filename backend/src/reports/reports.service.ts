@@ -6,7 +6,7 @@ import { AiUsageStatus, SubmissionStatus, SubscriptionStatus } from '@prisma/cli
 import { resolveAiMonthlyLimit } from '../common/config/ai-limits';
 
 // Subscription rows created via PaymentService.activateSubscription() store
-// the actual amountKES charged (a snapshot of student count x tier rate at
+// the actual amountKES charged (a snapshot of annual school billing; annual snapshots are divided by 12 for this monthly revenue estimate at
 // the time), so revenue is a straight sum of that — not a plan-name lookup.
 // Rows predating this pricing model (or created manually with no payment,
 // e.g. the seeded demo trial) have amountKES === null and contribute 0.
@@ -179,7 +179,7 @@ export class ReportsService {
     });
 
     const activeSubs = subscriptions.filter((s) => s.status === SubscriptionStatus.ACTIVE);
-    const estimatedMonthlyRevenueKES = activeSubs.reduce((sum, s) => sum + (s.amountKES ?? 0), 0);
+    const estimatedMonthlyRevenueKES = activeSubs.reduce((sum, s) => sum + (s.amountKES ?? 0) / (s.interval === 'ANNUAL' ? 12 : 1), 0);
 
     const schoolsBySubscriptionStatus = subscriptions.reduce<Record<string, number>>((acc, s) => {
       acc[s.status] = (acc[s.status] ?? 0) + 1;
@@ -190,7 +190,7 @@ export class ReportsService {
       type: 'financial',
       generatedAt,
       scope: targetSchoolId ? 'school' : 'platform',
-      note: 'Revenue sums the amountKES recorded on each active subscription at the time it was activated (student count x tier rate). Older/manually-created rows with no recorded amount contribute 0.',
+      note: 'Revenue sums the amountKES recorded on each active subscription at the time it was activated (annual school billing; annual snapshots are divided by 12 for this monthly revenue estimate). Older/manually-created rows with no recorded amount contribute 0.',
       estimatedMonthlyRevenueKES,
       activeSubscriptions: activeSubs.length,
       totalSubscriptionRecords: subscriptions.length,

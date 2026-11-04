@@ -1,3 +1,4 @@
+import { INDIVIDUAL_MONTHLY_KES } from "../common/config/plans";
 import {
   BadRequestException,
   ConflictException,
@@ -70,12 +71,8 @@ export class IndependentStudentsService {
       this.configService
         .get<string>("INDEPENDENT_MPESA_STORE_NUMBER")
         ?.trim() || "";
-    const monthlyAmountKES = this.readPositiveAmount(
-      "INDEPENDENT_MONTHLY_PRICE_KES",
-    );
-    const annualAmountKES = this.readPositiveAmount(
-      "INDEPENDENT_ANNUAL_PRICE_KES",
-    );
+    const monthlyAmountKES = INDIVIDUAL_MONTHLY_KES;
+    const annualAmountKES = INDIVIDUAL_MONTHLY_KES * 12;
 
     return {
       enabled: Boolean(tillNumber && monthlyAmountKES),

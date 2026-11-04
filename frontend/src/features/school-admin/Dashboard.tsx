@@ -298,8 +298,8 @@ export function SchoolAdminDashboard() {
         <h2 className="font-medium text-sm mb-2">Subscription</h2>
         {pricing ? (
           <p className="text-sm text-gray-600">
-            {pricing.tier.name} plan · {pricing.studentCount} students · KES {pricing.ratePerStudent}/student/month
-            ({pricing.schoolType.toLowerCase()}) = <span className="font-medium">KES {pricing.amountKES.toLocaleString()}/mo</span>
+            {pricing.tier.name} plan · {pricing.studentCount} students · KES {pricing.ratePerStudent}/learner/year
+            ({pricing.schoolType.toLowerCase()}) = <span className="font-medium">KES {pricing.amountKES.toLocaleString()}/year</span>
           </p>
         ) : (
           <p className="text-sm text-gray-500">Loading pricing...</p>

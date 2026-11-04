@@ -24,6 +24,7 @@
     "cms:migrate-legacy": "ts-node src/scripts/migrate-question-bank.ts",
     "fix:grades": "ts-node prisma/fix-grade-format.ts",
     "fix:assignment-grades": "ts-node prisma/fix-assignment-lab-grades.ts",
+    "test:mpesa": "ts-node scripts/test-mpesa.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },

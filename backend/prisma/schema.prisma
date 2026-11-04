@@ -318,6 +318,7 @@ enum InstitutionType {
 }
 
 model School {
+  paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
   id                 Int                 @id @default(autoincrement())
   name               String
@@ -375,6 +376,7 @@ model School {
 }
 
 model User {
+  paymentLedger Payment[]
   kjseaMockAttempts KjseaMockAttempt[]
   id       Int    @id @default(autoincrement())
   schoolId Int    @map("school_id")
@@ -1179,15 +1181,8 @@ model Subscription {
   schoolId Int    @map("school_id")
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  // `plan` is now the auto-resolved tier name (Free/Starter/Standard/
-  // Premium/Enterprise) at the time this subscription was created/paid —
-  // see backend/src/common/config/plans.ts. It's no longer something a
-  // client selects; PaymentService computes it from the school's live
-  // student count + type. amountKES/studentCount/schoolType are a snapshot
-  // of the numbers that produced that amount, kept for accurate revenue
-  // reporting even as a school's enrollment changes later. All three are
-  // nullable so older rows (created before this pricing model existed, e.g.
-  // the seeded demo trial) remain valid.
+  // New school payments snapshot "School Annual" at KES 200/learner/year.
+  // Legacy plan names, amounts and monthly periods remain historical records.
   plan               String
   status             SubscriptionStatus   @default(TRIAL)
   amountKES          Int?                 @map("amount_kes")
@@ -2804,4 +2799,39 @@ model CurriculumTaxonomy {
   updated_at DateTime @updatedAt
 
   @@index([grade, pathway, track, subject])
+}
+
+// Financial ledger: Tuma orders retain their existing operational state/history.
+enum MpesaLedgerStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+model Payment {
+  id String @id @default(uuid())
+  user_id Int
+  user User @relation(fields:[user_id],references:[id],onDelete:Restrict)
+  school_id Int?
+  school School? @relation(fields:[school_id],references:[id],onDelete:Restrict)
+  amount Int
+  phone String
+  checkout_request_id String? @unique
+  mpesa_receipt String? @unique
+  status MpesaLedgerStatus @default(PENDING)
+  legacy_tuma_id Int @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  @@index([user_id,status])
+}
+model MpesaCallbackInbox {
+  id String @id @default(uuid())
+  event_key String @unique
+  reference String
+  payload Json
+  attempts Int @default(0)
+  next_attempt_at DateTime @default(now())
+  processed_at DateTime?
+  last_error String?
+  created_at DateTime @default(now())
+  @@index([processed_at,next_attempt_at])
 }
