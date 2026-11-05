@@ -1,0 +1,3 @@
+# Optional specialist package: pulls pymatgen/numpy/scipy; not needed for
+# the bounded exact SymPy conservation solver included in this service.
+balance-rxns==0.2.0

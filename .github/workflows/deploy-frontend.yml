@@ -10,6 +10,10 @@ on:
       - 'backend/src/csl/**'
       - 'backend/src/study-hub/**'
       - 'backend/src/student/**'
+      - 'backend/src/math-engine/**'
+      - 'backend/scripts/prepare-math-engine.mjs'
+      - 'backend/src/__tests__/math-engine.spec.ts'
+      - 'services/math-engine/**'
       - 'backend/src/__tests__/filtering.spec.ts'
       - 'backend/src/__tests__/content-delivery-phase1.spec.ts'
       - 'backend/src/__tests__/student-library.spec.ts'
@@ -96,6 +100,15 @@ jobs:
           path: frontend/dist/
           if-no-files-found: error
           retention-days: 7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify Python math engine
+        run: |
+          python -m venv backend/.math-venv
+          backend/.math-venv/bin/pip install -r services/math-engine/requirements-dev.txt
+          cd services/math-engine
+          ../../backend/.math-venv/bin/python -m unittest -f -v test_engine.py
       - name: Verify assessment backend
         working-directory: backend
         env:
@@ -108,12 +121,16 @@ jobs:
           DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           CMS_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/cms_publish_test
+          MATH_ENGINE_TEST_PYTHON: ${{ github.workspace }}/backend/.math-venv/bin/python
           TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: |
           npx prisma db push --skip-generate
           docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE cms_publish_test'
           DATABASE_URL="$CMS_TEST_DATABASE_URL" npx prisma migrate deploy
           npm test -- --runInBand
+      - name: Wait for Python math engine
+        working-directory: frontend
+        run: node scripts/check-math-api.mjs
       - name: Wait for student library API
         working-directory: frontend
         run: node scripts/check-library-api.mjs

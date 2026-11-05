@@ -13,3 +13,7 @@ dist/
 # by main.ts from ./uploads at runtime — not part of source control).
 uploads/*
 !uploads/.gitkeep
+
+# Local Python math runtime
+.math-venv/
+__pycache__/

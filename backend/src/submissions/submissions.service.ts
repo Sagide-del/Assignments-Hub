@@ -1,3 +1,5 @@
+import { GradingService } from "../student/grading.service";
+import { Optional } from "@nestjs/common";
 import { submissionScope, assertStudentScope } from "../teacher-scope/scope";
 import {
   BadRequestException,
@@ -52,6 +54,7 @@ export class SubmissionsService {
     private readonly prisma: PrismaService,
     private readonly smsService: SmsService,
     private readonly delivery: AssignmentDeliveryService,
+    @Optional() private readonly mathGrading?: GradingService,
   ) {}
 
   /**
@@ -139,7 +142,9 @@ export class SubmissionsService {
     let allAutoGraded = true;
     let totalScore = 0;
 
-    const answerRows = assignment.questions.map((q) => {
+    const verified = isFinal && this.mathGrading ? await this.mathGrading.verifiedQuestions(assignment) : new Map<number, any>();
+    const answerRows = [];
+    for (const q of assignment.questions) {
       const studentAnswer = answerByQuestionId.get(q.id) ?? '';
       let isCorrect: boolean | null = null;
       let pointsAwarded: number | null = null;
@@ -149,7 +154,9 @@ export class SubmissionsService {
       // whatever's typed so far, ungraded, so re-opening it later shows the
       // student's own in-progress answers rather than premature scores.
       if (isFinal && this.canAutoGradeQuestion(q)) {
-        const result = this.gradeAutoQuestion(q, studentAnswer);
+        const result = verified.has(q.id) && this.mathGrading
+          ? await this.mathGrading.grade(verified.get(q.id), studentAnswer, q.points)
+          : this.gradeAutoQuestion(q, studentAnswer);
         isCorrect = result.isCorrect;
         pointsAwarded = result.pointsAwarded;
         feedback = result.feedback;
@@ -158,8 +165,8 @@ export class SubmissionsService {
         allAutoGraded = false;
       }
 
-      return { questionId: q.id, studentAnswer, isCorrect, pointsAwarded, feedback };
-    });
+      answerRows.push({ questionId: q.id, studentAnswer, isCorrect, pointsAwarded, feedback });
+    }
 
     const fullyGraded = isFinal && allAutoGraded && answerRows.length > 0;
     const completedAt = isFinal ? new Date() : null;
