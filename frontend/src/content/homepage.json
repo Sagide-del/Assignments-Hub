@@ -1,0 +1,15 @@
+{
+  "title": "Assignment Hub Kenya | CBC Revision, KCBE Mocks, AI Study Coach (Grades 1-12)",
+  "description": "Kenya's most advanced CBC learning platform. Get instant feedback on assignments, AI-generated study timetables, 3D STEM labs, and KCBE mocks for Grades 1 to 12. Start free.",
+  "heading": "Kenya's Complete CBC & KCBE Learning Platform (Grades 1–12)",
+  "subtitle": "From PP1 to Grade 12. Master your exams with topic-led assignments, instant marking, AI-generated study plans, and interactive 3D labs.",
+  "faqs": [
+    {"question": "Which grades does Assignment Hub support?", "answer": "Assignment Hub supports grade-specific learning from Grade 1 to Grade 12, with early-years activities for PP1 and PP2. Available subjects, reviewed assignments and practical activities depend on the learner's grade and published content. Senior-school content also follows the learner's selected subjects."},
+    {"question": "Can I try CBC revision without paying or registering?", "answer": "Yes. Our public free revision collection currently includes Grade 7 Mathematics and Integrated Science samples with questions and worked answers. No account or payment is needed for these samples. Individual workspace access costs KES 300 per month after registration."},
+    {"question": "How does instant marking work?", "answer": "Auto-marked questions provide feedback after submission and result release. Supported exact mathematics and chemistry calculations use SymPy verification. Teacher-assessed work and unsupported calculations may need review; not every question is marked instantly."},
+    {"question": "What does the AI Study Coach do?", "answer": "The Learning Coach uses available assessment results to identify weaker topics and help create a weekly study plan. Study sessions can use active recall, spaced repetition and interleaving. Published cheat sheets support topic revision."},
+    {"question": "Are the KCBE and KJSEA mocks official examination papers?", "answer": "No. These are independent, timed practice papers, not official KNEC papers or predictions. School SBA and mock projections are planning estimates, not official national examination grades."},
+    {"question": "Does Assignment Hub require an app?", "answer": "No app installation is needed. Use a compatible modern browser on a phone, tablet or computer with internet access. Interactive 3D labs require a device and browser that support WebGL."},
+    {"question": "How do schools get access?", "answer": "Schools contact Assignment Hub for onboarding at KES 200 per learner per year. Teachers access only their assigned streams and subjects; school administrators can view school-wide reports and SBA projections. Contact us on WhatsApp at 0748 519 923."}
+  ]
+}

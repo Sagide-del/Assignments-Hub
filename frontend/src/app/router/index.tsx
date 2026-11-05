@@ -12,6 +12,7 @@ import { dashboardPathForRole } from '../../services/authService';
 
 import Login from '../../pages/Login';
 import Home from '../../pages/Home';
+import FreeRevision from '../../pages/FreeRevision';
 import IndependentRegister from '../../pages/IndependentRegister';
 
 import { StemLabsPage } from '../../features/student/StemLabs';
@@ -245,6 +246,7 @@ const platformAdminNav = [
 
 
 export const router = createBrowserRouter([
+  {path:'/free-revision',element:<FreeRevision/>},
 
   {
     path: '/login',

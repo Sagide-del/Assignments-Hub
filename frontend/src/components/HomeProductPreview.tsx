@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useRef, useState } from "react";
 import {
   BookOpen,
@@ -13,10 +14,10 @@ const previews = [
     id: "respiratory",
     label: "3D STEM labs",
     Icon: FlaskConical,
-    title: "Explore the respiratory system",
+    title: "Interactive 3D STEM Labs",
     context: "Grade 11 · Biology",
     description:
-      "Explore lung anatomy, change breathing settings and record observations in the practical workspace.",
+      "Don’t just read about the lungs—rotate them, adjust breathing rates and explore breathing mechanics.",
     alt: "Actual Assignment Hub respiratory simulator showing a labelled 3D lung model, anatomy controls, breathing rate and tidal volume settings.",
     source: { width: 1440, height: 1767 },
     crop: { x: 294, y: 290, width: 1104, height: 759 },
@@ -132,6 +133,14 @@ export function HomeProductPreview() {
           <p className="mt-1.5 min-h-[3.75rem] text-sm leading-6 text-slate-600">
             {preview.description}
           </p>
+          {preview.id === "respiratory" && (
+            <Link
+              to="/student/stem-labs"
+              className="mt-2 inline-flex min-h-10 items-center text-sm font-semibold text-[#526b00]"
+            >
+              Explore STEM Labs →
+            </Link>
+          )}
         </figcaption>
       </figure>
       <div
