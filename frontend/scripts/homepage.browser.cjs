@@ -59,7 +59,7 @@ mkdirSync(artifacts, { recursive: true });
       .waitFor();
     await staticPage.getByRole("link", { name: /Mathematics.*free questions/ }).click();
     await staticPage.waitForURL("**/revision/grade-7/mathematics/");
-    assert((await staticPage.locator('fieldset').count()) >= 10);
+    assert((await staticPage.locator('fieldset').count()) >= 3);
     await staticPage.getByRole('heading', { name: 'Answers and explanations' }).waitFor();
     await staticPage.screenshot({ path: join(artifacts, 'public-mathematics-without-javascript.png'), fullPage: true });
     const context = await browser.newContext();

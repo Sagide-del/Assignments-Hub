@@ -134,7 +134,10 @@ export default function PublicSamples({ module }: { module: MasterModule }) {
                 publish.isPending ||
                 withdraw.isPending
               }
-              onClick={() => publish.mutate()}
+              onClick={() => {
+                withdraw.reset();
+                publish.mutate();
+              }}
               className="rounded-lg bg-[#101820] px-4 py-3 font-semibold text-white disabled:opacity-40"
             >
               {publish.isPending ? "Saving…" : "Approve public samples"}
@@ -143,7 +146,10 @@ export default function PublicSamples({ module }: { module: MasterModule }) {
               <button
                 type="button"
                 disabled={withdraw.isPending || publish.isPending}
-                onClick={() => withdraw.mutate()}
+                onClick={() => {
+                  publish.reset();
+                  withdraw.mutate();
+                }}
                 className="rounded-lg border border-slate-300 px-4 py-3"
               >
                 Withdraw public samples

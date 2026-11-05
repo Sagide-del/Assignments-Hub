@@ -214,7 +214,13 @@ export class PublicRevisionService {
           tenant_id: true,
           content_json: true,
         },
-        orderBy: [{ grade: "asc" }, { subject: "asc" }, { topic: "asc" }],
+        orderBy: [
+          { grade: "asc" },
+          { subject: "asc" },
+          { topic: "asc" },
+          { updated_at: "desc" },
+          { id: "asc" },
+        ],
       }),
       this.prisma.curriculumTaxonomy.findMany({
         where: { grade: { gte: 1, lte: 12 } },

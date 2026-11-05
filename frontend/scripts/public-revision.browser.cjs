@@ -15,7 +15,7 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/public-revision-browser'
    }await context.close();
   }
   const context=await browser.newContext();const page=await context.newPage();const apiCalls=[];page.on('request',r=>{if(r.url().includes('/api/'))apiCalls.push(r.url());});
-  await page.goto(base+'/revision/grade-7/mathematics/');const count=await page.locator('fieldset').count();assert(count>=10);
+  await page.goto(base+'/revision/grade-7/mathematics/');const count=await page.locator('fieldset').count();assert(count>=3);
   for(const field of await page.locator('fieldset').all()){const answer=await field.getAttribute('data-answer');await field.locator(`input[value="${answer}"]`).check();}
   await page.getByRole('button',{name:'Check my answers',exact:true}).click();await page.getByRole('status').filter({hasText:`You scored ${count} out of ${count}`}).waitFor();
   assert.equal(await page.locator('details[open]').count(),count);await page.getByRole('button',{name:'Try again',exact:true}).click();assert.equal(await page.locator('input:checked').count(),0);assert.equal(apiCalls.length,0);

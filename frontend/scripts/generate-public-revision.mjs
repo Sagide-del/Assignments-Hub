@@ -228,8 +228,8 @@ export async function generatePublic({ publicDir = root, feed } = {}) {
   )
     throw Error("Invalid public revision feed");
   const pages = groupPages([
-    ...resources.map((r) => ({ ...r, grade: 7 })),
     ...(remote?.topics || []),
+    ...resources.map((r) => ({ ...r, grade: 7 })),
   ]);
   const taxonomy = remote?.taxonomy?.length ? remote.taxonomy : seed;
   const manifest = resolve(publicDir, "revision/spoke-manifest.json");

@@ -96,3 +96,30 @@ test("sitemap lists only published pages, withdrawal removes files, repeat build
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("reviewed CMS samples replace a starter topic instead of being silently ignored", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "public-review-override-"));
+  try {
+    await mkdir(join(dir, "revision"));
+    await writeFile(join(dir, "sitemap.xml"), "<urlset></urlset>");
+    const reviewed = {
+      ...topics[0],
+      questions: topics[0].questions.slice(0,3),
+      introduction:
+        "A newly reviewed introduction explaining the same topic with updated examples and guidance for learners to practise independently.",
+    };
+    await generatePublic({
+      publicDir: dir,
+      feed: { version: 1, topics: [reviewed], taxonomy: [] },
+    });
+    const html = await readFile(
+      join(dir, "revision/grade-7/mathematics/index.html"),
+      "utf8",
+    );
+    assert.equal((html.match(/<fieldset /g) || []).length, 8);
+    assert(html.includes(reviewed.introduction));
+    assert(!html.includes(topics[0].introduction));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
