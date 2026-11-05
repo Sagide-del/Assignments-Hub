@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {spawnSync} from 'node:child_process';
+const script=new URL('./check-math-api.mjs',import.meta.url).href;
+function run(status,body){return spawnSync(process.execPath,['--input-type=module','-e',`globalThis.setTimeout=(fn)=>{fn();return 0};globalThis.fetch=async()=>new Response(JSON.stringify(${JSON.stringify(body)}),{status:${status}});await import(${JSON.stringify(script)});`],{encoding:'utf8',timeout:10000});}
+test('readiness succeeds only for the expected live capability version',()=>{const r=run(200,{mathEngineVersion:1});assert.equal(r.status,0);assert.match(r.stdout,/passed its algebra and chemistry/);});
+test('readiness retains the gate and reports safe failure categories without dumping response bodies',()=>{const r=run(503,{code:'MATH_ENGINE_PYTHON_MISSING',message:'not logged',secret:'never-log-this'});assert.equal(r.status,1);assert.match(r.stdout,/HTTP 503.*MATH_ENGINE_PYTHON_MISSING/);assert.match(r.stderr,/Publication remains blocked/);assert(!r.stdout.includes('never-log-this'));const old=run(404,{});assert.equal(old.status,1);assert.match(old.stdout,/backend has not deployed/);});
+
+test('readiness recognises diagnostic codes through the production exception envelope',()=>{const r=run(503,{statusCode:503,message:"MATH_ENGINE_BUNDLE_MISSING: runtime is absent"});assert.equal(r.status,1);assert.match(r.stdout,/HTTP 503.*MATH_ENGINE_BUNDLE_MISSING/);});

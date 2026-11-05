@@ -261,6 +261,20 @@ integration("Phase 3 real private Python engine and NestJS integration", () => {
     expect(changed.size).toBe(0);
   });
 });
+describe("Math engine deployment diagnostics", () => {
+  it("reports a missing deployment bundle without attempting a silent startup loop", async () => {
+    const engine = new MathEngineService(new ConfigService({MATH_ENGINE_WORKDIR:"/tmp/assignmenthub-missing-runtime-fixture"}));
+    try { await engine.health(); throw Error("Expected unavailable runtime"); }
+    catch (error: any) { expect(error.getResponse()).toMatchObject({code:"MATH_ENGINE_BUNDLE_MISSING"}); }
+    finally {engine.onModuleDestroy();}
+  });
+  it("distinguishes a missing Python interpreter from missing runtime source", async () => {
+    const engine = new MathEngineService(new ConfigService({MATH_ENGINE_WORKDIR:join(process.cwd(),"runtime/math-engine"),MATH_ENGINE_PYTHON:"/tmp/assignmenthub-missing-python-fixture"}));
+    try { await engine.health(); throw Error("Expected unavailable interpreter"); }
+    catch (error: any) { expect(error.getResponse()).toMatchObject({code:"MATH_ENGINE_PYTHON_MISSING"}); }
+    finally {engine.onModuleDestroy();}
+  });
+});
 describe("Math engine failure handling", () => {
   it("propagates an outage instead of stamping generated answers as verified", async () => {
     const validator = new MathValidatorService({
