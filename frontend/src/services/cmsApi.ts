@@ -70,6 +70,22 @@ const list = (value: unknown): MasterModule[] => {
 // Reuse the app's token attachment, single-flight refresh and API base URL.
 // CMS administration routes are protected by the backend role guard.
 export const cmsApi = {
+  publishPublicSamples: (
+    id: string,
+    data: {
+      question_indices: number[];
+      introduction: string;
+      guidance: string[];
+      rights_confirmed: boolean;
+    },
+  ) =>
+    api
+      .post(`/cms/modules/${encodeURIComponent(id)}/public-samples`, data)
+      .then((r) => r.data),
+  withdrawPublicSamples: (id: string) =>
+    api
+      .patch(`/cms/modules/${encodeURIComponent(id)}/public-samples/withdraw`)
+      .then((r) => r.data),
   updateModule: (id: string, topic: string) =>
     api
       .patch(`/cms/modules/${encodeURIComponent(id)}`, { topic })

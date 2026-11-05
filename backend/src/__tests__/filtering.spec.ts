@@ -1,3 +1,4 @@
+import { PublicRevisionService } from "../cms/public-revision.service";
 import { PracticeController } from "../question-bank/practice.controller";
 import { PracticeService } from "../question-bank/practice.service";
 import "reflect-metadata";
@@ -574,6 +575,7 @@ integration(
           LabsService,
           SkillsService,
           CmsService,
+          PublicRevisionService,
           {
             provide: ConfigService,
             useValue: new ConfigService({

@@ -1,3 +1,4 @@
+import { PublicRevisionService } from "../cms/public-revision.service";
 import "reflect-metadata";
 import {
   Global,
@@ -289,6 +290,7 @@ integration("Authenticated subject-enrolled assignments", () => {
           }),
         },
         { provide: CmsService, useValue: cms },
+        { provide: PublicRevisionService, useValue: {} },
         { provide: PracticeService, useValue: practice },
       ],
     })

@@ -77,7 +77,7 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - name: Test verified publish and rollback
-        run: node --test scripts/deployment/publish-verified-rbac.test.mjs backend/scripts/deployment/provision-demo-academy.test.mjs
+        run: node --test scripts/deployment/public-routes.test.mjs scripts/deployment/publish-verified-rbac.test.mjs backend/scripts/deployment/provision-demo-academy.test.mjs
       - name: Check live RBAC verification configuration
         env:
           DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
@@ -91,11 +91,17 @@ jobs:
       - name: Type check frontend
         run: npx tsc -b
         working-directory: frontend
+      - name: Wait for reviewed public revision export
+        run: node scripts/wait-public-revision.mjs
+        working-directory: frontend
+        env:
+          PUBLIC_REVISION_FEED_URL: https://assignments-hub-api.onrender.com/api/v1/cms/public-revision
       - name: Build static frontend
         run: npm run build
         working-directory: frontend
         env:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
+          PUBLIC_REVISION_FEED_URL: https://assignments-hub-api.onrender.com/api/v1/cms/public-revision
       - name: Save frontend build for deployment recovery
         uses: actions/upload-artifact@v4
         with:
@@ -195,6 +201,7 @@ jobs:
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           node scripts/auth-ui.browser.cjs
           node scripts/homepage.browser.cjs
+          node scripts/public-revision.browser.cjs
       - name: Verify live SBA import access restrictions
         working-directory: frontend
         run: node scripts/check-sba-import-access.mjs

@@ -1,3 +1,7 @@
+import {
+  PublicRevisionService,
+  PublicSamplesDto,
+} from "./public-revision.service";
 import { UpdateModuleDto } from "./dto/update-module.dto";
 import { TaxonomyQueryDto } from "./dto/taxonomy-query.dto";
 import {
@@ -22,7 +26,10 @@ import { PublishDto } from "./dto/publish.dto";
 
 @Controller("cms")
 export class CmsController {
-  constructor(private readonly cms: CmsService) {}
+  constructor(
+    private readonly cms: CmsService,
+    private readonly publicRevision: PublicRevisionService,
+  ) {}
 
   @Post("drafts")
   @Roles(Role.PLATFORM_ADMIN)
@@ -122,7 +129,33 @@ export class CmsController {
 
   @Get("capabilities")
   @Public()
-  async capabilities() { return this.cms.capabilities(); }
+  async capabilities() {
+    return this.cms.capabilities();
+  }
+
+  @Post("modules/:id/public-samples")
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction("cms.public_samples_approved")
+  publishSamples(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() dto: PublicSamplesDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.publicRevision.publish(id, dto, actor.id);
+  }
+
+  @Patch("modules/:id/public-samples/withdraw")
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction("cms.public_samples_withdrawn")
+  withdrawSamples(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.publicRevision.withdraw(id);
+  }
+
+  @Get("public-revision")
+  @Public()
+  getPublicRevision() {
+    return this.publicRevision.catalogue();
+  }
 
   @Get("store")
   @Public()

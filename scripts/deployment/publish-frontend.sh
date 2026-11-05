@@ -11,10 +11,15 @@ mapfile -t DEPLOY_ORIGIN < <(python3 "$DEPLOY_SCRIPT_DIR/frontend-origin.py" < "
 [[ ${#DEPLOY_ORIGIN[@]} -ge 1 && -n "${DEPLOY_ORIGIN[0]}" ]] || { echo 'Could not resolve the S3 origin' >&2; exit 1; }
 DEPLOY_DEST="s3://${DEPLOY_ORIGIN[0]}${DEPLOY_ORIGIN[1]:+/${DEPLOY_ORIGIN[1]}}/"
 echo "Publishing frontend to $DEPLOY_DEST"
+DEPLOY_ROUTES="${PUBLIC_ROUTE_SNAPSHOT_DIR:-$(mktemp -d)}"
+if [[ ! -f "$DEPLOY_ROUTES/state.json" ]]; then
+  node "$DEPLOY_SCRIPT_DIR/public-routes.mjs" prepare "${DEPLOY_ORIGIN[0]}" "${DEPLOY_ORIGIN[1]}" "$FRONTEND_DIST" "$DEPLOY_ROUTES"
+fi
 # Upload dependencies before HTML. Retain old bundles for browsers with cached HTML.
 aws s3 sync "$FRONTEND_DIST/" "$DEPLOY_DEST" --exclude '*.html' --cache-control 'public,max-age=300' --only-show-errors
 aws s3 cp "$FRONTEND_DIST/assets/" "${DEPLOY_DEST}assets/" --recursive --cache-control 'public,max-age=31536000,immutable' --only-show-errors
 aws s3 cp "$FRONTEND_DIST/" "$DEPLOY_DEST" --recursive --exclude '*' --include '*.html' --cache-control 'no-cache,max-age=0,must-revalidate' --only-show-errors
+node "$DEPLOY_SCRIPT_DIR/public-routes.mjs" publish "${DEPLOY_ORIGIN[0]}" "${DEPLOY_ORIGIN[1]}" "$FRONTEND_DIST" "$DEPLOY_ROUTES"
 DEPLOY_INVALIDATION="$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths '/*' --query Invalidation.Id --output text)"
 echo "Waiting for CloudFront invalidation $DEPLOY_INVALIDATION"
 aws cloudfront wait invalidation-completed --distribution-id "$DISTRIBUTION_ID" --id "$DEPLOY_INVALIDATION"
@@ -27,4 +32,5 @@ if ! cmp -s "$FRONTEND_DIST/index.html" "$DEPLOY_HOME"; then
   exit 1
 fi
 rm -f "$DEPLOY_HOME"
-echo 'Verified: assignmenthub.co.ke serves the uploaded frontend.'
+node "$DEPLOY_SCRIPT_DIR/public-routes.mjs" verify "${DEPLOY_ORIGIN[0]}" "${DEPLOY_ORIGIN[1]}" "$FRONTEND_DIST" "$DEPLOY_ROUTES"
+echo 'Verified: assignmenthub.co.ke serves the uploaded frontend and public revision documents.'

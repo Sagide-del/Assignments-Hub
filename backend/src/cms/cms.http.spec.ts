@@ -1,3 +1,4 @@
+import { PublicRevisionService } from "./public-revision.service";
 import {
   Injectable,
   INestApplication,
@@ -112,6 +113,17 @@ const db: any = {
         })
         .map((row) => project(row, select)),
     ),
+    updateMany: jest.fn(async ({ where, data }) => {
+      const row = rows.get(where.id);
+      if (
+        !row ||
+        JSON.stringify(row.content_json) !==
+          JSON.stringify(where.content_json.equals)
+      )
+        return { count: 0 };
+      rows.set(where.id, { ...row, ...data });
+      return { count: 1 };
+    }),
     update: jest.fn(async ({ where, data }) => {
       const row = { ...rows.get(where.id), ...data, updated_at: new Date() };
       rows.set(row.id, row);
@@ -220,6 +232,7 @@ class TestJwtStrategy extends PassportStrategy(Strategy) {
   controllers: [CmsController],
   providers: [
     CmsService,
+    PublicRevisionService,
     TestJwtStrategy,
     { provide: PrismaService, useValue: db },
     { provide: AiProviderRouterService, useValue: ai },
@@ -750,5 +763,50 @@ describe("Master Content Library HTTP API", () => {
         )
       ).status,
     ).toBe(404);
+  });
+  it("public export exposes only explicitly reviewed samples and rejects non-platform publishers", async () => {
+    const module = await approved();
+    const sample = {
+      question_indices: [0, 1, 2],
+      introduction:
+        "Understand the four forces of flight by comparing lift and weight, then thrust and drag. Use each scenario to identify a force and explain its direction.",
+      guidance: [
+        "Sketch force arrows before choosing your answer.",
+        "Explain why the other options do not fit the scenario.",
+      ],
+      rights_confirmed: true,
+    };
+    const path = `/modules/${module.id}/public-samples`;
+    expect((await request(path, "POST", sample)).status).toBe(401);
+    for (const role of ["STUDENT", "TEACHER", "SCHOOL_ADMIN"])
+      expect((await request(path, "POST", sample, role)).status).toBe(403);
+    expect((await request("/public-revision")).data.topics).toEqual([]);
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { ...sample, rights_confirmed: false },
+          "PLATFORM_ADMIN",
+        )
+      ).status,
+    ).toBe(400);
+    expect((await request(path, "POST", sample, "PLATFORM_ADMIN")).status).toBe(
+      201,
+    );
+    const feed = await request("/public-revision");
+    expect(feed.status).toBe(200);
+    expect(feed.data.topics).toHaveLength(1);
+    expect(feed.data.topics[0].questions).toHaveLength(3);
+    expect(feed.data.topics[0]).not.toHaveProperty("content_json");
+    expect(JSON.stringify(feed.data)).not.toMatch(
+      /generation_cost_tokens|reviewed_by|verified_answer|tenant_id/,
+    );
+    expect(rows.get(module.id).content_json.questions).toHaveLength(30);
+    expect(
+      (await request(path + "/withdraw", "PATCH", undefined, "PLATFORM_ADMIN"))
+        .status,
+    ).toBe(200);
+    expect((await request("/public-revision")).data.topics).toEqual([]);
   });
 });

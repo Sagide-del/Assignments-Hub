@@ -24,6 +24,7 @@ finish() {
   if [[ "$RBAC_NEEDS_ROLLBACK" == true ]]; then
     echo 'Deployment verification failed. Restoring the previous production frontend.' >&2
     if aws s3 sync "$RBAC_TEMP/previous/" "$RBAC_DEST" --cache-control 'no-cache,max-age=0,must-revalidate' --only-show-errors &&
+       node "$RBAC_SCRIPT_DIR/public-routes.mjs" restore "${RBAC_ORIGIN[0]}" "${RBAC_ORIGIN[1]}" "$FRONTEND_DIST" "$RBAC_TEMP/routes" &&
        RBAC_INVALIDATION="$(aws cloudfront create-invalidation --distribution-id "$RBAC_DISTRIBUTION" --paths '/*' --query Invalidation.Id --output text)" &&
        aws cloudfront wait invalidation-completed --distribution-id "$RBAC_DISTRIBUTION" --id "$RBAC_INVALIDATION" &&
        curl -fsS --max-time 30 https://assignmenthub.co.ke/ -o "$RBAC_TEMP/restored.html" &&
@@ -43,7 +44,13 @@ aws cloudfront get-distribution-config --id "$RBAC_DISTRIBUTION" --query Distrib
 mapfile -t RBAC_ORIGIN < <(python3 "$RBAC_SCRIPT_DIR/frontend-origin.py" < "$RBAC_TEMP/distribution.json")
 [[ ${#RBAC_ORIGIN[@]} -ge 1 && -n "${RBAC_ORIGIN[0]}" ]] || { echo 'Origin could not be resolved.' >&2; exit 1; }
 RBAC_DEST="s3://${RBAC_ORIGIN[0]}${RBAC_ORIGIN[1]:+/${RBAC_ORIGIN[1]}}/"
-aws s3 sync "$RBAC_DEST" "$RBAC_TEMP/previous/" --only-show-errors
+export PUBLIC_ROUTE_SNAPSHOT_DIR="$RBAC_TEMP/routes"
+node "$RBAC_SCRIPT_DIR/public-routes.mjs" prepare "${RBAC_ORIGIN[0]}" "${RBAC_ORIGIN[1]}" "$FRONTEND_DIST" "$PUBLIC_ROUTE_SNAPSHOT_DIR"
+RBAC_ALIAS_EXCLUDES=()
+if [[ -f "$PUBLIC_ROUTE_SNAPSHOT_DIR/excludes.txt" ]]; then
+  while IFS= read -r route; do RBAC_ALIAS_EXCLUDES+=(--exclude "$route"); done < "$PUBLIC_ROUTE_SNAPSHOT_DIR/excludes.txt"
+fi
+aws s3 sync "$RBAC_DEST" "$RBAC_TEMP/previous/" "${RBAC_ALIAS_EXCLUDES[@]}" --only-show-errors
 curl -fsS --max-time 30 https://assignmenthub.co.ke/ -o "$RBAC_TEMP/public-before.html"
 cmp -s "$RBAC_TEMP/previous/index.html" "$RBAC_TEMP/public-before.html" || { echo 'S3 snapshot does not match the current public homepage. Stop before deployment.' >&2; exit 1; }
 RBAC_NEEDS_ROLLBACK=true

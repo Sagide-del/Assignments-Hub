@@ -50,7 +50,8 @@ export async function generate() {
   }
   // Keep existing public URLs and replace only the generated revision entries.
   const sitemapPath = resolve(publicDir, 'sitemap.xml');
-  const sitemap = (await readFile(sitemapPath, 'utf8')).replace(/\s*<url>\s*<loc>https:\/\/assignmenthub\.co\.ke\/revision\/[\s\S]*?<\/url>/g, '');
+  const owned = new Set(['/revision/', ...resources.map(pathFor)].map(path => origin + path));
+  const sitemap = (await readFile(sitemapPath, 'utf8')).replace(/\s*<url>\s*<loc>([^<]+)<\/loc>[\s\S]*?<\/url>/g, (entry, url) => owned.has(url) ? '' : entry);
   const entries = ['/revision/', ...resources.map(pathFor)].map((path) => `  <url><loc>${origin}${path}</loc></url>`).join('\n');
   await writeFile(sitemapPath, sitemap.replace('</urlset>', `${entries}\n</urlset>`));
 }

@@ -53,10 +53,15 @@ mkdirSync(artifacts, { recursive: true });
     await hero
       .getByRole("link", { name: "Try Free CBC Revision", exact: true })
       .click();
-    await staticPage.waitForURL("**/revision/");
+    await staticPage.waitForURL("**/free-revision/");
     await staticPage
-      .getByRole("heading", { name: /A little practice/ })
+      .getByRole("heading", { name: /A clearer way to revise/ })
       .waitFor();
+    await staticPage.getByRole("link", { name: /Mathematics.*free questions/ }).click();
+    await staticPage.waitForURL("**/revision/grade-7/mathematics/");
+    assert((await staticPage.locator('fieldset').count()) >= 10);
+    await staticPage.getByRole('heading', { name: 'Answers and explanations' }).waitFor();
+    await staticPage.screenshot({ path: join(artifacts, 'public-mathematics-without-javascript.png'), fullPage: true });
     const context = await browser.newContext();
     await context.route("**/api/v1/**", (r) => r.fulfill({ json: [] }));
     const page = await context.newPage(),

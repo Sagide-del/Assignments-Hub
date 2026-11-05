@@ -15,10 +15,11 @@ test('software and FAQ structured data stay in sync with visible question conten
  assert.deepEqual(faq.mainEntity.map(x=>[x.name,x.acceptedAnswer.text]),content.faqs.map(x=>[x.question,x.answer]));
  assert(content.faqs.some(f=>f.answer.includes('not official KNEC')));
 });
-test('free practice alias has a fixed destination and a non-JavaScript fallback',async()=>{
- const alias=await readFile(new URL('../public/free-revision/index.html',import.meta.url),'utf8');
- assert(alias.includes('href="/revision/"'));assert(alias.includes('content="0;url=/revision/"'));
- assert(alias.includes('rel="canonical" href="https://assignmenthub.co.ke/revision/"'));
+test('free practice hub is indexable and has a non-JavaScript directory',async()=>{
+ const hub=await readFile(new URL('../public/free-revision/index.html',import.meta.url),'utf8');
+ assert(hub.includes('href="/revision/grade-7/mathematics/"'));
+ assert(!hub.includes('http-equiv="refresh"'));
+ assert(hub.includes('rel="canonical" href="https://assignmenthub.co.ke/free-revision/"'));
 });
 
 test('homepage FAQ schema is removed on other views and restored on return',async()=>{

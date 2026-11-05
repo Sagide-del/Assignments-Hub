@@ -50,5 +50,5 @@ test('generation is repeatable and preserves existing sitemap URLs', async () =>
   await generate();
   assert.equal(await readFile(sitemapPath, 'utf8'), once);
   for (const url of [...before.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1])) assert.ok(once.includes(`<loc>${url}</loc>`));
-  assert.equal((once.match(/<loc>https:\/\/assignmenthub.co.ke\/revision\//g) || []).length, 4);
+  for (const resource of resources) assert.ok(once.includes(`/revision/${resource.slug}/</loc>`));
 });

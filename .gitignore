@@ -17,3 +17,6 @@ uploads/*
 # Local Python math runtime
 .math-venv/
 __pycache__/
+
+# Generated local KaTeX assets for standalone revision documents (copied on build).
+frontend/public/revision/assets/katex/

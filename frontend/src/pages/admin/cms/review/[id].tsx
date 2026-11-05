@@ -1,3 +1,4 @@
+import PublicSamples from "../PublicSamples";
 import { TheoryCheatsheet } from "../../../../features/student/TheoryCheatsheet";
 import { DiagramRenderer } from "../../../../components/ExamDiagrams/DiagramRenderer";
 import { useState } from "react";
@@ -245,6 +246,7 @@ export default function CmsReviewPage() {
           )}
         </p>
       )}
+      <PublicSamples key={module.id} module={module} />
       {!hasPayload ? (
         <EmptyState
           title="Published module summary"

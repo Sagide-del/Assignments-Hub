@@ -132,7 +132,7 @@ export default function Home() {
             <AssignmentHubWordmark size="sm" />
           </Link>
           <div className="hidden items-center gap-7 text-sm font-semibold text-slate-600 md:flex">
-            <a href="/revision/" className="transition hover:text-[#101820]">
+            <a href="/free-revision/" className="transition hover:text-[#101820]">
               Free revision
             </a>
             <a href="#for-parents" className="transition hover:text-[#101820]">
@@ -678,7 +678,7 @@ export default function Home() {
             <a href="/about/" className="hover:text-white">
               About
             </a>
-            <a href="/revision/" className="hover:text-white">
+            <a href="/free-revision/" className="hover:text-white">
               Free revision
             </a>
             <a href="#for-parents" className="hover:text-white">
