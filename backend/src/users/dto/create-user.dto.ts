@@ -1,4 +1,9 @@
 import {
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
+  ArrayUnique,
+  MaxLength,
   IsEmail,
   IsEnum,
   IsInt,
@@ -11,6 +16,15 @@ import {
 import { Role } from '../../common/enums/role.enum';
 
 export class CreateUserDto {
+
+  @ValidateIf(o => o.role === Role.STUDENT && /^Grade (10|11|12)$/.test(o.grade))
+  @IsArray() @ArrayMinSize(3) @ArrayMaxSize(3) @ArrayUnique()
+  @IsString({each:true}) @MaxLength(120,{each:true})
+  elective_subjects?: string[];
+
+  @IsOptional() @IsString()
+  track?: string;
+
   @IsString()
   @MinLength(2)
   name: string;

@@ -176,8 +176,8 @@ export class UsersController {
     if (!file) {
       throw new BadRequestException('Attach an .xlsx file under the "file" field');
     }
-    if (!EXCEL_MIMETYPES.has(file.mimetype) && !file.originalname.match(/\.xlsx?$/i)) {
-      throw new BadRequestException('Only .xlsx/.xls files are supported');
+    if (!EXCEL_MIMETYPES.has(file.mimetype) && !file.originalname.match(/\.(xlsx?|csv)$/i)) {
+      throw new BadRequestException('Only .xlsx/.xls/.csv files are supported');
     }
   }
 

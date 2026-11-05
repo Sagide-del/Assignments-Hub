@@ -1,3 +1,6 @@
+import { SubjectEnrollmentService } from "./subject-enrollment.service";
+import { SubjectEnrollmentController } from "./subject-enrollment.controller";
+import { StudentAssignmentsService } from "./assignments.service";
 import { ConfigModule } from "@nestjs/config";
 import { LibraryService } from "./library.service";
 import { LibraryPdfService } from "./library-pdf.service";
@@ -18,13 +21,16 @@ import {
 @Module({
   imports: [ConfigModule],
   providers: [
+    SubjectEnrollmentService,
+    StudentAssignmentsService,
     StudentScopeService,
     RotationService,
     LibraryService,
     LibraryPdfService,
   ],
-  exports: [StudentScopeService],
+  exports: [StudentScopeService, SubjectEnrollmentService],
   controllers: [
+    SubjectEnrollmentController,
     StudentContentController,
     StudentLibraryController,
     RotationController,

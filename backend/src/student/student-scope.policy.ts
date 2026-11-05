@@ -66,6 +66,8 @@ export function subjectKey(v: unknown) {
         pe: "physicaleducation",
         maths: "mathematics",
         coremathematics: "mathematics",
+        coremath: "mathematics",
+        coremaths: "mathematics",
         essentialmathematics: "mathematics",
         computerscience: "computerstudies",
         historyandgovernment: "historyandcitizenship",
@@ -89,6 +91,8 @@ export interface StudentScope {
   stream: string | null;
   className: string | null;
   subjects: string[];
+  assignment_subjects?: string[];
+  elective_subjects?: string[];
 }
 export const SHARED_SUBJECTS = [
   "Mathematics",

@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+import { enrolledSubjects, assignmentMatches, allowedAssignmentSubject } from "./assignment-subjects";
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -109,6 +111,8 @@ export class StudentScopeService {
       stream: user.studentProfile?.stream ?? null,
       className: user.studentProfile?.className ?? null,
       subjects,
+      elective_subjects: grade >= 10 ? user.elective_subjects : [],
+      assignment_subjects: enrolledSubjects(grade,user.elective_subjects??[],subjects),
     };
   }
   async filterAssignments(scope: StudentScope, rows: any[]) {
@@ -132,7 +136,7 @@ export class StudentScopeService {
     );
     return rows.filter(
       (a) =>
-        contentMatches(scope, {
+        assignmentMatches(scope, {
           ...a,
           pathway: a.rawJson?.pathway ?? null,
           track: a.rawJson?.track ?? null,
@@ -141,7 +145,8 @@ export class StudentScopeService {
     );
   }
   private publishedModuleMatches(scope: StudentScope, m: any) {
-    if (!contentMatches(scope, m)) return false;
+    const isAssignment = ((m.content_json as any)?.content_type ?? "ASSIGNMENT") === "ASSIGNMENT";
+    if (!(isAssignment ? assignmentMatches(scope,m) : contentMatches(scope,m))) return false;
     if (m.status === "PUBLISHED_STORE") return m.tenant_id === null;
     return (
       m.status === "PUBLISHED_SCHOOL" &&
@@ -206,23 +211,16 @@ export class StudentScopeService {
     const labels = [scope.stream, scope.className].filter(
       (x): x is string => !!x,
     );
-    const rows = await this.db.masterModule.findMany({
-      where: {
-        grade: scope.grade,
-        OR: [
-          { status: "PUBLISHED_STORE", tenant_id: null },
-          {
-            status: "PUBLISHED_SCHOOL",
-            tenant_id: String(scope.school_id),
-            OR: [
-              { assignments: { none: {} } },
-              { assignments: { some: { stream_id: { in: labels } } } },
-            ],
-          },
-        ],
-      },
-      orderBy: { updated_at: "desc" },
-    });
+    let where:Prisma.MasterModuleWhereInput={grade:scope.grade,OR:[{status:"PUBLISHED_STORE",tenant_id:null},{status:"PUBLISHED_SCHOOL",tenant_id:String(scope.school_id),OR:[{assignments:{none:{}}},{assignments:{some:{stream_id:{in:labels}}}}]}]};
+    if(kind==="ASSIGNMENT"){
+      // Resolve legacy spelling/whitespace aliases from headers, then fetch
+      // full payloads only for enrolled subjects at the database boundary.
+      const candidates=await this.db.masterModule.findMany({where,select:{subject:true},distinct:["subject"]});
+      const names=candidates.filter(m=>allowedAssignmentSubject(scope,m.subject)).map(m=>m.subject);
+      if(!names.length)return [];
+      where={...where,subject:{in:names}};
+    }
+    const rows=await this.db.masterModule.findMany({where,orderBy:{updated_at:"desc"}});
     // Match existing CMS subscription rules, without changing CMS authoring.
     const school = await this.db.school.findUnique({
       where: { id: scope.school_id },
@@ -230,7 +228,7 @@ export class StudentScopeService {
     });
     if (school?.subscriptionStatus !== "ACTIVE") return [];
     return rows
-      .filter((m) => contentMatches(scope, m))
+      .filter((m) => ((m.content_json as any)?.content_type ?? "ASSIGNMENT") === "ASSIGNMENT" ? assignmentMatches(scope,m) : contentMatches(scope,m))
       .filter(
         (m) =>
           !kind ||

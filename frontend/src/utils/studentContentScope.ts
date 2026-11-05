@@ -3,6 +3,9 @@ export interface StudentContentScope {
   pathway: string | null;
   track: string | null;
   subjects: string[];
+  assignment_subjects?: string[];
+  elective_subjects?: string[];
+  assignment_setup_required?: boolean;
   availability: { labs: number; skills: number; csl: boolean };
   setup_required: boolean;
 }

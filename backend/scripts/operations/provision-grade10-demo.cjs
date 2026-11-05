@@ -21,7 +21,7 @@ async function provisionGrade10Demo(db){
   const admin=await tx.user.create({data:{schoolId:school.id,name:'STEM Demo School Admin',role:'SCHOOL_ADMIN',email:credentials.admin.email,passwordHash:adminHash}});
   const teacher=await tx.user.create({data:{schoolId:school.id,name:'STEM Demo Teacher',role:'TEACHER',email:credentials.teacher.email,passwordHash:teacherHash}});
   for(const subject of ['Mathematics','Physics','Chemistry','Biology'])await tx.teacherAssignment.create({data:{school_id:school.id,teacher_id:teacher.id,stream_id:stream.id,subject}});
-  const student=await tx.user.create({data:{schoolId:school.id,name:'STEM Demo Learner',role:'STUDENT',grade:'Grade 10',admissionNumber:credentials.student.admissionNumber,passwordHash:studentHash,studentProfile:{create:{admissionNumber:credentials.student.admissionNumber,grade:'Grade 10',stream:'10A',pathway:'STEM'}}}});
+  const student=await tx.user.create({data:{schoolId:school.id,name:'STEM Demo Learner',role:'STUDENT',grade:'Grade 10',elective_subjects:['Biology','Chemistry','Physics'],admissionNumber:credentials.student.admissionNumber,passwordHash:studentHash,studentProfile:{create:{admissionNumber:credentials.student.admissionNumber,grade:'Grade 10',stream:'10A',pathway:'STEM'}}}});
   await tx.studentPathwaySelection.create({data:{schoolId:school.id,studentId:student.id,trackId:track.id,source:'MANUAL',notes:'Synthetic Grade 10 STEM test account'}});
   return {schoolId:school.id,adminId:admin.id,teacherId:teacher.id,studentId:student.id};
  },{timeout:30000});

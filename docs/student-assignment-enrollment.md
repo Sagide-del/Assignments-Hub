@@ -1,0 +1,20 @@
+# Subject-enrolled assignments
+
+Senior assignment delivery uses four core subjects (English, Kiswahili, Core Mathematics and Community Service Learning) plus the learner's saved three electives. A pathway or track alone no longer implies enrolment in every subject in that track. `User.elective_subjects` is an additive text array with an empty default; existing learners are not guessed/backfilled into electives. Until they save their choices they see core assignments only.
+
+`StudentAssignmentsService.getStudentSubjects` resolves the current user and grade from the database, never stale JWT claims. `/student/assignments`, existing `/assignments` list/detail/question/submission paths, student CMS catalogue/start, library assignment modules, next-batch rotation and assignment practice honour these enrolled subjects. Explicit enrolment permits a cross-track subject such as Computer Science in a Pure Sciences combination. Grade, published state, active subscription and school/stream publication restrictions still apply. Non-assignment labs, skills, mock papers and learning-coach curriculum policy retain their existing pathway/track rules.
+
+Aliases such as Computer Science/Computer Studies and Core Mathematics/Mathematics are recognized without granting unrelated subjects. Grade 1–9 assignments use grade-specific curriculum subjects and ignore senior selections. Assignment metadata includes the learner's own progress, due date and safe identifiers, never grading answers. The frontend merges subject counts, groups CMS practice by subject, preserves separate batches and filters search/status consistently. Already materialized CMS work is shown through the existing assignment catalogue without duplicated cards.
+
+## Onboarding
+
+- Senior registration collects a track and three electives using the grade's taxonomy catalogue. Recommended subjects appear first, with other-track electives available. After normal registration and normal sign-in, the authenticated profile endpoint saves the choices. No Auth DTO, credential, token or server-side authentication logic is changed. Subject-save errors preserve the created-account state and can be retried when continuing.
+- `/student/subjects` lets an authenticated learner manage only their own choices. Requests validate distinct, noncore, grade-available electives and a grade/pathway-aligned track. Track changes preserve historical selections by deactivating the old choice. Existing private demo track references can be retained, but are not offered to new learners in the public options catalogue.
+- The profile-only routes use the existing trial allowance decorator so trial learners can complete subject setup without receiving paid content access. The trial guard and payment code are unchanged.
+- School import accepts XLSX or CSV. Senior rows require Pathway, Track and Elective Subjects; use semicolons between the three subject names. Preview validates the same catalogue before creating any account. CSV parsing preserves leading zeros in admission numbers. Templates include the new fields. No taxonomy seed runs during onboarding/import.
+
+## Rollout and verification
+
+Migration `20261105110000_student_elective_subjects` adds the users column without altering historical submissions or questions. The public `/student/assignment-capabilities` probe checks the column before frontend publication. Students already enrolled in senior grades use My Assignments → Manage subjects once. New demo provisioning includes Biology, Chemistry and Physics by default.
+
+Tests cover core-plus-elective sets, cross-track Computer Science, unselected-subject direct-link rejection, Grade 8 behaviour, no inferred electives, validated self-service updates, learner-specific progress/dates, CSV preview/import and alias grouping. Browser verification covers registration, subject changes and immediate cache filtering, subject grouping, search/status, empty-state consistency and responsive layouts. M-Pesa, SBA, CSL and Auth implementation files are unchanged.

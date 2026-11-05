@@ -1,3 +1,4 @@
+import { allowedAssignmentSubject } from "./assignment-subjects";
 import {
   BadRequestException,
   ForbiddenException,
@@ -24,7 +25,7 @@ export class RotationService {
     )
       throw new BadRequestException("Choose a subject and topic.");
     const scope = await this.scopes.getStudentScope(actor.id, actor.schoolId);
-    if (!allowedSubject(scope, subject))
+    if (!allowedAssignmentSubject(scope, subject))
       throw new ForbiddenException("This subject is outside your curriculum.");
     const catalogue = (await this.scopes.modules(scope, "ASSIGNMENT")).filter(
       (m) => subjectKey(m.subject) === subjectKey(subject),

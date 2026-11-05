@@ -281,7 +281,7 @@ describe("Student curriculum policy", () => {
     expect(scopeRoute("CmsController", "startLearning")).toBe("module");
     expect(scopeRoute("CmsController", "publishModule")).toBeNull();
     expect(scopeRoute("SkillsController", "completeLesson")).toBe("skill");
-    expect(scopeRoute("PracticeController", "start")).toBe("coachStart");
+    expect(scopeRoute("PracticeController", "start")).toBe("assignmentPracticeStart");
     expect(scopeRoute("SubmissionsController", "results")).toBe("submission");
   });
 });
@@ -399,6 +399,7 @@ integration(
         data: {
           schoolId: school.id,
           name: "Technical Student",
+          elective_subjects: ["Aviation Technology","Electrical Technology","Physics"],
           role: "STUDENT",
           grade: "Grade 10",
           studentProfile: { create: { stream: "1B", pathway: "STEM" } },
@@ -408,6 +409,7 @@ integration(
         data: {
           schoolId: school.id,
           name: "Pure Sciences Student",
+          elective_subjects: ["Biology","Chemistry","Physics"],
           role: "STUDENT",
           grade: "Grade 10",
         },

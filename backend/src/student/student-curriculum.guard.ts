@@ -1,3 +1,4 @@
+import { allowedAssignmentSubject } from "./assignment-subjects";
 import {
   CanActivate,
   ExecutionContext,
@@ -62,7 +63,7 @@ export function scopeRoute(c: string, h: string): string | null {
       findSubjects: "stemSubjects",
     },
     MnemonicCardsController: { findAll: "cards" },
-    PracticeController: { subjects: "practiceCatalog", start: "coachStart" },
+    PracticeController: { subjects: "practiceCatalog", start: "assignmentPracticeStart" },
     LearningCoachController: {
       catalog: "coach",
       plans: "coach",
@@ -178,8 +179,9 @@ export class StudentCurriculumGuard implements CanActivate {
           schoolId: scope.school_id,
         },
       });
-      if (m) assert({ grade: (m.coverage as any)?.grade, subject: m.subject });
+      if (m) {if(m.source === "PRACTICE") {if(!allowedAssignmentSubject(scope,m.subject) || gradeNumber((m.coverage as any)?.grade)!==scope.grade)deny();} else assert({ grade: (m.coverage as any)?.grade, subject: m.subject });}
     }
+    if (kind === "assignmentPracticeStart" && !allowedAssignmentSubject(scope,req.body?.subject)) deny();
     if (kind === "coachStart" && !allowedSubject(scope, req.body?.subject))
       deny();
     if (kind === "coachAnswer" && Number.isSafeInteger(numeric)) {

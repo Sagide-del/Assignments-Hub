@@ -2,12 +2,13 @@ import type { Assignment } from "../../types";
 import { assignmentSubject } from "./assignment-list";
 export const catalogueKey = (value: string) =>
   value.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-KE");
-function catalogueSubject(assignment: Assignment) {
-  const name = assignmentSubject(assignment);
-  return /^(?:math|maths|mathematic|mathematics)$/i.test(name)
-    ? "Mathematics"
-    : name;
+export function catalogueSubjectName(name:string) {
+  if(/^(?:math|maths|mathematic|mathematics|core math|core maths|core mathematics)$/i.test(name.trim()))return "Mathematics";
+  if(/^(?:computer science|computer studies)$/i.test(name.trim()))return "Computer Science";
+  if(/^(?:csl|community service learning)$/i.test(name.trim()))return "Community Service Learning";
+  return name;
 }
+function catalogueSubject(assignment: Assignment) {return catalogueSubjectName(assignmentSubject(assignment));}
 /** Prefer supplied topic labels; title cleanup is a navigation fallback, not syllabus mapping. */
 export function assignmentTopic(assignment: Assignment): string {
   const labelled = assignment.description

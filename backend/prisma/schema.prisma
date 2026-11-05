@@ -411,6 +411,7 @@ model User {
   // Student's grade/class (e.g. "Grade 7"), used to scope which assignments
   // they see. Not applicable to staff roles.
   grade           String?
+  elective_subjects String[] @default([])
   // Parent/guardian phone number in international format (e.g.
   // "+254712345678"), used by SmsService to notify the parent when this
   // student completes an assignment or a new one is posted. Student-only.

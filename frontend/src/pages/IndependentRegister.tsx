@@ -1,3 +1,5 @@
+import { SubjectSelectionFields, type SubjectChoice } from "../features/student/SubjectSelection";
+import { api } from "../api/axios";
 import { useId, useState, type FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -23,6 +25,10 @@ export default function IndependentRegister() {
     pathway: '',
     parentPhone: '',
   });
+  const [subjects,setSubjects]=useState<SubjectChoice>({elective_subjects:[]});
+  const senior=/^Grade (10|11|12)$/.test(form.grade);
+  async function saveSubjects(result:IndependentRegistrationResult){if(!senior)return;await loginIndependent(result.username??result.admissionNumber,form.password);await api.post('/student/subjects',subjects);}
+  const profileMutation=useMutation({mutationFn:saveSubjects,onError:(err)=>setError(apiErrorMessage(err,'Account created. Retry saving your selected subjects before continuing.'))});
   const [error, setError] = useState<string | null>(null);
 
   const registerMutation = useMutation({
@@ -39,6 +45,7 @@ export default function IndependentRegister() {
     onSuccess: (result) => {
       setAccount(result);
       setError(null);
+      if(senior) profileMutation.mutate(result);
     },
     onError: (err) => setError(apiErrorMessage(err, 'Could not create your account')),
   });
@@ -47,6 +54,7 @@ export default function IndependentRegister() {
     mutationFn: async () => {
       if (!account) throw new Error('Create an account before continuing');
       await loginIndependent(account.username ?? account.admissionNumber, form.password);
+      if(senior) await api.post("/student/subjects",subjects);
     },
     onSuccess: () => navigate('/student/activate'),
     onError: (err) => setError(apiErrorMessage(err, 'Your account was created, but we could not sign you in automatically. Please sign in to continue.')),
@@ -59,6 +67,7 @@ export default function IndependentRegister() {
       setError('Passwords do not match');
       return;
     }
+    if(senior && (!subjects.track_id||subjects.elective_subjects.length!==3)){setError('Choose your track and exactly three electives.');return;}
     registerMutation.mutate();
   }
 
@@ -80,7 +89,7 @@ export default function IndependentRegister() {
                 <p className="mt-3 text-sm leading-6 text-slate-600">Use this username and your password to sign in. Your account activates automatically after your M-Pesa payment is confirmed.</p>
               </div>
               {error ? <ErrorMessage message={error} /> : null}
-              <button type="button" onClick={() => continueMutation.mutate()} disabled={continueMutation.isPending} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60">
+              <button type="button" onClick={() => continueMutation.mutate()} disabled={continueMutation.isPending||profileMutation.isPending} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60">
                 {continueMutation.isPending ? 'Signing you in...' : 'Continue to payment'} <ArrowRight className="ml-2 h-4 w-4" />
               </button>
               <Link to="/login" className="flex min-h-11 items-center justify-center text-sm font-semibold text-[#536D00] hover:underline">Sign in later</Link>
@@ -149,7 +158,7 @@ export default function IndependentRegister() {
                 <select
                   id="registration-grade"
                   value={form.grade}
-                  onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value, pathway: /^Grade (10|11|12)$/.test(event.target.value) ? current.pathway : '' }))}
+                  onChange={(event) => {setSubjects({elective_subjects:[]});setForm((current) => ({ ...current, grade: event.target.value, pathway: /^Grade (10|11|12)$/.test(event.target.value) ? current.pathway : '' }));}}
                   className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#8CB500]"
                 >
                   {['PP1', 'PP2', ...Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`)].map((grade) => (
@@ -160,7 +169,7 @@ export default function IndependentRegister() {
               {/^Grade (10|11|12)$/.test(form.grade) ? (
                 <div>
                   <label htmlFor="registration-pathway" className="mb-1.5 block text-sm font-medium text-slate-700">Senior School pathway</label>
-                  <select id="registration-pathway" value={form.pathway} onChange={(event) => setForm((current) => ({ ...current, pathway: event.target.value }))} className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#8CB500]">
+                  <select id="registration-pathway" value={form.pathway} onChange={(event) => {setSubjects({elective_subjects:[]});setForm((current) => ({ ...current, pathway: event.target.value }));}} className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#8CB500]">
                     <option value="">Choose your pathway</option>
                     <option value="STEM">STEM</option>
                     <option value="Social Sciences">Social Sciences</option>
@@ -169,6 +178,7 @@ export default function IndependentRegister() {
                   <p className="mt-2 text-xs leading-5 text-slate-500">Independent learners can change this later as their subject combination becomes clear.</p>
                 </div>
               ) : null}
+              {senior&&<SubjectSelectionFields grade={Number(form.grade.split(" ")[1])} pathway={form.pathway} value={subjects} onChange={setSubjects}/>}
               <Field
                 label="Parent or guardian phone"
                 type="tel"

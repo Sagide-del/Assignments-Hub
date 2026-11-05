@@ -1,3 +1,4 @@
+import { assignmentMatches, allowedAssignmentSubject } from "./assignment-subjects";
 import {
   CallHandler,
   ExecutionContext,
@@ -33,13 +34,13 @@ export class StudentCurriculumInterceptor implements NestInterceptor {
       return {
         ...data,
         subjects: (data.subjects ?? []).filter((x: any) =>
-          allowedSubject(s, x.subject),
+          allowedAssignmentSubject(s, x.subject),
         ),
         active: (data.active ?? []).filter((x: any) =>
-          contentMatches(s, { subject: x.subject, grade: x.coverage?.grade }),
+          assignmentMatches(s, { subject: x.subject, grade: x.coverage?.grade }),
         ),
         completed: (data.completed ?? []).filter((x: any) =>
-          contentMatches(s, { subject: x.subject, grade: x.coverage?.grade }),
+          assignmentMatches(s, { subject: x.subject, grade: x.coverage?.grade }),
         ),
       };
     if (!Array.isArray(data)) return data;
@@ -87,9 +88,10 @@ export class StudentCurriculumInterceptor implements NestInterceptor {
             pathway: true,
             track: true,
             subject: true,
+            content_json: true,
           },
         });
-        const allowed = new Set(rows.filter(match).map((x) => x.id));
+        const allowed = new Set(rows.filter(x => ((x.content_json as any)?.content_type ?? "ASSIGNMENT") === "ASSIGNMENT" ? assignmentMatches(s,x) : match(x)).map((x) => x.id));
         return data.filter((x) => allowed.has(x.id));
       }
       case "labSessions": {

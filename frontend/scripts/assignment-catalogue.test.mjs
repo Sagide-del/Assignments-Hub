@@ -50,3 +50,5 @@ test('display cleanup preserves manual titles, fractions, non-prefix subject wor
  const a=task(20,'Business Studies · Enterprise / 1.2 Opportunities • Cash flow · Batch 2',{subject:'Business Studies'}),before=JSON.stringify(a),groups=groupAssignments([a]);
  learningTitle(a.title,a.subject);assert.equal(JSON.stringify(a),before);assert.equal(groupAssignments([a])[0].topics[0].key,groups[0].topics[0].key);assert(matchesAssignmentSearch(a,'cash flow'));
 });
+
+test('core maths and computer-subject aliases share one subject folder',()=>{const groups=groupAssignments([task(90,"Algebra",{subject:"Core Mathematics"}),task(91,"Geometry",{subject:"Mathematics"}),task(92,"Networks",{subject:"Computer Studies"}),task(93,"Coding",{subject:"Computer Science"})]);assert.equal(groups.length,2);assert.deepEqual(groups.map(g=>g.name).sort(),["Computer Science","Mathematics"]);assert(groups.every(g=>g.assignments.length===2));});

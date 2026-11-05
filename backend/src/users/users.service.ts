@@ -1,3 +1,5 @@
+import { SubjectEnrollmentService } from "../student/subject-enrollment.service";
+import { gradeNumber } from "../student/student-scope.policy";
 import { studentScope, assertStudentScope } from "../teacher-scope/scope";
 import {
   ConflictException,
@@ -21,6 +23,7 @@ const SAFE_SELECT = {
   email: true,
   admissionNumber: true,
   grade: true,
+  elective_subjects: true,
   parentPhone: true,
   subject: true,
   assignedClass: true,
@@ -50,6 +53,10 @@ export class UsersService {
       if (existing) throw new ConflictException('Admission number already in use at this school');
 
       const grade = normalizeGrade(dto.grade);
+      const gradeValue=gradeNumber(grade);
+      const electives=gradeValue && gradeValue>=10 ? await new SubjectEnrollmentService(this.prisma).validate(gradeValue,dto.elective_subjects) : [];
+      let selectedTrack: {id:number}|null=null;
+      if(gradeValue && gradeValue>=10)selectedTrack=await new SubjectEnrollmentService(this.prisma).resolveTrack(gradeValue,dto.pathway,dto.track);
       const passwordHash = dto.studentPin
         ? await bcrypt.hash(dto.studentPin, 12)
         : undefined;
@@ -62,6 +69,8 @@ export class UsersService {
           admissionNumber: dto.admissionNumber,
           passwordHash,
           grade,
+          elective_subjects: electives,
+          ...(selectedTrack ? {pathwaySelections:{create:{schoolId:targetSchoolId,trackId:selectedTrack.id,source:"MANUAL" as const,notes:"School learner enrolment"}}}:{}),
           parentPhone: dto.parentPhone,
           studentProfile: {
             create: {

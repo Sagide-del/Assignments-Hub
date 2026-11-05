@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
+import {Readable} from 'stream';
+import {SubjectEnrollmentService} from '../student/subject-enrollment.service';
+import {gradeNumber} from '../student/student-scope.policy';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import * as crypto from 'crypto';
@@ -102,6 +105,9 @@ const LEGACY_HEADER_ALIASES: Record<string, string[]> = {
   parentPhone: ['parent phone', 'guardian phone', 'parent contact', 'parent phone number', 'guardian phone number'],
   subject: ['subject', 'teaching subject'],
   assignedClass: ['assigned class', 'class', 'teaching class', 'class taught'],
+  pathway: ['pathway'],
+  track: ['track'],
+  elective_subjects: ['elective subjects','electives','elective_subjects'],
 };
 
 const STUDENT_HEADER_ALIASES: Record<string, string[]> = {
@@ -115,6 +121,8 @@ const STUDENT_HEADER_ALIASES: Record<string, string[]> = {
   parentPhone: ['parent phone', 'guardian phone', 'parent contact', 'parent phone number', 'guardian phone number'],
   parentEmail: ['parent email', 'guardian email'],
   pathway: ['pathway', 'learning pathway'],
+  track: ['track', 'senior track'],
+  elective_subjects: ['elective subjects', 'electives', 'elective_subjects'],
 };
 
 const TEACHER_HEADER_ALIASES: Record<string, string[]> = {
@@ -141,6 +149,8 @@ interface ParsedImportRow {
   studentClass: string;
   stream: string;
   pathway: string;
+  track: string;
+  elective_subjects: string[];
   parentName: string;
   parentPhone: string;
   parentEmail: string;
@@ -270,6 +280,9 @@ export class UsersImportService {
       { header: 'Parent Phone', key: 'parentPhone', width: 18 },
       { header: 'Subject', key: 'subject', width: 20 },
       { header: 'Class', key: 'assignedClass', width: 16 },
+      { header: 'Pathway', key:'pathway',width:22 },
+      { header: 'Track', key:'track',width:24 },
+      { header: 'Elective Subjects',key:'elective_subjects',width:50 },
     ];
     sheet.getRow(1).font = { bold: true };
 
@@ -317,11 +330,13 @@ export class UsersImportService {
       { header: 'Parent Phone', key: 'parentPhone', width: 18 },
       { header: 'Parent Email', key: 'parentEmail', width: 28 },
       { header: 'Pathway', key: 'pathway', width: 22 },
+      { header: 'Track', key: 'track', width: 24 },
+      { header: 'Elective Subjects', key: 'elective_subjects', width: 50 },
     ];
     sheet.getRow(1).font = { bold: true };
-    sheet.getCell('L1').value =
+    sheet.getCell('N1').value =
       'Required: Name, Admission Number, Grade. Login PIN is optional; a secure six-digit PIN is generated when blank. ' +
-      'Class, Stream, Pathway, and parent details are stored in the learner profile.';
+      'Grades 10–12: provide Pathway, Track and exactly three Elective Subjects separated by semicolons (for example Biology;Chemistry;Computer Science).';
     return workbook.xlsx.writeBuffer();
   }
 
@@ -359,7 +374,8 @@ export class UsersImportService {
     options: ProcessWorkbookOptions,
   ): Promise<ProcessWorkbookResult> {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer as any);
+    if(buffer[0]===0x50 && buffer[1]===0x4b)await workbook.xlsx.load(buffer as any);
+    else await workbook.csv.read(Readable.from([buffer.toString("utf8")]),{map:(value:string)=>value});
     const sheet = workbook.worksheets[0];
 
     if (!sheet) {
@@ -478,6 +494,8 @@ export class UsersImportService {
           studentClass: raw.studentClass || undefined,
           stream: raw.stream || undefined,
           pathway: raw.pathway || undefined,
+          track: raw.track || undefined,
+          elective_subjects: raw.elective_subjects,
           parentName: raw.parentName || undefined,
           parentPhone: raw.parentPhone || undefined,
           parentEmail: raw.parentEmail || undefined,
@@ -486,6 +504,11 @@ export class UsersImportService {
         });
 
         const validationErrors = await validate(dto, { whitelist: true });
+        if(!validationErrors.length && raw.role===Role.STUDENT && (gradeNumber(dto.grade)??0)>=10){
+          try{await new SubjectEnrollmentService(this.prisma).validate(gradeNumber(dto.grade)!,dto.elective_subjects);await new SubjectEnrollmentService(this.prisma).resolveTrack(gradeNumber(dto.grade)!,dto.pathway,dto.track);}
+          catch(e){throw this.createRowError(rowNumber,raw.name||undefined,'elective_subjects',(e as Error).message);}
+        }
+
         if (validationErrors.length > 0) {
           const detail = this.validationErrorDetail(validationErrors);
           throw this.createRowError(rowNumber, raw.name || undefined, detail.field, detail.message);
@@ -576,6 +599,8 @@ export class UsersImportService {
       studentClass: this.cell(row, columnMap.studentClass),
       stream: this.cell(row, columnMap.stream),
       pathway: this.cell(row, columnMap.pathway),
+      track: this.cell(row, columnMap.track),
+      elective_subjects: this.cell(row,columnMap.elective_subjects).split(/[;,|]/).map(v=>v.trim()).filter(Boolean),
       parentName: this.cell(row, columnMap.parentName),
       parentPhone: this.cell(row, columnMap.parentPhone),
       parentEmail: this.cell(row, columnMap.parentEmail),
