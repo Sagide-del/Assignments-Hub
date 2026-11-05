@@ -282,6 +282,7 @@ integration("Timetable isolated PostgreSQL/JWT and real branded PDF", () => {
         name: "Victor Planner",
         admissionNumber: "TP001",
         grade: "Grade 11",
+        elective_subjects:["Biology","Chemistry","Physics"],
         role: "STUDENT",
         studentProfile: {
           create: { grade: "Grade 11", stream: "1B", pathway: "STEM" },
@@ -293,6 +294,7 @@ integration("Timetable isolated PostgreSQL/JWT and real branded PDF", () => {
         schoolId: b.id,
         name: "Other learner",
         grade: "Grade 11",
+        elective_subjects:["Biology","Chemistry","Physics"],
         role: "STUDENT",
       },
     });
@@ -345,7 +347,8 @@ integration("Timetable isolated PostgreSQL/JWT and real branded PDF", () => {
         pathway: "STEM",
         subject: "Mathematics",
         topic: "Fractions",
-        status: "PUBLISHED_SCHOOL",
+        status: "APPROVED",
+        distributions: {create:{audience:"SCHOOL",school_id:String(a.id),stream_id:"1B"}},
         tenant_id: String(a.id),
         content_json: {
           theory_text: "Reviewed lesson.",
@@ -544,7 +547,7 @@ integration("Timetable isolated PostgreSQL/JWT and real branded PDF", () => {
     ).toBe(403);
     await db.masterModule.update({
       where: { id: moduleId },
-      data: { status: "PUBLISHED_SCHOOL" },
+      data: { status: "APPROVED" },
     });
   });
   it("retries invalid AI JSON once, saves a valid fallback and preserves the same weekly row", async () => {

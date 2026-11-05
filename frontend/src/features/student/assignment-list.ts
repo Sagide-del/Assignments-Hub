@@ -10,7 +10,8 @@ export const STATE_META: Record<AssignmentState, { label: string; action: string
   RESULTS_AVAILABLE: { label: 'Results available', action: 'Review answers', className: 'border-lime-300 bg-lime-50 text-[#466000]' },
 };
 
-export function assignmentState(submission?: Submission): AssignmentState {
+export function assignmentState(submission?: Submission,assignment?:Assignment): AssignmentState {
+  if(!submission&&assignment?.cmsModule){const m=assignment.cmsModule;return m.state==='IN_PROGRESS'?'IN_PROGRESS':m.state==='COMPLETED'?(m.results_released?'RESULTS_AVAILABLE':'SUBMITTED'):'NOT_STARTED';}
   if (!submission) return 'NOT_STARTED';
   if (submission.status === 'DRAFT') return 'IN_PROGRESS';
   // A graded submission is not visible as results until the backend releases it.
@@ -59,11 +60,11 @@ export function selectAssignments(
   const search = filters.search.trim().toLocaleLowerCase('en-KE');
   return assignments.filter((assignment) => assignment.isPublished
     && (!filters.subject || assignmentSubject(assignment) === filters.subject)
-    && (filters.state === 'ALL' || assignmentState(submissions.get(assignment.id)) === filters.state)
+    && (filters.state === 'ALL' || assignmentState(submissions.get(assignment.id),assignment) === filters.state)
     && (!search || `${assignment.title} ${assignmentSubject(assignment)}`.toLocaleLowerCase('en-KE').includes(search)))
     .sort((a, b) => {
-      const stateA = assignmentState(submissions.get(a.id));
-      const stateB = assignmentState(submissions.get(b.id));
+      const stateA = assignmentState(submissions.get(a.id),a);
+      const stateB = assignmentState(submissions.get(b.id),b);
       const unfinished = (state: AssignmentState) => state === 'NOT_STARTED' || state === 'IN_PROGRESS';
       const newest = () => (timestamp(b.createdAt) === timestamp(a.createdAt) ? a.id - b.id : timestamp(b.createdAt) - timestamp(a.createdAt));
       const deadline = () => timestamp(a.dueDate) === timestamp(b.dueDate) ? 0 : timestamp(a.dueDate) - timestamp(b.dueDate);

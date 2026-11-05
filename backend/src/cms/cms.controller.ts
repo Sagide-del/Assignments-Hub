@@ -1,3 +1,4 @@
+import { UpdateModuleDto } from "./dto/update-module.dto";
 import { TaxonomyQueryDto } from "./dto/taxonomy-query.dto";
 import {
   Body,
@@ -69,6 +70,29 @@ export class CmsController {
     return this.cms.publishModule(dto);
   }
 
+  @Get("modules")
+  @Roles(Role.PLATFORM_ADMIN)
+  getModules() {
+    return this.cms.getModules();
+  }
+
+  @Patch("modules/:id")
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction("cms.module_updated")
+  updateModule(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateModuleDto,
+  ) {
+    return this.cms.updateModule(id, dto.topic);
+  }
+
+  @Patch("modules/:id/archive")
+  @Roles(Role.PLATFORM_ADMIN)
+  @AuditAction("cms.module_archived")
+  archive(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.cms.archiveModule(id);
+  }
+
   @Get("modules/:id")
   @Roles(Role.PLATFORM_ADMIN)
   getModule(@Param("id", new ParseUUIDPipe()) id: string) {
@@ -95,6 +119,10 @@ export class CmsController {
   ) {
     return this.cms.startLearningModule(id, actor);
   }
+
+  @Get("capabilities")
+  @Public()
+  async capabilities() { return this.cms.capabilities(); }
 
   @Get("store")
   @Public()

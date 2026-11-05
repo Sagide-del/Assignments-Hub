@@ -107,6 +107,7 @@ integration("Authenticated student library and PDF delivery", () => {
         schoolId: school.id,
         name: "Library Learner",
         grade: "Grade 11",
+        elective_subjects:["Biology","Chemistry","Physics"],
         role: "STUDENT",
       },
     });
@@ -131,7 +132,8 @@ integration("Authenticated student library and PDF delivery", () => {
           grade,
           subject,
           topic,
-          status,
+          status: ["PUBLISHED_SCHOOL","PUBLISHED_STORE"].includes(status) ? "APPROVED" : status,
+          ...(["PUBLISHED_SCHOOL","PUBLISHED_STORE"].includes(status) ? {distributions:{create:{audience:status === "PUBLISHED_STORE" ? "PUBLIC_STORE" : "SCHOOL",school_id:status === "PUBLISHED_STORE" ? null : String(tenant)}}} : {}),
           tenant_id: status === "PUBLISHED_STORE" ? null : String(tenant),
           pathway,
           track,
@@ -162,9 +164,7 @@ integration("Authenticated student library and PDF delivery", () => {
       "Humanities",
     );
     const stream = await make("Library Fixture OtherStream");
-    await db.moduleAssignment.create({
-      data: { module_id: stream.id, stream_id: "1A" },
-    });
+    await db.contentDistribution.updateMany({where:{module_id:stream.id},data:{stream_id:"1A"}});
     await make("Library Fixture Public", 11, school.id, "PUBLISHED_STORE");
     @Global()
     @Module({

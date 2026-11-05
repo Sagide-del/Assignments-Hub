@@ -2768,18 +2768,17 @@ model QuestionGenerationBatch {
   @@map("question_generation_batches")
 }
 
-// Master content is authored centrally; ModuleAssignment records delivery.
+// Master content is authored centrally; ContentDistribution records delivery.
+// Legacy ModuleAssignment rows remain as historical records.
 enum ContentStatus {
   DRAFT
   APPROVED
-  PUBLISHED_STORE
-  PUBLISHED_SCHOOL
   ARCHIVED
 }
 
 model MasterModule {
-  batch_number Int @default(1)
-  theory_cheatsheet Json @default("{}")
+  batch_number           Int           @default(1)
+  theory_cheatsheet      Json          @default("{}")
   id                     String        @id @default(uuid())
   level                  String
   grade                  Int
@@ -2794,7 +2793,8 @@ model MasterModule {
   tenant_id              String?
   generation_cost_tokens Int           @default(0)
 
-  assignments ModuleAssignment[]
+  distributions ContentDistribution[]
+  assignments   ModuleAssignment[]
 }
 
 model ModuleAssignment {
@@ -3011,4 +3011,17 @@ model Study_School_Schedule {
  updated_at DateTime @updatedAt
  school School @relation(fields:[school_id],references:[id],onDelete:Restrict)
  @@unique([school_id,grade,stream])
+}
+
+model ContentDistribution {
+  id           String       @id @default(uuid())
+  module_id    String
+  audience     String
+  school_id    String?
+  stream_id    String?
+  published_at DateTime     @default(now())
+  module       MasterModule @relation(fields: [module_id], references: [id], onDelete: Cascade)
+
+  @@index([module_id])
+  @@index([audience, school_id, stream_id])
 }

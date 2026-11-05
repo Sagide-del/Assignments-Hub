@@ -256,6 +256,7 @@ export const router = createBrowserRouter([
     element: <Login />,
   },
 
+  {path:'/library',element:<Navigate to="/student/study-hub/library" replace/>},
   {
     path: '/register',
     element: <IndependentRegister />,

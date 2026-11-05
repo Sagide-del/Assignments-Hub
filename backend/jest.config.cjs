@@ -11,5 +11,7 @@ module.exports = {
     ],
   },
   testEnvironment: "node",
+  // Real PostgreSQL/bcrypt integration checks need scheduling headroom on CI.
+  testTimeout: 15000,
   collectCoverageFrom: ["src/**/*.ts", "!src/**/*.spec.ts", "!src/main.ts"],
 };

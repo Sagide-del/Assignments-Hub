@@ -10,7 +10,7 @@ import { useAuthStore } from "../../../store/auth.store";
 
 export interface CmsPublishSuccess {
   message: string;
-  status: "PUBLISHED_STORE" | "PUBLISHED_SCHOOL";
+  status: "APPROVED";
 }
 export default function PublishModal({
   module,
@@ -23,7 +23,8 @@ export default function PublishModal({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const busy = useRef(false);
-  const [target, setTarget] = useState<"STORE" | "SCHOOL">("STORE");
+  const [storeChecked, setStoreChecked] = useState(true);
+  const [schoolChecked, setSchoolChecked] = useState(false);
   const [schoolId, setSchoolId] = useState("");
   const [streams, setStreams] = useState<string[]>([]);
   const [wholeSchool, setWholeSchool] = useState(false);
@@ -31,13 +32,13 @@ export default function PublishModal({
   const schools = useQuery({
     queryKey: ["cms", userId, "publish-schools"],
     queryFn: schoolsApi.findAll,
-    enabled: target === "SCHOOL",
+    enabled: schoolChecked,
     retry: false,
   });
   const learners = useQuery({
     queryKey: ["cms", userId, "school-streams", schoolId, module.grade],
     queryFn: () => usersApi.findAll(Number(schoolId)),
-    enabled: target === "SCHOOL" && !!schoolId,
+    enabled: schoolChecked && !!schoolId,
     retry: false,
   });
   const choices = cmsSchoolStreams(
@@ -49,17 +50,21 @@ export default function PublishModal({
     (school) => String(school.id) === schoolId && school.code !== "INDEPENDENT",
   );
   const publish = useMutation({
-    mutationFn: () =>
-      cmsApi.publishModule(
-        target === "STORE"
-          ? { module_id: module.id, target_type: "STORE" }
-          : {
-              module_id: module.id,
-              target_type: "SCHOOL",
-              target_id: schoolId,
-              stream_ids: wholeSchool ? [] : streams,
-            },
-      ),
+    mutationFn: async () => {
+      // Each target is additive and idempotent: retrying retains previous successes.
+      if (storeChecked)
+        await cmsApi.publishModule({
+          module_id: module.id,
+          audience: "PUBLIC_STORE",
+        });
+      if (schoolChecked)
+        await cmsApi.publishModule({
+          module_id: module.id,
+          audience: "SCHOOL",
+          school_id: schoolId,
+          stream_ids: wholeSchool ? [] : streams,
+        });
+    },
     onMutate: () => {
       busy.current = true;
     },
@@ -68,11 +73,8 @@ export default function PublishModal({
     },
     onSuccess: () =>
       onPublished({
-        status: target === "STORE" ? "PUBLISHED_STORE" : "PUBLISHED_SCHOOL",
-        message:
-          target === "STORE"
-            ? "Published to Public Store."
-            : `Published to ${validSchool?.name ?? "school"}${wholeSchool ? " · whole school" : ` · ${streams.length} ${streams.length === 1 ? "stream" : "streams"}`}.`,
+        status: "APPROVED",
+        message: `Published to ${[storeChecked ? "Public Store" : "", schoolChecked ? (validSchool?.name ?? "school") : ""].filter(Boolean).join(" and ")}.`,
       }),
   });
   useEffect(() => {
@@ -86,13 +88,14 @@ export default function PublishModal({
     };
   }, []);
   const ready =
-    target === "STORE" ||
-    (!!validSchool &&
-      (wholeSchool ||
-        (!learners.isFetching &&
-          !learners.isError &&
-          streams.length > 0 &&
-          streams.every((stream) => choices.includes(stream)))));
+    (storeChecked || schoolChecked) &&
+    (!schoolChecked ||
+      (!!validSchool &&
+        (wholeSchool ||
+          (!learners.isFetching &&
+            !learners.isError &&
+            streams.length > 0 &&
+            streams.every((stream) => choices.includes(stream))))));
   function submit(event: FormEvent) {
     event.preventDefault();
     if (ready && !busy.current) {
@@ -142,16 +145,16 @@ export default function PublishModal({
             Destination
           </legend>
           <label
-            className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm font-medium ${target === "STORE" ? "border-slate-600 bg-slate-50" : "border-slate-200"}`}
+            className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm font-medium ${storeChecked ? "border-slate-600 bg-slate-50" : "border-slate-200"}`}
           >
             <input
-              type="radio"
+              type="checkbox"
               name="cms-destination"
               value="STORE"
-              checked={target === "STORE"}
+              checked={storeChecked}
               disabled={publish.isPending}
               onChange={() => {
-                setTarget("STORE");
+                setStoreChecked(!storeChecked);
                 publish.reset();
               }}
               className="accent-slate-900"
@@ -160,16 +163,16 @@ export default function PublishModal({
             Publish to Public Store
           </label>
           <label
-            className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm font-medium ${target === "SCHOOL" ? "border-slate-600 bg-slate-50" : "border-slate-200"}`}
+            className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm font-medium ${schoolChecked ? "border-slate-600 bg-slate-50" : "border-slate-200"}`}
           >
             <input
-              type="radio"
+              type="checkbox"
               name="cms-destination"
               value="SCHOOL"
-              checked={target === "SCHOOL"}
+              checked={schoolChecked}
               disabled={publish.isPending}
               onChange={() => {
-                setTarget("SCHOOL");
+                setSchoolChecked(!schoolChecked);
                 publish.reset();
               }}
               className="accent-slate-900"
@@ -182,7 +185,7 @@ export default function PublishModal({
             Publish to School
           </label>
         </fieldset>
-        {target === "SCHOOL" && (
+        {schoolChecked && (
           <div className="mt-5 space-y-4">
             <div>
               <label
@@ -310,7 +313,7 @@ export default function PublishModal({
           >
             {apiErrorMessage(
               publish.error,
-              "Publishing failed. Your selection is kept; try again.",
+              "Publishing incomplete. Any successful destination is retained. Retry safely with the same selection.",
             )}
           </p>
         )}

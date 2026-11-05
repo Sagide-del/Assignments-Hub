@@ -131,6 +131,9 @@ jobs:
           docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE cms_publish_test'
           DATABASE_URL="$CMS_TEST_DATABASE_URL" npx prisma migrate deploy
           npm test -- --runInBand
+      - name: Wait for CMS distributions and migrated storage
+        working-directory: frontend
+        run: node scripts/check-cms-distributions.mjs
       - name: Wait for student elective assignment filtering
         working-directory: frontend
         run: node scripts/check-electives-api.mjs

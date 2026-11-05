@@ -202,7 +202,8 @@ integration("Authenticated subject-enrolled assignments", () => {
             track: t,
             subject,
             topic: `Electives fixture ${subject}`,
-            status: "PUBLISHED_SCHOOL",
+            status: "APPROVED",
+            distributions: {create:{audience:"SCHOOL",school_id:String(school.id)}},
             tenant_id: String(school.id),
             content_json: {
               content_type: "ASSIGNMENT",
@@ -238,7 +239,8 @@ integration("Authenticated subject-enrolled assignments", () => {
           grade: 8,
           subject,
           topic: `Electives fixture junior ${subject}`,
-          status: "PUBLISHED_STORE",
+          status: "APPROVED",
+          distributions: {create:{audience:"PUBLIC_STORE"}},
           content_json: { questions: [] },
         },
       });
@@ -254,7 +256,8 @@ integration("Authenticated subject-enrolled assignments", () => {
           grade,
           subject: "Biology",
           topic: `Electives fixture ${suffix}`,
-          status,
+          status: status === "PUBLISHED_SCHOOL" ? "APPROVED" : status,
+          ...(status === "PUBLISHED_SCHOOL" ? {distributions:{create:{audience:"SCHOOL",school_id:String(tenant)}}} : {}),
           tenant_id: String(tenant),
           content_json: { questions: [] },
         },
@@ -377,14 +380,7 @@ integration("Authenticated subject-enrolled assignments", () => {
     const defaults: any = await (
       await call("/student/assignments", unset)
     ).json();
-    expect(defaults.map((m: any) => m.subject).sort()).toEqual(
-      [
-        "English",
-        "Kiswahili",
-        "Core Mathematics",
-        "Community Service Learning",
-      ].sort(),
-    );
+    expect(defaults).toEqual([]);
   });
   it("stores validated subject choices on the authenticated learner only and changes the next assignment response", async () => {
     expect(

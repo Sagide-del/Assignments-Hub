@@ -1,298 +1,313 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSearchParams, useLocation, Link } from "react-router-dom";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
-  ArrowRight,
-  BookOpen,
-  Building2,
-  CheckCircle2,
-  FileText,
+  Folder,
   Plus,
-  Search,
   Store,
-  X,
+  Building2,
+  Archive,
+  Pencil,
+  Send,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { PageHeader, EmptyState } from "../../../components/ui/Saas";
+import { PageHeader } from "../../../components/ui/Saas";
+import { cmsApi, type MasterModule } from "../../../services/cmsApi";
+import { cmsFolders, cmsQuestionCount } from "../../../services/cms-folders";
 import { apiErrorMessage } from "../../../api/axios";
-import { cmsApi, type CmsStatus } from "../../../services/cmsApi";
 import { useAuthStore } from "../../../store/auth.store";
-
-const TABS = [
-  { status: "DRAFT", label: "Drafts", Icon: FileText },
-  { status: "APPROVED", label: "Approved", Icon: CheckCircle2 },
-  { status: "PUBLISHED_STORE", label: "Published to Store", Icon: Store },
-  {
-    status: "PUBLISHED_SCHOOL",
-    label: "Published to Schools",
-    Icon: Building2,
-  },
-] as const;
-
+import PublishModal from "./PublishModal";
 export default function CmsDashboard() {
-  const userId = useAuthStore((state) => state.user?.id);
-  const location = useLocation();
-  const [toast, setToast] = useState<string | null>(() =>
-    typeof location.state?.cmsPublication === "string"
-      ? location.state.cmsPublication
-      : null,
+  const uid = useAuthStore((s) => s.user?.id),
+    client = useQueryClient();
+  const [grade, setGrade] = useState(""),
+    [subject, setSubject] = useState(""),
+    [status, setStatus] = useState(""),
+    [search, setSearch] = useState("");
+  const [publishing, setPublishing] = useState<MasterModule | null>(null),
+    [message, setMessage] = useState("");
+  const query = useQuery({
+    queryKey: ["cms", uid, "modules"],
+    queryFn: cmsApi.getModules,
+    retry: false,
+  });
+  const edit = useMutation({
+    mutationFn: ({ id, topic }: { id: string; topic: string }) =>
+      cmsApi.updateModule(id, topic),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["cms", uid] }),
+  });
+  const archive = useMutation({
+    mutationFn: cmsApi.archiveModule,
+    onSuccess: () => client.invalidateQueries({ queryKey: ["cms", uid] }),
+  });
+  const all = query.data ?? [];
+  const filtered = all.filter(
+    (m) =>
+      (!grade || String(m.grade) === grade) &&
+      (!subject || m.subject === subject) &&
+      (!status || m.status === status) &&
+      m.topic.toLowerCase().includes(search.trim().toLowerCase()),
   );
-  useEffect(() => {
-    if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(null), 7000);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
-  const [params, setParams] = useSearchParams();
-  const status =
-    TABS.find((tab) => tab.status === params.get("status"))?.status ?? "DRAFT";
-  const [search, setSearch] = useState("");
-  const [legacyOnly, setLegacyOnly] = useState(false);
-  const pending = useQuery({
-    queryKey: ["cms", userId, "drafts"],
-    queryFn: cmsApi.getDrafts,
-    enabled: status === "DRAFT" || status === "APPROVED",
-    retry: false,
-  });
-  const store = useQuery({
-    queryKey: ["cms", userId, "store"],
-    queryFn: cmsApi.getPublicStore,
-    enabled: status === "PUBLISHED_STORE",
-    retry: false,
-  });
-  const schoolPublications = useQuery({
-    queryKey: ["cms", userId, "school-publications"],
-    queryFn: cmsApi.getSchoolPublications,
-    enabled: status === "PUBLISHED_SCHOOL",
-    retry: false,
-  });
-  const query =
-    status === "PUBLISHED_STORE"
-      ? store
-      : status === "PUBLISHED_SCHOOL"
-        ? schoolPublications
-        : pending;
-  const items = (query.data ?? []).filter(
-    (item) =>
-      item.status === status &&
-      (!legacyOnly ||
-        !["DRAFT", "APPROVED"].includes(status) ||
-        (item.content_json as { source?: string } | undefined)?.source ===
-          "LEGACY") &&
-      `${item.topic} ${item.subject} ${item.pathway ?? ""} Grade ${item.grade}`
-        .toLowerCase()
-        .includes(search.trim().toLowerCase()),
-  );
-  function select(next: CmsStatus) {
-    setParams({ status: next });
-    setSearch("");
-  }
+  const selectClass =
+    "min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm";
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-5 right-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-lg"
-        >
-          <CheckCircle2
-            size={18}
-            className="shrink-0 text-emerald-600"
-            aria-hidden="true"
-          />
-          <span>{toast}</span>
-          <button
-            type="button"
-            onClick={() => setToast(null)}
-            aria-label="Dismiss publication notification"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-50"
-          >
-            <X size={15} aria-hidden="true" />
-          </button>
-        </div>
-      )}
       <PageHeader
         title="Content Library"
         actions={
           <Link
             to="/platform/cms/create"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#101820] px-4 text-sm font-semibold text-white hover:bg-slate-800"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#101820] px-4 text-sm font-semibold text-white"
           >
-            <Plus size={17} aria-hidden="true" />
+            <Plus size={17} />
             Create content
           </Link>
         }
       />
-      <div
-        role="tablist"
-        aria-label="Content status"
-        className="flex gap-1 overflow-x-auto border-b border-slate-200"
-        onKeyDown={(event) => {
-          const current = TABS.findIndex((tab) => tab.status === status);
-          const index =
-            event.key === "ArrowRight"
-              ? (current + 1) % TABS.length
-              : event.key === "ArrowLeft"
-                ? (current + TABS.length - 1) % TABS.length
-                : event.key === "Home"
-                  ? 0
-                  : event.key === "End"
-                    ? TABS.length - 1
-                    : -1;
-          if (index >= 0) {
-            event.preventDefault();
-            select(TABS[index].status);
-            document.getElementById(`cms-tab-${TABS[index].status}`)?.focus();
-          }
-        }}
-      >
-        {TABS.map(({ status: key, label, Icon }) => (
-          <button
-            key={key}
-            id={`cms-tab-${key}`}
-            type="button"
-            role="tab"
-            aria-selected={status === key}
-            aria-controls="cms-content-panel"
-            tabIndex={status === key ? 0 : -1}
-            onClick={() => select(key)}
-            className={`inline-flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-xs font-semibold transition sm:px-4 sm:text-sm ${status === key ? "border-[#607d00] text-slate-900" : "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800"}`}
-          >
-            <Icon size={16} aria-hidden="true" />
-            {label}
-          </button>
-        ))}
+      {message && (
+        <p
+          role="status"
+          className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900"
+        >
+          {message}
+        </p>
+      )}
+      <div className="grid gap-3 sm:grid-cols-4">
+        <select
+          aria-label="Grade"
+          className={selectClass}
+          value={grade}
+          onChange={(e) => {
+            setGrade(e.target.value);
+            setSubject("");
+          }}
+        >
+          <option value="">All grades</option>
+          {[...new Set(all.map((m) => m.grade))]
+            .sort((a, b) => a - b)
+            .map((g) => (
+              <option key={g} value={g}>
+                Grade {g}
+              </option>
+            ))}
+        </select>
+        <select
+          aria-label="Subject"
+          className={selectClass}
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+        >
+          <option value="">All subjects</option>
+          {[
+            ...new Set(
+              all
+                .filter((m) => !grade || String(m.grade) === grade)
+                .map((m) => m.subject),
+            ),
+          ]
+            .sort()
+            .map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+        </select>
+        <select
+          aria-label="Status"
+          className={selectClass}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="">All statuses</option>
+          {["DRAFT", "APPROVED", "ARCHIVED"].map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+        <input
+          aria-label="Search by topic"
+          placeholder="Search by topic…"
+          className={selectClass}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
-      <section
-        id="cms-content-panel"
-        role="tabpanel"
-        aria-labelledby={`cms-tab-${status}`}
-        className="space-y-4"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500" role="status">
-            {query.isPending
-              ? "Loading content…"
-              : query.isError
-                ? "Library unavailable"
-                : `${items.length} ${items.length === 1 ? "module" : "modules"}`}
-          </p>
-          <label className="relative w-full sm:max-w-xs">
-            <span className="sr-only">Search content</span>
-            <Search
-              size={16}
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-3 text-slate-400"
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search topic or subject"
-              className="min-h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm"
-            />
-          </label>
+      <p className="text-sm text-slate-500">
+        {filtered.length} {filtered.length === 1 ? "batch" : "batches"}
+      </p>
+      {query.isPending ? (
+        <p role="status">Loading library…</p>
+      ) : query.isError ? (
+        <div role="alert">
+          {apiErrorMessage(query.error, "Unable to load content.")}{" "}
+          <button onClick={() => query.refetch()} className="underline">
+            Retry
+          </button>
         </div>
-        {(status === "DRAFT" || status === "APPROVED") && (
-          <label className="flex items-center gap-2 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={legacyOnly}
-              onChange={(event) => setLegacyOnly(event.target.checked)}
-            />
-            Legacy content only
-          </label>
-        )}
-        {query.isPending ? (
-          <div
-            role="status"
-            aria-label="Loading content library"
-            className="space-y-3"
-          >
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-24 animate-pulse rounded-xl bg-slate-100"
-              />
-            ))}
-          </div>
-        ) : query.isError ? (
-          <div
-            role="alert"
-            className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
-          >
-            <p>
-              {apiErrorMessage(
-                query.error,
-                "Content could not be loaded. Try again.",
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={() => query.refetch()}
-              className="mt-2 min-h-10 font-semibold underline"
+      ) : !filtered.length ? (
+        <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
+          No content found.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {cmsFolders(filtered).map((g) => (
+            <details
+              key={g.grade}
+              open={!!grade}
+              className="rounded-xl border border-slate-200 bg-white"
             >
-              Try again
-            </button>
-          </div>
-        ) : !items.length ? (
-          <EmptyState
-            title={
-              search
-                ? "No matching content"
-                : status === "DRAFT"
-                  ? "No drafts yet"
-                  : status === "APPROVED"
-                    ? "No approved modules yet"
-                    : status === "PUBLISHED_SCHOOL"
-                      ? "No school publications yet"
-                      : "No store publications yet"
-            }
-            action={
-              status === "DRAFT" && !search ? (
-                <Link
-                  to="/platform/cms/create"
-                  className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-800"
-                >
-                  Create your first module
-                  <ArrowRight size={15} aria-hidden="true" />
-                </Link>
-              ) : undefined
-            }
-          />
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
-            {items.map((item) => (
-              <article
-                key={item.id}
-                className="flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5"
-              >
-                <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f1f5e5] text-[#526b10] sm:flex">
-                  <BookOpen size={19} aria-hidden="true" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-500">
-                    Grade {item.grade} · {item.subject}
-                  </p>
-                  <h2 className="mt-1 break-words text-base font-semibold text-slate-900">
-                    {item.topic}
-                  </h2>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {[item.pathway, item.track].filter(Boolean).join(" · ") ||
-                      item.level}
-                  </p>
-                </div>
-                <Link
-                  to={`/platform/cms/review/${encodeURIComponent(item.id)}`}
-                  className="inline-flex min-h-10 shrink-0 items-center gap-2 self-start rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 sm:self-auto"
-                >
-                  {status === "PUBLISHED_STORE" || status === "PUBLISHED_SCHOOL"
-                    ? "View module"
-                    : "Review"}
-                  <ArrowRight size={14} aria-hidden="true" />
-                </Link>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+              <summary className="flex cursor-pointer items-center gap-2 p-4 font-semibold">
+                <Folder size={19} className="text-[#607d00]" />
+                Grade {g.grade}
+              </summary>
+              <div className="space-y-2 px-3 pb-3 sm:px-5">
+                {g.subjects.map((s) => (
+                  <details
+                    key={s.subject}
+                    open={!!subject}
+                    className="rounded-lg bg-slate-50"
+                  >
+                    <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+                      {s.subject}
+                    </summary>
+                    <div className="space-y-2 px-3 pb-3">
+                      {s.topics.map((t) => (
+                        <details key={t.topic}>
+                          <summary className="cursor-pointer py-2 text-sm text-slate-600">
+                            {t.topic}
+                          </summary>
+                          <div className="divide-y divide-slate-100 rounded-lg bg-white">
+                            {t.batches.map((m) => (
+                              <article
+                                key={m.id}
+                                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold">
+                                    Batch {m.batch_number ?? 1}{" "}
+                                    <span className="font-normal text-slate-500">
+                                      · {cmsQuestionCount(m)}{" "}
+                                      {cmsQuestionCount(m) === 1
+                                        ? "question"
+                                        : "questions"}
+                                    </span>
+                                  </p>
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    {m.status} ·{" "}
+                                    {new Date(
+                                      m.created_at,
+                                    ).toLocaleDateString()}
+                                  </p>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {m.distributions?.map((d) => (
+                                      <span
+                                        key={d.id}
+                                        className="inline-flex items-center gap-1 rounded-md bg-[#f1f5e5] px-2 py-1 text-xs text-[#405615]"
+                                      >
+                                        {d.audience === "PUBLIC_STORE" ? (
+                                          <>
+                                            <Store size={12} />
+                                            Public Store
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Building2 size={12} />
+                                            {d.school_name ??
+                                              `School ${d.school_id}`}
+                                            {d.stream_id
+                                              ? ` · ${d.stream_id}`
+                                              : " · All streams"}
+                                          </>
+                                        )}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                                  {m.status === "APPROVED" && (
+                                    <button
+                                      onClick={() => setPublishing(m)}
+                                      className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-[#101820] px-3 text-white"
+                                    >
+                                      <Send size={13} />
+                                      Publish
+                                    </button>
+                                  )}
+                                  <Link
+                                    to={`/platform/cms/review/${m.id}`}
+                                    className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-slate-200 px-3"
+                                  >
+                                    <Pencil size={13} />
+                                    Review
+                                  </Link>
+                                  <button
+                                    disabled={edit.isPending}
+                                    onClick={() => {
+                                      const topic = window.prompt(
+                                        "Topic title",
+                                        m.topic,
+                                      );
+                                      if (
+                                        topic?.trim() &&
+                                        topic.trim() !== m.topic
+                                      )
+                                        edit.mutate({
+                                          id: m.id,
+                                          topic: topic.trim(),
+                                        });
+                                    }}
+                                    className="min-h-10 px-2"
+                                  >
+                                    Edit title
+                                  </button>
+                                  {m.status !== "ARCHIVED" && (
+                                    <button
+                                      disabled={archive.isPending}
+                                      onClick={() => {
+                                        if (
+                                          window.confirm(
+                                            "Archive this batch? It will be hidden from students; its history will be preserved.",
+                                          )
+                                        )
+                                          archive.mutate(m.id);
+                                      }}
+                                      className="inline-flex min-h-10 items-center gap-1 px-2 text-slate-500"
+                                    >
+                                      <Archive size={13} />
+                                      Archive
+                                    </button>
+                                  )}
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </details>
+          ))}
+        </div>
+      )}
+      {edit.isError && (
+        <p role="alert" className="text-amber-900">
+          {apiErrorMessage(edit.error, "Update failed.")}
+        </p>
+      )}
+      {archive.isError && (
+        <p role="alert" className="text-amber-900">
+          {apiErrorMessage(archive.error, "Archive failed.")}
+        </p>
+      )}
+      {publishing && (
+        <PublishModal
+          module={publishing}
+          onClose={() => setPublishing(null)}
+          onPublished={(r) => {
+            setMessage(r.message);
+            setPublishing(null);
+            void client.invalidateQueries({ queryKey: ["cms", uid] });
+          }}
+        />
+      )}
     </div>
   );
 }

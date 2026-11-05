@@ -55,6 +55,9 @@ integration("CMS PostgreSQL delivery records", () => {
       await prisma.masterModule.deleteMany({
         where: { id: { in: moduleIds } },
       });
+      await prisma.stream.deleteMany({
+        where: { school_id: { in: schoolIds } },
+      });
       await prisma.school.deleteMany({ where: { id: { in: schoolIds } } });
       await prisma.$disconnect();
     }
@@ -75,6 +78,14 @@ integration("CMS PostgreSQL delivery records", () => {
         .generation_cost_tokens,
     ).toBe(1840);
     await service.approveModule(draft.id);
+    await prisma.stream.createMany({
+      data: ["1A", "1B"].map((name) => ({
+        school_id: school.id,
+        grade: "Grade 11",
+        name,
+      })),
+      skipDuplicates: true,
+    });
     const input = {
       module_id: draft.id,
       target_type: PublishTargetType.SCHOOL,
@@ -85,7 +96,7 @@ integration("CMS PostgreSQL delivery records", () => {
       service.publishModule(input),
       service.publishModule(input),
     ]);
-    const records = await prisma.moduleAssignment.findMany({
+    const records = await prisma.contentDistribution.findMany({
       where: { module_id: draft.id },
       orderBy: { stream_id: "asc" },
     });
@@ -98,8 +109,8 @@ integration("CMS PostgreSQL delivery records", () => {
     expect(
       await prisma.masterModule.findUniqueOrThrow({ where: { id: draft.id } }),
     ).toMatchObject({
-      status: "PUBLISHED_SCHOOL",
-      tenant_id: String(school.id),
+      status: "APPROVED",
+      tenant_id: null,
     });
     expect(
       (await service.getSchoolPublications()).some(
@@ -109,6 +120,71 @@ integration("CMS PostgreSQL delivery records", () => {
     expect(
       (await service.getPublicStore()).some((module) => module.id === draft.id),
     ).toBe(false);
+  });
+  it("retains public delivery when adding schools, retries idempotently and archives without deleting history", async () => {
+    const school = await prisma.school.create({
+      data: { name: "Distribution school", code: `DIST${Date.now()}` },
+    });
+    schoolIds.push(school.id);
+    const draft = await service.generateAiContent({
+      grade: 11,
+      subject: "Aviation Technology",
+      topic: "Aerodynamics",
+    });
+    moduleIds.push(draft.id);
+    await service.approveModule(draft.id);
+    await service.publishModule({
+      module_id: draft.id,
+      audience: "PUBLIC_STORE",
+    });
+    await service.publishModule({
+      module_id: draft.id,
+      audience: "SCHOOL",
+      school_id: String(school.id),
+    });
+    await service.publishModule({
+      module_id: draft.id,
+      audience: "PUBLIC_STORE",
+    });
+    expect(
+      await prisma.contentDistribution.count({
+        where: { module_id: draft.id },
+      }),
+    ).toBe(2);
+    expect(
+      (await service.getPublicStore()).some((m) => m.id === draft.id),
+    ).toBe(true);
+    expect(
+      (await service.getSchoolPublications()).some((m) => m.id === draft.id),
+    ).toBe(true);
+    expect((await service.getDrafts()).some((m) => m.id === draft.id)).toBe(
+      true,
+    );
+    await expect(
+      service.publishModule({
+        module_id: draft.id,
+        audience: "SCHOOL",
+        school_id: String(school.id),
+        stream_ids: ["foreign-stream"],
+      }),
+    ).rejects.toThrow("belonging");
+    const summary = (await service.getModules()).find(
+      (m) => m.id === draft.id,
+    )!;
+    expect(summary.question_count).toBe(30);
+    expect(summary).not.toHaveProperty("content_json");
+    expect(
+      summary.distributions.some((d) => d.school_name === school.name),
+    ).toBe(true);
+    await service.archiveModule(draft.id);
+    expect(
+      (await service.getPublicStore()).some((m) => m.id === draft.id),
+    ).toBe(false);
+    expect(
+      await prisma.contentDistribution.count({
+        where: { module_id: draft.id },
+      }),
+    ).toBe(2);
   });
   it("publishes store metadata without creating stream delivery rows or exposing answer payloads", async () => {
     const draft = await service.generateAiContent({
@@ -128,7 +204,7 @@ integration("CMS PostgreSQL delivery records", () => {
     const entry = (await service.getPublicStore()).find(
       (module) => module.id === draft.id,
     )!;
-    expect(entry.status).toBe("PUBLISHED_STORE");
+    expect(entry.status).toBe("APPROVED");
     expect(entry).not.toHaveProperty("content_json");
     expect((await service.getModule(draft.id)).content_json).toBeDefined();
   });

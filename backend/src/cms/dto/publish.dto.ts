@@ -21,8 +21,19 @@ export class PublishDto {
   @IsUUID()
   module_id: string;
 
+  @IsOptional()
   @IsEnum(PublishTargetType)
-  target_type: PublishTargetType;
+  target_type?: PublishTargetType;
+
+  @IsOptional()
+  @IsEnum({ PUBLIC_STORE: "PUBLIC_STORE", SCHOOL: "SCHOOL" })
+  audience?: "PUBLIC_STORE" | "SCHOOL";
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^[1-9]\d*$/)
+  @MaxLength(10)
+  school_id?: string;
 
   // Existing School IDs are integers; the CMS stores their string form.
   @IsOptional()

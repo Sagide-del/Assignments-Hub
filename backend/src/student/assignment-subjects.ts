@@ -15,7 +15,11 @@ export function enrolledSubjects(
   electives: string[],
   junior: string[],
 ) {
-  return grade >= 10 ? [...CORE_ASSIGNMENT_SUBJECTS, ...electives] : junior;
+  return grade >= 10
+    ? electives.length
+      ? [...CORE_ASSIGNMENT_SUBJECTS, ...electives]
+      : []
+    : junior;
 }
 export function allowedAssignmentSubject(
   scope: StudentScope,

@@ -36,7 +36,7 @@ def run(payload):
     ctx=mp.get_context('forkserver');parent,child=ctx.Pipe(duplex=False);process=ctx.Process(target=worker,args=(child,payload))
     try:
         process.start();child.close()
-        if not parent.poll(3):raise HTTPException(422,'Calculation exceeded its limit')
+        if not parent.poll(5):raise HTTPException(422,'Calculation exceeded its limit')
         try:result=parent.recv()
         except EOFError:raise HTTPException(422,'Unsupported calculation')
         if not result['ok']:raise HTTPException(422,'Unsupported calculation')

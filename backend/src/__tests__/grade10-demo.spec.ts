@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import {readFileSync} from 'fs';
+import {join} from 'path';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -20,4 +22,6 @@ integration('Grade 10 STEM demo provisioning',()=>{
   const pairs=await db.teacherAssignment.findMany({where:{teacher_id:c.teacherId},include:{stream:true}});expect(pairs).toHaveLength(4);expect(pairs.every(p=>p.stream.name==='10A'&&p.school_id===c.schoolId)).toBe(true);
   await expect(provisionGrade10Demo(db)).rejects.toThrow('already exists');expect((await db.user.findUniqueOrThrow({where:{id:c.teacherId}})).passwordHash).toBe(users.find(u=>u.id===c.teacherId)!.passwordHash);
  },30000);
+ it('repairs only the empty demo electives and preserves an already chosen combination',async()=>{const user=await db.user.findFirstOrThrow({where:{school:{code:'STEM10TEST'},admissionNumber:'STEM1001'}});const sql=readFileSync(join(process.cwd(),'prisma/migrations/20261105130000_repair_stem_demo_electives/migration.sql'),'utf8');await db.user.update({where:{id:user.id},data:{elective_subjects:[]}});await db.$executeRawUnsafe(sql);expect((await db.user.findUniqueOrThrow({where:{id:user.id}})).elective_subjects).toEqual(['Biology','Chemistry','Physics']);await db.user.update({where:{id:user.id},data:{elective_subjects:['Biology','Chemistry','Computer Science']}});await db.$executeRawUnsafe(sql);expect((await db.user.findUniqueOrThrow({where:{id:user.id}})).elective_subjects).toEqual(['Biology','Chemistry','Computer Science']);});
+
 });

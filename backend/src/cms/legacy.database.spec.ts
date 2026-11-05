@@ -140,8 +140,9 @@ integration("Legacy migration on disposable PostgreSQL", () => {
       expect(
         await service.getLearningModules({ ...actor, grade: "Grade 8" }),
       ).toEqual([]);
-      await prisma.moduleAssignment.create({
-        data: { module_id: module.id, stream_id: "7A" },
+      await prisma.contentDistribution.updateMany({
+        where: { module_id: module.id },
+        data: { stream_id: "7A" },
       });
       expect(await service.getLearningModules(actor)).toEqual([]);
       await expect(
@@ -163,12 +164,16 @@ integration("Legacy migration on disposable PostgreSQL", () => {
       expect(delivery.questions[0].config).toEqual({ rubric: "Preserved" });
       expect((delivery.rawJson as any).cms_content.theory_text).toBe("");
       expect(delivery.rawJson).not.toHaveProperty("legacy_records");
-      await expect(
-        service.publishModule({
-          module_id: module.id,
-          target_type: "STORE" as any,
-        }),
-      ).rejects.toThrow("School-owned");
+      await service.publishModule({
+        module_id: module.id,
+        audience: "PUBLIC_STORE",
+      });
+      expect((await service.getModule(module.id)).distributions).toHaveLength(
+        2,
+      );
+      expect(
+        (await service.getPublicStore()).some((m) => m.id === module.id),
+      ).toBe(true);
     } finally {
       log.mockRestore();
       await prisma.moduleAssignment.deleteMany({

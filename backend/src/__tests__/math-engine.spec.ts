@@ -15,6 +15,8 @@ const integration = process.env.MATH_ENGINE_TEST_PYTHON
   ? describe
   : describe.skip;
 integration("Phase 3 real private Python engine and NestJS integration", () => {
+  // Real isolated Python processes include interpreter startup; unit-test 5s is too short on CI.
+  jest.setTimeout(30000);
   let engine: MathEngineService, validator: MathValidatorService;
   const source = () => ({
     question_text: "Solve 2*x+3=11",
@@ -128,19 +130,17 @@ integration("Phase 3 real private Python engine and NestJS integration", () => {
           .mockImplementation(({ data }) => ({ id: "module", ...data })),
       },
       curriculumTaxonomy: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            {
-              id: "tax",
-              level: "Senior School",
-              grade: 11,
-              pathway: "STEM",
-              track: "Pure Sciences",
-              subject: "Mathematics",
-              topics: ["Equations"],
-            },
-          ]),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "tax",
+            level: "Senior School",
+            grade: 11,
+            pathway: "STEM",
+            track: "Pure Sciences",
+            subject: "Mathematics",
+            topics: ["Equations"],
+          },
+        ]),
       },
     };
     const ai = {
@@ -216,13 +216,11 @@ integration("Phase 3 real private Python engine and NestJS integration", () => {
       },
       submission: {
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest
-          .fn()
-          .mockImplementation(({ data }) => ({
-            id: 1,
-            ...data,
-            answers: data.answers?.create ?? [],
-          })),
+        create: jest.fn().mockImplementation(({ data }) => ({
+          id: 1,
+          ...data,
+          answers: data.answers?.create ?? [],
+        })),
       },
       masterModule: {
         findUnique: jest
@@ -263,16 +261,39 @@ integration("Phase 3 real private Python engine and NestJS integration", () => {
 });
 describe("Math engine deployment diagnostics", () => {
   it("reports a missing deployment bundle without attempting a silent startup loop", async () => {
-    const engine = new MathEngineService(new ConfigService({MATH_ENGINE_WORKDIR:"/tmp/assignmenthub-missing-runtime-fixture"}));
-    try { await engine.health(); throw Error("Expected unavailable runtime"); }
-    catch (error: any) { expect(error.getResponse()).toMatchObject({code:"MATH_ENGINE_BUNDLE_MISSING"}); }
-    finally {engine.onModuleDestroy();}
+    const engine = new MathEngineService(
+      new ConfigService({
+        MATH_ENGINE_WORKDIR: "/tmp/assignmenthub-missing-runtime-fixture",
+      }),
+    );
+    try {
+      await engine.health();
+      throw Error("Expected unavailable runtime");
+    } catch (error: any) {
+      expect(error.getResponse()).toMatchObject({
+        code: "MATH_ENGINE_BUNDLE_MISSING",
+      });
+    } finally {
+      engine.onModuleDestroy();
+    }
   });
   it("distinguishes a missing Python interpreter from missing runtime source", async () => {
-    const engine = new MathEngineService(new ConfigService({MATH_ENGINE_WORKDIR:join(process.cwd(),"runtime/math-engine"),MATH_ENGINE_PYTHON:"/tmp/assignmenthub-missing-python-fixture"}));
-    try { await engine.health(); throw Error("Expected unavailable interpreter"); }
-    catch (error: any) { expect(error.getResponse()).toMatchObject({code:"MATH_ENGINE_PYTHON_MISSING"}); }
-    finally {engine.onModuleDestroy();}
+    const engine = new MathEngineService(
+      new ConfigService({
+        MATH_ENGINE_WORKDIR: join(process.cwd(), "runtime/math-engine"),
+        MATH_ENGINE_PYTHON: "/tmp/assignmenthub-missing-python-fixture",
+      }),
+    );
+    try {
+      await engine.health();
+      throw Error("Expected unavailable interpreter");
+    } catch (error: any) {
+      expect(error.getResponse()).toMatchObject({
+        code: "MATH_ENGINE_PYTHON_MISSING",
+      });
+    } finally {
+      engine.onModuleDestroy();
+    }
   });
 });
 describe("Math engine failure handling", () => {

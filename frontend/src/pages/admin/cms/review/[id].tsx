@@ -183,24 +183,24 @@ export default function CmsReviewPage() {
         actions={
           <>
             <span className="inline-flex min-h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600">
-              {module.status === "PUBLISHED_STORE"
-                ? "Published to Store"
-                : module.status === "PUBLISHED_SCHOOL"
-                  ? "Published to Schools"
-                  : module.status === "APPROVED"
-                    ? "Approved"
-                    : "Draft"}
+              {module.status === "APPROVED"
+                ? "Approved"
+                : module.status === "ARCHIVED"
+                  ? "Archived"
+                  : "Draft"}
             </span>
-            {hasPayload && ["DRAFT", "APPROVED"].includes(module.status) && (
-              <button
-                type="button"
-                disabled={enrich.isPending || approve.isPending}
-                onClick={() => enrich.mutate()}
-                className="min-h-11 rounded-lg border border-slate-200 px-4 text-xs font-semibold disabled:opacity-40"
-              >
-                {enrich.isPending ? "Enriching…" : "Enrich with AI"}
-              </button>
-            )}
+            {hasPayload &&
+              !module.distributions?.length &&
+              ["DRAFT", "APPROVED"].includes(module.status) && (
+                <button
+                  type="button"
+                  disabled={enrich.isPending || approve.isPending}
+                  onClick={() => enrich.mutate()}
+                  className="min-h-11 rounded-lg border border-slate-200 px-4 text-xs font-semibold disabled:opacity-40"
+                >
+                  {enrich.isPending ? "Enriching…" : "Enrich with AI"}
+                </button>
+              )}
             {module.status === "DRAFT" && hasPayload && (
               <button
                 type="button"

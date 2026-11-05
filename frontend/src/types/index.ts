@@ -49,6 +49,7 @@ export interface School {
 }
 
 export interface Assignment {
+  cmsModule?: {id:string;state?:string;results_released?:boolean};
   rawJson?: { cms_module_id?: string; cms_content?: unknown };
   bankPractice?: { subject: string; topic: string; activeId?: string; latestResultId?: string; completedBatches?: number; historicalOnly?: boolean };
   topic?: string | null;

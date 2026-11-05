@@ -26,6 +26,7 @@ import { IndependentTrialGuard } from "../common/guards/independent-trial.guard"
 const TEST_SECRET = "cms-api-test-only-secret";
 const rows = new Map<string, any>();
 let assignments: any[] = [];
+let distributions: any[] = [];
 let failAssignmentWrite = false;
 let serial: Promise<unknown> = Promise.resolve();
 const copy = <T>(value: T): T => structuredClone(value);
@@ -96,6 +97,15 @@ const db: any = {
             return false;
           if (typeof where.status === "string" && row.status !== where.status)
             return false;
+          if (
+            where.distributions?.some?.audience &&
+            !distributions.some(
+              (d) =>
+                d.module_id === row.id &&
+                d.audience === where.distributions.some.audience,
+            )
+          )
+            return false;
           return (
             where.tenant_id === undefined || row.tenant_id === where.tenant_id
           );
@@ -106,6 +116,28 @@ const db: any = {
       const row = { ...rows.get(where.id), ...data, updated_at: new Date() };
       rows.set(row.id, row);
       return copy(row);
+    }),
+  },
+  studentProfile: {
+    findMany: jest.fn(async () => [
+      { stream: "1A", className: null },
+      { stream: "1B", className: null },
+      { stream: "1C", className: null },
+    ]),
+  },
+  stream: { findMany: jest.fn(async () => []) },
+  contentDistribution: {
+    findFirst: jest.fn(
+      async ({ where }) =>
+        distributions.find((d) =>
+          Object.entries(where).every(([k, v]) => d[k] === v),
+        ) ?? null,
+    ),
+    create: jest.fn(async ({ data }) => {
+      if (failAssignmentWrite) throw Error("Simulated distribution failure");
+      const d = { id: randomUUID(), published_at: new Date(), ...data };
+      distributions.push(d);
+      return d;
     }),
   },
   school: {
@@ -143,16 +175,27 @@ const db: any = {
     }),
   },
 };
+db.masterModule.findUniqueOrThrow = jest.fn(async ({ where }) => {
+  const row = rows.get(where.id);
+  if (!row) throw Error("Missing");
+  return {
+    ...copy(row),
+    distributions: copy(distributions.filter((d) => d.module_id === where.id)),
+    assignments: [],
+  };
+});
 db.$transaction = jest.fn((run: (tx: any) => Promise<unknown>) => {
   const task = serial.then(async () => {
     const savedRows = copy([...rows]),
-      savedAssignments = copy(assignments);
+      savedAssignments = copy(assignments),
+      savedDistributions = copy(distributions);
     try {
       return await run(db);
     } catch (error) {
       rows.clear();
       for (const [id, row] of savedRows) rows.set(id, row);
       assignments = savedAssignments;
+      distributions = savedDistributions;
       throw error;
     }
   });
@@ -262,6 +305,7 @@ describe("Master Content Library HTTP API", () => {
   beforeEach(() => {
     rows.clear();
     assignments = [];
+    distributions = [];
     failAssignmentWrite = false;
     jest.clearAllMocks();
     ai.generateAssignment
@@ -502,10 +546,10 @@ describe("Master Content Library HTTP API", () => {
       expect(publicStore.data[0]).not.toHaveProperty(key);
     expect(
       (await request("/drafts", "GET", undefined, "PLATFORM_ADMIN")).data,
-    ).toHaveLength(1);
+    ).toHaveLength(2);
     expect(assignments).toHaveLength(0);
   });
-  it("delivers to a real school and synchronizes streams without duplicate assignment records", async () => {
+  it("delivers to a real school and adds streams without duplicate distribution records", async () => {
     const module = await approved(),
       body = {
         module_id: module.id,
@@ -518,9 +562,9 @@ describe("Master Content Library HTTP API", () => {
       request("/publish", "POST", body, "PLATFORM_ADMIN"),
     ]);
     expect(results.every((result) => result.status === 201)).toBe(true);
-    expect(assignments).toHaveLength(2);
-    expect(rows.get(module.id).tenant_id).toBe("1");
-    const retained = assignments.find((row) => row.stream_id === "1B").id;
+    expect(distributions).toHaveLength(2);
+    expect(rows.get(module.id).status).toBe("APPROVED");
+    const retained = distributions.find((row) => row.stream_id === "1B").id;
     expect(
       (
         await request(
@@ -531,8 +575,14 @@ describe("Master Content Library HTTP API", () => {
         )
       ).status,
     ).toBe(201);
-    expect(assignments.map((row) => row.stream_id)).toEqual(["1B", "1C"]);
-    expect(assignments.find((row) => row.stream_id === "1B").id).toBe(retained);
+    expect(distributions.map((row) => row.stream_id)).toEqual([
+      "1A",
+      "1B",
+      "1C",
+    ]);
+    expect(distributions.find((row) => row.stream_id === "1B").id).toBe(
+      retained,
+    );
     expect((await request("/store")).data).toHaveLength(0);
   });
   it("lets only administrators retrieve school publications and full module details", async () => {
@@ -583,10 +633,10 @@ describe("Master Content Library HTTP API", () => {
       { module_id: module.id, target_type: "SCHOOL", target_id: "2" },
       "PLATFORM_ADMIN",
     );
-    expect(result.data.status).toBe("PUBLISHED_SCHOOL");
+    expect(result.data.status).toBe("APPROVED");
     expect(result.data.assignments).toEqual([]);
   });
-  it("rejects invalid targets, duplicates, unapproved content and audience reassignment", async () => {
+  it("rejects invalid targets and allows approved content to reach multiple audiences", async () => {
     const module = await create(),
       body = { module_id: module.id, target_type: "SCHOOL", target_id: "1" };
     expect(
@@ -625,11 +675,11 @@ describe("Master Content Library HTTP API", () => {
         await request(
           "/publish",
           "POST",
-          { module_id: module.id, target_type: "STORE" },
+          { module_id: module.id, audience: "PUBLIC_STORE" },
           "PLATFORM_ADMIN",
         )
       ).status,
-    ).toBe(409);
+    ).toBe(201);
     expect(
       (
         await request(
@@ -639,7 +689,7 @@ describe("Master Content Library HTTP API", () => {
           "PLATFORM_ADMIN",
         )
       ).status,
-    ).toBe(409);
+    ).toBe(201);
     expect(
       (
         await request(
@@ -649,7 +699,13 @@ describe("Master Content Library HTTP API", () => {
           "PLATFORM_ADMIN",
         )
       ).status,
-    ).toBe(409);
+    ).toBe(200);
+    expect(distributions.map((d) => d.audience)).toEqual([
+      "SCHOOL",
+      "PUBLIC_STORE",
+      "SCHOOL",
+    ]);
+    expect((await request("/store")).data).toHaveLength(1);
   });
   it("rolls back publication if stream delivery fails", async () => {
     const module = await approved();

@@ -1,11 +1,7 @@
 import { AssignmentSubjectSetup } from "./SubjectSelection";
 import { subjectKey as enrolledSubjectKey } from "../../../../backend/src/student/student-scope.policy";
 import { useStudentContentScope } from "../../hooks/useStudentContentScope";
-import {
-  CmsLearningLibrary,
-  filterCmsModules,
-  type LearningModule,
-} from "./CmsLearningLibrary";
+import { type LearningModule } from "./CmsLearningLibrary";
 import { cmsLearningContent } from "../../services/cms-content";
 import { PageHeader } from "../../components/ui/Saas";
 import { learningTitle } from "./assignment-presentation";
@@ -43,7 +39,6 @@ import {
 } from "./assignment-list";
 import {
   catalogueKey,
-  catalogueSubjectName,
   groupAssignments,
   matchesAssignmentSearch,
 } from "./assignment-catalogue";
@@ -72,11 +67,11 @@ function GroupProgress({
     );
   const submitted = fixed.filter((a) =>
     ["SUBMITTED", "RESULTS_AVAILABLE"].includes(
-      assignmentState(submissions.get(a.id)),
+      assignmentState(submissions.get(a.id), a),
     ),
   ).length;
   const active = fixed.filter(
-    (a) => assignmentState(submissions.get(a.id)) === "IN_PROGRESS",
+    (a) => assignmentState(submissions.get(a.id), a) === "IN_PROGRESS",
   ).length;
   return (
     <div className="mt-5 border-t border-slate-100 pt-4">
@@ -124,8 +119,15 @@ function AssignmentCard({
         .then((r) => r.data),
     onSuccess: (r) => navigate(`/student/assignments/practice/${r.id}`),
   });
+  const cmsStart = useMutation({
+    mutationFn: () =>
+      api
+        .post<{ id: number }>(`/cms/learning/${assignment.cmsModule!.id}/start`)
+        .then((r) => r.data),
+    onSuccess: (r) => navigate(`/student/assignments/${r.id}`),
+  });
   const location = useLocation();
-  const state = assignmentState(submission),
+  const state = assignmentState(submission, assignment),
     meta = STATE_META[state];
   const count = assignment._count?.questions ?? assignment.questions?.length;
   const marks = assignment.maxPoints ?? assignment.totalMarks;
@@ -184,7 +186,26 @@ function AssignmentCard({
             </p>
           )}
         </div>
-        {assignment.bankPractice ? (
+        {assignment.cmsModule ? (
+          <div>
+            <button
+              disabled={cmsStart.isPending}
+              onClick={() => cmsStart.mutate()}
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {cmsStart.isPending ? "Opening…" : meta.action}
+              <ArrowRight size={16} />
+            </button>
+            {cmsStart.isError && (
+              <p role="alert" className="mt-2 text-xs text-amber-900">
+                {apiErrorMessage(
+                  cmsStart.error,
+                  "This assignment could not be opened.",
+                )}
+              </p>
+            )}
+          </div>
+        ) : assignment.bankPractice ? (
           <div>
             <button
               disabled={practice.isPending}
@@ -403,18 +424,45 @@ export function MyAssignmentsPage() {
         },
       });
     }
-    const enrolled = contentScope.data?.assignment_subjects;
-    return [...published, ...bank].filter(
+    const represented = new Set(published.map((a) => a.rawJson?.cms_module_id));
+    const cms: Assignment[] = (cmsQuery.data ?? [])
+      .filter((m) => !represented.has(m.id))
+      .map((m, i) => ({
+        id: -(1000000 + i),
+        title: m.topic,
+        topic: m.topic,
+        subject: m.subject,
+        grade: `Grade ${m.grade}`,
+        schoolId: user!.schoolId,
+        isPublished: true,
+        type: "AUTO_MARKED",
+        dueDate: m.due_date,
+        createdAt: m.created_at ?? "2020-01-01T00:00:00Z",
+        _count: {
+          questions: m.question_count,
+          submissions: m.state && m.state !== "TO_START" ? 1 : 0,
+        },
+        cmsModule: {
+          id: m.id,
+          state: m.state,
+          results_released: m.results_released,
+        },
+        rawJson: { cms_module_id: m.id },
+      }));
+    const enrolled = contentScope.data?.assignment_subjects ?? [];
+    return [...published, ...bank, ...cms].filter(
       (a) =>
-        !enrolled ||
+        user?.isIndependentTrial ||
         enrolled.some(
           (s) => enrolledSubjectKey(s) === enrolledSubjectKey(a.subject),
         ),
     );
   }, [
     assignmentsQuery.data,
+    cmsQuery.data,
     practiceQuery.data,
     user?.schoolId,
+    user?.isIndependentTrial,
     contentScope.data?.assignment_subjects,
   ]);
   const submissions = useMemo(() => {
@@ -447,19 +495,6 @@ export function MyAssignmentsPage() {
   const matchingTopic = matchingSubject?.topics.find(
     (t) => t.key === catalogueKey(topicKey),
   );
-  const represented = new Set(
-    (assignmentsQuery.data ?? [])
-      .map((a) => a.rawJson?.cms_module_id)
-      .filter((id): id is string => typeof id === "string"),
-  );
-  const cmsVisible = filterCmsModules(cmsQuery.data ?? [], {
-    subject: subjectKey,
-    topic: topicKey,
-    search,
-    state,
-    subjects: contentScope.data?.assignment_subjects,
-    excluded: represented,
-  });
   const loading =
     (cmsQuery.isPending && cmsQuery.fetchStatus !== "idle") ||
     assignmentsQuery.isPending ||
@@ -490,33 +525,35 @@ export function MyAssignmentsPage() {
     setParams(next, { replace: true });
   }
   const title = topicKey
-    ? (selectedTopic?.name ?? cmsVisible[0]?.topic ?? "Topic")
+    ? (selectedTopic?.name ?? "Topic")
     : subjectKey
-      ? (selectedSubject?.name ?? cmsVisible[0]?.subject ?? "Subject")
+      ? (selectedSubject?.name ?? "Subject")
       : "Your subjects";
   const count = topicKey
-    ? (matchingTopic?.assignments.length ?? 0) + cmsVisible.length
+    ? (matchingTopic?.assignments.length ?? 0)
     : subjectKey
-      ? new Set([
-          ...(matchingSubject?.topics.map((t) => catalogueKey(t.name)) ?? []),
-          ...cmsVisible.map((m) => catalogueKey(m.topic)),
-        ]).size
-      : new Set([
-          ...groups.map((s) => catalogueKey(s.name)),
-          ...cmsVisible.map((m) => catalogueKey(catalogueSubjectName(m.subject))),
-        ]).size;
+      ? (matchingSubject?.topics.length ?? 0)
+      : groups.length;
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-6">
       <PageHeader
         title="My Assignments"
         actions={
-          user?.grade ? (
-            <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-              {contentScope.data?.grade
-                ? `Grade ${contentScope.data.grade}`
-                : user.grade}
-            </span>
-          ) : null
+          <div className="flex items-center gap-3">
+            <Link
+              to="/library"
+              className="text-xs font-medium text-slate-600 underline"
+            >
+              Explore Library
+            </Link>
+            {user?.grade ? (
+              <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+                {contentScope.data?.grade
+                  ? `Grade ${contentScope.data.grade}`
+                  : user.grade}
+              </span>
+            ) : null}
+          </div>
         }
       />
       {contentScope.data && contentScope.data.grade >= 10 && (
@@ -657,14 +694,6 @@ export function MyAssignmentsPage() {
           </button>
         )}
       </div>
-      {!error && !loading && (
-        <CmsLearningLibrary
-          subject={subjectKey}
-          topic={topicKey}
-          search={search}
-          items={cmsVisible}
-        />
-      )}
       {error ? (
         <div
           role="alert"
@@ -713,7 +742,7 @@ export function MyAssignmentsPage() {
           <p className="mt-2 text-xs leading-6 text-slate-500">
             {hasFilters
               ? "Try another search or clear the filters."
-              : "Your teacher hasn't published assignments for your subjects yet. Check back soon."}
+              : "No assignments available yet. Check back soon."}
           </p>
           {hasFilters && (
             <button

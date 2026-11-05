@@ -23,6 +23,15 @@ export class MathValidatorService {
   async verify(questions: any[], problems: unknown[], subject: string) {
     const eligible = /math|chemistry/i.test(subject);
     const results = [];
+    // Reuse identical exact computations only within this generation request.
+    const solvedCache = new Map<
+      string,
+      Awaited<ReturnType<MathEngineService["solve"]>>
+    >();
+    const matchCache = new Map<
+      string,
+      Awaited<ReturnType<MathEngineService["equivalent"]>>
+    >();
     for (const [i, q] of questions.entries()) {
       const problem = problems[i] as any;
       if (!eligible || !problem) {
@@ -45,15 +54,23 @@ export class MathValidatorService {
         continue;
       }
       try {
-        const solved = await this.engine.solve(
+        const solveKey = JSON.stringify([
           problem.question_type,
           problem.expression,
-        );
-        const matches = await this.engine.equivalent(
-          problem.question_type,
-          q.correct_answer,
-          solved.correct_answer,
-        );
+        ]);
+        const solved =
+          solvedCache.get(solveKey) ??
+          (await this.engine.solve(problem.question_type, problem.expression));
+        solvedCache.set(solveKey, solved);
+        const matchKey = JSON.stringify([solveKey, q.correct_answer]);
+        const matches =
+          matchCache.get(matchKey) ??
+          (await this.engine.equivalent(
+            problem.question_type,
+            q.correct_answer,
+            solved.correct_answer,
+          ));
+        matchCache.set(matchKey, matches);
         results.push({
           ...q,
           verified_answer: solved.correct_answer,

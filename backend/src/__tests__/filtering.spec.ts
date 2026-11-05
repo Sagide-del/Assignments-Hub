@@ -541,7 +541,8 @@ integration(
             track,
             subject,
             topic: "Test topic",
-            status: "PUBLISHED_SCHOOL",
+            status: "APPROVED",
+            distributions: {create:{audience:"SCHOOL",school_id:String(tenant)}},
             tenant_id: String(tenant),
             content_json: {
               content_type: "ASSIGNMENT",
@@ -765,12 +766,12 @@ integration(
         ).status,
       ).toBe(403);
     });
-    it("missing senior selection keeps shared core content visible and asks for setup", async () => {
+    it("missing senior electives returns no assignment content and asks for setup", async () => {
       const s: any = await (await call("/student/content-scope", unset)).json();
       expect(s.setup_required).toBe(true);
       expect(s.track).toBeNull();
       expect((await data("/assignments", unset)).map((x) => x.subject)).toEqual(
-        ["Mathematics"],
+        [],
       );
     });
     it("never filters school admin responses and immediately honours a changed grade", async () => {

@@ -1,10 +1,10 @@
 import { api } from "../api/axios";
 
-export type CmsStatus =
-  "DRAFT" | "APPROVED" | "PUBLISHED_STORE" | "PUBLISHED_SCHOOL" | "ARCHIVED";
+export type CmsStatus = "DRAFT" | "APPROVED" | "ARCHIVED";
 export interface MasterModule {
   id: string;
   batch_number?: number;
+  question_count?: number;
   theory_cheatsheet?: unknown;
   level: string;
   grade: number;
@@ -18,6 +18,14 @@ export interface MasterModule {
   updated_at: string;
   tenant_id?: string | null;
   generation_cost_tokens?: number;
+  distributions?: {
+    id: string;
+    audience: "PUBLIC_STORE" | "SCHOOL";
+    school_id: string | null;
+    school_name?: string | null;
+    stream_id: string | null;
+    published_at: string;
+  }[];
   assignments?: {
     id: string;
     module_id: string;
@@ -47,7 +55,9 @@ export interface CreateCmsDraft {
 }
 export interface PublishCmsModule {
   module_id: string;
-  target_type: "STORE" | "SCHOOL";
+  target_type?: "STORE" | "SCHOOL";
+  audience?: "PUBLIC_STORE" | "SCHOOL";
+  school_id?: string;
   target_id?: string;
   stream_ids?: string[];
 }
@@ -60,6 +70,16 @@ const list = (value: unknown): MasterModule[] => {
 // Reuse the app's token attachment, single-flight refresh and API base URL.
 // CMS administration routes are protected by the backend role guard.
 export const cmsApi = {
+  updateModule: (id: string, topic: string) =>
+    api
+      .patch(`/cms/modules/${encodeURIComponent(id)}`, { topic })
+      .then((r) => r.data),
+  getModules: () =>
+    api.get<MasterModule[]>("/cms/modules").then((r) => list(r.data)),
+  archiveModule: (id: string) =>
+    api
+      .patch(`/cms/modules/${encodeURIComponent(id)}/archive`)
+      .then((r) => r.data),
   getTaxonomy: (grade: number) =>
     api
       .get<CurriculumTaxonomy[]>("/cms/taxonomy", { params: { grade } })

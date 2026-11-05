@@ -13,6 +13,7 @@ export interface LearningModule {
   subject: string;
   topic: string;
   question_count: number;
+  created_at?:string;
   expected_question_count?: number;
   assessment_type?: string;
   state?: "TO_START" | "IN_PROGRESS" | "COMPLETED";

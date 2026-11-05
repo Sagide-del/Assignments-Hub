@@ -23,7 +23,9 @@ function setup(count = 15, status = "APPROVED") {
     grade: 10,
     subject: "Physics",
     topic: "Waves",
-    status,
+    status: status === "APPROVED_PUBLISHED" ? "APPROVED" : status,
+    distributions:
+      status === "APPROVED_PUBLISHED" ? [{ audience: "PUBLIC_STORE" }] : [],
     updated_at: new Date(),
     generation_cost_tokens: 10,
     content_json: {
@@ -45,12 +47,10 @@ function setup(count = 15, status = "APPROVED") {
     $transaction: jest.fn((callback) => callback(tx)),
   };
   const ai = {
-    generateAssignment: jest
-      .fn()
-      .mockResolvedValue({
-        content: additions(Math.max(0, 30 - count)),
-        usage: { totalTokens: 42 },
-      }),
+    generateAssignment: jest.fn().mockResolvedValue({
+      content: additions(Math.max(0, 30 - count)),
+      usage: { totalTokens: 42 },
+    }),
   };
   return {
     service: new CmsService(prisma as any, ai as any),
@@ -88,7 +88,7 @@ describe("CMS enrichment", () => {
     ).toEqual(original);
   });
   it("rejects published content before spending credit", async () => {
-    const { service, ai } = setup(15, "PUBLISHED_STORE");
+    const { service, ai } = setup(15, "APPROVED_PUBLISHED");
     await expect(service.enrichModule("module")).rejects.toThrow(
       "Only unpublished",
     );

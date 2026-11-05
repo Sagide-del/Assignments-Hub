@@ -170,6 +170,7 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
         schoolId: school.id,
         name: "First Learner",
         grade: "Grade 11",
+        elective_subjects:["Biology","Chemistry","Physics"],
         role: "STUDENT",
       },
     });
@@ -178,6 +179,7 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
         schoolId: school.id,
         name: "Second Learner",
         grade: "Grade 11",
+        elective_subjects:["Biology","Chemistry","Physics"],
         role: "STUDENT",
       },
     });
@@ -200,7 +202,8 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
           grade,
           subject: "Mathematics",
           topic,
-          status: status as any,
+          status: ["PUBLISHED_SCHOOL","PUBLISHED_STORE"].includes(status) ? "APPROVED" : status as any,
+          ...(["PUBLISHED_SCHOOL","PUBLISHED_STORE"].includes(status) ? {distributions:{create:{audience:status === "PUBLISHED_STORE" ? "PUBLIC_STORE" : "SCHOOL",school_id:status === "PUBLISHED_STORE" ? null : String(tenant)}}} : {}),
           tenant_id: String(tenant),
           theory_cheatsheet: phase1Sheet(),
           content_json: generated(),
@@ -396,7 +399,7 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
       expect(saved.generation_cost_tokens).toBe(77);
       await db.masterModule.update({
         where: { id: saved.id },
-        data: { status: "PUBLISHED_SCHOOL", tenant_id: String(school.id) },
+        data: { status: "APPROVED", distributions:{create:{audience:"SCHOOL",school_id:String(school.id)}}, tenant_id: String(school.id) },
       });
       const opened = await cms.startLearningModule(saved.id, {
         ...student,

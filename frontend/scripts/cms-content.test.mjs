@@ -54,3 +54,15 @@ test('complete grade-band formative and CAT sets are not mislabeled as partial 3
   assert.equal(cmsLearningContent({question_count:4,expected_question_count:5}).partial,true);
   assert.equal(cmsLearningContent({question_count:10}).partial,true); // Historical sets keep their original rule.
 });
+
+const { cmsFolders } = await loadTypeScript(new URL('../src/services/cms-folders.ts', import.meta.url));
+test('CMS folders preserve distinct grades, subjects, topics and ordered historical batches',()=>{
+ const row=(id,grade,subject,topic,batch_number)=>({id,grade,subject,topic,batch_number,created_at:'2026-11-05',status:'APPROVED'});
+ const folders=cmsFolders([row('b',10,'Biology','Cells',2),row('a',10,'Biology','Cells',1),row('c',8,'Science','Safety',1),row('d',10,'Chemistry','Atoms',1)]);
+ assert.deepEqual(folders.map(g=>g.grade),[8,10]);
+ assert.deepEqual(folders[1].subjects.map(s=>s.subject),['Biology','Chemistry']);
+ assert.deepEqual(folders[1].subjects[0].topics[0].batches.map(b=>b.id),['a','b']);
+});
+
+const { cmsQuestionCount } = await loadTypeScript(new URL("../src/services/cms-folders.ts", import.meta.url));
+test("CMS folder counts read summary metadata without requiring answer payloads",()=>{assert.equal(cmsQuestionCount({question_count:30}),30);assert.equal(cmsQuestionCount({content_json:{questions:[{},{}]}}),2);assert.equal(cmsQuestionCount({}),0);});
