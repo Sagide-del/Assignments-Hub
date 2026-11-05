@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "build": "tsc -b && vite build --config vite.config.ts",
+    "build": "tsc -b && vite build --config vite.config.ts && node scripts/prerender-home.mjs",
     "preview": "vite preview --config vite.config.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "prebuild": "node scripts/generate-revision.mjs && node scripts/generate-home-seo.mjs",

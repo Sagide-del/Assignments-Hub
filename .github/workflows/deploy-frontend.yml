@@ -194,6 +194,7 @@ jobs:
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           node scripts/auth-ui.browser.cjs
+          node scripts/homepage.browser.cjs
       - name: Verify live SBA import access restrictions
         working-directory: frontend
         run: node scripts/check-sba-import-access.mjs

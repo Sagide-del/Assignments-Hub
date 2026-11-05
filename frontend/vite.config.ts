@@ -9,7 +9,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 function revisionDirectoryIndex(root: string) {
   return (request: IncomingMessage, response: ServerResponse, next: () => void) => {
     const [path, query] = (request.url ?? '').split('?');
-    if (!/^\/revision(?:\/[a-z0-9-]+)?\/?$/.test(path)) return next();
+    if (!/^\/(?:revision(?:\/[a-z0-9-]+)?|free-revision)\/?$/.test(path)) return next();
     const directory = path.endsWith('/') ? path : `${path}/`;
     if (!existsSync(resolve(root, `.${directory}index.html`))) return next();
     if (!path.endsWith('/')) {

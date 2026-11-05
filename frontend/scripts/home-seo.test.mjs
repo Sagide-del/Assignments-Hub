@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 const content=JSON.parse(await readFile(new URL('../src/content/homepage.json',import.meta.url),'utf8'));
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
 test('homepage initial HTML exposes requested SEO metadata and canonical',()=>{
- assert(html.includes(`<title>${content.title}</title>`));
+ assert(html.includes(`<title>${content.title.replaceAll('&','&amp;')}</title>`));
  assert(html.includes(`name="description" content="${content.description}"`));
  assert(html.includes('rel="canonical" href="https://assignmenthub.co.ke/"'));
 });
@@ -34,4 +34,12 @@ test('homepage FAQ schema is removed on other views and restored on return',asyn
   showHomepageFaq(true);
   assert.equal(JSON.parse(script.textContent)['@graph'].find(x=>x['@type']==='FAQPage').mainEntity.length,content.faqs.length);
  }finally{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;}
+});
+
+test('organisation identity and lung social preview use the supplied business details',()=>{
+ const graph=JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])['@graph'];
+ const org=graph.find(x=>x['@type']==='EducationalOrganization');
+ assert.equal(org.address.postOfficeBoxNumber,'14069');assert.equal(org.address.postalCode,'00100');assert.equal(org.address.addressLocality,'Nairobi');
+ assert.equal(org.contactPoint.telephone,'+254748519923');assert.equal(org.sameAs.length,2);assert(org.sameAs.every(url=>url.startsWith('https://')&&!url.includes('](')));
+ assert(html.includes('property="og:image" content="https://assignmenthub.co.ke/product-previews/respiratory.webp"'));
 });

@@ -17,7 +17,7 @@ const previews = [
     title: "Interactive 3D STEM Labs",
     context: "Grade 11 · Biology",
     description:
-      "Don’t just read about the lungs—rotate them, adjust breathing rates and explore breathing mechanics.",
+      "Grade 11 Biology: rotate the lungs, adjust breathing rates and explore breathing mechanics. Available activities follow your grade and subjects.",
     alt: "Actual Assignment Hub respiratory simulator showing a labelled 3D lung model, anatomy controls, breathing rate and tidal volume settings.",
     source: { width: 1440, height: 1767 },
     crop: { x: 294, y: 290, width: 1104, height: 759 },

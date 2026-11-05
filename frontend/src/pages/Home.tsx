@@ -176,7 +176,7 @@ export default function Home() {
                   href="/free-revision"
                   className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#101820] px-6 text-sm font-bold text-white transition hover:bg-[#1c2a38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D] focus-visible:ring-offset-2"
                 >
-                  Try Free CBC Practice
+                  Try Free CBC Revision
                 </a>
                 <a
                   href={WHATSAPP_CONTACT_URL}
@@ -194,11 +194,11 @@ export default function Home() {
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> Instant
-                  marking
+                  feedback
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> Works on
-                  any phone
+                  modern phones
                 </span>
               </div>
             </div>
@@ -281,14 +281,14 @@ export default function Home() {
         <section
           id="all-grades"
           className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
-          aria-labelledby="how-heading"
+          aria-labelledby="grade-coverage-heading"
         >
           <div className="max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">
               Every stage of learning
             </p>
             <h2
-              id="how-heading"
+              id="grade-coverage-heading"
               className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl"
             >
               Built for Every Learner, from Grade 1 to Grade 12.
@@ -307,6 +307,51 @@ export default function Home() {
                 <p className="mt-3 leading-7 text-slate-600">{step.text}</p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section
+          id="how-it-works"
+          className="border-y border-slate-200 bg-white"
+          aria-labelledby="workflow-heading"
+        >
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">
+              How it works
+            </p>
+            <h2
+              id="workflow-heading"
+              className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl"
+            >
+              One topic. Three clear steps.
+            </h2>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {[
+                [
+                  "01",
+                  "Choose a subject and topic",
+                  "Open published work for your grade and enrolled subjects. Start with one topic and a manageable practice set.",
+                ],
+                [
+                  "02",
+                  "Practise and submit",
+                  "Answer in your workspace and save your progress. Timed mock papers help you practise working against the clock.",
+                ],
+                [
+                  "03",
+                  "Learn from feedback",
+                  "Review released marks and explanations, revisit difficult concepts, and use your study plan to prepare for the next set.",
+                ],
+              ].map(([number, title, text]) => (
+                <article key={number}>
+                  <p className="text-sm font-extrabold text-[#607d00]">
+                    {number}
+                  </p>
+                  <h3 className="mt-4 text-xl font-bold">{title}</h3>
+                  <p className="mt-3 leading-7 text-slate-600">{text}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -622,6 +667,9 @@ export default function Home() {
             >
               WhatsApp 0748 519 923
             </a>
+            <p className="mt-3 text-sm text-slate-300">
+              P.O. Box 14069 · 00100 · Nairobi, Kenya
+            </p>
           </div>
           <nav
             className="flex flex-wrap gap-x-5 gap-y-3 text-sm"
