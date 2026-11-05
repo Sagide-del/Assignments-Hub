@@ -1,257 +1,382 @@
-import { SubjectSelectionFields, type SubjectChoice } from "../features/student/SubjectSelection";
-import { api } from "../api/axios";
-import { useId, useState, type FormEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, LockKeyhole, Sparkles } from 'lucide-react';
-import { authApi } from '../api/auth.api';
-import { apiErrorMessage } from '../api/axios';
-import { AssignmentHubWordmark } from '../components/ui/Logo';
-import type { IndependentRegistrationResult } from '../types';
-import { loginIndependent } from '../services/authService';
-
+import { useId, useState, type FormEvent } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowRight, School, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import {
+  SubjectSelectionFields,
+  type SubjectChoice,
+} from "../features/student/SubjectSelection";
+import { AuthFrame } from "../components/auth/AuthFrame";
+import { api, apiErrorMessage } from "../api/axios";
+import { authApi } from "../api/auth.api";
+import { loginIndependent } from "../services/authService";
+import type { IndependentRegistrationResult } from "../types";
 export default function IndependentRegister() {
-  const navigate = useNavigate();
-  const [usernameEdited, setUsernameEdited] = useState(false);
-  const [account, setAccount] = useState<IndependentRegistrationResult | null>(null);
-  const [form, setForm] = useState({
-    name: '',
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    grade: 'Grade 7',
-    pathway: '',
-    parentPhone: '',
-  });
-  const [subjects,setSubjects]=useState<SubjectChoice>({elective_subjects:[]});
-  const senior=/^Grade (10|11|12)$/.test(form.grade);
-  async function saveSubjects(result:IndependentRegistrationResult){if(!senior)return;await loginIndependent(result.username??result.admissionNumber,form.password);await api.post('/student/subjects',subjects);}
-  const profileMutation=useMutation({mutationFn:saveSubjects,onError:(err)=>setError(apiErrorMessage(err,'Account created. Retry saving your selected subjects before continuing.'))});
-  const [error, setError] = useState<string | null>(null);
-
-  const registerMutation = useMutation({
-    mutationFn: () =>
-      authApi.registerIndependent({
-        name: form.name.trim(),
-        username: form.username.trim().toLowerCase(),
-        email: form.email.trim().toLowerCase() || undefined,
-        password: form.password,
-        grade: form.grade,
-        pathway: form.pathway || undefined,
-        parentPhone: form.parentPhone.trim() || undefined,
-      }),
-    onSuccess: (result) => {
-      setAccount(result);
-      setError(null);
-      if(senior) profileMutation.mutate(result);
-    },
-    onError: (err) => setError(apiErrorMessage(err, 'Could not create your account')),
-  });
-
-  const continueMutation = useMutation({
-    mutationFn: async () => {
-      if (!account) throw new Error('Create an account before continuing');
-      await loginIndependent(account.username ?? account.admissionNumber, form.password);
-      if(senior) await api.post("/student/subjects",subjects);
-    },
-    onSuccess: () => navigate('/student/activate'),
-    onError: (err) => setError(apiErrorMessage(err, 'Your account was created, but we could not sign you in automatically. Please sign in to continue.')),
-  });
-
-  function submitRegistration(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    if(senior && (!subjects.track_id||subjects.elective_subjects.length!==3)){setError('Choose your track and exactly three electives.');return;}
-    registerMutation.mutate();
-  }
-
-  if (account) {
-    return (
-      <main className="min-h-screen bg-[#f6f8f4] px-4 py-5 sm:px-6 sm:py-8">
-        <div className="mx-auto w-full max-w-xl">
-          <div className="mb-7 flex items-center justify-between gap-4"><AssignmentHubWordmark size="sm" /></div>
-          <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(16,24,32,0.08)]">
-            <div className="bg-[#101820] px-6 py-7 text-white sm:px-9">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5E61D]">Account created</p>
-              <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Continue to secure payment</h1>
-              <p className="mt-3 text-sm leading-6 text-slate-300">Your starter account is ready. Sign in securely and choose an M-Pesa payment plan to unlock the full workspace.</p>
-            </div>
-            <div className="space-y-6 p-6 sm:p-9">
-              <div className="rounded-2xl border border-[#D9ED9A] bg-[#F8FCEB] p-5">
-                <p className="font-semibold text-[#101820]">Your username</p>
-                <p className="mt-3 rounded-xl bg-white px-4 py-3 font-mono text-lg font-semibold tracking-wide text-[#101820]">{account.username ?? account.admissionNumber}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">Use this username and your password to sign in. Your account activates automatically after your M-Pesa payment is confirmed.</p>
-              </div>
-              {error ? <ErrorMessage message={error} /> : null}
-              <button type="button" onClick={() => continueMutation.mutate()} disabled={continueMutation.isPending||profileMutation.isPending} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#B5E61D] px-5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60">
-                {continueMutation.isPending ? 'Signing you in...' : 'Continue to payment'} <ArrowRight className="ml-2 h-4 w-4" />
-              </button>
-              <Link to="/login" className="flex min-h-11 items-center justify-center text-sm font-semibold text-[#536D00] hover:underline">Sign in later</Link>
-            </div>
-          </section>
-        </div>
-      </main>
-    );
-  }
-
+  const [params] = useSearchParams();
+  const account =
+    params.get("account") === "staff"
+      ? "staff"
+      : params.get("account") === "student"
+        ? "student"
+        : "independent";
   return (
-    <main className="min-h-screen bg-[#f6f8f4] px-4 py-5 sm:px-6 sm:py-8">
-      <div className="mx-auto w-full max-w-xl">
-        <div className="mb-7 flex items-center justify-between gap-4">
-          <AssignmentHubWordmark size="sm" />
-          <Link to="/login" className="text-sm font-semibold text-[#101820] hover:underline">
-            Already have an account? Sign in
+    <AuthFrame account={account} mode="register">
+      {account === "independent" ? (
+        <IndependentRegistrationForm />
+      ) : (
+        <div className="space-y-4 rounded-xl bg-slate-50 p-5">
+          <div className="flex items-center gap-2 font-semibold">
+            {account === "staff" ? (
+              <ShieldCheck size={20} />
+            ) : (
+              <School size={20} />
+            )}
+            Your school provides this account
+          </div>
+          <p className="text-sm leading-6 text-slate-600">
+            {account === "staff"
+              ? "Ask your School Admin for a staff account. School administrators are onboarded by Assignment Hub."
+              : "Ask your school for its school code, your admission number and learner PIN."}
+          </p>
+          <Link
+            to={`/login?account=${account}`}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#101820] px-4 text-sm font-semibold text-white"
+          >
+            Log in with school details
+            <ArrowRight size={16} />
+          </Link>
+          <Link
+            to="/register?account=independent"
+            className="block text-sm font-semibold text-[#536d00] underline underline-offset-4"
+          >
+            Create an independent learner account instead
           </Link>
         </div>
-
-        <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(16,24,32,0.08)]">
-          <div className="border-b border-slate-100 bg-[#101820] px-6 py-7 text-white sm:px-9">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B5E61D]">Individual learner</p>
-                <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
-                  Create your learning account
-                </h1>
-              </div>
-              <Sparkles className="h-7 w-7 shrink-0 text-[#B5E61D]" aria-hidden="true" />
-            </div>
-            <p className="mt-3 max-w-md text-sm leading-6 text-slate-300">
-              One account for assignments, feedback, revision resources and practical skills.
-            </p>
-          </div>
-
-            <form onSubmit={submitRegistration} className="space-y-4 p-6 sm:p-9">
-              <div className="flex items-center gap-3 rounded-2xl bg-[#f6f8f4] px-4 py-3 text-sm text-slate-600">
-                <LockKeyhole className="h-4 w-4 shrink-0 text-[#607b00]" />
-                Your account is created first. Activation is requested separately, so there is no payment pressure on this step.
-              </div>
-              <Field
-                label="Learner's full name"
-                value={form.name}
-                onChange={(value) => setForm((current) => ({ ...current, name: value, username: usernameEdited ? current.username : suggestUsername(value) }))}
-                autoComplete="name"
-              />
-              <div>
-                <Field
-                  label="Username"
-                  value={form.username}
-                  onChange={(value) => {
-                    setUsernameEdited(true);
-                    setForm((current) => ({ ...current, username: value.toLowerCase() }));
-                  }}
-                  autoComplete="username"
-                  minLength={3}
-                  maxLength={30}
-                  pattern="[a-zA-Z][a-zA-Z0-9._]{2,29}"
-                  title="3–30 characters, starting with a letter. Use letters, numbers, dots or underscores."
-                />
-                <p className="mt-2 text-xs leading-5 text-slate-500">Use a name you will remember, such as sam.jeptoo. You can edit the suggestion. Capital letters do not matter.</p>
-              </div>
-              <div>
-                <label htmlFor="registration-grade" className="mb-1.5 block text-sm font-medium text-slate-700">Current grade</label>
-                <select
-                  id="registration-grade"
-                  value={form.grade}
-                  onChange={(event) => {setSubjects({elective_subjects:[]});setForm((current) => ({ ...current, grade: event.target.value, pathway: /^Grade (10|11|12)$/.test(event.target.value) ? current.pathway : '' }));}}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#8CB500]"
-                >
-                  {['PP1', 'PP2', ...Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`)].map((grade) => (
-                    <option key={grade} value={grade}>{grade}</option>
-                  ))}
-                </select>
-              </div>
-              {/^Grade (10|11|12)$/.test(form.grade) ? (
-                <div>
-                  <label htmlFor="registration-pathway" className="mb-1.5 block text-sm font-medium text-slate-700">Senior School pathway</label>
-                  <select id="registration-pathway" value={form.pathway} onChange={(event) => {setSubjects({elective_subjects:[]});setForm((current) => ({ ...current, pathway: event.target.value }));}} className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#8CB500]">
-                    <option value="">Choose your pathway</option>
-                    <option value="STEM">STEM</option>
-                    <option value="Social Sciences">Social Sciences</option>
-                    <option value="Arts and Sports Science">Arts and Sports Science</option>
-                  </select>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">Independent learners can change this later as their subject combination becomes clear.</p>
-                </div>
-              ) : null}
-              {senior&&<SubjectSelectionFields grade={Number(form.grade.split(" ")[1])} pathway={form.pathway} value={subjects} onChange={setSubjects}/>}
-              <Field
-                label="Parent or guardian phone"
-                type="tel"
-                value={form.parentPhone}
-                onChange={(value) => setForm((current) => ({ ...current, parentPhone: value }))}
-                autoComplete="tel"
-                required
-              />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="Password"
-                  type="password"
-                  value={form.password}
-                  onChange={(value) => setForm((current) => ({ ...current, password: value }))}
-                  autoComplete="new-password"
-                  minLength={8}
-                />
-                <Field
-                  label="Confirm password"
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={(value) => setForm((current) => ({ ...current, confirmPassword: value }))}
-                  autoComplete="new-password"
-                  minLength={8}
-                />
-              </div>
-
-              <Field
-                label="Email address for receipts (optional)"
-                type="email"
-                value={form.email}
-                onChange={(value) => setForm((current) => ({ ...current, email: value }))}
-                autoComplete="email"
-                required={false}
-              />
-              <p className="-mt-2 text-xs leading-5 text-slate-500">A parent or guardian email can receive payment receipts. Learners without email can still pay and activate normally.</p>
-
-              {error ? <ErrorMessage message={error} /> : null}
-              <button
-                type="submit"
-                disabled={registerMutation.isPending}
-                className="w-full rounded-xl bg-[#B5E61D] px-5 py-3.5 text-sm font-semibold text-[#101820] transition hover:bg-[#A6D417] disabled:opacity-60"
-              >
-                {registerMutation.isPending ? 'Creating account...' : 'Create account'}
-              </button>
-              <p className="text-center text-sm"><a href="/revision/" className="font-semibold text-[#536D00] underline">Try free Grade 7 revision before registering</a></p>
-              <p className="text-center text-xs leading-5 text-slate-500">By continuing, you confirm that the learner or parent has permission to create this account.</p>
-            </form>
-
-        </section>
-      </div>
-    </main>
+      )}
+    </AuthFrame>
   );
 }
-
+export function IndependentRegistrationForm() {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    name: "",
+    username: "",
+    grade: "Grade 7",
+    pathway: "",
+    parentPhone: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [usernameEdited, setUsernameEdited] = useState(false),
+    [showPassword, setShowPassword] = useState(false);
+  const [subjects, setSubjects] = useState<SubjectChoice>({
+    elective_subjects: [],
+  });
+  const [account, setAccount] = useState<IndependentRegistrationResult | null>(
+      null,
+    ),
+    [error, setError] = useState<string | null>(null);
+  const senior = /^Grade (10|11|12)$/.test(form.grade);
+  const phone = form.parentPhone.replace(/[\s()-]/g, "");
+  async function continueToPayment(result: IndependentRegistrationResult) {
+    await loginIndependent(
+      result.username ?? result.admissionNumber,
+      form.password,
+    );
+    if (senior) await api.post("/student/subjects", subjects);
+    // Navigation state avoids placing a payer's phone in the URL or localStorage.
+    // The existing activation page requires confirmation before sending any STK.
+    navigate("/student/activate", { state: { payerPhone: phone } });
+  }
+  const register = useMutation({
+    mutationFn: async () => {
+      const result = await authApi.registerIndependent({
+        name: form.name.trim(),
+        username: form.username.trim().toLowerCase(),
+        grade: form.grade,
+        pathway: form.pathway || undefined,
+        parentPhone: phone,
+        email: form.email.trim().toLowerCase() || undefined,
+        password: form.password,
+      });
+      setAccount(result);
+      await continueToPayment(result);
+    },
+    onError: (err) =>
+      setError(
+        apiErrorMessage(
+          err,
+          "Could not finish account setup. Please try again.",
+        ),
+      ),
+  });
+  const resume = useMutation({
+    mutationFn: () => continueToPayment(account!),
+    onError: (err) =>
+      setError(
+        apiErrorMessage(
+          err,
+          "Your account is saved. Retry continuing to payment, or sign in later.",
+        ),
+      ),
+  });
+  const busy = register.isPending || resume.isPending;
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (busy) return;
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!/^(?:\+?254|0)[17]\d{8}$/.test(phone)) {
+      setError(
+        "Enter a Kenyan M-Pesa number, such as 0712345678 or +254712345678.",
+      );
+      return;
+    }
+    if (
+      senior &&
+      (!form.pathway ||
+        !subjects.track_id ||
+        subjects.elective_subjects.length !== 3)
+    ) {
+      setError("Choose a pathway, track and exactly three electives.");
+      return;
+    }
+    if (account) resume.mutate();
+    else register.mutate();
+  }
+  if (account)
+    return (
+      <div className="space-y-4">
+        <div role="status" className="rounded-xl bg-[#f1f5e5] p-4 text-sm">
+          <p className="font-semibold">Account saved</p>
+          <p className="mt-1 text-slate-600">
+            Username:{" "}
+            <strong>{account.username ?? account.admissionNumber}</strong>
+          </p>
+        </div>
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950"
+          >
+            {error}
+          </p>
+        )}
+        <button
+          disabled={busy}
+          onClick={() => {
+            setError(null);
+            resume.mutate();
+          }}
+          className="min-h-12 w-full rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? "Preparing payment…" : "Continue to M-Pesa confirmation"}
+        </button>
+        <Link
+          to="/login?account=independent"
+          className="block text-center text-sm font-semibold text-[#536d00]"
+        >
+          Sign in later
+        </Link>
+      </div>
+    );
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <Field
+        label="Full name"
+        value={form.name}
+        onChange={(name) =>
+          setForm((f) => ({
+            ...f,
+            name,
+            username: usernameEdited ? f.username : suggestUsername(name),
+          }))
+        }
+        placeholder="e.g., Victor Halisi"
+        autoComplete="name"
+        minLength={2}
+        maxLength={200}
+      />
+      <Field
+        label="Username"
+        value={form.username}
+        onChange={(username) => {
+          setUsernameEdited(true);
+          setForm((f) => ({ ...f, username: username.toLowerCase() }));
+        }}
+        placeholder="e.g., victor.halisi"
+        autoComplete="username"
+        minLength={3}
+        maxLength={30}
+        pattern="[a-zA-Z][a-zA-Z0-9._]{2,29}"
+        title="Start with a letter. Use 3–30 letters, numbers, dots or underscores."
+      />
+      <div>
+        <label
+          htmlFor="registration-grade"
+          className="mb-1.5 block text-sm font-medium text-slate-700"
+        >
+          Grade
+        </label>
+        <select
+          id="registration-grade"
+          value={form.grade}
+          onChange={(e) => {
+            setSubjects({ elective_subjects: [] });
+            setForm((f) => ({ ...f, grade: e.target.value, pathway: "" }));
+          }}
+          className={inputClass}
+        >
+          {[
+            "PP1",
+            "PP2",
+            ...Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`),
+          ].map((g) => (
+            <option key={g}>{g}</option>
+          ))}
+        </select>
+      </div>
+      {senior && (
+        <div>
+          <label
+            htmlFor="registration-pathway"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
+          >
+            Pathway
+          </label>
+          <select
+            id="registration-pathway"
+            required
+            value={form.pathway}
+            onChange={(e) => {
+              setSubjects({ elective_subjects: [] });
+              setForm((f) => ({ ...f, pathway: e.target.value }));
+            }}
+            className={inputClass}
+          >
+            <option value="">Choose a pathway</option>
+            {["STEM", "Social Sciences", "Arts and Sports Science"].map((p) => (
+              <option key={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {senior && form.pathway && (
+        <SubjectSelectionFields
+          compact
+          grade={Number(form.grade.split(" ")[1])}
+          pathway={form.pathway}
+          value={subjects}
+          onChange={setSubjects}
+        />
+      )}
+      <Field
+        label="Phone for M-Pesa"
+        type="tel"
+        value={form.parentPhone}
+        onChange={(parentPhone) => setForm((f) => ({ ...f, parentPhone }))}
+        placeholder="+254 7XX XXX XXX"
+        autoComplete="tel"
+        maxLength={30}
+      />
+      <p className="!mt-1.5 text-xs text-slate-500">
+        Use your own or a parent/guardian’s M-Pesa number.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          value={form.password}
+          onChange={(password) => setForm((f) => ({ ...f, password }))}
+          autoComplete="new-password"
+          minLength={8}
+          maxLength={72}
+        />
+        <Field
+          label="Confirm password"
+          type={showPassword ? "text" : "password"}
+          value={form.confirmPassword}
+          onChange={(confirmPassword) =>
+            setForm((f) => ({ ...f, confirmPassword }))
+          }
+          autoComplete="new-password"
+          minLength={8}
+          maxLength={72}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={() => setShowPassword((v) => !v)}
+        aria-pressed={showPassword}
+        className="inline-flex min-h-9 items-center gap-2 text-xs font-medium text-slate-500"
+      >
+        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}{" "}
+        {showPassword ? "Hide passwords" : "Show passwords"}
+      </button>
+      <details className="rounded-lg border border-slate-200 px-3 py-2">
+        <summary className="cursor-pointer py-1 text-sm text-slate-500">
+          Receipt email (optional)
+        </summary>
+        <div className="py-2">
+          <Field
+            label="Email address for receipts"
+            type="email"
+            required={false}
+            value={form.email}
+            onChange={(email) => setForm((f) => ({ ...f, email }))}
+            autoComplete="email"
+          />
+        </div>
+      </details>
+      {error && (
+        <p
+          role="alert"
+          className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950"
+        >
+          {error}
+        </p>
+      )}
+      <button
+        disabled={busy}
+        type="submit"
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+      >
+        {busy ? "Creating account…" : "Create account & pay KES 300"}
+        <ArrowRight size={17} />
+      </button>
+      <p className="text-center text-xs leading-5 text-slate-500">
+        KES 300 per month. Next, confirm your M-Pesa request.
+        <br />
+        Payment activates access after confirmation.
+      </p>
+      <p className="text-center text-xs leading-5 text-slate-400">
+        Continue with permission from the learner or their parent/guardian.
+      </p>
+    </form>
+  );
+}
+const inputClass =
+  "min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-[#101820] outline-none transition placeholder:text-slate-400 focus:border-[#8cb500] focus:ring-2 focus:ring-[#b5e61d]/15";
 function Field({
   label,
-  type = 'text',
   value,
   onChange,
   autoComplete,
   required = true,
-  minLength,
-  maxLength,
-  pattern,
-  title,
+  type = "text",
+  ...rest
 }: {
   label: string;
-  type?: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (v: string) => void;
   autoComplete: string;
   required?: boolean;
+  type?: string;
+  placeholder?: string;
   minLength?: number;
   maxLength?: number;
   pattern?: string;
@@ -260,34 +385,35 @@ function Field({
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-slate-700">{label}</label>
+      <label
+        htmlFor={id}
+        className="mb-1.5 block text-sm font-medium text-slate-700"
+      >
+        {label}
+      </label>
       <input
+        {...rest}
         id={id}
         type={type}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
-        required={required}
-        minLength={minLength}
-        maxLength={maxLength}
-        pattern={pattern}
-        title={title}
+        onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
-        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#8CB500]"
+        autoCapitalize={autoComplete === "username" ? "none" : undefined}
+        spellCheck={autoComplete === "username" ? false : undefined}
+        required={required}
+        className={inputClass}
       />
     </div>
   );
 }
-
-function ErrorMessage({ message }: { message: string }) {
-  return <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{message}</p>;
-}
-
 function suggestUsername(name: string) {
-  return name.normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().trim()
-    .replace(/[^a-z0-9\s._]/g, '')
-    .replace(/\s+/g, '.')
-    .replace(/^[^a-z]+/, '')
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s._]/g, "")
+    .replace(/\s+/g, ".")
+    .replace(/^[^a-z]+/, "")
     .slice(0, 30);
 }

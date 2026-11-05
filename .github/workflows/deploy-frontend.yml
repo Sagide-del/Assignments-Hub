@@ -184,6 +184,16 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/rbac-browser" --no-package-lock --ignore-scripts playwright@1.56.1
           "$RUNNER_TEMP/rbac-browser/node_modules/.bin/playwright" install --with-deps chromium
           echo "NODE_PATH=$RUNNER_TEMP/rbac-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Verify unified login and registration flow
+        working-directory: frontend
+        env:
+          AUTH_UI_BASE_URL: http://127.0.0.1:4196
+          AUTH_UI_ARTIFACT_DIR: ${{ runner.temp }}/auth-ui
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4196 > "$RUNNER_TEMP/auth-preview.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          node scripts/auth-ui.browser.cjs
       - name: Verify live SBA import access restrictions
         working-directory: frontend
         run: node scripts/check-sba-import-access.mjs

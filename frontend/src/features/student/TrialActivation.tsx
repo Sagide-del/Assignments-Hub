@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -18,13 +18,18 @@ import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
 type Interval = "MONTHLY" | "ANNUAL";
 export function TrialActivationPage() {
+  const location = useLocation();
+  const registrationPhone =
+    typeof location.state?.payerPhone === "string"
+      ? location.state.payerPhone
+      : "";
   const userId = useAuthStore((s) => s.user?.id),
     refreshToken = useAuthStore((s) => s.refreshToken),
     setSession = useAuthStore((s) => s.setSession),
     navigate = useNavigate(),
     client = useQueryClient();
   const [interval, setInterval] = useState<Interval>("MONTHLY"),
-    [phone, setPhone] = useState(""),
+    [phone, setPhone] = useState(registrationPhone),
     [error, setError] = useState<string | null>(null),
     [accessMessage, setAccessMessage] = useState(""),
     [now, setNow] = useState(Date.now()),

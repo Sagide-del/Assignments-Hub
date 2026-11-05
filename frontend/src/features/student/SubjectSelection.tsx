@@ -25,13 +25,16 @@ export function SubjectSelectionFields({
   value,
   onChange,
   currentTrack,
+  compact = false,
 }: {
   grade: number;
   pathway?: string;
-  currentTrack?:{id:number;name:string;pathway:string}|null;
+  currentTrack?: { id: number; name: string; pathway: string } | null;
+  compact?: boolean;
   value: SubjectChoice;
   onChange: (v: SubjectChoice) => void;
 }) {
+  const [electiveSearch, setElectiveSearch] = useState("");
   const data = useQuery({
     queryKey: ["subject-options", grade],
     enabled: grade >= 10 && grade <= 12,
@@ -42,9 +45,12 @@ export function SubjectSelectionFields({
     retry: false,
   });
   const options = data.data,
-    tracks = [...(options?.tracks ?? []),...(currentTrack && !options?.tracks.some(t=>t.id===currentTrack.id)?[currentTrack]:[])].filter(
-      (t) => !pathway || t.pathway === pathway,
-    ),
+    tracks = [
+      ...(options?.tracks ?? []),
+      ...(currentTrack && !options?.tracks.some((t) => t.id === currentTrack.id)
+        ? [currentTrack]
+        : []),
+    ].filter((t) => !pathway || t.pathway === pathway),
     selected = tracks.find((t) => t.id === value.track_id);
   const subjects = (options?.subjects ?? []).filter(
     (s) =>
@@ -135,27 +141,69 @@ export function SubjectSelectionFields({
           ))}
         </select>
       </label>
-      <div>
-        <p className="mb-2 text-sm font-semibold">
-          Electives{" "}
-          <span className="font-normal text-slate-500">
-            {value.elective_subjects.length}/3
-          </span>
-        </p>
-        <p className="text-xs text-slate-500">
-          Core subjects are included. Choose three electives; another track’s
-          subject is allowed.
-        </p>
-      </div>
-      <p className="text-xs text-slate-500">Core: {CORE_ASSIGNMENT_SUBJECTS.join(" · ")}</p>
-      {selected &&
-        group(
-          "Your track",
-          subjects.filter((s) => recommended.has(subjectKey(s))),
-        )}
-      {group(
-        selected ? "Other electives" : "Available electives",
-        subjects.filter((s) => !selected || !recommended.has(subjectKey(s))),
+      {(!compact || selected) && (
+        <>
+          <div>
+            <p className="mb-2 text-sm font-semibold">
+              Electives{" "}
+              <span className="font-normal text-slate-500">
+                {value.elective_subjects.length}/3
+              </span>
+            </p>
+            <p className="text-xs text-slate-500">
+              Core subjects are included. Select three electives.
+            </p>
+          </div>
+          {!compact && (
+            <p className="text-xs text-slate-500">
+              Core: {CORE_ASSIGNMENT_SUBJECTS.join(" · ")}
+            </p>
+          )}
+          {selected &&
+            group(
+              "Your track",
+              subjects.filter((s) => recommended.has(subjectKey(s))),
+            )}
+          {compact && selected ? (
+            <details className="rounded-lg border border-slate-200 px-3 py-2">
+              <summary className="cursor-pointer py-1 text-sm text-slate-600">
+                Other electives{" "}
+                {value.elective_subjects.some(
+                  (s) => !recommended.has(subjectKey(s)),
+                )
+                  ? `(${value.elective_subjects.filter((s) => !recommended.has(subjectKey(s))).length} selected)`
+                  : "(optional)"}
+              </summary>
+              <div className="space-y-3 pb-1 pt-3">
+                <input
+                  type="search"
+                  aria-label="Search other electives"
+                  placeholder="Search a subject"
+                  value={electiveSearch}
+                  onChange={(e) => setElectiveSearch(e.target.value)}
+                  className="min-h-11 w-full rounded-lg border border-slate-200 px-3 text-sm"
+                />
+                {group(
+                  "Other electives",
+                  subjects.filter(
+                    (s) =>
+                      !recommended.has(subjectKey(s)) &&
+                      s
+                        .toLowerCase()
+                        .includes(electiveSearch.trim().toLowerCase()),
+                  ),
+                )}
+              </div>
+            </details>
+          ) : (
+            group(
+              selected ? "Other electives" : "Available electives",
+              subjects.filter(
+                (s) => !selected || !recommended.has(subjectKey(s)),
+              ),
+            )
+          )}
+        </>
       )}
     </div>
   );
@@ -167,9 +215,11 @@ export function AssignmentSubjectSetup({ grade }: { grade: number }) {
     queryKey: ["my-enrolled-subjects", user?.id, user?.schoolId],
     queryFn: () =>
       api
-        .get<{ elective_subjects: string[]; track_id: number | null; current_track?:{id:number;name:string;pathway:string}|null }>(
-          "/student/subjects",
-        )
+        .get<{
+          elective_subjects: string[];
+          track_id: number | null;
+          current_track?: { id: number; name: string; pathway: string } | null;
+        }>("/student/subjects")
         .then((r) => r.data),
     retry: false,
   });
@@ -211,9 +261,7 @@ export function AssignmentSubjectSetup({ grade }: { grade: number }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">
-            {incomplete
-              ? "Choose your three electives"
-              : "Your electives"}
+            {incomplete ? "Choose your three electives" : "Your electives"}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {current.data?.elective_subjects.join(" · ") ||

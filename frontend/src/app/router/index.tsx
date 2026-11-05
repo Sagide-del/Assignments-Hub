@@ -264,7 +264,7 @@ export const router = createBrowserRouter([
 
   {
     path: '/login/staff',
-    element: <Navigate to="/login" replace />,
+    element: <Navigate to="/login?account=staff" replace />,
   },
 
   {
