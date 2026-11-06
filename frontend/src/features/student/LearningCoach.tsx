@@ -10,11 +10,13 @@ import {
   Clock3,
   Lightbulb,
   RotateCcw,
-  Target,
   Upload,
   Volume2,
   Plus,
   Trash2,
+  BrainCircuit,
+  Sparkles,
+  BookOpenCheck,
 } from "lucide-react";
 import { apiErrorMessage } from "../../api/axios";
 import {
@@ -25,6 +27,9 @@ import {
 } from "../../api/learning-coach.api";
 import { useAuthStore } from "../../store/auth.store";
 import { isCbcGrade } from "../../utils/gradeTier";
+import { useStudentContentScope } from "../../hooks/useStudentContentScope";
+import { timetableApi } from "../../api/timetable.api";
+import { useNavigate } from "react-router-dom";
 
 function ReportCardPanel() {
   const client = useQueryClient();
@@ -736,6 +741,8 @@ function SessionPlayer({
 
 export function LearningCoachPage() {
   const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
+  const scope = useStudentContentScope();
   const [session, setSession] = useState<LearningSession | null>(null);
   const catalog = useQuery({
     queryKey: ["learning-coach-catalog"],
@@ -745,6 +752,7 @@ export function LearningCoachPage() {
     queryKey: ["learning-coach-plans"],
     queryFn: learningCoachApi.plans,
   });
+  const reports = useQuery({ queryKey: ["learning-coach-report-cards"], queryFn: learningCoachApi.reportCards });
   const start = useMutation({
     mutationFn: (input: {
       subject: string;
@@ -753,6 +761,7 @@ export function LearningCoachPage() {
     }) => learningCoachApi.start(input),
     onSuccess: setSession,
   });
+  const generatePlan = useMutation({ mutationFn: () => timetableApi.generate(false), onSuccess: () => navigate("/student/study-hub/timetable") });
   if (!isCbcGrade(user?.grade))
     return (
       <div className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm leading-6 text-amber-950">
@@ -764,24 +773,27 @@ export function LearningCoachPage() {
     );
   if (session)
     return <SessionPlayer data={session} onClose={() => setSession(null)} />;
-  if (catalog.isLoading || plans.isLoading)
+  if (catalog.isLoading || plans.isLoading || reports.isLoading)
     return (
       <div className="space-y-4">
         <div className="h-44 animate-pulse rounded-2xl bg-slate-200" />
         <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />
       </div>
     );
+  const report = reports.data?.find((item) => item.status === "ANALYZED");
+  const profile = report?.diagnosis?.colorCodes ?? [];
+  const allowed = new Set((scope.data?.assignment_subjects ?? scope.data?.subjects ?? []).map((subject) => subject.toLowerCase()));
+  const red = new Set(profile.filter((item) => item.color === "RED").map((item) => item.subject.toLowerCase()));
+  const paths = (plans.data ?? []).filter((plan) => red.has(plan.subject.toLowerCase()) && (!allowed.size || allowed.has(plan.subject.toLowerCase())));
+  if (!report) return <div className="mx-auto max-w-5xl space-y-6"><PageHeader title="Learning Coach" /><div className="rounded-3xl border border-dashed border-lime-300 bg-lime-50 p-8 text-center"><BrainCircuit className="mx-auto h-10 w-10 text-[#607D00]"/><h2 className="mt-4 text-2xl font-semibold text-[#101820]">Unlock your personalized Learning Coach</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">Upload your end-term report card to get a color-coded diagnosis, custom study techniques, and a priority study plan.</p></div><ReportCardPanel /></div>;
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <ReportCardPanel />
-      <TopicPicker
-        topics={catalog.data ?? []}
-        plans={plans.data ?? []}
-        loading={start.isPending}
-        onStart={({ subject, topic }, mode) =>
-          start.mutate({ subject, topic, mode })
-        }
-      />
+    <div className="mx-auto max-w-6xl space-y-6 pb-10">
+      <PageHeader title="Learning Coach" />
+      <section className="rounded-3xl bg-[#101820] p-6 text-white sm:p-8"><div className="flex gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#b5e719] text-[#101820]"><BrainCircuit className="h-6 w-6" /></span><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-lime-200">Socratic diagnosis</p><p className="mt-3 max-w-4xl text-lg leading-8">{report.diagnosis?.message}</p></div></div></section>
+      <section><h2 className="text-xl font-semibold text-[#101820]">Your subject profile</h2><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{profile.filter((item) => !allowed.size || allowed.has(item.subject.toLowerCase())).map((item) => { const priority = item.color === "RED"; const tone = item.color === "GREEN" ? "border-emerald-200 bg-emerald-50" : item.color === "YELLOW" ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"; return <article key={item.subject} className={`rounded-2xl border p-4 ${tone}`}><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{item.subject}</p><p className="mt-3 text-3xl font-semibold text-[#101820]">{item.percentage}%</p><p className="mt-1 text-sm text-slate-600">{priority ? "Needs focused support" : item.color === "GREEN" ? "A current strength" : "Building consistency"}</p>{priority ? <span className="mt-3 inline-flex rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white">Priority focus</span> : null}</article>; })}</div></section>
+      <section><div className="flex items-center gap-2"><BookOpenCheck className="h-5 w-5 text-[#607D00]"/><h2 className="text-xl font-semibold text-[#101820]">Mastery paths</h2></div>{paths.length ? <div className="mt-3 grid gap-4 md:grid-cols-2">{paths.map((plan) => <PlanCard key={plan.id} plan={plan} onPractice={() => start.mutate({ subject: plan.subject, topic: plan.topic, mode: "PRACTICE" })} />)}</div> : <TopicPicker topics={(catalog.data ?? []).filter((topic) => red.has(topic.subject.toLowerCase()) && (!allowed.size || allowed.has(topic.subject.toLowerCase())))} plans={[]} loading={start.isPending} onStart={({ subject, topic }, mode) => start.mutate({ subject, topic, mode })} />}</section>
+      <section><div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#607D00]"/><h2 className="text-xl font-semibold text-[#101820]">How you should study this week</h2></div><div className="mt-3 grid gap-3 md:grid-cols-2">{profile.filter((item) => item.color === "RED" && (!allowed.size || allowed.has(item.subject.toLowerCase()))).map((item) => <article key={item.subject} className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex gap-3"><BrainCircuit className="h-6 w-6 shrink-0 text-[#607D00]"/><div><p className="text-xs font-bold uppercase tracking-wide text-[#607D00]">{item.subject}</p><h3 className="mt-1 font-semibold text-[#101820]">{report.diagnosis?.learningTechniques?.[item.subject] ?? "Active recall and error correction"}</h3></div></div><p className="mt-4 text-sm leading-6 text-slate-600">Why: your latest confirmed score is {item.percentage}%, so short repeat practice will help more than rereading notes.</p><p className="mt-2 text-sm font-medium text-[#101820]">Action: explain a worked example aloud, answer without notes, then correct one mistake.</p></article>)}</div></section>
+      <button type="button" disabled={generatePlan.isPending} onClick={() => generatePlan.mutate()} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#b5e719] px-6 text-base font-bold text-[#101820] disabled:opacity-60">{generatePlan.isPending ? "Preparing your adaptive plan…" : "Generate my adaptive study plan"}<ArrowRight className="h-5 w-5"/></button>
       {start.isError ? (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {apiErrorMessage(
@@ -790,35 +802,6 @@ export function LearningCoachPage() {
           )}
         </p>
       ) : null}
-      {(plans.data ?? []).length ? (
-        <section>
-          <div className="mb-4 flex items-center gap-2">
-            <Target className="h-5 w-5 text-[#607D00]" />
-            <h2 className="text-xl font-semibold text-[#101820]">
-              My mastery plans
-            </h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {plans.data!.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                onPractice={() =>
-                  start.mutate({
-                    subject: plan.subject,
-                    topic: plan.topic,
-                    mode: "PRACTICE",
-                  })
-                }
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <Clock3 className="h-4 w-4" /> Short sessions, immediate feedback, and
-        spaced follow-up practice.
-      </div>
     </div>
   );
 }
