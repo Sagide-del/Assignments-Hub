@@ -96,6 +96,8 @@ export interface LearningCoachReportCard {
 }
 
 export const learningCoachApi = {
+  // Report-card analysis deliberately requires learner score confirmation.
+  // The browser never sends the uploaded document contents to an AI provider.
   catalog: () =>
     api
       .get<LearningTopic[]>("/learning-coach/catalog")
