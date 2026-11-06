@@ -54,6 +54,7 @@ export interface CreateCmsDraft {
   track?: string;
   subject: string;
   topic: string;
+  subjectCategory?: "CORE" | "ELECTIVE";
 }
 export interface PublishCmsModule {
   module_id: string;
