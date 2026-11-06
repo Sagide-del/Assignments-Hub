@@ -12,7 +12,7 @@ import {
 import { apiErrorMessage } from "../../api/axios";
 import {
   independentStudentsApi,
-  type TumaPayment,
+  type JengaPayment,
 } from "../../api/independent-students.api";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
@@ -44,12 +44,12 @@ export function TrialActivationPage() {
   });
   const capabilities = useQuery({
     queryKey: ["individual-stk-capabilities"],
-    queryFn: independentStudentsApi.getStkCapabilities,
+    queryFn: independentStudentsApi.getJengaCapabilities,
   });
   const queryKey = ["individual-stk-payment", userId];
   const payment = useQuery({
     queryKey,
-    queryFn: independentStudentsApi.getStkPayment,
+    queryFn: independentStudentsApi.getJengaPayment,
     refetchInterval: (q) =>
       q.state.data &&
       ["PENDING", "PROCESSING", "AWAITING_VERIFICATION"].includes(
@@ -110,12 +110,12 @@ export function TrialActivationPage() {
   }, [p?.status, p?.reference]);
   const stk = useMutation({
     mutationFn: () =>
-      independentStudentsApi.startStkPayment({
+      independentStudentsApi.startJengaPayment({
         interval,
         phone,
         idempotencyKey: key.current,
       }),
-    onSuccess: (data: TumaPayment) => {
+    onSuccess: (data: JengaPayment) => {
       client.setQueryData(queryKey, data);
       setError(null);
       if (["FAILED", "CANCELLED"].includes(data.status))
@@ -168,7 +168,7 @@ export function TrialActivationPage() {
           <div>
             <h2 className="font-semibold">M-Pesa STK Push</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Powered by Tuma · payment completed on your phone
+              Secured by Equity Jenga · payment completed on your phone
             </p>
           </div>
         </div>

@@ -66,6 +66,7 @@ export class TumaPaymentProvider {
   }
   isConfigured() {
     return Boolean(
+      this.config.get<string>("TUMA_ENABLED") === "true" &&
       this.config.get<string>("TUMA_API_KEY")?.trim() &&
       this.config.get<string>("TUMA_BUSINESS_EMAIL")?.trim() &&
       this.callbackBase() &&

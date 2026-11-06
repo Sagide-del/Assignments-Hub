@@ -484,6 +484,7 @@ model User {
   reviewedIndependentPaymentClaims IndependentPaymentClaim[]    @relation("IndependentPaymentClaimReviewedBy")
   independentPaystackPayments      IndependentPaystackPayment[] @relation("IndependentPaystackPaymentStudent")
   independentTumaPayments          IndependentTumaPayment[]
+  independentJengaPayments         IndependentJengaPayment[]   @relation("IndependentJengaPaymentStudent")
   updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
   requestedAiGenerationJobs        AiGenerationJob[]            @relation("AiGenerationRequestedBy")
   uploadedAiExtractedContents      AiExtractedContent[]         @relation("AiExtractedContentUploadedBy")
@@ -2654,6 +2655,32 @@ model IndependentTumaPayment {
 
   @@index([studentId, status])
   @@map("independent_tuma_payments")
+}
+
+// Jenga is intentionally separate from the historical Tuma ledger. This
+// preserves reconciliation for payments already initiated through Tuma while
+// giving every Jenga M-Pesa receipt a database-enforced idempotency boundary.
+model IndependentJengaPayment {
+  id                   Int                  @id @default(autoincrement())
+  studentId            Int                  @map("student_id")
+  student              User                 @relation("IndependentJengaPaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  reference            String               @unique @db.VarChar(6)
+  idempotencyKey       String               @unique @map("idempotency_key")
+  amountKES            Int                  @map("amount_kes")
+  phone                String
+  interval             SubscriptionInterval
+  status               PaymentStatus        @default(PENDING)
+  providerReference    String?              @unique @map("provider_reference")
+  receiptNumber        String?              @unique @map("receipt_number")
+  callbackPayload      Json?                @map("callback_payload")
+  failureReason        String?              @map("failure_reason")
+  expiresAt            DateTime             @map("expires_at")
+  paidAt               DateTime?            @map("paid_at")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+
+  @@index([studentId, status])
+  @@map("independent_jenga_payments")
 }
 
 model ContentLibraryJob {

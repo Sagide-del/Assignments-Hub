@@ -40,22 +40,22 @@ export const independentStudentsApi = {
       >("/independent-students/public/payment-claims", dto)
       .then((r) => r.data),
 
-  startStkPayment: (input: {
+  startJengaPayment: (input: {
     interval: "MONTHLY" | "ANNUAL";
     phone: string;
     idempotencyKey: string;
   }) =>
     api
-      .post<TumaPayment>("/independent-students/tuma/stk-push", input)
+      .post<JengaPayment>("/independent-students/jenga/stk-push", input)
       .then((r) => r.data),
-  getStkPayment: () =>
+  getJengaPayment: () =>
     api
-      .get<TumaPayment | null>("/independent-students/tuma/payment")
+      .get<JengaPayment | null>("/independent-students/jenga/payment")
       .then((r) => r.data),
-  getStkCapabilities: () =>
+  getJengaCapabilities: () =>
     api
-      .get<{ tumaPaymentsVersion: number; configured: boolean }>(
-        "/independent-students/tuma/capabilities",
+      .get<{ provider: "Jenga"; configured: boolean }>(
+        "/independent-students/jenga/capabilities",
       )
       .then((r) => r.data),
 
@@ -157,7 +157,7 @@ export const independentStudentsApi = {
       .then((r) => r.data),
 };
 
-export interface TumaPayment {
+export interface JengaPayment {
   reference: string;
   status:
     | "PENDING"

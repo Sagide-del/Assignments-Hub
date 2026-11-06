@@ -5,6 +5,14 @@ import { MpesaCallbackController } from "./mpesa-callback.controller";
 import { TumaPaymentProvider } from "./tuma-payment.provider";
 import { TumaPaymentsService } from "./tuma-payments.service";
 import { TumaPaymentsController } from "./tuma-payments.controller";
+import {
+  JengaPaymentsController,
+  JengaWebhookController,
+} from "./jenga-payments.controller";
+import { JengaAuthService } from "./jenga-auth.service";
+import { JengaSignatureService } from "./jenga-signature.service";
+import { JengaPaymentProvider } from "./jenga-payment.provider";
+import { JengaPaymentsService } from "./jenga-payments.service";
 import { Module } from "@nestjs/common";
 import { IndependentStudentsController } from "./independent-students.controller";
 import { IndependentStudentsService } from "./independent-students.service";
@@ -17,6 +25,8 @@ import { SmsModule } from "../sms/sms.module";
     IndependentStudentsController,
     TumaPaymentsController,
     MpesaCallbackController,
+    JengaPaymentsController,
+    JengaWebhookController,
   ],
   providers: [
     IndependentStudentsService,
@@ -24,6 +34,10 @@ import { SmsModule } from "../sms/sms.module";
     TumaPaymentsService,
     TumaCallbackQueue,
     TumaReconciliationService,
+    JengaAuthService,
+    JengaSignatureService,
+    JengaPaymentProvider,
+    JengaPaymentsService,
   ],
   exports: [IndependentStudentsService],
 })
