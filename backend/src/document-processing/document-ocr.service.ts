@@ -12,6 +12,7 @@ import {
 } from '@aws-sdk/client-s3';
 import {
   Block,
+  DetectDocumentTextCommand,
   GetDocumentTextDetectionCommand,
   GetDocumentTextDetectionCommandOutput,
   StartDocumentTextDetectionCommand,
@@ -92,6 +93,39 @@ export class DocumentOcrService {
           this.logger.warn(`Could not remove temporary OCR file: ${this.errorMessage(error)}`);
         });
       }
+    }
+  }
+
+  /**
+   * Images use Textract's synchronous API, so a learner can confirm the
+   * detected scores immediately after upload rather than waiting on a job.
+   */
+  async extractImage(buffer: Buffer) {
+    this.assertConfigured();
+    try {
+      const result = await this.textract!.send(
+        new DetectDocumentTextCommand({ Document: { Bytes: buffer } }),
+      );
+      const text = (result.Blocks ?? [])
+        .filter((block) => block.BlockType === "LINE" && block.Text)
+        .map((block) => block.Text!.trim())
+        .filter(Boolean)
+        .join("\n")
+        .trim();
+      if (text.length < 10) {
+        throw new BadRequestException(
+          "OCR could not find readable text in this image. Add the scores manually.",
+        );
+      }
+      return text;
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+      this.logger.error(`Textract image OCR failed: ${this.errorMessage(error)}`);
+      throw new ServiceUnavailableException(
+        "Image recognition is temporarily unavailable. Add the scores manually.",
+      );
     }
   }
 

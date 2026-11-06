@@ -9,6 +9,7 @@ import { AuditService } from "../audit/audit.service";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { PrismaService } from "../prisma/prisma.service";
 import { UploadsService } from "../uploads/uploads.service";
+import { DocumentOcrService } from "../document-processing/document-ocr.service";
 import { ConfirmReportCardDto } from "./dto/confirm-report-card.dto";
 
 type Score = { subject: string; percentage: number };
@@ -19,6 +20,7 @@ export class ReportCardService {
     private readonly prisma: PrismaService,
     private readonly uploads: UploadsService,
     private readonly audit: AuditService,
+    private readonly ocr: DocumentOcrService,
   ) {}
 
   async list(actor: AuthenticatedUser) {
@@ -45,7 +47,7 @@ export class ReportCardService {
       file,
       `uploads/learning-coach-report-cards/${actor.schoolId}/${actor.id}`,
     );
-    const candidates = await this.extractScores(file);
+    const candidates = await this.extractScores(file, uploaded.assetKey);
     const report = await this.prisma.learningCoachReportCard.create({
       data: {
         schoolId: actor.schoolId,
@@ -183,15 +185,34 @@ export class ReportCardService {
     };
   }
 
-  private async extractScores(file: Express.Multer.File): Promise<Score[]> {
-    if (file.mimetype !== "application/pdf") return [];
-    const parser = new PDFParse({ data: file.buffer });
+  private async extractScores(
+    file: Express.Multer.File,
+    storageKey: string,
+  ): Promise<Score[]> {
+    if (file.mimetype === "application/pdf") {
+      const parser = new PDFParse({ data: file.buffer });
+      try {
+        const extracted = this.parseText((await parser.getText()).text);
+        if (extracted.length) return extracted;
+      } catch {
+        // A scanned PDF has no embedded text. The optional OCR path below can
+        // still provide a confirmation table when it is enabled for the host.
+      } finally {
+        await parser.destroy();
+      }
+      try {
+        return this.parseText(await this.ocr.extractPdf(file.buffer, storageKey));
+      } catch {
+        return [];
+      }
+    }
+
     try {
-      return this.parseText((await parser.getText()).text);
+      return this.parseText(await this.ocr.extractImage(file.buffer));
     } catch {
+      // Manual score entry remains available when OCR is intentionally off or
+      // the image is not readable enough for a reliable result.
       return [];
-    } finally {
-      await parser.destroy();
     }
   }
 

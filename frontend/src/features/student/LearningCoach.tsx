@@ -22,6 +22,7 @@ import { apiErrorMessage } from "../../api/axios";
 import {
   learningCoachApi,
   type LearningPlan,
+  type LearningCoachReportCard,
   type LearningSession,
   type LearningTopic,
 } from "../../api/learning-coach.api";
@@ -33,7 +34,8 @@ import { useNavigate } from "react-router-dom";
 
 function ReportCardPanel() {
   const client = useQueryClient();
-  const [activeReport, setActiveReport] = useState<number | null>(null);
+  const [activeReport, setActiveReport] =
+    useState<LearningCoachReportCard | null>(null);
   const [scores, setScores] = useState<
     Array<{ subject: string; percentage: number }>
   >([]);
@@ -44,10 +46,17 @@ function ReportCardPanel() {
   const upload = useMutation({
     mutationFn: learningCoachApi.uploadReportCard,
     onSuccess: (report) => {
+      client.setQueryData<LearningCoachReportCard[]>(
+        ["learning-coach-report-cards"],
+        (current = []) => [
+          report,
+          ...current.filter((item) => item.id !== report.id),
+        ],
+      );
       void client.invalidateQueries({
         queryKey: ["learning-coach-report-cards"],
       });
-      setActiveReport(report.id);
+      setActiveReport(report);
       setScores(
         report.extractedScores?.length
           ? report.extractedScores
@@ -58,7 +67,7 @@ function ReportCardPanel() {
   const confirm = useMutation({
     mutationFn: () =>
       learningCoachApi.confirmReportCard(
-        activeReport!,
+        activeReport!.id,
         scores.filter((score) => score.subject.trim()),
       ),
     onSuccess: () => {
@@ -69,9 +78,18 @@ function ReportCardPanel() {
       setActiveReport(null);
     },
   });
-  const selected = activeReport
-    ? reports.data?.find((report) => report.id === activeReport)
-    : undefined;
+  const selected = activeReport;
+  const reportHistory = (reports.data ?? [])
+    .filter((report) => report.id !== selected?.id)
+    .filter(
+      (report, index, all) =>
+        all.findIndex(
+          (candidate) =>
+            candidate.fileName === report.fileName &&
+            candidate.status === report.status,
+        ) === index,
+    )
+    .slice(0, 3);
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -132,7 +150,13 @@ function ReportCardPanel() {
               Not now
             </button>
           </div>
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 overflow-hidden rounded-xl border border-lime-200 bg-white">
+            <div className="grid grid-cols-[1fr_86px_36px] gap-2 border-b border-lime-100 bg-lime-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-[#466000]">
+              <span>Subject</span>
+              <span>Score</span>
+              <span aria-hidden="true" />
+            </div>
+            <div className="space-y-2 p-3">
             {scores.map((score, index) => (
               <div key={index} className="grid grid-cols-[1fr_86px_36px] gap-2">
                 <input
@@ -180,6 +204,7 @@ function ReportCardPanel() {
                 </button>
               </div>
             ))}
+            </div>
           </div>
           <button
             type="button"
@@ -213,9 +238,9 @@ function ReportCardPanel() {
           ) : null}
         </div>
       ) : null}
-      {(reports.data ?? []).length ? (
+      {reportHistory.length ? (
         <div className="mt-5 space-y-3">
-          {reports.data!.slice(0, 3).map((report) => (
+          {reportHistory.map((report) => (
             <article
               key={report.id}
               className="rounded-xl border border-slate-100 bg-slate-50 p-3"
@@ -227,7 +252,7 @@ function ReportCardPanel() {
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveReport(report.id);
+                    setActiveReport(report);
                     setScores(
                       report.extractedScores?.length
                         ? report.extractedScores
