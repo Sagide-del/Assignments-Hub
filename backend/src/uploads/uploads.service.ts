@@ -105,8 +105,7 @@ export class UploadsService {
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: assetKey,
-        ResponseContentDisposition: `attachment; filename="${fileName.replace(/["
-]/g, "")}"`,
+        ResponseContentDisposition: `attachment; filename="${fileName.replace(/["\r\n]/g, "")}"`,
       }),
       { expiresIn: expiresInSeconds },
     );
