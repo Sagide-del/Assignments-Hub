@@ -34,29 +34,145 @@ import { useNavigate } from "react-router-dom";
 
 type ReportScore = { subject: string; percentage: number };
 
-function parseReportImageText(text: string): ReportScore[] {
-  const seen = new Set<string>();
-  return text
+const REPORT_SUBJECTS = [
+  "English",
+  "Kiswahili",
+  "Mathematics",
+  "Integrated Science",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "Computer Studies",
+  "Community Service Learning",
+  "Social Studies",
+  "Religious Education",
+  "Christian Religious Education",
+  "Islamic Religious Education",
+  "Agriculture",
+  "Business Studies",
+  "Geography",
+  "History",
+  "Home Science",
+  "Pre-Technical Studies",
+  "Life Skills",
+  "Art and Craft",
+  "Music",
+  "French",
+  "German",
+] as const;
+
+function normaliseReportText(value: string) {
+  return value.toUpperCase().replace(/[^A-Z]/g, "");
+}
+
+function editDistance(left: string, right: string) {
+  const row = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    let previous = row[0];
+    row[0] = leftIndex;
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const current = row[rightIndex];
+      row[rightIndex] = Math.min(
+        row[rightIndex] + 1,
+        row[rightIndex - 1] + 1,
+        previous + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1),
+      );
+      previous = current;
+    }
+  }
+  return row[right.length];
+}
+
+// Report photos frequently turn characters such as I/l or swap two letters.
+// Only map text to an approved learning area; never use headers, phone numbers,
+// or free-form OCR text as a subject.
+function resolveReportSubject(line: string) {
+  const candidate = normaliseReportText(line);
+  if (candidate.length < 4) return null;
+
+  let best: { subject: string; distance: number } | null = null;
+  for (const subject of REPORT_SUBJECTS) {
+    const expected = normaliseReportText(subject);
+    const distance = editDistance(candidate, expected);
+    const isPrefix =
+      candidate.startsWith(expected.slice(0, Math.max(5, expected.length - 4))) ||
+      expected.startsWith(candidate.slice(0, Math.max(5, candidate.length - 4)));
+    if (
+      (isPrefix || distance <= Math.max(2, Math.floor(expected.length * 0.2))) &&
+      (!best || distance < best.distance)
+    ) {
+      best = { subject, distance };
+    }
+  }
+  return best?.subject ?? null;
+}
+
+async function cropReportTable(
+  file: File,
+  crop: { left: number; top: number; width: number; height: number },
+) {
+  const image = await createImageBitmap(file);
+  try {
+    const sourceWidth = Math.max(1, Math.round(image.width * crop.width));
+    const sourceHeight = Math.max(1, Math.round(image.height * crop.height));
+    const canvas = document.createElement("canvas");
+    // Enlarging a small table region gives OCR a much clearer character edge.
+    canvas.width = Math.min(2400, Math.max(640, sourceWidth * 5));
+    canvas.height = Math.min(1800, Math.max(420, sourceHeight * 5));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Your browser could not prepare the report image.");
+    context.filter = "grayscale(1) contrast(1.45)";
+    context.drawImage(
+      image,
+      Math.round(image.width * crop.left),
+      Math.round(image.height * crop.top),
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("Could not read the report image."))),
+        "image/png",
+      ),
+    );
+  } finally {
+    image.close();
+  }
+}
+
+function parseTableScores(subjectText: string, scoreText: string): ReportScore[] {
+  const subjects = subjectText
     .split(/\r?\n/)
-    .flatMap((line) => {
-      const subject = line.match(/^\s*([A-Za-z][A-Za-z &/-]{2,60}?)(?=\s+\d)/)?.[1];
-      const values = [...line.matchAll(/\b\d{1,3}\b/g)].map((match) => Number(match[0]));
-      if (!subject || !values.length) return [];
-      const last = values[values.length - 1];
-      const previous = values.length > 1 ? values[values.length - 2] : undefined;
-      const percentage = last === 100 && previous !== undefined ? previous : last;
-      const normalized = subject.replace(/\s+/g, " ").trim();
-      if (percentage > 100 || seen.has(normalized.toLowerCase())) return [];
-      seen.add(normalized.toLowerCase());
-      return [{ subject: normalized, percentage }];
-    })
-    .slice(0, 30);
+    .map(resolveReportSubject)
+    .filter((subject): subject is string => Boolean(subject))
+    .filter((subject, index, all) => all.indexOf(subject) === index);
+  const percentages = [...scoreText.matchAll(/\b(\d{1,3})\s*%/g)]
+    .map((match) => Number(match[1]))
+    .filter((score) => score >= 0 && score <= 100);
+
+  return subjects
+    .map((subject, index) => ({ subject, percentage: percentages[index] }))
+    .filter((score): score is ReportScore => Number.isFinite(score.percentage));
 }
 
 async function readReportImage(file: File): Promise<ReportScore[]> {
-  const { recognize } = await import("tesseract.js");
-  const result = await recognize(file, "eng");
-  return parseReportImageText(result.data.text);
+  const tesseract = await import("tesseract.js");
+  // These percentages cover the assessment table on the common Kenyan report
+  // card layout. Reading separate columns prevents marks, rubrics and remarks
+  // from being mixed into subject names.
+  const [subjectsImage, scoresImage] = await Promise.all([
+    cropReportTable(file, { left: 0, top: 0.4, width: 0.31, height: 0.17 }),
+    cropReportTable(file, { left: 0.285, top: 0.425, width: 0.14, height: 0.13 }),
+  ]);
+  const [subjectsResult, scoresResult] = await Promise.all([
+    tesseract.default.recognize(subjectsImage, "eng"),
+    tesseract.default.recognize(scoresImage, "eng"),
+  ]);
+  return parseTableScores(subjectsResult.data.text, scoresResult.data.text);
 }
 
 function ReportCardPanel() {
