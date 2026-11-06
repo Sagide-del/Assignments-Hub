@@ -62,8 +62,9 @@ describe("Jenga payment callback settlement", () => {
     const callback = {
       code: 3,
       reference: "INV001",
-      transactionReference: "TQWERTY123",
-      amount: "300",
+      transactionReference: "INV001",
+      telcoReference: "TQWERTY123",
+      requestAmount: "300",
       mobileNumber: "254708374149",
     };
 

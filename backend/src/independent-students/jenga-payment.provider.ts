@@ -74,9 +74,12 @@ export class JengaPaymentProvider {
     }
 
     const accountNumber = this.config.get<string>("JENGA_ACCOUNT_NUMBER")!.trim();
-    const amount = String(input.amount);
+    // Jenga's account-settlement STK contract requires a string amount with
+    // up to two decimals. The same exact value is included in the signature.
+    const amount = input.amount.toFixed(2);
     const body = {
       merchant: {
+        countryCode: "KE",
         accountNumber,
         name:
           this.config.get<string>("JENGA_MERCHANT_NAME")?.trim() ||
@@ -127,6 +130,8 @@ export class JengaPaymentProvider {
             ? data.transactionReference
             : typeof data?.reference === "string"
               ? data.reference
+              : typeof data?.transactionId === "string"
+                ? data.transactionId
               : null,
         providerPayload: data as unknown,
       };

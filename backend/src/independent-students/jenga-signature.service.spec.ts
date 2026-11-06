@@ -10,7 +10,7 @@ describe("Jenga account-settlement signature", () => {
     reference: "INV001",
     mobileNumber: "254708374149",
     telco: "Safaricom" as const,
-    amount: "300",
+    amount: "300.00",
     currency: "KES" as const,
   };
   let directory = "";
@@ -34,7 +34,7 @@ describe("Jenga account-settlement signature", () => {
     const signature = service.sign(input);
     const verifier = createVerify("RSA-SHA256");
     verifier.update(
-      "01116762952500INV001254708374149Safaricom300KES",
+      "01116762952500INV001254708374149Safaricom300.00KES",
       "utf8",
     );
     verifier.end();

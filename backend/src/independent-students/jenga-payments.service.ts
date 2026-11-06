@@ -53,9 +53,15 @@ function parseCallback(value: unknown): JengaCallback {
       ? (root.payment as Record<string, unknown>)
       : {};
   const parsedCode = readNumber(root.code ?? root.statusCode ?? payment.code);
-  const reference = readString(
+  // Jenga account-settlement callbacks identify the original six-character
+  // merchant reference as transactionReference and the M-Pesa receipt as
+  // telcoReference. The fallback supports the early documented envelope
+  // where reference and transactionReference were reversed.
+  const directReference = readString(
     root.reference ?? root.paymentReference ?? root.ref ?? payment.ref,
   );
+  const transactionReference = readString(root.transactionReference);
+  const reference = directReference ?? transactionReference;
   if (
     parsedCode === undefined ||
     !Number.isInteger(parsedCode) ||
@@ -66,9 +72,14 @@ function parseCallback(value: unknown): JengaCallback {
   }
   const code = parsedCode;
   const receiptNumber = readString(
-    root.transactionReference ?? root.mpesaReceiptNumber ?? payment.transactionReference,
+    root.telcoReference ??
+      root.mpesaReceiptNumber ??
+      // Only use transactionReference as a receipt when a separate reference
+      // is present; otherwise it is the Jenga merchant reference.
+      (directReference ? transactionReference : undefined) ??
+      payment.telcoReference,
   );
-  const amount = readNumber(root.amount ?? payment.amount);
+  const amount = readNumber(root.requestAmount ?? root.amount ?? payment.amount);
   const mobileNumber = readString(root.mobileNumber ?? payment.mobileNumber);
   if (code === 3 && (!receiptNumber || !amount || amount <= 0)) {
     throw new BadRequestException("Completed Jenga callbacks require a receipt and amount.");
