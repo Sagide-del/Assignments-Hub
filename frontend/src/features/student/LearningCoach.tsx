@@ -32,6 +32,33 @@ import { useStudentContentScope } from "../../hooks/useStudentContentScope";
 import { timetableApi } from "../../api/timetable.api";
 import { useNavigate } from "react-router-dom";
 
+type ReportScore = { subject: string; percentage: number };
+
+function parseReportImageText(text: string): ReportScore[] {
+  const seen = new Set<string>();
+  return text
+    .split(/\r?\n/)
+    .flatMap((line) => {
+      const subject = line.match(/^\s*([A-Za-z][A-Za-z &/-]{2,60}?)(?=\s+\d)/)?.[1];
+      const values = [...line.matchAll(/\b\d{1,3}\b/g)].map((match) => Number(match[0]));
+      if (!subject || !values.length) return [];
+      const last = values[values.length - 1];
+      const previous = values.length > 1 ? values[values.length - 2] : undefined;
+      const percentage = last === 100 && previous !== undefined ? previous : last;
+      const normalized = subject.replace(/\s+/g, " ").trim();
+      if (percentage > 100 || seen.has(normalized.toLowerCase())) return [];
+      seen.add(normalized.toLowerCase());
+      return [{ subject: normalized, percentage }];
+    })
+    .slice(0, 30);
+}
+
+async function readReportImage(file: File): Promise<ReportScore[]> {
+  const { recognize } = await import("tesseract.js");
+  const result = await recognize(file, "eng");
+  return parseReportImageText(result.data.text);
+}
+
 function ReportCardPanel() {
   const client = useQueryClient();
   const [activeReport, setActiveReport] =
@@ -39,16 +66,15 @@ function ReportCardPanel() {
   const [dismissedReportIds, setDismissedReportIds] = useState<Set<number>>(
     () => new Set(),
   );
-  const [scores, setScores] = useState<
-    Array<{ subject: string; percentage: number }>
-  >([]);
+  const [scores, setScores] = useState<ReportScore[]>([]);
+  const [isReadingImage, setIsReadingImage] = useState(false);
   const reports = useQuery({
     queryKey: ["learning-coach-report-cards"],
     queryFn: learningCoachApi.reportCards,
   });
   const upload = useMutation({
     mutationFn: learningCoachApi.uploadReportCard,
-    onSuccess: (report) => {
+    onSuccess: async (report, file) => {
       client.setQueryData<LearningCoachReportCard[]>(
         ["learning-coach-report-cards"],
         (current = []) => [
@@ -59,12 +85,32 @@ function ReportCardPanel() {
       void client.invalidateQueries({
         queryKey: ["learning-coach-report-cards"],
       });
-      setActiveReport(report);
-      setScores(
+      const initialScores =
         report.extractedScores?.length
           ? report.extractedScores
-          : [{ subject: "", percentage: 0 }],
-      );
+          : [];
+      setActiveReport(report);
+      setScores(initialScores.length ? initialScores : [{ subject: "", percentage: 0 }]);
+
+      // Browser OCR is a privacy-preserving fallback for image reports when
+      // server OCR is unavailable. It never uploads image bytes to an AI API.
+      if (!initialScores.length && file.type.startsWith("image/")) {
+        setIsReadingImage(true);
+        try {
+          const detected = await readReportImage(file);
+          if (!detected.length) return;
+          const enriched = { ...report, extractedScores: detected };
+          client.setQueryData<LearningCoachReportCard[]>(
+            ["learning-coach-report-cards"],
+            (current = []) =>
+              current.map((item) => (item.id === report.id ? enriched : item)),
+          );
+          setActiveReport(enriched);
+          setScores(detected);
+        } finally {
+          setIsReadingImage(false);
+        }
+      }
     },
   });
   const confirm = useMutation({
@@ -131,12 +177,12 @@ function ReportCardPanel() {
         </div>
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50">
           <Upload className="h-4 w-4" />
-          {upload.isPending ? "Reading report…" : "Upload report"}
+          {upload.isPending || isReadingImage ? "Reading report…" : "Upload report"}
           <input
             className="sr-only"
             type="file"
             accept="application/pdf,image/jpeg,image/png,image/webp"
-            disabled={upload.isPending}
+            disabled={upload.isPending || isReadingImage}
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file) upload.mutate(file);
@@ -232,6 +278,12 @@ function ReportCardPanel() {
             ))}
             </div>
           </div>
+          {isReadingImage ? (
+            <p className="mt-3 text-sm text-slate-600" role="status">
+              Reading the uploaded image securely on this device. Your scores
+              will appear in the table shortly.
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={() =>
