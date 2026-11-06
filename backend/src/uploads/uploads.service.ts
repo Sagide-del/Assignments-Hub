@@ -105,7 +105,8 @@ export class UploadsService {
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: assetKey,
-        ResponseContentDisposition: `attachment; filename="${fileName.replace(/["\r\n]/g, "")}"`,
+        ResponseContentDisposition: `attachment; filename="${fileName.replace(/["
+]/g, "")}"`,
       }),
       { expiresIn: expiresInSeconds },
     );
@@ -178,7 +179,7 @@ export class UploadsService {
       );
       if (errorName === "AccessDenied" || errorName === "Forbidden") {
         throw new ServiceUnavailableException(
-          "File storage permission is not configured for marketplace uploads.",
+          "File storage permission is not configured for this private upload.",
         );
       }
       throw new InternalServerErrorException("File upload failed");

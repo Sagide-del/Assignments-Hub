@@ -12,7 +12,10 @@ export default function CmsCreatePage() {
     [pathway, setPathway] = useState(""),
     [track, setTrack] = useState(""),
     [subject, setSubject] = useState(""),
-    [topic, setTopic] = useState("");
+    [topic, setTopic] = useState(""),
+    [subjectCategory, setSubjectCategory] = useState<"CORE" | "ELECTIVE">(
+      "CORE",
+    );
   const navigate = useNavigate(),
     client = useQueryClient(),
     userId = useAuthStore((state) => state.user?.id),
@@ -52,6 +55,7 @@ export default function CmsCreatePage() {
         grade: Number(grade),
         subject,
         topic,
+        subjectCategory,
         ...(senior ? { pathway, track } : {}),
       }),
     onSettled: () => {
@@ -211,6 +215,21 @@ export default function CmsCreatePage() {
                   {row.subject}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="block text-sm font-medium text-slate-700">
+            Subject category
+            <select
+              aria-label="Subject category"
+              className={control}
+              disabled={generate.isPending}
+              value={subjectCategory}
+              onChange={(event) =>
+                setSubjectCategory(event.target.value as "CORE" | "ELECTIVE")
+              }
+            >
+              <option value="CORE">Core subject</option>
+              <option value="ELECTIVE">Elective subject</option>
             </select>
           </label>
           <label className="block text-sm font-medium text-slate-700">

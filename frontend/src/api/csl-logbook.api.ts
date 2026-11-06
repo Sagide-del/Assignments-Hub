@@ -26,6 +26,13 @@ export interface CslHours {
   complete: boolean;
   logs: CslLog[];
 }
+export interface IndependentCslProject {
+  id: string;
+  title: string;
+  area: string;
+  estimatedHours: number;
+  prompt: string;
+}
 export const cslLogbookApi = {
   mine: () => api.get<CslHours>("/csl/my-hours").then((r) => r.data),
   log: (data: FormData) =>
@@ -41,6 +48,14 @@ export const cslLogbookApi = {
     api
       .get(`/csl/${id}/logbook-pdf`, { responseType: "blob", timeout: 120000 })
       .then((r) => r.data as Blob),
+  independentProjects: () =>
+    api
+      .get<IndependentCslProject[]>("/csl/independent-projects")
+      .then((r) => r.data),
+  submitProject: (projectId: string, reflection: string) =>
+    api
+      .post<CslLog>("/csl/submit-project", { projectId, reflection })
+      .then((r) => r.data),
 };
 export function saveCslPdf(blob: Blob) {
   const url = URL.createObjectURL(blob),

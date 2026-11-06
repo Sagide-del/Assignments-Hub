@@ -13,12 +13,13 @@ export interface LearningModule {
   subject: string;
   topic: string;
   question_count: number;
-  created_at?:string;
+  created_at?: string;
   expected_question_count?: number;
   assessment_type?: string;
   state?: "TO_START" | "IN_PROGRESS" | "COMPLETED";
   due_date?: string | null;
   results_released?: boolean;
+  priority_focus?: boolean;
 }
 export function filterCmsModules(
   rows: LearningModule[],

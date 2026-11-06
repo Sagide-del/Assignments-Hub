@@ -10,6 +10,8 @@ import { Role } from "../common/enums/role.enum";
 import { assertStudentScope, studentScope } from "../teacher-scope/scope";
 import { CslPhotoService } from "./csl-photo.service";
 import { CSL_TARGET, LogCslDto, cslToday } from "./csl.dto";
+import { SubmitIndependentProjectDto } from "./independent-project.dto";
+import { randomUUID } from "crypto";
 @Injectable()
 export class CslService {
   constructor(
@@ -26,6 +28,55 @@ export class CslService {
       target_hours: CSL_TARGET,
       photo_storage_configured: this.photos.configured(),
     };
+  }
+  independentProjects() {
+    return [
+      {
+        id: "community-reading",
+        title: "Community reading circle",
+        area: "Service & literacy",
+        estimatedHours: 2,
+        prompt:
+          "Plan and lead a short reading or study session for younger learners. Describe how you included everyone.",
+      },
+      {
+        id: "water-audit",
+        title: "Home water audit",
+        area: "Environment",
+        estimatedHours: 2,
+        prompt:
+          "Observe water use at home or school, identify one waste point, and test a practical improvement.",
+      },
+      {
+        id: "digital-safety",
+        title: "Digital safety guide",
+        area: "Digital citizenship",
+        estimatedHours: 2,
+        prompt:
+          "Create a simple safety guide for a younger learner covering passwords, privacy and respectful communication.",
+      },
+    ];
+  }
+  async submitIndependentProject(
+    dto: SubmitIndependentProjectDto,
+    actor: AuthenticatedUser,
+  ) {
+    await this.senior(actor);
+    const project = this.independentProjects().find(
+      (item) => item.id === dto.projectId,
+    );
+    if (!project)
+      throw new BadRequestException("Choose a valid guided CSL project.");
+    const entry: LogCslDto = {
+      activity_name: project.title,
+      description: `${project.prompt}\n\nLearner reflection:\n${dto.reflection.trim()}`,
+      hours_logged: project.estimatedHours,
+      activity_date: cslToday(),
+      submission_key: randomUUID(),
+    };
+    // Guided projects are submitted for a teacher's review; the platform
+    // never claims a teacher approval on the learner's behalf.
+    return this.log(entry, undefined, actor);
   }
   private async senior(actor: AuthenticatedUser) {
     const s = await this.db.user.findFirst({

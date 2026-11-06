@@ -10,7 +10,13 @@ export class StudentAssignmentsService {
   }
   async findAll(actor: AuthenticatedUser) {
     const scope = await this.scopes.getStudentScope(actor.id, actor.schoolId);
-    const modules = await this.scopes.modules(scope, "ASSIGNMENT");
+    const [modules, learner] = await Promise.all([
+      this.scopes.modules(scope, "ASSIGNMENT"),
+      this.scopes.prisma.user.findFirst({
+        where: { id: actor.id, schoolId: actor.schoolId },
+        select: { weakSubjects: true },
+      }),
+    ]);
     if (!modules.length) return [];
     const labels = [scope.stream, scope.className].filter(
       (x): x is string => !!x,
@@ -36,27 +42,41 @@ export class StudentAssignmentsService {
           where: { studentId: actor.id },
           orderBy: { createdAt: "desc" },
           take: 1,
-          select: { status: true,resultsReleasedAt:true },
+          select: { status: true, resultsReleasedAt: true },
         },
       },
       orderBy: { createdAt: "desc" },
     });
-    return modules.map((m) => {
-      const a = assigned.find(
-        (a) => (a.rawJson as any)?.cms_module_id === m.id,
+    const weakSubjects = new Set(
+      (learner?.weakSubjects ?? []).map((subject) =>
+        subject.trim().toLowerCase(),
+      ),
+    );
+    return modules
+      .map((m) => {
+        const a = assigned.find(
+          (a) => (a.rawJson as any)?.cms_module_id === m.id,
+        );
+        const progress = a?.submissions[0];
+        const priorityFocus = weakSubjects.has(m.subject.trim().toLowerCase());
+        return {
+          ...m,
+          assignment_id: a?.id ?? null,
+          due_date: a?.dueDate ?? null,
+          results_released: !!progress?.resultsReleasedAt,
+          state: progress
+            ? progress.status === "DRAFT"
+              ? "IN_PROGRESS"
+              : "COMPLETED"
+            : "TO_START",
+          priority_focus: priorityFocus,
+        };
+      })
+      .sort(
+        (left, right) =>
+          Number(right.priority_focus) - Number(left.priority_focus) ||
+          String(left.subject).localeCompare(String(right.subject)) ||
+          String(left.topic).localeCompare(String(right.topic)),
       );
-      const progress = a?.submissions[0];
-      return {
-        ...m,
-        assignment_id: a?.id ?? null,
-        due_date: a?.dueDate ?? null,
-        results_released: !!progress?.resultsReleasedAt,
-        state: progress
-          ? progress.status === "DRAFT"
-            ? "IN_PROGRESS"
-            : "COMPLETED"
-          : "TO_START",
-      };
-    });
   }
 }

@@ -111,6 +111,7 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
         pathway: taxonomy.pathway,
         track: taxonomy.track,
         subject: taxonomy.subject,
+        subject_category: dto.subjectCategory ?? "CORE",
         topic: dto.topic,
         content_json: {
           ...content,

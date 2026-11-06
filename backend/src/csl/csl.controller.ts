@@ -26,6 +26,7 @@ import { CslPhotoService } from "./csl-photo.service";
 import { CslService } from "./csl.service";
 import { CslPdfService } from "./csl-pdf.service";
 import { LogCslDto, RejectCslDto } from "./csl.dto";
+import { SubmitIndependentProjectDto } from "./independent-project.dto";
 @Controller("csl")
 @UseGuards(TeacherScopeGuard)
 export class CslController {
@@ -56,6 +57,19 @@ export class CslController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.csl.log(dto, file, actor);
+  }
+  @Get("independent-projects")
+  @Roles(Role.STUDENT)
+  independentProjects() {
+    return this.csl.independentProjects();
+  }
+  @Post("submit-project")
+  @Roles(Role.STUDENT)
+  submitProject(
+    @Body() dto: SubmitIndependentProjectDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.csl.submitIndependentProject(dto, actor);
   }
   @Get("my-hours")
   @Header("Cache-Control", "private, no-store")

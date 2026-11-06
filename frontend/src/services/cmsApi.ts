@@ -11,7 +11,9 @@ export interface MasterModule {
   pathway?: string | null;
   track?: string | null;
   subject: string;
+  subject_category?: "CORE" | "ELECTIVE";
   topic: string;
+  subjectCategory?: "CORE" | "ELECTIVE";
   content_json?: unknown;
   status: CmsStatus;
   created_at: string;

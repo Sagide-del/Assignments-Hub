@@ -1,6 +1,6 @@
-import { api } from './axios';
+import { api } from "./axios";
 
-export type LearningCoachMode = 'DIAGNOSTIC' | 'PRACTICE';
+export type LearningCoachMode = "DIAGNOSTIC" | "PRACTICE";
 
 export interface LearningTopic {
   subject: string;
@@ -36,7 +36,12 @@ export interface LearningQuestion {
   id: number;
   questionText: string;
   contentHtml: string | null;
-  questionType: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'FILL_BLANK' | 'NUMERIC' | 'SHORT_ANSWER';
+  questionType:
+    | "MULTIPLE_CHOICE"
+    | "TRUE_FALSE"
+    | "FILL_BLANK"
+    | "NUMERIC"
+    | "SHORT_ANSWER";
   options: string[] | null;
   hint: string | null;
   points: number;
@@ -76,19 +81,68 @@ export interface LearningCoachReportCard {
   fileName: string;
   fileSize: number;
   createdAt: string;
+  status?:
+    "UPLOADED" | "AWAITING_CONFIRMATION" | "NEEDS_MANUAL_ENTRY" | "ANALYZED";
+  extractedScores?: Array<{ subject: string; percentage: number }>;
+  diagnosis?: {
+    message: string;
+    colorCodes: Array<{
+      subject: string;
+      percentage: number;
+      color: "GREEN" | "YELLOW" | "RED";
+    }>;
+    learningTechniques: Record<string, string>;
+  };
 }
 
 export const learningCoachApi = {
-  catalog: () => api.get<LearningTopic[]>('/learning-coach/catalog').then((response) => response.data),
-  plans: () => api.get<LearningPlan[]>('/learning-coach/plans').then((response) => response.data),
-  start: (input: { subject: string; topic: string; mode?: LearningCoachMode }) =>
-    api.post<LearningSession>('/learning-coach/sessions', input).then((response) => response.data),
+  catalog: () =>
+    api
+      .get<LearningTopic[]>("/learning-coach/catalog")
+      .then((response) => response.data),
+  plans: () =>
+    api
+      .get<LearningPlan[]>("/learning-coach/plans")
+      .then((response) => response.data),
+  start: (input: {
+    subject: string;
+    topic: string;
+    mode?: LearningCoachMode;
+  }) =>
+    api
+      .post<LearningSession>("/learning-coach/sessions", input)
+      .then((response) => response.data),
   answer: (sessionId: number, input: { questionId: number; answer: string }) =>
-    api.post<LearningAnswerFeedback>(`/learning-coach/sessions/${sessionId}/answers`, input).then((response) => response.data),
-  reportCards: () => api.get<LearningCoachReportCard[]>('/learning-coach/report-cards').then((response) => response.data),
+    api
+      .post<LearningAnswerFeedback>(
+        `/learning-coach/sessions/${sessionId}/answers`,
+        input,
+      )
+      .then((response) => response.data),
+  reportCards: () =>
+    api
+      .get<LearningCoachReportCard[]>("/learning-coach/report-cards")
+      .then((response) => response.data),
   uploadReportCard: (file: File) => {
     const form = new FormData();
-    form.append('file', file);
-    return api.post<LearningCoachReportCard>('/learning-coach/report-cards', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((response) => response.data);
+    form.append("file", file);
+    return api
+      .post<LearningCoachReportCard>("/learning-coach/report-cards", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((response) => response.data);
   },
+  confirmReportCard: (
+    id: number,
+    scores: Array<{ subject: string; percentage: number }>,
+  ) =>
+    api
+      .post(`/learning-coach/report-cards/${id}/confirm`, { scores })
+      .then(
+        (response) =>
+          response.data as {
+            diagnosis: NonNullable<LearningCoachReportCard["diagnosis"]>;
+            timetable: unknown[];
+          },
+      ),
 };

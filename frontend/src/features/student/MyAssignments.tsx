@@ -145,6 +145,11 @@ function AssignmentCard({
                 ? "In Progress"
                 : "Completed"}
           </span>
+          {assignment.rawJson?.priority_focus ? (
+            <span className="ml-2 inline-flex rounded-md bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700">
+              Priority focus
+            </span>
+          ) : null}
           <LearningTitle
             value={assignment.title}
             subject={assignment.subject}
@@ -446,8 +451,9 @@ export function MyAssignmentsPage() {
           id: m.id,
           state: m.state,
           results_released: m.results_released,
+          priority_focus: m.priority_focus,
         },
-        rawJson: { cms_module_id: m.id },
+        rawJson: { cms_module_id: m.id, priority_focus: m.priority_focus },
       }));
     const enrolled = contentScope.data?.assignment_subjects ?? [];
     return [...published, ...bank, ...cms].filter(

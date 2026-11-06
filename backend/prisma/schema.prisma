@@ -318,27 +318,27 @@ enum InstitutionType {
 }
 
 model School {
-  weeklyTimetables Study_Timetable[]
-  studySchedules Study_School_Schedule[]
-  cslLogbook CSL_Logbook[]
-  externalMocks ExternalMock_Record[]
-  sbaProjections SBA_Projection[]
-  sbaRecords SBA_Record[]
-  streams Stream[]
-  paymentLedger Payment[]
-  kjseaMockAttempts KjseaMockAttempt[]
-  id                 Int                 @id @default(autoincrement())
+  weeklyTimetables   Study_Timetable[]
+  studySchedules     Study_School_Schedule[]
+  cslLogbook         CSL_Logbook[]
+  externalMocks      ExternalMock_Record[]
+  sbaProjections     SBA_Projection[]
+  sbaRecords         SBA_Record[]
+  streams            Stream[]
+  paymentLedger      Payment[]
+  kjseaMockAttempts  KjseaMockAttempt[]
+  id                 Int                     @id @default(autoincrement())
   name               String
-  code               String              @unique // short code students use to log in, e.g. "GHSCH"
+  code               String                  @unique // short code students use to log in, e.g. "GHSCH"
   logoUrl            String? // NOT @map'd — matches the original unmapped "logoUrl" column from the initial migration.
   address            String?
   phone              String?
-  contactEmail       String?             @map("contact_email")
-  subscriptionStatus SubscriptionStatus  @default(TRIAL)
-  type               SchoolType          @default(DAY) @map("school_type")
-  themeTemplate      SchoolThemeTemplate @default(ACADEMIC_NAVY) @map("theme_template")
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  contactEmail       String?                 @map("contact_email")
+  subscriptionStatus SubscriptionStatus      @default(TRIAL)
+  type               SchoolType              @default(DAY) @map("school_type")
+  themeTemplate      SchoolThemeTemplate     @default(ACADEMIC_NAVY) @map("theme_template")
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
 
   users                     User[]
   assignments               Assignment[]
@@ -383,21 +383,21 @@ model School {
 }
 
 model User {
-  weeklyTimetables Study_Timetable[]
-  cslHourLogs CSL_Logbook[] @relation("CslHourStudent")
-  cslHourApprovals CSL_Logbook[] @relation("CslHourApprover")
-  cslHourReviews CSL_Logbook[] @relation("CslHourReviewer")
-  externalMocks ExternalMock_Record[] @relation("ExternalMockStudent")
-  importedMocks ExternalMock_Record[] @relation("ExternalMockImporter")
-  sbaProjections SBA_Projection[]
-  sbaScores SBA_Record[] @relation("SbaStudent")
-  enteredSbaScores SBA_Record[] @relation("SbaEnteredBy")
+  weeklyTimetables   Study_Timetable[]
+  cslHourLogs        CSL_Logbook[]         @relation("CslHourStudent")
+  cslHourApprovals   CSL_Logbook[]         @relation("CslHourApprover")
+  cslHourReviews     CSL_Logbook[]         @relation("CslHourReviewer")
+  externalMocks      ExternalMock_Record[] @relation("ExternalMockStudent")
+  importedMocks      ExternalMock_Record[] @relation("ExternalMockImporter")
+  sbaProjections     SBA_Projection[]
+  sbaScores          SBA_Record[]          @relation("SbaStudent")
+  enteredSbaScores   SBA_Record[]          @relation("SbaEnteredBy")
   teacherAssignments TeacherAssignment[]
-  paymentLedger Payment[]
-  kjseaMockAttempts KjseaMockAttempt[]
-  id       Int    @id @default(autoincrement())
-  schoolId Int    @map("school_id")
-  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  paymentLedger      Payment[]
+  kjseaMockAttempts  KjseaMockAttempt[]
+  id                 Int                   @id @default(autoincrement())
+  schoolId           Int                   @map("school_id")
+  school             School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   name String
   role Role
@@ -407,15 +407,20 @@ model User {
   passwordHash String? @map("password_hash")
 
   // Student credentials
-  admissionNumber String? @map("admission_number")
+  admissionNumber   String?  @map("admission_number")
   // Student's grade/class (e.g. "Grade 7"), used to scope which assignments
   // they see. Not applicable to staff roles.
-  grade           String?
+  grade             String?
   elective_subjects String[] @default([])
+  // Learner-owned coaching signals. These are updated only after a learner
+  // confirms extracted report-card scores or completes a coach diagnostic.
+  weakSubjects      String[] @default([]) @map("weak_subjects")
+  strongSubjects    String[] @default([]) @map("strong_subjects")
+  primarySkillFocus String?  @map("primary_skill_focus")
   // Parent/guardian phone number in international format (e.g.
   // "+254712345678"), used by SmsService to notify the parent when this
   // student completes an assignment or a new one is posted. Student-only.
-  parentPhone     String? @map("parent_phone")
+  parentPhone       String?  @map("parent_phone")
 
   // Set only for an "independent" student — one enrolled directly by
   // PLATFORM_ADMIN under the system's dedicated "Independent Students"
@@ -477,8 +482,8 @@ model User {
   recordedIndependentInvoices      IndependentStudentInvoice[]  @relation("IndependentInvoiceRecordedBy")
   independentPaymentClaims         IndependentPaymentClaim[]    @relation("IndependentPaymentClaimStudent")
   reviewedIndependentPaymentClaims IndependentPaymentClaim[]    @relation("IndependentPaymentClaimReviewedBy")
-  independentPaystackPayments     IndependentPaystackPayment[] @relation("IndependentPaystackPaymentStudent")
-  independentTumaPayments IndependentTumaPayment[]
+  independentPaystackPayments      IndependentPaystackPayment[] @relation("IndependentPaystackPaymentStudent")
+  independentTumaPayments          IndependentTumaPayment[]
   updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
   requestedAiGenerationJobs        AiGenerationJob[]            @relation("AiGenerationRequestedBy")
   uploadedAiExtractedContents      AiExtractedContent[]         @relation("AiExtractedContentUploadedBy")
@@ -501,8 +506,8 @@ model User {
   learningCoachSessions            LearningCoachSession[]       @relation("LearningCoachSessionStudent")
   learningCoachResponses           LearningCoachResponse[]      @relation("LearningCoachResponseStudent")
   learningCoachReportCards         LearningCoachReportCard[]
-  sbaEvidence                      StudentSbaEvidence[] @relation("SbaEvidenceStudent")
-  reviewedSbaEvidence              StudentSbaEvidence[] @relation("SbaEvidenceReviewer")
+  sbaEvidence                      StudentSbaEvidence[]         @relation("SbaEvidenceStudent")
+  reviewedSbaEvidence              StudentSbaEvidence[]         @relation("SbaEvidenceReviewer")
   presenceSessions                 UserPresenceSession[]
 
   @@unique([id, schoolId])
@@ -540,15 +545,19 @@ model StudentProfile {
 // No automated interpretation is performed on upload — it is intentionally a
 // future input to the learner-approved coaching workflow.
 model LearningCoachReportCard {
-  id        Int      @id @default(autoincrement())
-  schoolId  Int      @map("school_id")
-  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  studentId Int      @map("student_id")
-  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  assetKey  String   @map("asset_key")
-  fileName  String   @map("file_name")
-  fileSize  Int      @map("file_size")
-  createdAt DateTime @default(now()) @map("created_at")
+  id              Int       @id @default(autoincrement())
+  schoolId        Int       @map("school_id")
+  school          School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId       Int       @map("student_id")
+  student         User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assetKey        String    @map("asset_key")
+  fileName        String    @map("file_name")
+  fileSize        Int       @map("file_size")
+  status          String    @default("UPLOADED")
+  extractedScores Json?     @map("extracted_scores")
+  diagnosis       Json?     @map("diagnosis")
+  analyzedAt      DateTime? @map("analyzed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
   @@index([studentId, createdAt])
   @@map("learning_coach_report_cards")
@@ -666,22 +675,22 @@ model SkillPayment {
 }
 
 model MnemonicCard {
-  curriculumUnitId Int? @map("curriculum_unit_id")
-  content Json?
-  sourceDocumentId Int? @map("source_document_id")
-  id           Int      @id @default(autoincrement())
-  title        String
-  subject      String
-  topic        String
-  grade        String?
-  description  String?
-  pdfUrl       String   @map("pdf_url")
-  fileName     String   @map("file_name")
-  fileSize     Int?     @map("file_size")
-  isPublished  Boolean  @default(false) @map("is_published")
-  displayOrder Int      @default(0) @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  curriculumUnitId Int?     @map("curriculum_unit_id")
+  content          Json?
+  sourceDocumentId Int?     @map("source_document_id")
+  id               Int      @id @default(autoincrement())
+  title            String
+  subject          String
+  topic            String
+  grade            String?
+  description      String?
+  pdfUrl           String   @map("pdf_url")
+  fileName         String   @map("file_name")
+  fileSize         Int?     @map("file_size")
+  isPublished      Boolean  @default(false) @map("is_published")
+  displayOrder     Int      @default(0) @map("display_order")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@index([isPublished, grade])
   @@index([subject, topic])
@@ -838,16 +847,16 @@ model LearningCoachPlan {
   grade   String
   topic   String
 
-  masteryScore          Int       @default(0) @map("mastery_score")
-  lastDiagnosticScore   Int?      @map("last_diagnostic_score")
-  lowPerformanceStreak  Int       @default(0) @map("low_performance_streak")
-  nextReviewAt          DateTime? @map("next_review_at")
-  requiresHumanSupport  Boolean   @default(false) @map("requires_human_support")
-  recommendedTechnique String @map("recommended_technique")
-  focusAreas          Json   @map("focus_areas")
-  plan                Json
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  masteryScore         Int       @default(0) @map("mastery_score")
+  lastDiagnosticScore  Int?      @map("last_diagnostic_score")
+  lowPerformanceStreak Int       @default(0) @map("low_performance_streak")
+  nextReviewAt         DateTime? @map("next_review_at")
+  requiresHumanSupport Boolean   @default(false) @map("requires_human_support")
+  recommendedTechnique String    @map("recommended_technique")
+  focusAreas           Json      @map("focus_areas")
+  plan                 Json
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   sessions LearningCoachSession[]
 
@@ -863,25 +872,25 @@ model LearningCoachPlan {
 // verified themselves. Files are optional because schools may ask for a link,
 // reflection, photograph, or physical artefact reference.
 model StudentSbaEvidence {
-  id          Int    @id @default(autoincrement())
-  schoolId    Int    @map("school_id")
-  school      School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  studentId   Int    @map("student_id")
-  student     User   @relation("SbaEvidenceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  id        Int    @id @default(autoincrement())
+  schoolId  Int    @map("school_id")
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId Int    @map("student_id")
+  student   User   @relation("SbaEvidenceStudent", fields: [studentId], references: [id], onDelete: Cascade)
 
-  subject     String
-  title       String
-  description String?
-  assetKey    String? @map("asset_key")
-  fileName    String? @map("file_name")
-  fileSize    Int?    @map("file_size")
-  status      String  @default("SUBMITTED")
-  feedback    String?
-  reviewedById Int?   @map("reviewed_by_id")
-  reviewedBy   User?  @relation("SbaEvidenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  subject      String
+  title        String
+  description  String?
+  assetKey     String?   @map("asset_key")
+  fileName     String?   @map("file_name")
+  fileSize     Int?      @map("file_size")
+  status       String    @default("SUBMITTED")
+  feedback     String?
+  reviewedById Int?      @map("reviewed_by_id")
+  reviewedBy   User?     @relation("SbaEvidenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   reviewedAt   DateTime? @map("reviewed_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@index([schoolId, studentId, status])
   @@index([studentId, createdAt])
@@ -889,19 +898,19 @@ model StudentSbaEvidence {
 }
 
 model LearningCoachSession {
-  id        Int    @id @default(autoincrement())
-  schoolId  Int    @map("school_id")
-  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  studentId Int    @map("student_id")
-  student   User   @relation("LearningCoachSessionStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  planId    Int    @map("plan_id")
+  id        Int               @id @default(autoincrement())
+  schoolId  Int               @map("school_id")
+  school    School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId Int               @map("student_id")
+  student   User              @relation("LearningCoachSessionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  planId    Int               @map("plan_id")
   plan      LearningCoachPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
-  mode        String   @default("PRACTICE")
-  questionIds Int[]    @map("question_ids")
-  score       Int      @default(0)
-  total       Int      @default(0)
-  startedAt   DateTime @default(now()) @map("started_at")
+  mode        String    @default("PRACTICE")
+  questionIds Int[]     @map("question_ids")
+  score       Int       @default(0)
+  total       Int       @default(0)
+  startedAt   DateTime  @default(now()) @map("started_at")
   completedAt DateTime? @map("completed_at")
 
   responses LearningCoachResponse[]
@@ -912,20 +921,20 @@ model LearningCoachSession {
 }
 
 model LearningCoachResponse {
-  id          Int    @id @default(autoincrement())
-  schoolId    Int    @map("school_id")
-  school      School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  sessionId   Int    @map("session_id")
-  session     LearningCoachSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  studentId   Int    @map("student_id")
-  student     User   @relation("LearningCoachResponseStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  questionBankId Int @map("question_bank_id")
-  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  id             Int                  @id @default(autoincrement())
+  schoolId       Int                  @map("school_id")
+  school         School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sessionId      Int                  @map("session_id")
+  session        LearningCoachSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId      Int                  @map("student_id")
+  student        User                 @relation("LearningCoachResponseStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  questionBankId Int                  @map("question_bank_id")
+  questionBank   QuestionBank         @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
 
-  answer     String
-  isCorrect  Boolean @map("is_correct")
-  feedback   String
-  createdAt  DateTime @default(now()) @map("created_at")
+  answer    String
+  isCorrect Boolean  @map("is_correct")
+  feedback  String
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([sessionId, questionBankId])
   @@index([studentId, questionBankId, createdAt])
@@ -2342,15 +2351,15 @@ model IndependentPaystackPayment {
   studentId Int  @map("student_id")
   student   User @relation("IndependentPaystackPaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
 
-  reference String               @unique
-  amountKES Int                  @map("amount_kes")
-  interval  SubscriptionInterval @default(MONTHLY)
-  status    PaymentStatus        @default(PENDING)
-  email     String
-  paidAt    DateTime?            @map("paid_at")
+  reference  String               @unique
+  amountKES  Int                  @map("amount_kes")
+  interval   SubscriptionInterval @default(MONTHLY)
+  status     PaymentStatus        @default(PENDING)
+  email      String
+  paidAt     DateTime?            @map("paid_at")
   rawPayload Json?
-  createdAt DateTime             @default(now()) @map("created_at")
-  updatedAt DateTime             @updatedAt @map("updated_at")
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
 
   @@index([studentId, status])
   @@map("independent_paystack_payments")
@@ -2371,9 +2380,9 @@ model IndependentPaystackPayment {
 // ============================================================================
 
 model QuestionBank {
-  curriculumUnitId Int? @map("curriculum_unit_id")
+  curriculumUnitId    Int?  @map("curriculum_unit_id")
   curriculumSourceIds Json? @map("curriculum_source_ids")
-  id Int @id @default(autoincrement())
+  id                  Int   @id @default(autoincrement())
 
   source   QuestionBankSource @default(PLATFORM)
   isGlobal Boolean            @default(true) @map("is_global")
@@ -2422,10 +2431,10 @@ model QuestionBank {
   // Groups every question produced by one upload+generate call so the admin
   // review screen can approve/reject a batch together. Not a foreign key —
   // just a correlation id (crypto.randomUUID()).
-  generationBatchId String? @map("generation_batch_id")
-  batchId Int? @map("batch_id")
-  batch QuestionGenerationBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
-  sourceFileName    String? @map("source_file_name")
+  generationBatchId String?                  @map("generation_batch_id")
+  batchId           Int?                     @map("batch_id")
+  batch             QuestionGenerationBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  sourceFileName    String?                  @map("source_file_name")
 
   reviewedById Int?      @map("reviewed_by_id")
   reviewedBy   User?     @relation("QuestionBankReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
@@ -2440,9 +2449,9 @@ model QuestionBank {
   publishedAssignment   Assignment? @relation("QuestionBankPublishedAssignment", fields: [publishedAssignmentId], references: [id], onDelete: SetNull)
   publishedAt           DateTime?   @map("published_at")
 
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  usages    QuestionBankUsage[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  usages                 QuestionBankUsage[]
   learningCoachResponses LearningCoachResponse[]
 
   @@index([isGlobal, status, subject, grade])
@@ -2457,8 +2466,8 @@ model QuestionBank {
 // new question batch can be grounded in the relevant topic without sending
 // an entire textbook to the AI provider on every request.
 model QuestionBankSourceDocument {
-  role String @default("LEGACY")
-  reviewed Boolean @default(false)
+  role        String   @default("LEGACY")
+  reviewed    Boolean  @default(false)
   id          Int      @id @default(autoincrement())
   title       String
   subject     String
@@ -2598,25 +2607,26 @@ model StudentAssignmentVariant {
 
 // Private generated practice papers. Answer keys stay server-side until submission.
 model KjseaMockAttempt {
-  subject String @default("Mathematics")
-  source String @default("GENERATED")
-  coverage Json @default("{}")
-  id String @id @default(cuid())
-  schoolId Int @map("school_id")
-  studentId Int @map("student_id")
-  seed Int
-  version String @default("kjsea-maths-v1")
-  status String @default("DRAFT")
-  questions Json
-  answers Json @default("{}")
-  timeLimitMinutes Int? @map("time_limit_minutes")
-  score Int?
-  completedAt DateTime? @map("completed_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  school School @relation(fields:[schoolId],references:[id],onDelete:Cascade)
-  student User @relation(fields:[studentId],references:[id],onDelete:Cascade)
-  @@index([schoolId,studentId,createdAt])
+  subject          String    @default("Mathematics")
+  source           String    @default("GENERATED")
+  coverage         Json      @default("{}")
+  id               String    @id @default(cuid())
+  schoolId         Int       @map("school_id")
+  studentId        Int       @map("student_id")
+  seed             Int
+  version          String    @default("kjsea-maths-v1")
+  status           String    @default("DRAFT")
+  questions        Json
+  answers          Json      @default("{}")
+  timeLimitMinutes Int?      @map("time_limit_minutes")
+  score            Int?
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  school           School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student          User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, studentId, createdAt])
   @@map("kjsea_mock_attempts")
 }
 
@@ -2647,124 +2657,136 @@ model IndependentTumaPayment {
 }
 
 model ContentLibraryJob {
- id String @id @default(cuid())
- kind String
- status String @default("QUEUED")
- input Json
- result Json?
- error String?
- createdById Int @map("created_by_id")
- createdAt DateTime @default(now()) @map("created_at")
- updatedAt DateTime @updatedAt @map("updated_at")
- @@index([status,createdAt])
- @@map("content_library_jobs")
+  id          String   @id @default(cuid())
+  kind        String
+  status      String   @default("QUEUED")
+  input       Json
+  result      Json?
+  error       String?
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("content_library_jobs")
 }
 
 // Short, play-led learning activities for PP1 through Grade 3. Generated
 // content always starts as a draft and becomes visible only after a platform
 // administrator publishes it to the intended audience.
 model EarlyYearsActivity {
- id String @id @default(cuid())
- grade String
- area String
- language String @default("EN")
- title String
- prompt String
- content Json
- status String @default("DRAFT")
- audience String @default("BOTH")
- schoolIds Json @default("[]") @map("school_ids")
- createdById Int @map("created_by_id")
- publishedAt DateTime? @map("published_at")
- createdAt DateTime @default(now()) @map("created_at")
- updatedAt DateTime @updatedAt @map("updated_at")
- @@index([grade, status, audience])
- @@index([area, language])
- @@map("early_years_activities")
+  id          String    @id @default(cuid())
+  grade       String
+  area        String
+  language    String    @default("EN")
+  title       String
+  prompt      String
+  content     Json
+  status      String    @default("DRAFT")
+  audience    String    @default("BOTH")
+  schoolIds   Json      @default("[]") @map("school_ids")
+  createdById Int       @map("created_by_id")
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([grade, status, audience])
+  @@index([area, language])
+  @@map("early_years_activities")
 }
 
 model EarlyYearsActivityProgress {
- id String @id @default(cuid())
- activityId String @map("activity_id")
- studentId Int @map("student_id")
- completedAt DateTime @default(now()) @map("completed_at")
- @@unique([activityId, studentId])
- @@index([studentId, completedAt])
- @@map("early_years_activity_progress")
+  id          String   @id @default(cuid())
+  activityId  String   @map("activity_id")
+  studentId   Int      @map("student_id")
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  @@unique([activityId, studentId])
+  @@index([studentId, completedAt])
+  @@map("early_years_activity_progress")
 }
 
 model CurriculumScope {
- id Int @id @default(autoincrement())
- grade String
- subject String
- pathway String @default("")
- authority String
- verified Boolean @default(false)
- units CurriculumOutcome[]
- createdAt DateTime @default(now()) @map("created_at")
- updatedAt DateTime @updatedAt @map("updated_at")
- @@unique([grade,subject,pathway])
- @@map("curriculum_scopes")
-}
-model CurriculumOutcome {
- id Int @id @default(autoincrement())
- scopeId Int @map("scope_id")
- scope CurriculumScope @relation(fields:[scopeId],references:[id],onDelete:Restrict)
- strand String
- subStrand String @map("sub_strand")
- outcome String
- quote String @db.Text
- sourceDocumentId Int @map("source_document_id")
- supportingSourceIds Json @default("[]") @map("supporting_source_ids")
- verified Boolean @default(false)
- @@index([scopeId])
- @@map("curriculum_outcomes")
-}
-model CurriculumGradeReview {
- grade String @id
- verifiedAt DateTime? @map("verified_at")
- verifiedBy Int? @map("verified_by")
- note String @default("")
- @@map("curriculum_grade_reviews")
-}
-model ContentCollection {
- id String @id @default(cuid())
- name String
- grades Json
- rightsConfirmed Boolean @map("rights_confirmed")
- createdById Int @map("created_by_id")
- assets CollectionAsset[]
- createdAt DateTime @default(now()) @map("created_at")
- @@map("content_collections")
-}
-model CollectionAsset {
- id String @id @default(cuid())
- collectionId String @map("collection_id")
- collection ContentCollection @relation(fields:[collectionId],references:[id],onDelete:Cascade)
- name String
- origin String
- assetKey String? @map("asset_key")
- role String @default("AUTO")
- status String @default("QUEUED")
- mapping Json?
- extractedText String? @db.Text @map("extracted_text")
- sourceIds Json @default("[]") @map("source_ids")
- error String?
- createdAt DateTime @default(now()) @map("created_at")
- updatedAt DateTime @updatedAt @map("updated_at")
- @@unique([collectionId,origin])
- @@index([status])
- @@map("collection_assets")
+  id        Int                 @id @default(autoincrement())
+  grade     String
+  subject   String
+  pathway   String              @default("")
+  authority String
+  verified  Boolean             @default(false)
+  units     CurriculumOutcome[]
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  @@unique([grade, subject, pathway])
+  @@map("curriculum_scopes")
 }
 
+model CurriculumOutcome {
+  id                  Int             @id @default(autoincrement())
+  scopeId             Int             @map("scope_id")
+  scope               CurriculumScope @relation(fields: [scopeId], references: [id], onDelete: Restrict)
+  strand              String
+  subStrand           String          @map("sub_strand")
+  outcome             String
+  quote               String          @db.Text
+  sourceDocumentId    Int             @map("source_document_id")
+  supportingSourceIds Json            @default("[]") @map("supporting_source_ids")
+  verified            Boolean         @default(false)
+
+  @@index([scopeId])
+  @@map("curriculum_outcomes")
+}
+
+model CurriculumGradeReview {
+  grade      String    @id
+  verifiedAt DateTime? @map("verified_at")
+  verifiedBy Int?      @map("verified_by")
+  note       String    @default("")
+
+  @@map("curriculum_grade_reviews")
+}
+
+model ContentCollection {
+  id              String            @id @default(cuid())
+  name            String
+  grades          Json
+  rightsConfirmed Boolean           @map("rights_confirmed")
+  createdById     Int               @map("created_by_id")
+  assets          CollectionAsset[]
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  @@map("content_collections")
+}
+
+model CollectionAsset {
+  id            String            @id @default(cuid())
+  collectionId  String            @map("collection_id")
+  collection    ContentCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  name          String
+  origin        String
+  assetKey      String?           @map("asset_key")
+  role          String            @default("AUTO")
+  status        String            @default("QUEUED")
+  mapping       Json?
+  extractedText String?           @map("extracted_text") @db.Text
+  sourceIds     Json              @default("[]") @map("source_ids")
+  error         String?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@unique([collectionId, origin])
+  @@index([status])
+  @@map("collection_assets")
+}
 
 // Durable generation runs. Chunk retry keys remain on QuestionBank, while
 // all chunks from one generation job share this stable numbered batch.
 model QuestionGenerationBatch {
-  id Int @id @default(autoincrement())
-  key String @unique
-  createdAt DateTime @default(now())
+  id        Int            @id @default(autoincrement())
+  key       String         @unique
+  createdAt DateTime       @default(now())
   questions QuestionBank[]
+
   @@map("question_generation_batches")
 }
 
@@ -2776,22 +2798,28 @@ enum ContentStatus {
   ARCHIVED
 }
 
+enum SubjectCategory {
+  CORE
+  ELECTIVE
+}
+
 model MasterModule {
-  batch_number           Int           @default(1)
-  theory_cheatsheet      Json          @default("{}")
-  id                     String        @id @default(uuid())
+  batch_number           Int             @default(1)
+  theory_cheatsheet      Json            @default("{}")
+  id                     String          @id @default(uuid())
   level                  String
   grade                  Int
   pathway                String?
   track                  String?
   subject                String
+  subject_category       SubjectCategory @default(CORE)
   topic                  String
   content_json           Json
-  status                 ContentStatus @default(DRAFT)
-  created_at             DateTime      @default(now())
-  updated_at             DateTime      @updatedAt
+  status                 ContentStatus   @default(DRAFT)
+  created_at             DateTime        @default(now())
+  updated_at             DateTime        @updatedAt
   tenant_id              String?
-  generation_cost_tokens Int           @default(0)
+  generation_cost_tokens Int             @default(0)
 
   distributions ContentDistribution[]
   assignments   ModuleAssignment[]
@@ -2808,15 +2836,15 @@ model ModuleAssignment {
 
 // Supplied taxonomy is kept separate from reviewed curriculum outcomes.
 model CurriculumTaxonomy {
-  id String @id
-  level String
-  grade Int
-  pathway String?
-  track String?
-  subject String
-  topics String[]
-  source String @default("USER_PROVIDED")
-  verified Boolean @default(false)
+  id         String   @id
+  level      String
+  grade      Int
+  pathway    String?
+  track      String?
+  subject    String
+  topics     String[]
+  source     String   @default("USER_PROVIDED")
+  verified   Boolean  @default(false)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -2830,85 +2858,94 @@ enum MpesaLedgerStatus {
   FAILED
   CANCELLED
 }
+
 model Payment {
-  id String @id @default(uuid())
-  user_id Int
-  user User @relation(fields:[user_id],references:[id],onDelete:Restrict)
-  school_id Int?
-  school School? @relation(fields:[school_id],references:[id],onDelete:Restrict)
-  amount Int
-  phone String
-  checkout_request_id String? @unique
-  mpesa_receipt String? @unique
-  status MpesaLedgerStatus @default(PENDING)
-  raw_payload String? @db.Text
-  reconciliation_after DateTime @default(now())
-  legacy_tuma_id Int @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  @@index([user_id,status])
-  @@index([status,created_at,reconciliation_after])
+  id                   String            @id @default(uuid())
+  user_id              Int
+  user                 User              @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  school_id            Int?
+  school               School?           @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  amount               Int
+  phone                String
+  checkout_request_id  String?           @unique
+  mpesa_receipt        String?           @unique
+  status               MpesaLedgerStatus @default(PENDING)
+  raw_payload          String?           @db.Text
+  reconciliation_after DateTime          @default(now())
+  legacy_tuma_id       Int               @unique
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
+
+  @@index([user_id, status])
+  @@index([status, created_at, reconciliation_after])
 }
+
 model MpesaCallbackInbox {
-  id String @id @default(uuid())
-  event_key String @unique
-  reference String
-  payload Json
-  attempts Int @default(0)
-  next_attempt_at DateTime @default(now())
-  processed_at DateTime?
-  last_error String?
-  created_at DateTime @default(now())
-  @@index([processed_at,next_attempt_at])
+  id              String    @id @default(uuid())
+  event_key       String    @unique
+  reference       String
+  payload         Json
+  attempts        Int       @default(0)
+  next_attempt_at DateTime  @default(now())
+  processed_at    DateTime?
+  last_error      String?
+  created_at      DateTime  @default(now())
+
+  @@index([processed_at, next_attempt_at])
 }
 
 // Append-only distinct authenticated callback bodies, including invalid payloads.
 model MpesaRawCallbackEvent {
-  id String @id @default(uuid())
+  id             String   @id @default(uuid())
   legacy_tuma_id Int
-  payload_hash String
-  raw_payload String @db.Text
-  created_at DateTime @default(now())
-  @@unique([legacy_tuma_id,payload_hash])
+  payload_hash   String
+  raw_payload    String   @db.Text
+  created_at     DateTime @default(now())
+
+  @@unique([legacy_tuma_id, payload_hash])
 }
 
 model Stream {
-  id String @id @default(uuid())
-  school_id Int
-  school School @relation(fields: [school_id], references: [id], onDelete: Cascade)
-  grade String
-  name String
+  id          String              @id @default(uuid())
+  school_id   Int
+  school      School              @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  grade       String
+  name        String
   assignments TeacherAssignment[]
+
   @@unique([id, school_id])
   @@unique([school_id, grade, name])
 }
+
 model TeacherAssignment {
-  id String @id @default(uuid())
+  id         String @id @default(uuid())
   teacher_id Int
-  school_id Int
-  subject String
-  stream_id String
-  teacher User @relation(fields: [teacher_id, school_id], references: [id, schoolId], onDelete: Cascade)
-  stream Stream @relation(fields: [stream_id, school_id], references: [id, school_id], onDelete: Cascade)
+  school_id  Int
+  subject    String
+  stream_id  String
+  teacher    User   @relation(fields: [teacher_id, school_id], references: [id, schoolId], onDelete: Cascade)
+  stream     Stream @relation(fields: [stream_id, school_id], references: [id, school_id], onDelete: Cascade)
+
   @@unique([teacher_id, subject, stream_id])
   @@index([school_id, teacher_id])
 }
 
 model SBA_Record {
-  id String @id @default(uuid())
-  student_id Int
-  school_id Int
-  subject String
-  grade_level Int
-  term String
+  id            String   @id @default(uuid())
+  student_id    Int
+  school_id     Int
+  subject       String
+  grade_level   Int
+  term          String
   academic_year Int
-  score Float
-  entered_by Int
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  student User @relation("SbaStudent", fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
-  school School @relation(fields: [school_id], references: [id], onDelete: Restrict)
-  teacher User @relation("SbaEnteredBy", fields: [entered_by, school_id], references: [id, schoolId], onDelete: Restrict)
+  score         Float
+  entered_by    Int
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  student       User     @relation("SbaStudent", fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school        School   @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  teacher       User     @relation("SbaEnteredBy", fields: [entered_by, school_id], references: [id, schoolId], onDelete: Restrict)
+
   @@unique([student_id, subject, grade_level, term, academic_year])
   @@index([student_id, subject, grade_level])
   @@index([school_id, grade_level])
@@ -2955,62 +2992,66 @@ model SBA_Projection {
 }
 
 model CSL_Logbook {
- id String @id @default(uuid())
- student_id Int
- school_id Int
- activity_name String
- description String @db.Text
- photo_url String?
- hours_logged Float
- activity_date DateTime @db.Date
- competency_tags String[] @default([])
- teacher_approved Boolean @default(false)
- approved_by Int?
- approved_at DateTime?
- review_status String @default("PENDING")
- rejection_comment String? @db.Text
- reviewed_by Int?
- reviewed_at DateTime?
- submission_key String
- ai_status String @default("PENDING")
- ai_attempts Int @default(0)
- ai_claimed_at DateTime?
- ai_retry_at DateTime @default(now())
- created_at DateTime @default(now())
- student User @relation("CslHourStudent", fields: [student_id,school_id], references: [id,schoolId], onDelete: Restrict)
- school School @relation(fields:[school_id],references:[id],onDelete: Restrict)
- approver User? @relation("CslHourApprover",fields:[approved_by,school_id],references:[id,schoolId],onDelete: Restrict)
- reviewer User? @relation("CslHourReviewer",fields:[reviewed_by,school_id],references:[id,schoolId],onDelete: Restrict)
- @@unique([student_id, submission_key])
- @@index([student_id, school_id])
- @@index([school_id, review_status, created_at])
- @@index([ai_status, ai_retry_at])
+  id                String    @id @default(uuid())
+  student_id        Int
+  school_id         Int
+  activity_name     String
+  description       String    @db.Text
+  photo_url         String?
+  hours_logged      Float
+  activity_date     DateTime  @db.Date
+  competency_tags   String[]  @default([])
+  teacher_approved  Boolean   @default(false)
+  approved_by       Int?
+  approved_at       DateTime?
+  review_status     String    @default("PENDING")
+  rejection_comment String?   @db.Text
+  reviewed_by       Int?
+  reviewed_at       DateTime?
+  submission_key    String
+  ai_status         String    @default("PENDING")
+  ai_attempts       Int       @default(0)
+  ai_claimed_at     DateTime?
+  ai_retry_at       DateTime  @default(now())
+  created_at        DateTime  @default(now())
+  student           User      @relation("CslHourStudent", fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school            School    @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  approver          User?     @relation("CslHourApprover", fields: [approved_by, school_id], references: [id, schoolId], onDelete: Restrict)
+  reviewer          User?     @relation("CslHourReviewer", fields: [reviewed_by, school_id], references: [id, schoolId], onDelete: Restrict)
+
+  @@unique([student_id, submission_key])
+  @@index([student_id, school_id])
+  @@index([school_id, review_status, created_at])
+  @@index([ai_status, ai_retry_at])
 }
 
 model Study_Timetable {
- id String @id @default(uuid())
- student_id Int
- school_id Int
- week_start DateTime @db.Date
- plan_json Json
- generated_at DateTime @default(now())
- generation_token String?
- generation_started_at DateTime?
- generation_count Int @default(0)
- student User @relation(fields:[student_id,school_id],references:[id,schoolId],onDelete:Restrict)
- school School @relation(fields:[school_id],references:[id],onDelete:Restrict)
- @@unique([student_id,week_start])
- @@index([school_id,week_start])
+  id                    String    @id @default(uuid())
+  student_id            Int
+  school_id             Int
+  week_start            DateTime  @db.Date
+  plan_json             Json
+  generated_at          DateTime  @default(now())
+  generation_token      String?
+  generation_started_at DateTime?
+  generation_count      Int       @default(0)
+  student               User      @relation(fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school                School    @relation(fields: [school_id], references: [id], onDelete: Restrict)
+
+  @@unique([student_id, week_start])
+  @@index([school_id, week_start])
 }
+
 model Study_School_Schedule {
- id String @id @default(uuid())
- school_id Int
- grade String
- stream String @default("")
- blocks_json Json
- updated_at DateTime @updatedAt
- school School @relation(fields:[school_id],references:[id],onDelete:Restrict)
- @@unique([school_id,grade,stream])
+  id          String   @id @default(uuid())
+  school_id   Int
+  grade       String
+  stream      String   @default("")
+  blocks_json Json
+  updated_at  DateTime @updatedAt
+  school      School   @relation(fields: [school_id], references: [id], onDelete: Restrict)
+
+  @@unique([school_id, grade, stream])
 }
 
 model ContentDistribution {

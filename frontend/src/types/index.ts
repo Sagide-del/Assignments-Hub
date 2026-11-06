@@ -2,7 +2,7 @@
 // PARENT deliberately does not exist yet — the backend has no parent role,
 // login endpoint, or parent-scoped data. The platform intentionally has no
 // parent portal route; guardians can receive student-shared reports instead.
-export type Role = 'PLATFORM_ADMIN' | 'SCHOOL_ADMIN' | 'TEACHER' | 'STUDENT';
+export type Role = "PLATFORM_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT";
 
 // Mirrors backend/src/auth/interfaces/authenticated-user.interface.ts —
 // the exact shape returned by /auth/me and embedded in every login response.
@@ -33,25 +33,41 @@ export interface School {
   id: number;
   name: string;
   code: string;
-  type: 'DAY' | 'BOARDING';
+  type: "DAY" | "BOARDING";
   themeTemplate:
-    | 'ACADEMIC_NAVY'
-    | 'ROYAL_BLUE'
-    | 'MODERN_TEAL'
-    | 'EMERALD_EDUCATION'
-    | 'MAROON_PROFESSIONAL';
+    | "ACADEMIC_NAVY"
+    | "ROYAL_BLUE"
+    | "MODERN_TEAL"
+    | "EMERALD_EDUCATION"
+    | "MAROON_PROFESSIONAL";
   logoUrl?: string | null;
   address?: string | null;
   phone?: string | null;
   contactEmail?: string | null;
-  subscriptionStatus: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | string;
+  subscriptionStatus: "TRIAL" | "ACTIVE" | "PAST_DUE" | string;
   createdAt: string;
 }
 
 export interface Assignment {
-  cmsModule?: {id:string;state?:string;results_released?:boolean};
-  rawJson?: { cms_module_id?: string; cms_content?: unknown };
-  bankPractice?: { subject: string; topic: string; activeId?: string; latestResultId?: string; completedBatches?: number; historicalOnly?: boolean };
+  cmsModule?: {
+    id: string;
+    state?: string;
+    results_released?: boolean;
+    priority_focus?: boolean;
+  };
+  rawJson?: {
+    cms_module_id?: string;
+    cms_content?: unknown;
+    priority_focus?: boolean;
+  };
+  bankPractice?: {
+    subject: string;
+    topic: string;
+    activeId?: string;
+    latestResultId?: string;
+    completedBatches?: number;
+    historicalOnly?: boolean;
+  };
   topic?: string | null;
   id: number;
   title: string;
@@ -62,8 +78,8 @@ export interface Assignment {
   targetStream?: string | null;
   totalMarks?: number;
   maxPoints?: number;
-  type?: 'TEACHER_MARKED' | 'AUTO_MARKED' | 'MIXED' | string;
-  kind?: 'STANDARD' | 'KCSE_PAPER';
+  type?: "TEACHER_MARKED" | "AUTO_MARKED" | "MIXED" | string;
+  kind?: "STANDARD" | "KCSE_PAPER";
   dueDate?: string | null;
   timeAllowedMinutes?: number | null;
   isPublished: boolean;
@@ -91,7 +107,7 @@ export interface Submission {
     studentProfile?: { className: string | null; stream: string | null } | null;
   };
   score: number | null;
-  status: 'DRAFT' | 'SUBMITTED' | 'GRADED' | string;
+  status: "DRAFT" | "SUBMITTED" | "GRADED" | string;
   isLate: boolean;
   feedback: string | null;
   gradedById: number | null;
@@ -107,23 +123,20 @@ export interface Submission {
 }
 
 export type QuestionType =
-  | 'MULTIPLE_CHOICE'
-  | 'TRUE_FALSE'
-  | 'FILL_BLANK'
-  | 'NUMERIC'
-  | 'SHORT_ANSWER'
-  | 'MATCHING'
-  | 'ORDERING'
-  | 'ESSAY'
-  | 'FILE_UPLOAD';
+  | "MULTIPLE_CHOICE"
+  | "TRUE_FALSE"
+  | "FILL_BLANK"
+  | "NUMERIC"
+  | "SHORT_ANSWER"
+  | "MATCHING"
+  | "ORDERING"
+  | "ESSAY"
+  | "FILE_UPLOAD";
 // ---- AI Assignment Generator ----
 // Mirrors backend/src/ai/dto/generate-assignment.dto.ts
 
 export type AiQuestionType =
-  | 'MULTIPLE_CHOICE'
-  | 'ESSAY'
-  | 'TRUE_FALSE'
-  | 'FILL_BLANK';
+  "MULTIPLE_CHOICE" | "ESSAY" | "TRUE_FALSE" | "FILL_BLANK";
 
 export interface GenerateAssignmentInput {
   grade: string;
@@ -181,7 +194,7 @@ export interface AssignmentJsonPayload {
   description?: string;
   subject: string;
   grade: string;
-  kind?: 'STANDARD' | 'KCSE_PAPER';
+  kind?: "STANDARD" | "KCSE_PAPER";
   sections: AssignmentJsonPayloadSection[];
 }
 
@@ -241,9 +254,9 @@ export interface Answer {
 }
 
 export interface MnemonicCard {
-  curriculumUnitId?:number|null;
-  content?:import("../api/content-library.api").RecallContent|null;
-  sourceDocumentId?:number|null;
+  curriculumUnitId?: number | null;
+  content?: import("../api/content-library.api").RecallContent | null;
+  sourceDocumentId?: number | null;
   id: number;
   title: string;
   subject: string;
@@ -350,8 +363,8 @@ export interface Lab {
   competency: string | null;
   description: string | null;
   durationMinutes: number | null;
-  type: 'SIMULATION' | 'VIDEO' | 'PRACTICAL' | string;
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | string;
+  type: "SIMULATION" | "VIDEO" | "PRACTICAL" | string;
+  status?: "DRAFT" | "PUBLISHED" | "ARCHIVED" | string;
   resourceUrl: string | null;
   introVideoUrl?: string | null;
   animationUrl?: string | null;
@@ -382,7 +395,14 @@ export interface Lab {
 }
 
 export interface LabSession {
-  answers?: {questionId:number;answer:string;isCorrect?: boolean | null;pointsAwarded?: number}[] | null;
+  answers?:
+    | {
+        questionId: number;
+        answer: string;
+        isCorrect?: boolean | null;
+        pointsAwarded?: number;
+      }[]
+    | null;
   completionSummary?: Record<string, unknown> | null;
   id: number;
   schoolId: number;
@@ -416,7 +436,7 @@ export interface CslSubmission {
   studentId: number;
   evidenceUrl: string | null;
   reflection: string | null;
-  status: 'PENDING' | 'APPROVED' | 'NEEDS_REVISION' | string;
+  status: "PENDING" | "APPROVED" | "NEEDS_REVISION" | string;
   score: number | null;
   maxScore: number | null;
   feedback: string | null;
@@ -474,7 +494,7 @@ export interface StudentPathwaySelection {
   track?: Track;
   isActive: boolean;
   notes: string | null;
-  source: 'MANUAL' | 'RECOMMENDATION';
+  source: "MANUAL" | "RECOMMENDATION";
   createdAt: string;
 }
 
@@ -483,27 +503,47 @@ export interface StudentPathwaySelection {
 // Track/Pathway entities, and there is no `eligible` boolean; use
 // gradeScore/subjectAssessment to judge fit instead.
 export interface PathwayRecommendation {
-  pathway: { id: number; key: string; name: string; icon: string; colorHex: string };
-  track: { id: number; key: string; name: string; icon: string; description: string };
+  pathway: {
+    id: number;
+    key: string;
+    name: string;
+    icon: string;
+    colorHex: string;
+  };
+  track: {
+    id: number;
+    key: string;
+    name: string;
+    icon: string;
+    description: string;
+  };
   score: number;
   gradeScore: number;
   interestScore: number;
   matchedInterests: string[];
-  subjectAssessment: { subject: string; minGrade: string; studentGrade: string | null; met: boolean | null }[];
+  subjectAssessment: {
+    subject: string;
+    minGrade: string;
+    studentGrade: string | null;
+    met: boolean | null;
+  }[];
 }
 
 // ---- Support Needs ----
 
 export type DisabilityCategory =
-  | 'VISUAL_IMPAIRMENT'
-  | 'HEARING_IMPAIRMENT'
-  | 'PHYSICAL_DISABILITY'
-  | 'INTELLECTUAL_DEVELOPMENTAL'
-  | 'AUTISM_SPECTRUM'
-  | 'MULTIPLE_DEAFBLIND'
-  | 'OTHER_UNSURE';
+  | "VISUAL_IMPAIRMENT"
+  | "HEARING_IMPAIRMENT"
+  | "PHYSICAL_DISABILITY"
+  | "INTELLECTUAL_DEVELOPMENTAL"
+  | "AUTISM_SPECTRUM"
+  | "MULTIPLE_DEAFBLIND"
+  | "OTHER_UNSURE";
 
-export type SupportLevel = 'MILD_SOME_SUPPORT' | 'MODERATE_REGULAR_SUPPORT' | 'SIGNIFICANT_INTENSIVE_SUPPORT';
+export type SupportLevel =
+  | "MILD_SOME_SUPPORT"
+  | "MODERATE_REGULAR_SUPPORT"
+  | "SIGNIFICANT_INTENSIVE_SUPPORT";
 
 export interface SupportInstitution {
   id: number;
@@ -547,22 +587,23 @@ export interface SubscriptionPlanTier {
 export interface ComputedPricing {
   tier: SubscriptionPlanTier;
   studentCount: number;
-  schoolType: 'DAY' | 'BOARDING';
+  schoolType: "DAY" | "BOARDING";
   ratePerStudent: number;
   amountKES: number;
 }
 
-export type PaymentMethod = 'PAYSTACK' | 'INTASEND' | 'MPESA' | 'EQUITY_PAYBILL';
+export type PaymentMethod =
+  "PAYSTACK" | "INTASEND" | "MPESA" | "EQUITY_PAYBILL";
 export type PaymentStatus =
-  | 'PENDING'
-  | 'PROCESSING'
-  | 'AWAITING_VERIFICATION'
-  | 'CONFIRMED'
-  | 'FAILED'
-  | 'REJECTED'
-  | 'CANCELLED';
-export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'VOID' | 'OVERDUE';
-export type SubscriptionInterval = 'MONTHLY' | 'ANNUAL';
+  | "PENDING"
+  | "PROCESSING"
+  | "AWAITING_VERIFICATION"
+  | "CONFIRMED"
+  | "FAILED"
+  | "REJECTED"
+  | "CANCELLED";
+export type InvoiceStatus = "DRAFT" | "ISSUED" | "PAID" | "VOID" | "OVERDUE";
+export type SubscriptionInterval = "MONTHLY" | "ANNUAL";
 
 export interface BillingProviderConfig {
   method: PaymentMethod;
@@ -580,7 +621,7 @@ export interface BillingSubscriptionRecord {
   status: string;
   amountKES: number | null;
   studentCount: number | null;
-  schoolType: 'DAY' | 'BOARDING' | null;
+  schoolType: "DAY" | "BOARDING" | null;
   interval: SubscriptionInterval;
   paymentMethod: PaymentMethod | null;
   currentPeriodStart: string | null;
@@ -600,14 +641,14 @@ export interface BillingInvoice {
   amountKES: number;
   currency: string;
   studentCountSnapshot: number | null;
-  schoolTypeSnapshot: 'DAY' | 'BOARDING' | null;
+  schoolTypeSnapshot: "DAY" | "BOARDING" | null;
   planSnapshot: string | null;
   issuedAt: string | null;
   dueAt: string | null;
   paidAt: string | null;
   pdfPath: string | null;
   metadata?: Record<string, unknown> | null;
-  school?: Pick<School, 'id' | 'name' | 'code'>;
+  school?: Pick<School, "id" | "name" | "code">;
 }
 
 export interface BillingPaymentTransaction {
@@ -631,7 +672,7 @@ export interface BillingPaymentTransaction {
   initiatedAt: string;
   confirmedAt: string | null;
   createdAt: string;
-  school?: Pick<School, 'id' | 'name' | 'code'>;
+  school?: Pick<School, "id" | "name" | "code">;
   invoice?: BillingInvoice | null;
 }
 
@@ -656,14 +697,22 @@ export interface PlatformBillingDashboard {
 }
 
 export interface BillingReconciliation {
-  invoices: Array<{ status: string; _count: { status: number }; _sum: { amountKES: number | null } }>;
-  payments: Array<{ status: string; _count: { status: number }; _sum: { amountKES: number | null } }>;
+  invoices: Array<{
+    status: string;
+    _count: { status: number };
+    _sum: { amountKES: number | null };
+  }>;
+  payments: Array<{
+    status: string;
+    _count: { status: number };
+    _sum: { amountKES: number | null };
+  }>;
   subscriptions: Array<{ status: string; _count: { status: number } }>;
   unreconciledInvoices: BillingInvoice[];
 }
 
 export interface SchoolAiBillingVisibility {
-  scope: 'school';
+  scope: "school";
   schoolId: number;
   schoolName: string;
   allocatedTokens: number | null;
@@ -674,10 +723,14 @@ export interface SchoolAiBillingVisibility {
 }
 
 export interface PlatformAiBillingVisibility {
-  scope: 'platform';
+  scope: "platform";
   totalTokensUsed: number;
   usageByFeature: Array<{ feature: string; tokensUsed: number }>;
-  usageBySchool: Array<{ schoolId: number; schoolName: string; tokensUsed: number }>;
+  usageBySchool: Array<{
+    schoolId: number;
+    schoolName: string;
+    tokensUsed: number;
+  }>;
   ledger: Array<{
     id: number;
     schoolId: number;
@@ -685,13 +738,19 @@ export interface PlatformAiBillingVisibility {
     billingPeriodEnd: string;
     totalTokens: number;
     amountKES: number;
-    school?: Pick<School, 'id' | 'name' | 'code'>;
+    school?: Pick<School, "id" | "name" | "code">;
   }>;
 }
 
-export type SkillContentStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-export type SkillEnrollmentStatus = 'REQUESTED' | 'AWAITING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+export type SkillContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type SkillLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+export type SkillEnrollmentStatus =
+  | "REQUESTED"
+  | "AWAITING_PAYMENT"
+  | "ACTIVE"
+  | "COMPLETED"
+  | "REJECTED"
+  | "CANCELLED";
 
 export interface SkillCategory {
   id: number;
@@ -753,7 +812,11 @@ export interface SkillEnrollment {
   approvedAt: string | null;
   completedAt: string | null;
   course?: SkillCourse;
-  student?: { id: number; name: string; school?: Pick<School, 'id' | 'name' | 'code'> };
+  student?: {
+    id: number;
+    name: string;
+    school?: Pick<School, "id" | "name" | "code">;
+  };
 }
 
 export interface SkillLessonProgress {
@@ -774,8 +837,12 @@ export interface SkillPayment {
   transactionReference: string | null;
   status: PaymentStatus;
   createdAt: string;
-  course?: Pick<SkillCourse, 'id' | 'title'>;
-  student?: { id: number; name: string; school?: Pick<School, 'id' | 'name' | 'code'> };
+  course?: Pick<SkillCourse, "id" | "title">;
+  student?: {
+    id: number;
+    name: string;
+    school?: Pick<School, "id" | "name" | "code">;
+  };
 }
 
 export interface SkillAdminSummary {
@@ -811,7 +878,8 @@ export interface StudentTalentProfile {
 // see MentorshipService.findMentorDirectory for why MentorDirectoryEntry is
 // a flattened User+MentorProfile shape rather than a raw MentorProfile.
 
-export type MentorshipStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'COMPLETED';
+export type MentorshipStatus =
+  "PENDING" | "ACCEPTED" | "DECLINED" | "COMPLETED";
 
 export interface MentorDirectoryEntry {
   teacherId: number;
@@ -904,7 +972,7 @@ export interface MessageConversationSummary {
 // enrolled directly rather than through a paying school, who pay for their
 // own access individually via M-Pesa Till Number.
 
-export type IndependentStudentStatus = 'ACTIVE' | 'EXPIRED' | 'NEVER_PAID';
+export type IndependentStudentStatus = "ACTIVE" | "EXPIRED" | "NEVER_PAID";
 
 export interface IndependentStudent {
   id: number;
@@ -949,14 +1017,15 @@ export interface IndependentWelcomeResult {
   };
 }
 
-export type TutorReviewState = 'ALL' | 'PENDING' | 'AUTO_GRADED' | 'TUTOR_REVIEWED';
+export type TutorReviewState =
+  "ALL" | "PENDING" | "AUTO_GRADED" | "TUTOR_REVIEWED";
 
 export interface TutorSubmission {
   id: number;
   assignmentId: number;
   studentId: number;
   score: number | null;
-  status: 'SUBMITTED' | 'GRADED' | string;
+  status: "SUBMITTED" | "GRADED" | string;
   isLate: boolean;
   feedback: string | null;
   gradedById: number | null;
@@ -968,7 +1037,7 @@ export interface TutorSubmission {
     title: string;
     subject: string;
     grade: string;
-    type: 'AUTO_MARKED' | 'TEACHER_MARKED' | 'PRACTICAL';
+    type: "AUTO_MARKED" | "TEACHER_MARKED" | "PRACTICAL";
     maxPoints: number;
   };
   student: {
@@ -1016,7 +1085,7 @@ export interface IndependentStudentInvoice {
   invoiceNumber: string;
   studentName: string;
   amountKES: number;
-  interval: 'MONTHLY' | 'ANNUAL';
+  interval: "MONTHLY" | "ANNUAL";
   periodStart: string;
   periodEnd: string;
   mpesaCode: string;
@@ -1047,22 +1116,25 @@ export interface IndependentRegistrationResult {
 }
 
 export type IndependentPaymentClaimStatus =
-  | 'AWAITING_VERIFICATION'
-  | 'CONFIRMED'
-  | 'REJECTED';
+  "AWAITING_VERIFICATION" | "CONFIRMED" | "REJECTED";
 
 export interface IndependentPaymentClaim {
   id: number;
   studentId: number;
   amountKES: number;
-  interval: 'MONTHLY' | 'ANNUAL';
+  interval: "MONTHLY" | "ANNUAL";
   mpesaCode: string;
   payerPhone: string | null;
   status: IndependentPaymentClaimStatus;
   reviewedAt: string | null;
   rejectionReason: string | null;
   createdAt: string;
-  student?: { id: number; name: string; email: string | null; grade: string | null };
+  student?: {
+    id: number;
+    name: string;
+    email: string | null;
+    grade: string | null;
+  };
   reviewedBy?: { id: number; name: string } | null;
 }
 
