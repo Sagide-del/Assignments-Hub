@@ -18,19 +18,28 @@ export class JengaSignatureService {
   constructor(private readonly config: ConfigService) {}
 
   sign(input: JengaSignatureInput) {
+    const configuredPem = this.config
+      .get<string>("JENGA_PRIVATE_KEY_PEM")
+      ?.trim();
     const path = this.config.get<string>("JENGA_PRIVATE_KEY_PATH")?.trim();
-    if (!path) {
+    if (!configuredPem && !path) {
       throw new ServiceUnavailableException(
         "Jenga signing is not configured yet.",
       );
     }
     let privateKey: string;
-    try {
-      privateKey = readFileSync(resolve(path), "utf8");
-    } catch {
-      throw new ServiceUnavailableException(
-        "Jenga signing key is unavailable. Please contact support.",
-      );
+    if (configuredPem) {
+      // Render and similar deployment dashboards preserve a PEM as one value
+      // when newlines are escaped. Do not write it to disk or log it.
+      privateKey = configuredPem.replace(/\\n/g, "\n");
+    } else {
+      try {
+        privateKey = readFileSync(resolve(path!), "utf8");
+      } catch {
+        throw new ServiceUnavailableException(
+          "Jenga signing key is unavailable. Please contact support.",
+        );
+      }
     }
 
     const plaintext = `${input.accountNumber}${input.reference}${input.mobileNumber}${input.telco}${input.amount}${input.currency}`;

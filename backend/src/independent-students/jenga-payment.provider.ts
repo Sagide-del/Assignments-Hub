@@ -26,7 +26,8 @@ export class JengaPaymentProvider {
           this.config.get<string>("JENGA_MERCHANT_CODE")?.trim() &&
           this.config.get<string>("JENGA_CONSUMER_SECRET")?.trim() &&
           this.config.get<string>("JENGA_ACCOUNT_NUMBER")?.trim() &&
-          this.config.get<string>("JENGA_PRIVATE_KEY_PATH")?.trim() &&
+          (this.config.get<string>("JENGA_PRIVATE_KEY_PEM")?.trim() ||
+            this.config.get<string>("JENGA_PRIVATE_KEY_PATH")?.trim()) &&
           this.callbackUrl(),
       )
     );
