@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   BookOpen,
   ChevronDown,
   Clock3,
   Coffee,
+  FileCheck2,
   ExternalLink,
   Focus,
   Printer,
@@ -16,6 +17,60 @@ import { schoolsApi } from '../../api/schools.api';
 import { Logo } from '../../components/ui/Logo';
 import { EmptyState } from '../../components/ui/Saas';
 import { useAuthStore } from '../../store/auth.store';
+
+type ScoreRow = { subject: string; score: string; maxScore: string };
+
+function ScoreConfirmation({ compact = false }: { compact?: boolean }) {
+  const client = useQueryClient();
+  const [open, setOpen] = useState(!compact);
+  const [assessmentName, setAssessmentName] = useState('Latest school results');
+  const [rows, setRows] = useState<ScoreRow[]>([
+    { subject: 'Mathematics', score: '', maxScore: '100' },
+    { subject: 'English', score: '', maxScore: '100' },
+    { subject: 'Science', score: '', maxScore: '100' },
+  ]);
+  const save = useMutation({
+    mutationFn: () => academicResultsApi.recordOwnResults({
+      assessmentName,
+      results: rows
+        .filter((row) => row.subject.trim() && row.score.trim() && row.maxScore.trim())
+        .map((row) => ({ subject: row.subject.trim(), score: Number(row.score), maxScore: Number(row.maxScore) })),
+    }),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ['academic-results', 'my-plan'] });
+      setOpen(false);
+    },
+  });
+  const entered = rows.filter((row) => row.subject.trim() && row.score.trim() && row.maxScore.trim());
+  const updateRow = (index: number, field: keyof ScoreRow, value: string) => {
+    setRows((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
+  };
+
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="print:hidden inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50"><FileCheck2 className="h-4 w-4" />Update my scores</button>;
+
+  return (
+    <section className={`rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 sm:p-5' : 'p-5 sm:p-7'}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">Confirm your results</p>
+          <h2 className="mt-1 text-xl font-semibold text-[#101820]">Create a plan from your latest scores</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">If a photo or report is unclear, enter the marks shown on it. This is used only to guide your personalised study plan.</p>
+        </div>
+        {compact ? <button type="button" onClick={() => setOpen(false)} className="text-sm font-semibold text-slate-500 hover:text-[#101820]">Cancel</button> : null}
+      </div>
+      <label className="mt-5 block"><span className="mb-1.5 block text-xs font-semibold text-slate-500">Assessment name</span><input value={assessmentName} onChange={(event) => setAssessmentName(event.target.value)} maxLength={80} className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-[#101820] outline-none focus:border-[#8DBB00] focus:ring-2 focus:ring-lime-100" /></label>
+      <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+        <div className="grid grid-cols-[minmax(0,1fr)_72px_72px] gap-2 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500 sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:px-4"><span>Subject</span><span>Score</span><span>Out of</span></div>
+        <div className="divide-y divide-slate-100">
+          {rows.map((row, index) => <div key={index} className="grid grid-cols-[minmax(0,1fr)_72px_72px] gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:px-4"><input value={row.subject} onChange={(event) => updateRow(index, 'subject', event.target.value)} placeholder="Subject" className="min-h-10 min-w-0 rounded-lg border border-slate-200 px-2 text-sm outline-none focus:border-[#8DBB00]" /><input value={row.score} onChange={(event) => updateRow(index, 'score', event.target.value)} inputMode="decimal" placeholder="0" className="min-h-10 min-w-0 rounded-lg border border-slate-200 px-2 text-sm outline-none focus:border-[#8DBB00]" /><input value={row.maxScore} onChange={(event) => updateRow(index, 'maxScore', event.target.value)} inputMode="decimal" placeholder="100" className="min-h-10 min-w-0 rounded-lg border border-slate-200 px-2 text-sm outline-none focus:border-[#8DBB00]" /></div>)}
+        </div>
+      </div>
+      <button type="button" onClick={() => setRows((current) => [...current, { subject: '', score: '', maxScore: '100' }])} disabled={rows.length >= 12} className="mt-3 text-sm font-semibold text-[#466000] disabled:text-slate-400">+ Add another subject</button>
+      {save.isError ? <p role="alert" className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">Your scores could not be saved. Check that every score is a number and is not above the maximum.</p> : null}
+      <button type="button" onClick={() => save.mutate()} disabled={entered.length === 0 || save.isPending} className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#101820] px-5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">{save.isPending ? 'Building your plan...' : 'Confirm scores and build my plan'}</button>
+    </section>
+  );
+}
 
 export function StudentStudyPlan() {
   const user = useAuthStore((state) => state.user);
@@ -29,9 +84,7 @@ export function StudentStudyPlan() {
 
   if (planQuery.isLoading) return <EmptyState title="Loading your study plan..." />;
   if (planQuery.isError) return <EmptyState title="Your study plan is temporarily unavailable." />;
-  if (!planQuery.data?.plan) {
-    return <EmptyState title="Your study plan will appear after your school uploads an academic result." />;
-  }
+  if (!planQuery.data?.plan) return <div className="mx-auto max-w-3xl"><ScoreConfirmation /></div>;
 
   const { plan, practiceAssignments, subjectTrends } = planQuery.data;
   const school = schoolQuery.data;
@@ -49,15 +102,15 @@ export function StudentStudyPlan() {
               <p className="mt-1 text-sm text-slate-300">{[user?.grade, plan.periodKey.replace(/-/g, ' ')].filter(Boolean).join(' · ')}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="print:hidden inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15 sm:w-auto sm:gap-2 sm:px-4"
-            aria-label="Print timetable"
-          >
-            <Printer className="h-4 w-4" strokeWidth={1.8} />
-            <span className="hidden sm:inline">Print timetable</span>
-          </button>
+          <div className="print:hidden flex shrink-0 items-center gap-2"><ScoreConfirmation compact /><button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15 sm:w-auto sm:gap-2 sm:px-4"
+              aria-label="Print timetable"
+            >
+              <Printer className="h-4 w-4" strokeWidth={1.8} />
+              <span className="hidden sm:inline">Print timetable</span>
+            </button></div>
         </div>
 
         <div className="grid grid-cols-3 divide-x divide-slate-200">

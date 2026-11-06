@@ -33,7 +33,8 @@ export class LearningCoachService {
     this.assertStudent(actor);
     this.assertCbcLearner(actor);
     if (!actor.grade) return [];
-    const rows = await this.prisma.questionBank.groupBy({
+    const [rows, latestStudyPlan] = await Promise.all([
+      this.prisma.questionBank.groupBy({
       by: ['subject', 'topic'],
       where: {
         isGlobal: true,
@@ -44,8 +45,24 @@ export class LearningCoachService {
       },
       _count: { id: true },
       orderBy: [{ subject: 'asc' }, { topic: 'asc' }],
-    });
-    return rows.map((row) => ({ subject: row.subject, topic: row.topic, questionCount: row._count.id }));
+      }),
+      this.prisma.studentStudyPlan.findFirst({
+        where: { schoolId: actor.schoolId, studentId: actor.id },
+        orderBy: { updatedAt: 'desc' },
+        select: { weakSubjects: true },
+      }),
+    ]);
+    const weakSubjects = Array.isArray(latestStudyPlan?.weakSubjects)
+      ? latestStudyPlan.weakSubjects
+          .map((entry: any) => typeof entry?.subject === 'string' ? entry.subject.toLowerCase() : '')
+          .filter(Boolean)
+      : [];
+    return rows.map((row) => ({
+      subject: row.subject,
+      topic: row.topic,
+      questionCount: row._count.id,
+      isRecommended: weakSubjects.includes(row.subject.toLowerCase()),
+    }));
   }
 
   async plans(actor: AuthenticatedUser) {

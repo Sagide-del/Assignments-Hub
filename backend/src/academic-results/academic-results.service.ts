@@ -14,6 +14,7 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { normalizeGrade } from '../common/utils/grade.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImportAcademicResultsDto } from './dto/import-academic-results.dto';
+import { RecordOwnAcademicResultsDto } from './dto/record-own-academic-results.dto';
 
 interface ParsedResult {
   row: number;
@@ -184,6 +185,62 @@ export class AcademicResultsService {
       take: 8,
     });
     return { plan, subjectTrends, practiceAssignments };
+  }
+
+  async recordOwnResults(dto: RecordOwnAcademicResultsDto, actor: AuthenticatedUser) {
+    if (actor.role !== Role.STUDENT) throw new ForbiddenException('Only learners can confirm their own results');
+    const duplicateSubjects = new Set<string>();
+    const results = dto.results.map((result) => {
+      const subject = result.subject.trim();
+      const key = subject.toLowerCase();
+      if (!subject) throw new BadRequestException('Each result needs a subject');
+      if (duplicateSubjects.has(key)) throw new BadRequestException(`Enter ${subject} only once`);
+      duplicateSubjects.add(key);
+      if (result.score > result.maxScore) throw new BadRequestException(`${subject}: score cannot be higher than the maximum score`);
+      return {
+        subject,
+        score: result.score,
+        maxScore: result.maxScore,
+        percentage: Math.round((result.score / result.maxScore) * 1000) / 10,
+        gradeLabel: result.gradeLabel?.trim() || null,
+      };
+    });
+    const now = new Date();
+    const academicYear = dto.academicYear ?? now.getFullYear();
+    const term = dto.term?.trim() || 'Self check-in';
+    const periodKey = `${academicYear}-${term.toLowerCase().replace(/\s+/g, '-')}`;
+    const name = dto.assessmentName?.trim() || 'Learner confirmed results';
+
+    const batch = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.academicResultBatch.create({
+        data: {
+          schoolId: actor.schoolId,
+          uploadedById: actor.id,
+          name,
+          academicYear,
+          term,
+          grade: normalizeGrade(actor.grade) ?? actor.grade ?? 'Unspecified grade',
+          fileName: 'learner-manual-score-entry',
+          status: AcademicResultBatchStatus.PROCESSING,
+        },
+      });
+      await tx.studentAcademicResult.createMany({
+        data: results.map((result) => ({ ...result, schoolId: actor.schoolId, batchId: created.id, studentId: actor.id })),
+      });
+      await this.upsertStudyPlan(tx, {
+        schoolId: actor.schoolId,
+        studentId: actor.id,
+        batchId: created.id,
+        generatedById: actor.id,
+        periodKey,
+        results: results.map((result) => ({ subject: result.subject, percentage: result.percentage })),
+      });
+      return tx.academicResultBatch.update({
+        where: { id: created.id },
+        data: { status: AcademicResultBatchStatus.COMPLETED, rowCount: results.length, completedAt: now },
+      });
+    });
+    return { success: true, batch, results: results.length, message: 'Your study plan has been updated from your confirmed results.' };
   }
 
   async reportPdf(id: number, actor: AuthenticatedUser) {

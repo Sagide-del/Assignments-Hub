@@ -6,6 +6,7 @@ export interface LearningTopic {
   subject: string;
   topic: string;
   questionCount: number;
+  isRecommended?: boolean;
 }
 
 export interface LearningPlanStep {

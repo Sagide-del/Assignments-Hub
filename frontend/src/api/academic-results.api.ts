@@ -59,6 +59,12 @@ function downloadBlob(blob: Blob, fileName: string) {
 
 export const academicResultsApi = {
   myPlan: () => api.get<StudentStudyPlanResponse>('/academic-results/me/plan').then((response) => response.data),
+  recordOwnResults: (payload: {
+    assessmentName?: string;
+    academicYear?: number;
+    term?: string;
+    results: Array<{ subject: string; score: number; maxScore: number; gradeLabel?: string }>;
+  }) => api.post('/academic-results/me/manual', payload).then((response) => response.data),
   batches: () => api.get<AcademicResultBatch[]>('/academic-results/batches').then((response) => response.data),
   analysis: (id: number) => api.get<AcademicAnalysis>(`/academic-results/batches/${id}/analysis`).then((response) => response.data),
   importResults: (payload: FormData) => api.post('/academic-results/import', payload, { headers: { 'Content-Type': 'multipart/form-data' } }).then((response) => response.data),

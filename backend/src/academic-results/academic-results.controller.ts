@@ -22,6 +22,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { AcademicResultsService } from './academic-results.service';
 import { ImportAcademicResultsDto } from './dto/import-academic-results.dto';
+import { RecordOwnAcademicResultsDto } from './dto/record-own-academic-results.dto';
 
 @UseGuards(TeacherScopeGuard)
 @Controller('academic-results')
@@ -72,6 +73,13 @@ export class AcademicResultsController {
   @Roles(Role.STUDENT)
   studentPlan(@CurrentUser() actor: AuthenticatedUser) {
     return this.academicResults.studentPlan(actor);
+  }
+
+  @Post('me/manual')
+  @Roles(Role.STUDENT)
+  @AuditAction('academic_results.manual_entry')
+  recordOwnResults(@Body() dto: RecordOwnAcademicResultsDto, @CurrentUser() actor: AuthenticatedUser) {
+    return this.academicResults.recordOwnResults(dto, actor);
   }
 
   @Get('batches/:id/analysis')

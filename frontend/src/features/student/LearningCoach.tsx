@@ -61,7 +61,9 @@ function PlanCard({ plan, onPractice }: { plan: LearningPlan; onPractice: () => 
 function TopicPicker({ topics, plans, onStart, loading }: { topics: LearningTopic[]; plans: LearningPlan[]; onStart: (topic: LearningTopic, mode: 'DIAGNOSTIC' | 'PRACTICE') => void; loading: boolean }) {
   const [subject, setSubject] = useState('');
   const subjects = useMemo(() => Array.from(new Set(topics.map((topic) => topic.subject))), [topics]);
-  const visible = topics.filter((topic) => !subject || topic.subject === subject);
+  const visible = topics
+    .filter((topic) => !subject || topic.subject === subject)
+    .sort((left, right) => Number(Boolean(right.isRecommended)) - Number(Boolean(left.isRecommended)) || left.subject.localeCompare(right.subject) || left.topic.localeCompare(right.topic));
   const planByTopic = new Map(plans.map((plan) => [`${plan.subject}::${plan.topic}`, plan]));
   const duePlan = plans.find((plan) => !plan.nextReviewAt || new Date(plan.nextReviewAt) <= new Date()) ?? plans[0];
   const dueTopic = duePlan ? topics.find((topic) => `${topic.subject}::${topic.topic}` === `${duePlan.subject}::${duePlan.topic}`) : undefined;
@@ -80,7 +82,7 @@ function TopicPicker({ topics, plans, onStart, loading }: { topics: LearningTopi
           {visible.map((topic) => {
             const plan = planByTopic.get(`${topic.subject}::${topic.topic}`);
             return <article key={`${topic.subject}-${topic.topic}`} className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">{topic.subject}</p><h2 className="mt-1 text-lg font-semibold text-[#101820]">{topic.topic}</h2></div>{plan ? <MasteryBadge score={plan.masteryScore} /> : null}</div>
+              <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">{topic.subject}</p><h2 className="mt-1 text-lg font-semibold text-[#101820]">{topic.topic}</h2></div>{plan ? <MasteryBadge score={plan.masteryScore} /> : topic.isRecommended ? <span className="rounded-full bg-lime-100 px-2.5 py-1 text-xs font-semibold text-[#466000]">Suggested</span> : null}</div>
 
               <button type="button" disabled={loading} onClick={() => onStart(topic, plan ? 'PRACTICE' : 'DIAGNOSTIC')} className="mt-5 min-h-11 w-full rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-[#101820] hover:text-white disabled:cursor-wait disabled:opacity-60">{plan ? 'Resume mastery path' : 'Begin diagnostic'}</button>
             </article>;
