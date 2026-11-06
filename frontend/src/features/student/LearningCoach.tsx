@@ -1,5 +1,5 @@
 import { PageHeader } from "../../components/ui/Saas";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlarmClock,
@@ -36,6 +36,9 @@ function ReportCardPanel() {
   const client = useQueryClient();
   const [activeReport, setActiveReport] =
     useState<LearningCoachReportCard | null>(null);
+  const [dismissedReportIds, setDismissedReportIds] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [scores, setScores] = useState<
     Array<{ subject: string; percentage: number }>
   >([]);
@@ -79,6 +82,26 @@ function ReportCardPanel() {
     },
   });
   const selected = activeReport;
+  const selectReport = (report: LearningCoachReportCard) => {
+    setActiveReport(report);
+    setScores(
+      report.extractedScores?.length
+        ? report.extractedScores
+        : [{ subject: "", percentage: 0 }],
+    );
+  };
+
+  // A learner should never have to hunt for a report they have just uploaded.
+  // On a refresh, resume the newest unconfirmed report at its score table.
+  useEffect(() => {
+    if (activeReport) return;
+    const pending = (reports.data ?? []).find(
+      (report) =>
+        report.status !== "ANALYZED" && !dismissedReportIds.has(report.id),
+    );
+    if (pending) selectReport(pending);
+  }, [activeReport, dismissedReportIds, reports.data]);
+
   const reportHistory = (reports.data ?? [])
     .filter((report) => report.id !== selected?.id)
     .filter(
@@ -144,7 +167,10 @@ function ReportCardPanel() {
             </div>
             <button
               type="button"
-              onClick={() => setActiveReport(null)}
+              onClick={() => {
+                setDismissedReportIds((ids) => new Set(ids).add(selected.id));
+                setActiveReport(null);
+              }}
               className="text-sm font-semibold text-slate-600"
             >
               Not now
@@ -252,12 +278,7 @@ function ReportCardPanel() {
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveReport(report);
-                    setScores(
-                      report.extractedScores?.length
-                        ? report.extractedScores
-                        : [{ subject: "", percentage: 0 }],
-                    );
+                    selectReport(report);
                   }}
                   className="shrink-0 text-sm font-semibold text-[#466000]"
                 >
