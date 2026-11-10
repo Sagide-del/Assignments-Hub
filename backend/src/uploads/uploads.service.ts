@@ -97,7 +97,10 @@ export class UploadsService {
     if (!this.bucket || !this.s3Client) {
       throw new ServiceUnavailableException("File storage is not configured.");
     }
-    if (!assetKey.startsWith("marketplace-private/")) {
+    if (
+      !assetKey.startsWith("marketplace-private/") &&
+      !assetKey.startsWith("uploads/learning-coach-report-cards/")
+    ) {
       throw new InternalServerErrorException("Invalid private resource key");
     }
     return getSignedUrl(

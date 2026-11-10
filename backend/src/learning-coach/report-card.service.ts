@@ -79,6 +79,22 @@ export class ReportCardService {
     return report;
   }
 
+  async previewUrl(id: number, actor: AuthenticatedUser) {
+    const report = await this.prisma.learningCoachReportCard.findFirst({
+      where: { id, schoolId: actor.schoolId, studentId: actor.id },
+      select: { assetKey: true, fileName: true },
+    });
+    if (!report) throw new NotFoundException("Report card not found");
+
+    return {
+      url: await this.uploads.createPrivateDownloadUrl(
+        report.assetKey,
+        report.fileName,
+        300,
+      ),
+    };
+  }
+
   async confirm(
     id: number,
     dto: ConfirmReportCardDto,
@@ -104,7 +120,7 @@ export class ReportCardService {
       [...scores].sort((a, b) => a.percentage - b.percentage)[0]?.subject ??
       null;
     const diagnosis = {
-      message: this.diagnosis(scores, weak),
+      message: this.diagnosis(scores, weak, strong, actor.name),
       colorCodes: scores.map((row) => ({
         ...row,
         color:
@@ -258,13 +274,27 @@ export class ReportCardService {
       });
   }
 
-  private diagnosis(scores: Score[], weak: string[]) {
+  private diagnosis(
+    scores: Score[],
+    weak: string[],
+    strong: string[],
+    learnerName: string,
+  ) {
     const average = Math.round(
       scores.reduce((sum, row) => sum + row.percentage, 0) / scores.length,
     );
+    const name = learnerName.trim().split(/\s+/)[0] || "Learner";
     if (!weak.length)
-      return `You have a solid starting point with an average of ${average}%. Keep practising the subjects closest to 70% so they become reliable strengths.`;
-    return `Your report shows that ${weak.join(", ")} need focused practice. This is a starting point, not a label: use short, repeated practice sessions and review each mistake before moving on.`;
+      return `${name}, you have a solid starting point with an average of ${average}%. Keep practising the subjects closest to 70% so they become reliable strengths.`;
+    const strongest = [...scores].sort((left, right) => right.percentage - left.percentage)[0];
+    const firstWeak = [...scores].sort((left, right) => left.percentage - right.percentage)[0];
+    const strengthPhrase = strong.length && strongest
+      ? `Your ${strongest.percentage}% in ${strongest.subject} is a real strength we can use.`
+      : "You already have useful foundations to build from.";
+    const bridge = weak.length > 1
+      ? `We will start with ${firstWeak.subject} and then support ${weak.slice(1).join(", ")}.`
+      : `We will start with ${firstWeak.subject} using short, guided practice sessions.`;
+    return `${name}, ${strengthPhrase} ${bridge} This result is a starting point, not a label: each corrected mistake becomes the next step in your plan.`;
   }
   private technique(score: number) {
     if (score < 40)

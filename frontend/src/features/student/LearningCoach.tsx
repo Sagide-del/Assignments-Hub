@@ -1,5 +1,5 @@
 import { PageHeader } from "../../components/ui/Saas";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlarmClock,
@@ -12,8 +12,6 @@ import {
   RotateCcw,
   Upload,
   Volume2,
-  Plus,
-  Trash2,
   BrainCircuit,
   Sparkles,
   BookOpenCheck,
@@ -26,13 +24,12 @@ import {
   type LearningSession,
   type LearningTopic,
 } from "../../api/learning-coach.api";
+import { ReportCardPreview, type ReportScore } from "./ReportCardPreview";
 import { useAuthStore } from "../../store/auth.store";
 import { isCbcGrade } from "../../utils/gradeTier";
 import { useStudentContentScope } from "../../hooks/useStudentContentScope";
 import { timetableApi } from "../../api/timetable.api";
 import { useNavigate } from "react-router-dom";
-
-type ReportScore = { subject: string; percentage: number };
 
 const REPORT_SUBJECTS = [
   "English",
@@ -177,6 +174,7 @@ async function readReportImage(file: File): Promise<ReportScore[]> {
 
 function ReportCardPanel() {
   const client = useQueryClient();
+  const fileInput = useRef<HTMLInputElement>(null);
   const [activeReport, setActiveReport] =
     useState<LearningCoachReportCard | null>(null);
   const [dismissedReportIds, setDismissedReportIds] = useState<Set<number>>(
@@ -184,6 +182,8 @@ function ReportCardPanel() {
   );
   const [scores, setScores] = useState<ReportScore[]>([]);
   const [isReadingImage, setIsReadingImage] = useState(false);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
   const reports = useQuery({
     queryKey: ["learning-coach-report-cards"],
     queryFn: learningCoachApi.reportCards,
@@ -206,7 +206,8 @@ function ReportCardPanel() {
           ? report.extractedScores
           : [];
       setActiveReport(report);
-      setScores(initialScores.length ? initialScores : [{ subject: "", percentage: 0 }]);
+      setScores(initialScores.length ? initialScores : [{ subject: "", percentage: Number.NaN }]);
+      setLocalPreviewUrl(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
 
       // Browser OCR is a privacy-preserving fallback for image reports when
       // server OCR is unavailable. It never uploads image bytes to an AI API.
@@ -233,15 +234,49 @@ function ReportCardPanel() {
     mutationFn: () =>
       learningCoachApi.confirmReportCard(
         activeReport!.id,
-        scores.filter((score) => score.subject.trim()),
+        scores.filter(
+          (score) =>
+            score.subject.trim() &&
+            Number.isFinite(score.percentage) &&
+            score.percentage >= 0 &&
+            score.percentage <= 100,
+        ),
       ),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (activeReport) {
+        const analyzed = {
+          ...activeReport,
+          status: "ANALYZED" as const,
+          extractedScores: scores.filter(
+            (score) =>
+              score.subject.trim() &&
+              Number.isFinite(score.percentage) &&
+              score.percentage >= 0 &&
+              score.percentage <= 100,
+          ),
+          diagnosis: data.diagnosis,
+        };
+        client.setQueryData<LearningCoachReportCard[]>(
+          ["learning-coach-report-cards"],
+          (current = []) =>
+            current.map((report) =>
+              report.id === analyzed.id ? analyzed : report,
+            ),
+        );
+      }
       void client.invalidateQueries({
         queryKey: ["learning-coach-report-cards"],
       });
       void client.invalidateQueries({ queryKey: ["learning-coach-catalog"] });
       setActiveReport(null);
+      setLocalPreviewUrl(null);
     },
+  });
+  const preview = useQuery({
+    queryKey: ["learning-coach-report-preview", activeReport?.id],
+    queryFn: () => learningCoachApi.reportCardPreview(activeReport!.id),
+    enabled: Boolean(activeReport?.id) && !localPreviewUrl,
+    staleTime: 4 * 60 * 1000,
   });
   const selected = activeReport;
   const selectReport = (report: LearningCoachReportCard) => {
@@ -249,7 +284,7 @@ function ReportCardPanel() {
     setScores(
       report.extractedScores?.length
         ? report.extractedScores
-        : [{ subject: "", percentage: 0 }],
+        : [{ subject: "", percentage: Number.NaN }],
     );
   };
 
@@ -264,6 +299,28 @@ function ReportCardPanel() {
     if (pending) selectReport(pending);
   }, [activeReport, dismissedReportIds, reports.data]);
 
+  useEffect(() => {
+    if (!upload.isPending && !isReadingImage && !confirm.isPending) {
+      setProgress(0);
+      return;
+    }
+    setProgress(12);
+    const steps = [28, 47, 69, 84, 96];
+    let index = 0;
+    const timer = window.setInterval(() => {
+      setProgress(steps[index] ?? 96);
+      index += 1;
+    }, 650);
+    return () => window.clearInterval(timer);
+  }, [upload.isPending, isReadingImage, confirm.isPending]);
+
+  useEffect(
+    () => () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    },
+    [localPreviewUrl],
+  );
+
   const reportHistory = (reports.data ?? [])
     .filter((report) => report.id !== selected?.id)
     .filter(
@@ -275,8 +332,30 @@ function ReportCardPanel() {
         ) === index,
     )
     .slice(0, 3);
+  const processing = upload.isPending || isReadingImage || confirm.isPending;
+  const chooseFile = () => fileInput.current?.click();
+  const discardActiveReport = () => {
+    setDismissedReportIds((ids) => new Set(ids).add(activeReport?.id ?? -1));
+    setActiveReport(null);
+    setScores([]);
+    setLocalPreviewUrl(null);
+  };
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <>
+      <input
+        ref={fileInput}
+        className="sr-only"
+        type="file"
+        accept="application/pdf,image/jpeg,image/png,image/webp"
+        disabled={processing}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) upload.mutate(file);
+          event.currentTarget.value = "";
+        }}
+      />
+      {processing ? <div className="fixed inset-0 z-50 grid place-items-center bg-[#0b1727]/80 p-5 backdrop-blur-sm"><section className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#101f38] p-7 text-center text-white shadow-2xl"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-lime-300 text-[#101f38]"><BrainCircuit className="h-7 w-7 animate-pulse" /></span><h2 className="mt-5 text-2xl font-semibold">{confirm.isPending ? "Analyzing your strengths and weaknesses…" : "Reading your report card…"}</h2><p className="mt-3 text-sm leading-6 text-slate-300">{confirm.isPending ? "Creating your color-coded focus profile and study actions." : "Extracting subjects, scores, and KCBE grades…"}</p><div className="mt-6 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-lime-300 transition-all duration-500" style={{ width: `${progress}%` }} /></div><p className="mt-3 text-xs font-semibold text-lime-200">{confirm.isPending ? "Generating your personalized learning plan…" : `${progress}% complete`}</p></section></div> : null}
+      {!selected ? <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">
@@ -291,21 +370,7 @@ function ReportCardPanel() {
             spaced review.
           </p>
         </div>
-        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50">
-          <Upload className="h-4 w-4" />
-          {upload.isPending || isReadingImage ? "Reading report…" : "Upload report"}
-          <input
-            className="sr-only"
-            type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            disabled={upload.isPending || isReadingImage}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) upload.mutate(file);
-              event.currentTarget.value = "";
-            }}
-          />
-        </label>
+        <button type="button" onClick={chooseFile} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50"><Upload className="h-4 w-4" />Upload report</button>
       </div>
       {upload.isError ? (
         <p className="mt-3 text-sm text-red-700">
@@ -314,123 +379,6 @@ function ReportCardPanel() {
             "The report card could not be uploaded.",
           )}
         </p>
-      ) : null}
-      {selected && selected.status !== "ANALYZED" ? (
-        <div className="mt-5 rounded-2xl border border-lime-200 bg-lime-50 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold text-[#101820]">
-                Confirm your scores
-              </p>
-              <p className="mt-1 text-sm text-slate-600">
-                Please correct any score before saving. This keeps your plan
-                accurate even if a scan was hard to read.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setDismissedReportIds((ids) => new Set(ids).add(selected.id));
-                setActiveReport(null);
-              }}
-              className="text-sm font-semibold text-slate-600"
-            >
-              Not now
-            </button>
-          </div>
-          <div className="mt-4 overflow-hidden rounded-xl border border-lime-200 bg-white">
-            <div className="grid grid-cols-[1fr_86px_36px] gap-2 border-b border-lime-100 bg-lime-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-[#466000]">
-              <span>Subject</span>
-              <span>Score</span>
-              <span aria-hidden="true" />
-            </div>
-            <div className="space-y-2 p-3">
-            {scores.map((score, index) => (
-              <div key={index} className="grid grid-cols-[1fr_86px_36px] gap-2">
-                <input
-                  value={score.subject}
-                  onChange={(event) =>
-                    setScores((rows) =>
-                      rows.map((row, rowIndex) =>
-                        rowIndex === index
-                          ? { ...row, subject: event.target.value }
-                          : row,
-                      ),
-                    )
-                  }
-                  placeholder="Subject"
-                  className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={score.percentage || ""}
-                  onChange={(event) =>
-                    setScores((rows) =>
-                      rows.map((row, rowIndex) =>
-                        rowIndex === index
-                          ? { ...row, percentage: Number(event.target.value) }
-                          : row,
-                      ),
-                    )
-                  }
-                  placeholder="%"
-                  className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
-                />
-                <button
-                  type="button"
-                  aria-label="Remove subject"
-                  onClick={() =>
-                    setScores((rows) =>
-                      rows.filter((_, rowIndex) => rowIndex !== index),
-                    )
-                  }
-                  className="grid place-items-center rounded-xl border border-slate-200 text-slate-500"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-            </div>
-          </div>
-          {isReadingImage ? (
-            <p className="mt-3 text-sm text-slate-600" role="status">
-              Reading the uploaded image securely on this device. Your scores
-              will appear in the table shortly.
-            </p>
-          ) : null}
-          <button
-            type="button"
-            onClick={() =>
-              setScores((rows) => [...rows, { subject: "", percentage: 0 }])
-            }
-            className="mt-3 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[#466000]"
-          >
-            <Plus className="h-4 w-4" />
-            Add subject
-          </button>
-          <button
-            type="button"
-            disabled={
-              confirm.isPending || !scores.some((score) => score.subject.trim())
-            }
-            onClick={() => confirm.mutate()}
-            className="mt-4 min-h-11 w-full rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {confirm.isPending
-              ? "Building your plan…"
-              : "Create my learning plan"}
-          </button>
-          {confirm.isError ? (
-            <p className="mt-2 text-sm text-red-700">
-              {apiErrorMessage(
-                confirm.error,
-                "Your learning plan could not be created.",
-              )}
-            </p>
-          ) : null}
-        </div>
       ) : null}
       {reportHistory.length ? (
         <div className="mt-5 space-y-3">
@@ -470,7 +418,9 @@ function ReportCardPanel() {
           ))}
         </div>
       ) : null}
-    </section>
+      </section> : null}
+      {selected && selected.status !== "ANALYZED" ? <><ReportCardPreview fileName={selected.fileName} previewUrl={localPreviewUrl ?? preview.data} scores={scores} onChange={setScores} onReupload={() => { discardActiveReport(); window.setTimeout(chooseFile, 50); }} onConfirm={() => confirm.mutate()} confirming={confirm.isPending} />{preview.isError ? <p className="text-sm text-slate-500">The report preview is unavailable, but you can still review and correct the extracted scores.</p> : null}{confirm.isError ? <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{apiErrorMessage(confirm.error, "Your learning plan could not be created.")}</p> : null}</> : null}
+    </>
   );
 }
 
@@ -501,6 +451,12 @@ function formatReview(date: string | null) {
     month: "short",
     day: "numeric",
   });
+}
+
+function reportLevel(percentage: number) {
+  if (percentage >= 70) return "EE · Strength";
+  if (percentage >= 40) return "ME · Developing";
+  return "BE · Priority";
 }
 
 function PlanCard({
@@ -1001,13 +957,13 @@ export function LearningCoachPage() {
   const paths = (plans.data ?? []).filter((plan) => red.has(plan.subject.toLowerCase()) && (!allowed.size || allowed.has(plan.subject.toLowerCase())));
   if (!report) return <div className="mx-auto max-w-5xl space-y-6"><PageHeader title="Learning Coach" /><div className="rounded-3xl border border-dashed border-lime-300 bg-lime-50 p-8 text-center"><BrainCircuit className="mx-auto h-10 w-10 text-[#607D00]"/><h2 className="mt-4 text-2xl font-semibold text-[#101820]">Unlock your personalized Learning Coach</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">Upload your end-term report card to get a color-coded diagnosis, custom study techniques, and a priority study plan.</p></div><ReportCardPanel /></div>;
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-10">
+    <div className="mx-auto max-w-6xl space-y-7 pb-28">
       <PageHeader title="Learning Coach" />
-      <section className="rounded-3xl bg-[#101820] p-6 text-white sm:p-8"><div className="flex gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#b5e719] text-[#101820]"><BrainCircuit className="h-6 w-6" /></span><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-lime-200">Socratic diagnosis</p><p className="mt-3 max-w-4xl text-lg leading-8">{report.diagnosis?.message}</p></div></div></section>
-      <section><h2 className="text-xl font-semibold text-[#101820]">Your subject profile</h2><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{profile.filter((item) => !allowed.size || allowed.has(item.subject.toLowerCase())).map((item) => { const priority = item.color === "RED"; const tone = item.color === "GREEN" ? "border-emerald-200 bg-emerald-50" : item.color === "YELLOW" ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"; return <article key={item.subject} className={`rounded-2xl border p-4 ${tone}`}><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{item.subject}</p><p className="mt-3 text-3xl font-semibold text-[#101820]">{item.percentage}%</p><p className="mt-1 text-sm text-slate-600">{priority ? "Needs focused support" : item.color === "GREEN" ? "A current strength" : "Building consistency"}</p>{priority ? <span className="mt-3 inline-flex rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white">Priority focus</span> : null}</article>; })}</div></section>
+      <section className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-[#102d58] via-[#274a91] to-[#6a3d8d] p-6 text-white shadow-[0_20px_50px_rgba(27,55,108,0.24)] sm:p-9"><div className="absolute -right-14 -top-16 h-64 w-64 rounded-full border border-white/15" /><div className="absolute -bottom-20 right-28 h-48 w-48 rounded-full bg-lime-300/15 blur-2xl" /><div className="relative flex gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-lime-300 text-[#102d58] shadow-lg"><BrainCircuit className="h-6 w-6" /></span><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-lime-200">Your learning conversation</p><h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">A plan built from your real results.</h2><p className="mt-3 max-w-4xl text-base leading-7 text-blue-50 sm:text-lg">{report.diagnosis?.message}</p></div></div></section>
+      <section><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Your snapshot</p><h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#101820]">What to protect and what to strengthen</h2></div><p className="text-sm text-slate-500">Based on your confirmed report card</p></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{profile.filter((item) => !allowed.size || allowed.has(item.subject.toLowerCase())).map((item) => { const priority = item.color === "RED"; const tone = item.color === "GREEN" ? "border-emerald-200 bg-emerald-50/80" : item.color === "YELLOW" ? "border-amber-200 bg-amber-50/80" : "border-rose-200 bg-rose-50/80"; const accent = item.color === "GREEN" ? "bg-emerald-500" : item.color === "YELLOW" ? "bg-amber-400" : "bg-rose-500"; return <article key={item.subject} className={`relative overflow-hidden rounded-2xl border p-5 ${tone}`}><span className={`absolute inset-x-0 top-0 h-1 ${accent}`} /><div className="flex items-start justify-between gap-2"><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">{item.subject}</p><span className="rounded-full bg-white/70 px-2 py-1 text-[10px] font-bold text-slate-600">{reportLevel(item.percentage)}</span></div><p className="mt-5 text-4xl font-semibold tracking-tight text-[#101820]">{item.percentage}%</p><p className="mt-1 text-sm text-slate-600">{priority ? "Start here this week" : item.color === "GREEN" ? "Keep this strength active" : "Build reliable recall"}</p>{priority ? <span className="mt-4 inline-flex rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white">Priority focus</span> : null}</article>; })}</div></section>
       <section><div className="flex items-center gap-2"><BookOpenCheck className="h-5 w-5 text-[#607D00]"/><h2 className="text-xl font-semibold text-[#101820]">Mastery paths</h2></div>{paths.length ? <div className="mt-3 grid gap-4 md:grid-cols-2">{paths.map((plan) => <PlanCard key={plan.id} plan={plan} onPractice={() => start.mutate({ subject: plan.subject, topic: plan.topic, mode: "PRACTICE" })} />)}</div> : <TopicPicker topics={(catalog.data ?? []).filter((topic) => red.has(topic.subject.toLowerCase()) && (!allowed.size || allowed.has(topic.subject.toLowerCase())))} plans={[]} loading={start.isPending} onStart={({ subject, topic }, mode) => start.mutate({ subject, topic, mode })} />}</section>
       <section><div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#607D00]"/><h2 className="text-xl font-semibold text-[#101820]">How you should study this week</h2></div><div className="mt-3 grid gap-3 md:grid-cols-2">{profile.filter((item) => item.color === "RED" && (!allowed.size || allowed.has(item.subject.toLowerCase()))).map((item) => <article key={item.subject} className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex gap-3"><BrainCircuit className="h-6 w-6 shrink-0 text-[#607D00]"/><div><p className="text-xs font-bold uppercase tracking-wide text-[#607D00]">{item.subject}</p><h3 className="mt-1 font-semibold text-[#101820]">{report.diagnosis?.learningTechniques?.[item.subject] ?? "Active recall and error correction"}</h3></div></div><p className="mt-4 text-sm leading-6 text-slate-600">Why: your latest confirmed score is {item.percentage}%, so short repeat practice will help more than rereading notes.</p><p className="mt-2 text-sm font-medium text-[#101820]">Action: explain a worked example aloud, answer without notes, then correct one mistake.</p></article>)}</div></section>
-      <button type="button" disabled={generatePlan.isPending} onClick={() => generatePlan.mutate()} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#b5e719] px-6 text-base font-bold text-[#101820] disabled:opacity-60">{generatePlan.isPending ? "Preparing your adaptive plan…" : "Generate my adaptive study plan"}<ArrowRight className="h-5 w-5"/></button>
+      <div className="sticky bottom-3 z-20 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-[0_12px_32px_rgba(16,24,32,.16)] backdrop-blur"><button type="button" disabled={generatePlan.isPending} onClick={() => generatePlan.mutate()} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#b5e719] px-6 text-base font-bold text-[#101820] disabled:opacity-60">{generatePlan.isPending ? "Preparing your adaptive plan…" : "Generate my adaptive study plan"}<ArrowRight className="h-5 w-5"/></button></div>
       {start.isError ? (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {apiErrorMessage(

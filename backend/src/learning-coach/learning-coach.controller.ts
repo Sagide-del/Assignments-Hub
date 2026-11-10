@@ -57,6 +57,17 @@ export class LearningCoachController {
     return this.reports.list(actor);
   }
 
+  @Get("report-cards/:id/preview")
+  @ApiOperation({
+    summary: "Create a short-lived private preview URL for a learner report card",
+  })
+  reportCardPreview(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.reports.previewUrl(id, actor);
+  }
+
   @Post("report-cards")
   @UseInterceptors(
     FileInterceptor("file", {

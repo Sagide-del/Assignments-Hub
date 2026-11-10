@@ -125,6 +125,10 @@ export const learningCoachApi = {
     api
       .get<LearningCoachReportCard[]>("/learning-coach/report-cards")
       .then((response) => response.data),
+  reportCardPreview: (id: number) =>
+    api
+      .get<{ url: string }>(`/learning-coach/report-cards/${id}/preview`)
+      .then((response) => response.data.url),
   uploadReportCard: (file: File) => {
     const form = new FormData();
     form.append("file", file);
