@@ -62,4 +62,30 @@ describe("ReportCardService", () => {
     const { service: missing } = serviceWith(null);
     await expect(missing.previewUrl(99, actor)).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it("extracts only recognised curriculum subjects from a report-card table", () => {
+    const { service } = serviceWith(null);
+    const scores = (service as any).parseTableRows([
+      ["LEARNING AREA", "TERM 3 ASSESSMENT", "RUBRICS", "REMARKS"],
+      ["ENGLISH", "48%", "5(me2)", "Meeting expectation"],
+      ["MATHEMATICS", "4%", "1(be2)", "Below expectation"],
+      ["COMPUTER STUDIES", "90%", "8(ee1)", "Exceeding expectation"],
+      ["Tel Line 1: 0710 926 168", "", "", ""],
+    ]);
+
+    expect(scores).toEqual([
+      { subject: "English", percentage: 48 },
+      { subject: "Mathematics", percentage: 4 },
+      { subject: "Computer Studies", percentage: 90 },
+    ]);
+  });
+
+  it("provides subject-specific recovery techniques", async () => {
+    const { service } = serviceWith({ id: 11 });
+    const result = await service.confirm(11, {
+      scores: [{ subject: "Mathematics", percentage: 4 }],
+    }, actor);
+
+    expect(result.diagnosis.learningTechniques.Mathematics).toContain("Feynman");
+  });
 });

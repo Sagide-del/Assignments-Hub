@@ -1,4 +1,5 @@
-import { FileText, Maximize2, PencilLine, RotateCcw, Sparkles, Upload } from "lucide-react";
+import { FileText, ImageOff, Maximize2, PencilLine, RotateCcw, Sparkles, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export type ReportScore = { subject: string; percentage: number };
 
@@ -28,6 +29,8 @@ export function ReportCardPreview({
   onConfirm,
   confirming,
 }: Props) {
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => setImageFailed(false), [previewUrl]);
   const update = (index: number, patch: Partial<ReportScore>) =>
     onChange(scores.map((score, row) => (row === index ? { ...score, ...patch } : score)));
   const validScores = scores.filter(
@@ -59,7 +62,7 @@ export function ReportCardPreview({
             {previewUrl && hasImage ? <a href={previewUrl} target="_blank" rel="noreferrer" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-[#a4d019]" aria-label="Open full-size report card"><Maximize2 className="h-4 w-4" /></a> : null}
           </div>
           <div className="mt-5 grid min-h-72 place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            {previewUrl && hasImage ? <img src={previewUrl} alt="Uploaded report card" className="max-h-[430px] w-full rounded-xl object-contain" /> : <div className="max-w-xs text-center"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-600"><FileText className="h-7 w-7" /></span><p className="mt-4 font-semibold text-[#101820]">Your report is stored privately</p><p className="mt-2 text-sm leading-6 text-slate-500">{hasImage ? "The preview is loading. You can still confirm or correct each result." : "This PDF cannot be shown here, but its extracted results are ready to review."}</p></div>}
+            {previewUrl && hasImage && !imageFailed ? <img src={previewUrl} alt="Uploaded report card" onError={() => setImageFailed(true)} className="max-h-[430px] w-full rounded-xl object-contain" /> : <div className="max-w-xs text-center"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-600">{imageFailed ? <ImageOff className="h-7 w-7" /> : <FileText className="h-7 w-7" />}</span><p className="mt-4 font-semibold text-[#101820]">{imageFailed ? "Preview unavailable" : "Your report is stored privately"}</p><p className="mt-2 text-sm leading-6 text-slate-500">{imageFailed ? "We could not display this private image here. The extracted table remains available for review." : hasImage ? "The preview is loading. You can still confirm or correct each result." : "This PDF cannot be shown here, but its extracted results are ready to review."}</p>{imageFailed && previewUrl ? <a href={previewUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-10 items-center rounded-lg bg-[#101820] px-3 text-sm font-bold text-white hover:bg-[#1b2b37]">Open original report</a> : null}</div>}
           </div>
           <p className="mt-4 text-xs leading-5 text-slate-500">Only you can view this report. It is used to create your private learning profile.</p>
         </aside>

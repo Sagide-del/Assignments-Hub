@@ -11,6 +11,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import {
+  AnalyzeDocumentCommand,
   Block,
   DetectDocumentTextCommand,
   GetDocumentTextDetectionCommand,
@@ -129,6 +130,26 @@ export class DocumentOcrService {
     }
   }
 
+  /**
+   * Report cards are tables, not prose. Returning cell rows keeps assessment
+   * marks separate from phone numbers, rubric labels, and teacher remarks.
+   */
+  async extractImageTables(buffer: Buffer): Promise<string[][]> {
+    this.assertConfigured();
+    try {
+      const result = await this.textract!.send(
+        new AnalyzeDocumentCommand({
+          Document: { Bytes: buffer },
+          FeatureTypes: ['TABLES'],
+        }),
+      );
+      return this.tableRows(result.Blocks ?? []);
+    } catch (error) {
+      this.logger.warn(`Textract table analysis failed: ${this.errorMessage(error)}`);
+      return [];
+    }
+  }
+
   private async waitForResult(jobId: string) {
     for (let attempt = 0; attempt < MAX_POLLS; attempt += 1) {
       const firstPage = await this.textract!.send(
@@ -176,6 +197,42 @@ export class DocumentOcrService {
         'OCR requires AWS_REGION and AWS_S3_BUCKET configuration.',
       );
     }
+  }
+
+  private tableRows(blocks: Block[]): string[][] {
+    const byId = new Map(blocks.filter((block) => block.Id).map((block) => [block.Id!, block]));
+    const textFor = (block: Block) => (block.Relationships ?? [])
+      .filter((relationship) => relationship.Type === 'CHILD')
+      .flatMap((relationship) => relationship.Ids ?? [])
+      .map((id) => byId.get(id))
+      .filter((child): child is Block => Boolean(child))
+      .filter((child) => child.BlockType === 'WORD' || child.BlockType === 'SELECTION_ELEMENT')
+      .map((child) => child.Text ?? (child.SelectionStatus === 'SELECTED' ? 'selected' : ''))
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    const rows: string[][] = [];
+    for (const table of blocks.filter((block) => block.BlockType === 'TABLE')) {
+      const cells = (table.Relationships ?? [])
+        .filter((relationship) => relationship.Type === 'CHILD')
+        .flatMap((relationship) => relationship.Ids ?? [])
+        .map((id) => byId.get(id))
+        .filter((block): block is Block => block?.BlockType === 'CELL');
+      const grouped = new Map<number, Block[]>();
+      for (const cell of cells) {
+        const row = cell.RowIndex ?? 0;
+        grouped.set(row, [...(grouped.get(row) ?? []), cell]);
+      }
+      for (const cellsInRow of grouped.values()) {
+        rows.push(
+          cellsInRow
+            .sort((left, right) => (left.ColumnIndex ?? 0) - (right.ColumnIndex ?? 0))
+            .map(textFor),
+        );
+      }
+    }
+    return rows;
   }
 
   private delay(milliseconds: number) {

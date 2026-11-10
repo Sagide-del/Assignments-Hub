@@ -14,6 +14,17 @@ import { ConfirmReportCardDto } from "./dto/confirm-report-card.dto";
 
 type Score = { subject: string; percentage: number };
 
+// Keep OCR constrained to subjects that the platform can actually coach. This
+// prevents headers, phone numbers and teacher remarks becoming fake subjects.
+const REPORT_SUBJECTS = [
+  "English", "Kiswahili", "Mathematics", "Integrated Science", "Biology",
+  "Chemistry", "Physics", "Computer Studies", "Community Service Learning",
+  "Social Studies", "Religious Education", "Christian Religious Education",
+  "Islamic Religious Education", "Agriculture", "Business Studies", "Geography",
+  "History", "Home Science", "Pre-Technical Studies", "Life Skills",
+  "Art and Craft", "Music", "French", "German",
+] as const;
+
 @Injectable()
 export class ReportCardService {
   constructor(
@@ -127,7 +138,7 @@ export class ReportCardService {
               : "RED",
       })),
       learningTechniques: Object.fromEntries(
-        scores.map((row) => [row.subject, this.technique(row.percentage)]),
+        scores.map((row) => [row.subject, this.technique(row.subject, row.percentage)]),
       ),
     };
     const periodKey = `learner-report-${id}`;
@@ -220,6 +231,9 @@ export class ReportCardService {
     }
 
     try {
+      const rows = await this.ocr.extractImageTables(file.buffer);
+      const tableScores = this.parseTableRows(rows);
+      if (tableScores.length) return tableScores;
       return this.parseText(await this.ocr.extractImage(file.buffer));
     } catch {
       // Manual score entry remains available when OCR is intentionally off or
@@ -232,20 +246,85 @@ export class ReportCardService {
     const scores: Score[] = [];
     const seen = new Set<string>();
     for (const line of text.split(/\r?\n/)) {
-      const match = line.match(
-        /^\s*([A-Za-z][A-Za-z &/-]{2,60}?)\s*[:\-]?\s*(\d{1,3})(?:\s*\/\s*(\d{1,3})|\s*%)?\s*$/,
-      );
-      if (!match) continue;
-      const subject = match[1].replace(/\s+/g, " ").trim();
-      const score = Number(match[2]);
-      const maximum = match[3] ? Number(match[3]) : 100;
-      const percentage =
-        maximum > 0 ? Math.round((score / maximum) * 100) : score;
-      if (percentage > 100 || seen.has(subject.toLowerCase())) continue;
+      const subject = this.resolveSubject(line);
+      const percentage = this.percentageFrom(line);
+      if (!subject || percentage === null || seen.has(subject.toLowerCase())) continue;
       seen.add(subject.toLowerCase());
       scores.push({ subject, percentage });
     }
     return scores.slice(0, 30);
+  }
+
+  private parseTableRows(rows: string[][]) {
+    const scores: Score[] = [];
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const subject = this.resolveSubject(row[0] ?? row.join(' '));
+      if (!subject || seen.has(subject.toLowerCase())) continue;
+      // In the common report-card layout the first percentage after the
+      // learning area is the assessment mark. Rubric numbers remain ignored.
+      const percentage = row.slice(1).map((cell) => this.percentageFrom(cell)).find(
+        (value): value is number => value !== null,
+      );
+      if (percentage === undefined) continue;
+      seen.add(subject.toLowerCase());
+      scores.push({ subject, percentage });
+    }
+    return scores.slice(0, 30);
+  }
+
+  private percentageFrom(value: string): number | null {
+    const percent = value.match(/\b(\d{1,3})\s*%/);
+    if (percent) {
+      const score = Number(percent[1]);
+      return score <= 100 ? score : null;
+    }
+    const fraction = value.match(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/);
+    if (fraction) {
+      const score = Number(fraction[1]);
+      const maximum = Number(fraction[2]);
+      return maximum > 0 ? Math.round((score / maximum) * 100) : null;
+    }
+    return null;
+  }
+
+  private resolveSubject(value: string): string | null {
+    const candidate = this.normalise(value);
+    if (candidate.length < 4) return null;
+    let closest: { subject: string; distance: number } | null = null;
+    for (const subject of REPORT_SUBJECTS) {
+      const expected = this.normalise(subject);
+      const distance = this.editDistance(candidate, expected);
+      const prefix = candidate.startsWith(expected.slice(0, Math.max(5, expected.length - 4)))
+        || expected.startsWith(candidate.slice(0, Math.max(5, candidate.length - 4)));
+      if ((prefix || distance <= Math.max(2, Math.floor(expected.length * 0.2)))
+        && (!closest || distance < closest.distance)) {
+        closest = { subject, distance };
+      }
+    }
+    return closest?.subject ?? null;
+  }
+
+  private normalise(value: string) {
+    return value.toUpperCase().replace(/[^A-Z]/g, '');
+  }
+
+  private editDistance(left: string, right: string) {
+    const row = Array.from({ length: right.length + 1 }, (_, index) => index);
+    for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+      let previous = row[0];
+      row[0] = leftIndex;
+      for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+        const current = row[rightIndex];
+        row[rightIndex] = Math.min(
+          row[rightIndex] + 1,
+          row[rightIndex - 1] + 1,
+          previous + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1),
+        );
+        previous = current;
+      }
+    }
+    return row[right.length];
   }
 
   private cleanScores(scores: Score[]) {
@@ -292,11 +371,17 @@ export class ReportCardService {
       : `We will start with ${firstWeak.subject} using short, guided practice sessions.`;
     return `${name}, ${strengthPhrase} ${bridge} This result is a starting point, not a label: each corrected mistake becomes the next step in your plan.`;
   }
-  private technique(score: number) {
-    if (score < 40)
-      return "Worked examples, then explain each step aloud before attempting one short question.";
+  private technique(subject: string, score: number) {
+    const key = this.normalise(subject);
+    if (score < 40) {
+      if (key === "MATHEMATICS") return "Feynman sprint: solve one worked example, then explain every step to a 10-year-old in a two-minute voice note.";
+      if (key === "PHYSICS") return "Visualise first: open a motion or pendulum simulation, predict what will happen, then calculate one value without notes.";
+      if (key === "CHEMISTRY") return "Particle story: draw the particles before balancing one equation, then explain what changed and what stayed conserved.";
+      if (key === "BIOLOGY") return "Analogy game: compare the process to a familiar system, label a simple diagram, then retrieve it without looking.";
+      return "Recovery loop: study one worked example, hide the notes, answer one short question, then correct one specific mistake.";
+    }
     if (score < 70)
-      return "Active recall: answer without notes, correct the gap, then retry after a short break.";
+      return "Active recall loop: answer without notes, correct the gap, then retry after a short break.";
     return "Interleaved practice: mix this subject with a related topic and explain why each answer works.";
   }
   private timetable(scores: Score[]) {
@@ -314,7 +399,7 @@ export class ReportCardService {
           subject: target.subject,
           topic: `${target.subject} foundations`,
           subtopic: "Coach-selected practice",
-          learningTechnique: this.technique(target.percentage),
+          learningTechnique: this.technique(target.subject, target.percentage),
           activity:
             "Learn one worked example, recall without notes, then correct one misconception.",
         };
