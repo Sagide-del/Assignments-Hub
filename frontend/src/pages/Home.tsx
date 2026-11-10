@@ -135,6 +135,9 @@ export default function Home() {
             <a href="/free-revision/" className="transition hover:text-[#101820]">
               Free revision
             </a>
+            <a href="/blog/" className="transition hover:text-[#101820]">
+              Parent guides
+            </a>
             <a href="#for-parents" className="transition hover:text-[#101820]">
               For parents
             </a>
@@ -187,6 +190,12 @@ export default function Home() {
                   Talk to us on WhatsApp
                 </a>
               </div>
+              <a
+                href="/blog/"
+                className="mt-5 inline-flex items-center text-sm font-bold text-[#365000] underline decoration-[#B5E61D] decoration-2 underline-offset-4 transition hover:text-[#101820]"
+              >
+                Parents: read the CBC Survival Guide
+              </a>
               <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-slate-600">
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> No app to
