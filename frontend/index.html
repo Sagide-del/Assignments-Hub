@@ -33,5 +33,29 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Keeps the public Blog destination discoverable while a cached app bundle
+      // is being replaced. The React navigation owns this link after deployment.
+      (() => {
+        const addBlogLink = () => {
+          if (document.querySelector('[data-blog-home-link]')) return true;
+          const pricing = [...document.querySelectorAll('a')].find(
+            (link) => link.textContent?.trim() === 'Pricing',
+          );
+          if (!pricing) return false;
+          const blog = pricing.cloneNode(true);
+          blog.href = '/blog/';
+          blog.textContent = 'Blog';
+          blog.setAttribute('data-blog-home-link', '');
+          pricing.after(blog);
+          return true;
+        };
+        if (addBlogLink()) return;
+        const observer = new MutationObserver(() => {
+          if (addBlogLink()) observer.disconnect();
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+      })();
+    </script>
   </body>
 </html>

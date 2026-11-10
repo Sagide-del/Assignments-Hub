@@ -135,7 +135,7 @@ export default function Home() {
             <a href="/free-revision/" className="transition hover:text-[#101820]">
               Free revision
             </a>
-            <a href="/blog/" className="transition hover:text-[#101820]">
+            <a href="/blog/" data-blog-home-link className="transition hover:text-[#101820]">
               Blog
             </a>
             <a href="#for-parents" className="transition hover:text-[#101820]">
