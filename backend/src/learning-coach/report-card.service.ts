@@ -87,11 +87,7 @@ export class ReportCardService {
     if (!report) throw new NotFoundException("Report card not found");
 
     return {
-      url: await this.uploads.createPrivateDownloadUrl(
-        report.assetKey,
-        report.fileName,
-        300,
-      ),
+      url: await this.uploads.createPrivatePreviewUrl(report.assetKey, 300),
     };
   }
 

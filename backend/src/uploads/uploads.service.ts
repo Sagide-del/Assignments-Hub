@@ -97,18 +97,29 @@ export class UploadsService {
     if (!this.bucket || !this.s3Client) {
       throw new ServiceUnavailableException("File storage is not configured.");
     }
-    if (
-      !assetKey.startsWith("marketplace-private/") &&
-      !assetKey.startsWith("uploads/learning-coach-report-cards/")
-    ) {
-      throw new InternalServerErrorException("Invalid private resource key");
-    }
+    this.assertPrivateAssetKey(assetKey);
     return getSignedUrl(
       this.s3Client,
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: assetKey,
         ResponseContentDisposition: `attachment; filename="${fileName.replace(/["\r\n]/g, "")}"`,
+      }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
+  async createPrivatePreviewUrl(assetKey: string, expiresInSeconds = 300) {
+    if (!this.bucket || !this.s3Client) {
+      throw new ServiceUnavailableException("File storage is not configured.");
+    }
+    this.assertPrivateAssetKey(assetKey);
+    return getSignedUrl(
+      this.s3Client,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: assetKey,
+        ResponseContentDisposition: "inline",
       }),
       { expiresIn: expiresInSeconds },
     );
@@ -188,6 +199,15 @@ export class UploadsService {
     }
 
     return { key };
+  }
+
+  private assertPrivateAssetKey(assetKey: string) {
+    if (
+      !assetKey.startsWith("marketplace-private/") &&
+      !assetKey.startsWith("uploads/learning-coach-report-cards/")
+    ) {
+      throw new InternalServerErrorException("Invalid private resource key");
+    }
   }
 
   private buildPublicUrl(key: string) {

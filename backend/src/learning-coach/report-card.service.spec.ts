@@ -20,7 +20,7 @@ describe("ReportCardService", () => {
       learningCoachReportCard: { findFirst: jest.fn().mockResolvedValue(report) },
       $transaction: jest.fn((callback) => callback(tx)),
     } as any;
-    const uploads = { createPrivateDownloadUrl: jest.fn().mockResolvedValue("https://signed.example/report") } as any;
+    const uploads = { createPrivatePreviewUrl: jest.fn().mockResolvedValue("https://signed.example/report") } as any;
     const audit = { record: jest.fn().mockResolvedValue(undefined) } as any;
     const ocr = {} as any;
     return { service: new ReportCardService(prisma, uploads, audit, ocr), prisma, uploads, tx };
@@ -57,7 +57,7 @@ describe("ReportCardService", () => {
     });
 
     await expect(service.previewUrl(11, actor)).resolves.toEqual({ url: "https://signed.example/report" });
-    expect(uploads.createPrivateDownloadUrl).toHaveBeenCalledWith(expect.any(String), "report.jpg", 300);
+    expect(uploads.createPrivatePreviewUrl).toHaveBeenCalledWith(expect.any(String), 300);
 
     const { service: missing } = serviceWith(null);
     await expect(missing.previewUrl(99, actor)).rejects.toBeInstanceOf(NotFoundException);
