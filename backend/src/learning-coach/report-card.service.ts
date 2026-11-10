@@ -13,6 +13,17 @@ import { DocumentOcrService } from "../document-processing/document-ocr.service"
 import { ConfirmReportCardDto } from "./dto/confirm-report-card.dto";
 
 type Score = { subject: string; percentage: number };
+type RecoveryTopic = { subject: string; topic: string };
+
+const RECOVERY_TOPIC_FALLBACKS: Record<string, string[]> = {
+  MATHEMATICS: ["Surds", "Logarithms"],
+  PHYSICS: ["Mechanics"],
+  CHEMISTRY: ["Atomic Structure"],
+  BIOLOGY: ["Cell Biology"],
+  "INTEGRATED SCIENCE": ["Forces and Motion"],
+  ENGLISH: ["Reading Comprehension"],
+  KISWAHILI: ["Ufahamu"],
+};
 
 // Keep OCR constrained to subjects that the platform can actually coach. This
 // prevents headers, phone numbers and teacher remarks becoming fake subjects.
@@ -126,6 +137,7 @@ export class ReportCardService {
     const focus =
       [...scores].sort((a, b) => a.percentage - b.percentage)[0]?.subject ??
       null;
+    const recoveryTopics = await this.recoveryTopics(actor.grade, weak);
     const diagnosis = {
       message: this.diagnosis(scores, weak, strong, actor.name),
       colorCodes: scores.map((row) => ({
@@ -138,7 +150,14 @@ export class ReportCardService {
               : "RED",
       })),
       learningTechniques: Object.fromEntries(
-        scores.map((row) => [row.subject, this.technique(row.subject, row.percentage)]),
+        scores.map((row) => [
+          row.subject,
+          this.technique(
+            row.subject,
+            row.percentage,
+            recoveryTopics.find((item) => item.subject.toLowerCase() === row.subject.toLowerCase())?.topic,
+          ),
+        ]),
       ),
     };
     const periodKey = `learner-report-${id}`;
@@ -189,6 +208,38 @@ export class ReportCardService {
             diagnosis.learningTechniques as unknown as Prisma.InputJsonValue,
         },
       });
+      await Promise.all(
+        recoveryTopics.map(({ subject, topic }) =>
+          tx.learningCoachPlan.upsert({
+            where: {
+              studentId_subject_grade_topic: {
+                studentId: actor.id,
+                subject,
+                grade: actor.grade ?? "Grade 7",
+                topic,
+              },
+            },
+            create: {
+              schoolId: actor.schoolId,
+              studentId: actor.id,
+              subject,
+              grade: actor.grade ?? "Grade 7",
+              topic,
+              masteryScore: 0,
+              recommendedTechnique: this.technique(subject, 0, topic),
+              focusAreas: ["Report-card recovery", "Active recall"],
+              plan: this.recoveryPlan(subject, topic),
+              nextReviewAt: new Date(),
+            },
+            // Do not overwrite evidence from earlier learner practice. The
+            // fresh report simply makes this path visible again.
+            update: {
+              recommendedTechnique: this.technique(subject, 0, topic),
+              focusAreas: ["Report-card recovery", "Active recall"],
+            },
+          }),
+        ),
+      );
     });
     await this.audit.record({
       action: "learning_coach.report_card_analyzed",
@@ -205,7 +256,31 @@ export class ReportCardService {
       primarySkillFocus: focus,
       diagnosis,
       timetable,
+      masteryPaths: recoveryTopics,
     };
+  }
+
+  private async recoveryTopics(gradeLabel: string | null | undefined, weakSubjects: string[]): Promise<RecoveryTopic[]> {
+    const grade = this.gradeNumber(gradeLabel);
+    const taxonomy = grade
+      ? await this.prisma.curriculumTaxonomy.findMany({
+          where: { grade, subject: { in: weakSubjects, mode: "insensitive" } },
+          select: { subject: true, topics: true },
+        })
+      : [];
+
+    return weakSubjects.flatMap((subject) => {
+      const source = taxonomy.find((item) => item.subject.toLowerCase() === subject.toLowerCase());
+      const topics = source?.topics?.filter(Boolean).slice(0, 2)
+        ?? RECOVERY_TOPIC_FALLBACKS[this.normalise(subject)]
+        ?? [`${subject} foundations`];
+      return topics.map((topic) => ({ subject: source?.subject ?? subject, topic }));
+    });
+  }
+
+  private gradeNumber(gradeLabel: string | null | undefined) {
+    const match = gradeLabel?.match(/(?:grade\s*)?(\d{1,2})/i);
+    return match ? Number(match[1]) : null;
   }
 
   private async extractScores(
@@ -371,12 +446,12 @@ export class ReportCardService {
       : `We will start with ${firstWeak.subject} using short, guided practice sessions.`;
     return `${name}, ${strengthPhrase} ${bridge} This result is a starting point, not a label: each corrected mistake becomes the next step in your plan.`;
   }
-  private technique(subject: string, score: number) {
+  private technique(subject: string, score: number, topic?: string) {
     const key = this.normalise(subject);
     if (score < 40) {
-      if (key === "MATHEMATICS") return "Feynman sprint: solve one worked example, then explain every step to a 10-year-old in a two-minute voice note.";
-      if (key === "PHYSICS") return "Visualise first: open a motion or pendulum simulation, predict what will happen, then calculate one value without notes.";
-      if (key === "CHEMISTRY") return "Particle story: draw the particles before balancing one equation, then explain what changed and what stayed conserved.";
+      if (key === "MATHEMATICS") return `Feynman Technique: solve two ${topic ?? "foundation"} problems step-by-step. Then record a two-minute voice note explaining the rule to a friend.`;
+      if (key === "PHYSICS") return `3D visualisation: model ${topic ?? "the idea"} first, predict what changes, then calculate one value using the formula.`;
+      if (key === "CHEMISTRY") return `Particle story: draw ${topic ?? "the structure"}, then explain the rule using an everyday analogy before answering one question.`;
       if (key === "BIOLOGY") return "Analogy game: compare the process to a familiar system, label a simple diagram, then retrieve it without looking.";
       return "Recovery loop: study one worked example, hide the notes, answer one short question, then correct one specific mistake.";
     }
@@ -405,5 +480,13 @@ export class ReportCardService {
         };
       },
     );
+  }
+
+  private recoveryPlan(subject: string, topic: string) {
+    return [
+      { order: 1, title: `${topic}: worked example`, minutes: 5, technique: this.technique(subject, 0, topic) },
+      { order: 2, title: "Recall without notes", minutes: 5, technique: "Close the notes and explain the key rule in your own words." },
+      { order: 3, title: "Correct one misconception", minutes: 5, technique: "Check one answer, name the error, and write the corrected rule." },
+    ];
   }
 }

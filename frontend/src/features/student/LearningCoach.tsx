@@ -15,6 +15,11 @@ import {
   BrainCircuit,
   Sparkles,
   BookOpenCheck,
+  Pause,
+  Play,
+  TimerReset,
+  X,
+  Target,
 } from "lucide-react";
 import { apiErrorMessage } from "../../api/axios";
 import {
@@ -468,41 +473,50 @@ function reportLevel(percentage: number) {
   return "BE · Priority";
 }
 
+function FocusTimer({ subject, topic, onClose }: { subject: string; topic: string; onClose: () => void }) {
+  const [seconds, setSeconds] = useState(15 * 60);
+  const [running, setRunning] = useState(true);
+  useEffect(() => {
+    if (!running || seconds <= 0) return;
+    const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [running, seconds]);
+  const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const remainder = String(seconds % 60).padStart(2, "0");
+  return <aside className="sticky bottom-3 z-20 rounded-2xl border border-[#293944] bg-[#101820] p-4 text-white shadow-[0_18px_44px_rgba(16,24,32,.28)] sm:flex sm:items-center sm:justify-between">
+    <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#b5e719] text-[#101820]"><Target className="h-5 w-5" /></span><div><p className="text-xs font-bold uppercase tracking-[.13em] text-lime-200">Focus session</p><p className="text-sm font-semibold">{subject}: {topic}</p></div></div>
+    <div className="mt-4 flex items-center gap-2 sm:mt-0"><span className="mr-auto font-mono text-2xl font-semibold tabular-nums">{minutes}:{remainder}</span><button type="button" onClick={() => setRunning((value) => !value)} className="grid h-10 w-10 place-items-center rounded-lg bg-white text-[#101820]" aria-label={running ? "Pause timer" : "Resume timer"}>{running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button><button type="button" onClick={() => { setSeconds(15 * 60); setRunning(false); }} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Reset timer"><TimerReset className="h-4 w-4" /></button><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Close timer"><X className="h-4 w-4" /></button></div>
+  </aside>;
+}
+
 function PlanCard({
   plan,
   onPractice,
+  onFocus,
+  diagnosticReady,
 }: {
   plan: LearningPlan;
   onPractice: () => void;
+  onFocus: () => void;
+  diagnosticReady: boolean;
 }) {
   const totalMinutes = plan.plan.reduce(
     (total, step) => total + step.minutes,
     0,
   );
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(16,24,32,.04)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">
             {plan.subject}
           </p>
-          <h2 className="mt-1 text-lg font-semibold text-[#101820]">
-            {plan.topic}
-          </h2>
+          <h2 className="mt-1 text-base font-semibold text-[#101820]">{plan.topic}</h2>
         </div>
         <MasteryBadge score={plan.masteryScore} />
       </div>
-      {plan.requiresHumanSupport ? (
-        <div className="mt-4 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-900">
-          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          This topic still needs support. Ask a teacher or tutor to review it
-          with you.
-        </div>
-      ) : null}
-      <p className="mt-4 text-sm leading-6 text-slate-600">
-        {plan.recommendedTechnique}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-medium text-slate-500">
+      <p className="mt-3 text-sm leading-6 text-slate-600">{plan.recommendedTechnique}</p>
+      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-medium text-slate-500">
         <span className="inline-flex items-center gap-1.5">
           <Clock3 className="h-4 w-4" /> About {totalMinutes} min
         </span>
@@ -511,12 +525,8 @@ function PlanCard({
           {formatReview(plan.nextReviewAt)}
         </span>
       </div>
-      <button
-        type="button"
-        onClick={onPractice}
-        className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white hover:bg-[#1d2c38]"
-      >
-        <RotateCcw className="h-4 w-4" /> Continue practice
+      <button type="button" onClick={diagnosticReady ? onPractice : onFocus} className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white hover:bg-[#1d2c38]">
+        {diagnosticReady ? <><RotateCcw className="h-4 w-4" /> Start diagnostic</> : <><Play className="h-4 w-4" /> Start 15-min session</>}
       </button>
     </article>
   );
@@ -921,6 +931,7 @@ export function LearningCoachPage() {
   const scope = useStudentContentScope();
   const [session, setSession] = useState<LearningSession | null>(null);
   const [reviewReport, setReviewReport] = useState(false);
+  const [focusTimer, setFocusTimer] = useState<{ subject: string; topic: string } | null>(null);
   const catalog = useQuery({
     queryKey: ["learning-coach-catalog"],
     queryFn: learningCoachApi.catalog,
@@ -963,16 +974,22 @@ export function LearningCoachPage() {
   const red = new Set(profile.filter((item) => item.color === "RED").map((item) => item.subject.toLowerCase()));
   const paths = (plans.data ?? []).filter((plan) => red.has(plan.subject.toLowerCase()) && (!allowed.size || allowed.has(plan.subject.toLowerCase())));
   const prioritySubjects = profile.filter((item) => item.color === "RED").sort((left, right) => left.percentage - right.percentage);
-  const strongestSubject = profile.filter((item) => item.color === "GREEN").sort((left, right) => right.percentage - left.percentage)[0];
+  const diagnosticTopics = new Set((catalog.data ?? []).map((topic) => `${topic.subject.toLowerCase()}::${topic.topic.toLowerCase()}`));
+  const startPriority = (plan: LearningPlan) => {
+    const isReady = diagnosticTopics.has(`${plan.subject.toLowerCase()}::${plan.topic.toLowerCase()}`);
+    if (isReady) start.mutate({ subject: plan.subject, topic: plan.topic, mode: "DIAGNOSTIC" });
+    else setFocusTimer({ subject: plan.subject, topic: plan.topic });
+  };
   if (!report || reviewReport) return <div className="mx-auto max-w-5xl space-y-6"><PageHeader title="Learning Coach" />{report ? <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-lime-200 bg-lime-50 p-5"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#607D00]">Report check</p><h2 className="mt-1 text-xl font-semibold text-[#101820]">Correct your results before continuing</h2><p className="mt-1 text-sm text-slate-600">Review each subject and score. Your updated confirmation replaces the earlier diagnosis.</p></div><button type="button" onClick={() => setReviewReport(false)} className="min-h-10 rounded-xl border border-[#101820] bg-white px-4 text-sm font-bold text-[#101820]">Back to Coach</button></div> : <div className="rounded-3xl border border-dashed border-lime-300 bg-lime-50 p-8 text-center"><BrainCircuit className="mx-auto h-10 w-10 text-[#607D00]"/><h2 className="mt-4 text-2xl font-semibold text-[#101820]">Unlock your personalized Learning Coach</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">Upload a report card, confirm the scores, then receive a private study plan built around your real results.</p></div>}<ReportCardPanel initialReport={reviewReport ? report : undefined} onAnalyzed={() => setReviewReport(false)} /></div>;
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-10">
+    <div className="mx-auto max-w-6xl space-y-7 pb-24">
       <PageHeader title="Learning Coach" />
-      <section className="overflow-hidden rounded-[26px] bg-[#101820] text-white shadow-[0_16px_42px_rgba(16,24,32,.16)]"><div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_280px]"><div><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#b5e719] text-[#101820]"><BrainCircuit className="h-5 w-5" /></span><p className="text-xs font-bold uppercase tracking-[0.16em] text-lime-200">Academic briefing</p></div><h2 className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">Your next best move</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">{report.diagnosis?.message}</p><button type="button" onClick={() => setReviewReport(true)} className="mt-5 inline-flex min-h-10 items-center rounded-lg border border-white/20 px-3 text-sm font-bold text-white hover:bg-white/10">Review report data</button></div><aside className="rounded-2xl border border-white/10 bg-white/[0.05] p-4"><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">This week&apos;s focus</p><div className="mt-3 space-y-3">{prioritySubjects.slice(0, 3).map((item, index) => <div key={item.subject} className="flex items-center gap-3"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#b5e719] text-xs font-black text-[#101820]">{index + 1}</span><div className="min-w-0"><p className="truncate text-sm font-bold">{item.subject}</p><p className="text-xs text-slate-300">{item.percentage}% · rebuild foundations</p></div></div>)}</div>{strongestSubject ? <p className="mt-5 border-t border-white/10 pt-4 text-xs leading-5 text-slate-300">Use {strongestSubject.subject} ({strongestSubject.percentage}%) as evidence that you can learn difficult ideas with the right method.</p> : null}</aside></div></section>
-      <section><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Report profile</p><h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#101820]">Strengths and focus areas</h2></div><p className="text-sm text-slate-500">Confirmed report data</p></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{profile.map((item) => { const priority = item.color === "RED"; const tone = item.color === "GREEN" ? "border-emerald-200 bg-emerald-50/70" : item.color === "YELLOW" ? "border-amber-200 bg-amber-50/70" : "border-rose-200 bg-rose-50/70"; const accent = item.color === "GREEN" ? "bg-emerald-500" : item.color === "YELLOW" ? "bg-amber-400" : "bg-rose-500"; return <article key={item.subject} className={`relative overflow-hidden rounded-xl border p-4 ${tone}`}><span className={`absolute inset-y-0 left-0 w-1 ${accent}`} /><div className="ml-2 flex items-start justify-between gap-2"><p className="text-xs font-bold uppercase tracking-[0.11em] text-slate-600">{item.subject}</p><span className="rounded-full bg-white/75 px-2 py-1 text-[10px] font-bold text-slate-600">{reportLevel(item.percentage)}</span></div><div className="ml-2 mt-4 flex items-end justify-between"><p className="text-3xl font-semibold tracking-tight text-[#101820]">{item.percentage}%</p>{priority ? <span className="rounded-full bg-rose-600 px-2 py-1 text-[10px] font-bold text-white">Priority</span> : null}</div></article>; })}</div></section>
-      <section><div className="flex items-center gap-2"><BookOpenCheck className="h-5 w-5 text-[#607D00]"/><h2 className="text-xl font-semibold text-[#101820]">Mastery paths</h2></div>{paths.length ? <div className="mt-3 grid gap-4 md:grid-cols-2">{paths.map((plan) => <PlanCard key={plan.id} plan={plan} onPractice={() => start.mutate({ subject: plan.subject, topic: plan.topic, mode: "PRACTICE" })} />)}</div> : <TopicPicker topics={(catalog.data ?? []).filter((topic) => red.has(topic.subject.toLowerCase()) && (!allowed.size || allowed.has(topic.subject.toLowerCase())))} plans={[]} loading={start.isPending} onStart={({ subject, topic }, mode) => start.mutate({ subject, topic, mode })} />}</section>
-      <section><div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#607D00]"/><h2 className="text-xl font-semibold text-[#101820]">This week&apos;s learning recipes</h2></div><p className="mt-1 text-sm text-slate-500">Follow one short sequence at a time. Each sequence ends with retrieval, not rereading.</p><div className="mt-3 grid gap-3 md:grid-cols-2">{prioritySubjects.map((item) => <article key={item.subject} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="flex gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-lime-50 text-[#607D00]"><BrainCircuit className="h-5 w-5"/></span><div><p className="text-xs font-bold uppercase tracking-[0.13em] text-[#607D00]">{item.subject}</p><h3 className="mt-1 text-sm font-semibold leading-6 text-[#101820]">{report.diagnosis?.learningTechniques?.[item.subject] ?? "Active recall and error correction"}</h3></div></div><span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">15 min</span></div><ol className="mt-4 space-y-2 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600"><li><strong className="text-[#101820]">1.</strong> Learn one example or visual model.</li><li><strong className="text-[#101820]">2.</strong> Hide the notes and explain the idea aloud.</li><li><strong className="text-[#101820]">3.</strong> Correct one mistake before stopping.</li></ol></article>)}</div></section>
-      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#607D00]">Adaptive timetable</p><h2 className="mt-1 text-lg font-semibold text-[#101820]">Build this week&apos;s focused study blocks</h2><p className="mt-1 text-sm text-slate-600">The timetable prioritises your lowest confirmed scores and includes recall reviews.</p></div><button type="button" disabled={generatePlan.isPending} onClick={() => generatePlan.mutate()} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#b5e719] px-5 text-sm font-bold text-[#101820] disabled:opacity-60">{generatePlan.isPending ? "Preparing plan…" : "Build study plan"}<ArrowRight className="h-4 w-4"/></button></section>
+      <section className="overflow-hidden rounded-3xl bg-[#101820] text-white shadow-[0_18px_48px_rgba(16,24,32,.16)]"><div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_270px]"><div><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#b5e719] text-[#101820]"><Target className="h-5 w-5" /></span><p className="text-xs font-bold uppercase tracking-[.15em] text-lime-200">Academic briefing</p></div><h2 className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">Your KCBE Recovery Plan.</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">{report.diagnosis?.message}</p><button type="button" onClick={() => paths[0] && startPriority(paths[0])} className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#b5e719] px-4 text-sm font-bold text-[#101820]">Start {paths[0]?.subject ?? "recovery"} Recovery <ArrowRight className="h-4 w-4" /></button></div><aside className="rounded-2xl border border-white/10 bg-white/[.06] p-4"><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">This week&apos;s focus</p><div className="mt-3 space-y-3">{prioritySubjects.slice(0, 3).map((item) => <div key={item.subject} className="flex items-center gap-3"><span className="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-[0_0_0_4px_rgba(251,113,133,.12)]"/><div><p className="text-sm font-bold">{item.subject}</p><p className="text-xs text-slate-300">{item.percentage}% · rebuild foundations</p></div></div>)}</div></aside></div></section>
+      <section><div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Confirmed results</p><h2 className="mt-1 text-xl font-semibold text-[#101820]">Your learning profile</h2></div><button type="button" onClick={() => setReviewReport(true)} className="text-sm font-semibold text-[#466000]">Review report</button></div><div className="mt-4 flex gap-3 overflow-x-auto pb-2">{profile.map((item) => { const priority = item.color === "RED"; const tone = item.color === "GREEN" ? "border-emerald-200 bg-emerald-50" : item.color === "YELLOW" ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"; return <article key={item.subject} className={`min-w-[168px] flex-1 rounded-2xl border p-4 ${tone}`}><p className="text-xs font-bold uppercase tracking-[.11em] text-slate-600">{item.subject}</p><p className="mt-4 text-3xl font-semibold tracking-tight text-[#101820]">{item.percentage}%</p><p className="mt-1 text-xs font-semibold text-slate-600">{priority ? "Priority focus" : reportLevel(item.percentage)}</p></article>; })}</div></section>
+      <section><div className="flex items-center gap-2"><BookOpenCheck className="h-5 w-5 text-[#607D00]"/><div><h2 className="text-xl font-semibold text-[#101820]">Mastery paths</h2><p className="text-sm text-slate-500">One focused topic at a time. Your next diagnostic unlocks when a question pack is ready.</p></div></div><div className="mt-4 grid gap-3 md:grid-cols-2">{paths.map((plan) => <PlanCard key={plan.id} plan={plan} diagnosticReady={diagnosticTopics.has(`${plan.subject.toLowerCase()}::${plan.topic.toLowerCase()}`)} onPractice={() => start.mutate({ subject: plan.subject, topic: plan.topic, mode: "DIAGNOSTIC" })} onFocus={() => setFocusTimer({ subject: plan.subject, topic: plan.topic })} />)}</div></section>
+      <section><div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#607D00]"/><div><h2 className="text-xl font-semibold text-[#101820]">Targeted Study Techniques</h2><p className="text-sm text-slate-500">Short, subject-specific methods designed to rebuild recall and confidence.</p></div></div><div className="mt-4 grid gap-3 lg:grid-cols-3">{prioritySubjects.map((item) => { const path = paths.find((plan) => plan.subject.toLowerCase() === item.subject.toLowerCase()); return <article key={item.subject} className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-bold uppercase tracking-[.13em] text-[#607D00]">{item.subject}{path ? ` · ${path.topic}` : ""}</p><p className="mt-3 text-sm font-semibold leading-6 text-[#101820]">{path?.recommendedTechnique ?? report.diagnosis?.learningTechniques?.[item.subject]}</p><button type="button" onClick={() => setFocusTimer({ subject: item.subject, topic: path?.topic ?? "recovery" })} className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-[#101820]"><Play className="h-4 w-4 text-[#607D00]" />Start 15-min session</button></article>; })}</div></section>
+      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#607D00]">Adaptive timetable</p><h2 className="mt-1 text-lg font-semibold text-[#101820]">Turn recovery into a weekly routine</h2><p className="mt-1 text-sm text-slate-600">Focus subjects receive more time, with spaced review built in.</p></div><button type="button" disabled={generatePlan.isPending} onClick={() => generatePlan.mutate()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#b5e719] px-5 text-sm font-bold text-[#101820] disabled:opacity-60">{generatePlan.isPending ? "Preparing plan…" : "Generate study plan"}<ArrowRight className="h-4 w-4"/></button></section>
+      {focusTimer ? <FocusTimer {...focusTimer} onClose={() => setFocusTimer(null)} /> : null}
       {start.isError ? (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {apiErrorMessage(

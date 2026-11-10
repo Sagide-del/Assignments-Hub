@@ -15,9 +15,15 @@ describe("ReportCardService", () => {
       learningCoachReportCard: { update: jest.fn().mockResolvedValue(report) },
       user: { update: jest.fn().mockResolvedValue({}) },
       studentStudyPlan: { upsert: jest.fn().mockResolvedValue({}) },
+      learningCoachPlan: { upsert: jest.fn().mockResolvedValue({}) },
     };
     const prisma = {
       learningCoachReportCard: { findFirst: jest.fn().mockResolvedValue(report) },
+      curriculumTaxonomy: { findMany: jest.fn().mockResolvedValue([
+        { subject: "Mathematics", topics: ["Surds", "Logarithms"] },
+        { subject: "Physics", topics: ["Mechanics"] },
+        { subject: "Chemistry", topics: ["Atomic Structure"] },
+      ]) },
       $transaction: jest.fn((callback) => callback(tx)),
     } as any;
     const uploads = { createPrivatePreviewUrl: jest.fn().mockResolvedValue("https://signed.example/report") } as any;
@@ -87,5 +93,29 @@ describe("ReportCardService", () => {
     }, actor);
 
     expect(result.diagnosis.learningTechniques.Mathematics).toContain("Feynman");
+  });
+
+  it("creates recovery paths from the learner grade taxonomy for every red subject", async () => {
+    const { service, tx } = serviceWith({ id: 11 });
+    actor.grade = "Grade 10";
+
+    await service.confirm(11, {
+      scores: [
+        { subject: "Mathematics", percentage: 4 },
+        { subject: "Physics", percentage: 30 },
+        { subject: "Chemistry", percentage: 34 },
+      ],
+    }, actor);
+
+    expect(tx.learningCoachPlan.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        studentId_subject_grade_topic: expect.objectContaining({ subject: "Mathematics", topic: "Surds" }),
+      }),
+    }));
+    expect(tx.learningCoachPlan.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        studentId_subject_grade_topic: expect.objectContaining({ subject: "Physics", topic: "Mechanics" }),
+      }),
+    }));
   });
 });
