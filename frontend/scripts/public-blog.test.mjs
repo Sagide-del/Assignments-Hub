@@ -18,7 +18,7 @@ test('generates five searchable branded blog articles', async () => {
     assert.ok(html.includes(post.title));
     assert.match(html, /Assignment Hub Team/);
     assert.match(html, /application\/ld\+json/);
-    assert.match(html, /Create free account/);
+    assert.match(html, /Try free revision/);
   }
   const sitemap = await readFile(join(root, 'sitemap.xml'), 'utf8');
   assert.match(sitemap, /cbc-grading-levels-explained/);
