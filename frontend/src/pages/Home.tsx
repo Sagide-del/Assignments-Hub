@@ -136,7 +136,7 @@ export default function Home() {
               Free revision
             </a>
             <a href="/blog/" className="transition hover:text-[#101820]">
-              Parent guides
+              Blog
             </a>
             <a href="#for-parents" className="transition hover:text-[#101820]">
               For parents
@@ -194,7 +194,7 @@ export default function Home() {
                 href="/blog/"
                 className="mt-5 inline-flex items-center text-sm font-bold text-[#365000] underline decoration-[#B5E61D] decoration-2 underline-offset-4 transition hover:text-[#101820]"
               >
-                Parents: read the CBC Survival Guide
+                Read the Assignment Hub blog
               </a>
               <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-slate-600">
                 <span className="inline-flex items-center gap-2">
