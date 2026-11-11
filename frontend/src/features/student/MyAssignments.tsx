@@ -132,6 +132,7 @@ function AssignmentCard({
   const count = assignment._count?.questions ?? assignment.questions?.length;
   const marks = assignment.maxPoints ?? assignment.totalMarks;
   const due = assignmentDeadline(assignment.dueDate);
+  const mastery = assignment.cmsModule?.mastery;
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-100/50 transition hover:border-slate-300 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -149,6 +150,22 @@ function AssignmentCard({
             <span className="ml-2 inline-flex rounded-md bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700">
               Priority focus
             </span>
+          ) : null}
+          {mastery ? (
+            <div className="mt-3 max-w-md rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="font-semibold text-slate-800">
+                  Mastery path · Attempt {Math.min(mastery.attempt_count + (mastery.mastery_status === "IN_PROGRESS" ? 1 : 0), 3)} of 3
+                </span>
+                <span className={mastery.mastery_status === "MASTERED" ? "font-semibold text-emerald-700" : mastery.mastery_status === "REMEDIAL" ? "font-semibold text-amber-700" : "font-semibold text-slate-600"}>
+                  {mastery.mastery_status === "MASTERED" ? "EE achieved" : mastery.mastery_status === "REMEDIAL" ? "Foundation next" : `${mastery.best_score}% best`}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                <div className={mastery.mastery_status === "MASTERED" ? "h-full bg-emerald-500" : "h-full bg-[#b7ec0b]"} style={{ width: `${mastery.mastery_status === "MASTERED" ? 100 : Math.min(100, (mastery.attempt_count / 3) * 100)}%` }} />
+              </div>
+              {mastery.foundation_recommended ? <p className="mt-2 text-xs text-amber-800">Let's try a foundation batch to build your confidence.</p> : null}
+            </div>
           ) : null}
           <LearningTitle
             value={assignment.title}
@@ -340,8 +357,13 @@ export function MyAssignmentsPage() {
     retry: false,
   });
   const assignments = useMemo(() => {
+    // Retry assignments are learner-specific CMS material. They must never
+    // surface in another learner's ordinary catalogue just because they share
+    // a class or stream.
     const published = (assignmentsQuery.data ?? []).filter(
-      (a) => a.isPublished,
+      (a) =>
+        a.isPublished &&
+        (!a.rawJson?.cms_mastery || a.rawJson.cms_student_id === user?.id),
     );
     const key = (subject: string, topic: string) =>
       JSON.stringify([catalogueKey(subject), catalogueKey(topic)]);
@@ -452,6 +474,7 @@ export function MyAssignmentsPage() {
           state: m.state,
           results_released: m.results_released,
           priority_focus: m.priority_focus,
+          mastery: m.mastery,
         },
         rawJson: { cms_module_id: m.id, priority_focus: m.priority_focus },
       }));

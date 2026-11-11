@@ -20,6 +20,7 @@ export interface LearningModule {
   due_date?: string | null;
   results_released?: boolean;
   priority_focus?: boolean;
+  mastery?: import("../../types").MasteryProgress | null;
 }
 export function filterCmsModules(
   rows: LearningModule[],

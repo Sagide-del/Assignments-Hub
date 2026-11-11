@@ -288,7 +288,16 @@ export class AssignmentsService {
       },
       orderBy: { createdAt: 'desc' },
     });
-    const visibleAssignments = actor.isIndependentTrial ? assignments.slice(0, 1) : assignments;
+    // CMS mastery retries are private to their learner. A stream/class match
+    // alone must never reveal another learner's retry set in the regular
+    // assignment catalogue.
+    const scopedAssignments = isStudent
+      ? assignments.filter((assignment) => {
+          const raw = assignment.rawJson as Record<string, unknown> | null;
+          return !raw?.cms_mastery || raw.cms_student_id === actor.id;
+        })
+      : assignments;
+    const visibleAssignments = actor.isIndependentTrial ? scopedAssignments.slice(0, 1) : scopedAssignments;
     return visibleAssignments.map((assignment) => ({
       ...assignment,
       _count: {
@@ -336,7 +345,9 @@ export class AssignmentsService {
         !assignment.isPublished ||
         (assignment.publishDate && assignment.publishDate > new Date()) ||
         (actor.grade && assignment.grade !== actor.grade) ||
-        !this.matchesStudentScope(assignment, studentProfile);
+        !this.matchesStudentScope(assignment, studentProfile) ||
+        ((assignment.rawJson as Record<string, unknown> | null)?.cms_mastery === true &&
+          (assignment.rawJson as Record<string, unknown> | null)?.cms_student_id !== actor.id);
       if (unavailable) throw new NotFoundException('Assignment not found');
       await this.assertIndependentTrialCanAccess(assignment.id, actor);
       const delivered = await this.delivery.questionsForStudent(assignment, actor.id);

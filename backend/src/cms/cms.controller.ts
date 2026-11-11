@@ -127,6 +127,16 @@ export class CmsController {
     return this.cms.startLearningModule(id, actor);
   }
 
+  @Post("learning/:id/complete")
+  @Roles(Role.STUDENT)
+  completeLearning(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body("assignmentId") assignmentId: number,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.cms.completeLearningModule(id, Number(assignmentId), actor);
+  }
+
   @Get("capabilities")
   @Public()
   async capabilities() {

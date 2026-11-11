@@ -54,9 +54,13 @@ export interface Assignment {
     state?: string;
     results_released?: boolean;
     priority_focus?: boolean;
+    mastery?: MasteryProgress | null;
   };
   rawJson?: {
     cms_module_id?: string;
+    cms_student_id?: number;
+    cms_attempt?: number;
+    cms_mastery?: boolean;
     cms_content?: unknown;
     priority_focus?: boolean;
   };
@@ -87,6 +91,15 @@ export interface Assignment {
   schoolId: number;
   questions?: Question[];
   _count?: { questions: number; submissions: number };
+}
+
+export interface MasteryProgress {
+  attempt_count: number;
+  best_score: number;
+  mastery_status: "LOCKED" | "IN_PROGRESS" | "MASTERED" | "REMEDIAL";
+  answers_unlocked: boolean;
+  attempts_remaining: number;
+  foundation_recommended: boolean;
 }
 
 // Mirrors backend/prisma/schema.prisma Submission model (there is no

@@ -33,6 +33,14 @@ import { RichContent } from "../../components/ui/RichContent";
 import { AnswerInputWithSymbols } from "./answer-input/AnswerInputWithSymbols";
 import type { Question } from "../../types";
 
+type MasteryCompletion = {
+  score: number;
+  answers_unlocked: boolean;
+  attempts_remaining: number;
+  mastery_status: "IN_PROGRESS" | "MASTERED" | "REMEDIAL";
+  message: string;
+};
+
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia(query).matches,
@@ -155,6 +163,8 @@ function ExamWorkspace() {
   });
 
   const [status, setStatus] = useState<string | null>(null);
+  const [masteryCompletion, setMasteryCompletion] =
+    useState<MasteryCompletion | null>(null);
   const [uploadingFor, setUploadingFor] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
@@ -198,6 +208,29 @@ function ExamWorkspace() {
       }
     },
   });
+  const completeMastery = useMutation({
+    mutationFn: () =>
+      api
+        .post<MasteryCompletion>(
+          `/cms/learning/${assignment?.rawJson?.cms_module_id}/complete`,
+          { assignmentId },
+        )
+        .then((response) => response.data),
+    onSuccess: (result) => {
+      setMasteryCompletion(result);
+      void queryClient.invalidateQueries({ queryKey: ["cms-learning", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["assignment-catalogue"] });
+    },
+  });
+  const retryMastery = useMutation({
+    mutationFn: () =>
+      api
+        .post<{ id: number }>(
+          `/cms/learning/${assignment?.rawJson?.cms_module_id}/start`,
+        )
+        .then((response) => response.data),
+    onSuccess: (result) => navigate(`/student/assignments/${result.id}`),
+  });
   const answers = draft.answers;
   const autoSubmitted = useRef(false);
   useEffect(() => {
@@ -211,6 +244,25 @@ function ExamWorkspace() {
     document.body.classList.add("exam-focus-active");
     return () => document.body.classList.remove("exam-focus-active");
   }, [focusMode]);
+  useEffect(() => {
+    if (
+      !assignment?.rawJson?.cms_mastery ||
+      !assignment.rawJson.cms_module_id ||
+      !existing ||
+      existing.status === "DRAFT" ||
+      masteryCompletion ||
+      completeMastery.isPending
+    )
+      return;
+    completeMastery.mutate();
+  }, [
+    assignment?.rawJson?.cms_mastery,
+    assignment?.rawJson?.cms_module_id,
+    existing?.id,
+    existing?.status,
+    masteryCompletion,
+    completeMastery,
+  ]);
   function toggleFlag() {
     const qid = questions?.[currentIndex]?.id;
     if (qid == null) return;
@@ -407,6 +459,43 @@ function ExamWorkspace() {
             Math.max(0, Math.round((score / assignmentMaxPoints) * 100)),
           )
         : null;
+    const masteryLocked =
+      Boolean(assignment.rawJson?.cms_mastery) &&
+      masteryCompletion != null &&
+      !masteryCompletion.answers_unlocked;
+    if (masteryLocked) {
+      return (
+        <div className="mx-auto max-w-2xl space-y-5 py-6 sm:py-10">
+          <section className="rounded-3xl bg-[#101c25] p-6 text-white shadow-xl sm:p-9">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#b7ec0b]">
+              Mastery checkpoint
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold">Keep building the skill</h1>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
+              You scored {masteryCompletion.score}%. EE mastery begins at 80%, so the answer review stays closed while you practise again.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <span className="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold">{masteryCompletion.attempts_remaining} attempt{masteryCompletion.attempts_remaining === 1 ? "" : "s"} remaining</span>
+              <span className="text-sm text-slate-300">Questions and options will be shuffled on your next attempt.</span>
+            </div>
+          </section>
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 className="font-semibold text-slate-900">Your next best step</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Take a short break, revisit the worked examples, then retry this focused practice set. The aim is understanding, not rushing.</p>
+            <button
+              type="button"
+              onClick={() => retryMastery.mutate()}
+              disabled={retryMastery.isPending}
+              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#b7ec0b] px-5 text-sm font-bold text-[#101c25] disabled:opacity-50"
+            >
+              {retryMastery.isPending ? "Preparing retry..." : "Try again"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            {retryMastery.isError ? <p className="mt-3 text-sm text-red-700">Could not prepare your next attempt. Please try again.</p> : null}
+          </section>
+        </div>
+      );
+    }
     const resultSummary = (
       <section
         aria-label="Assessment result"

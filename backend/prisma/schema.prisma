@@ -483,6 +483,7 @@ model User {
   independentPaymentClaims         IndependentPaymentClaim[]    @relation("IndependentPaymentClaimStudent")
   reviewedIndependentPaymentClaims IndependentPaymentClaim[]    @relation("IndependentPaymentClaimReviewedBy")
   independentPaystackPayments      IndependentPaystackPayment[] @relation("IndependentPaystackPaymentStudent")
+  masteryProgress                  StudentMasteryProgress[]
   independentTumaPayments          IndependentTumaPayment[]
   independentJengaPayments         IndependentJengaPayment[]   @relation("IndependentJengaPaymentStudent")
   updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
@@ -2830,6 +2831,34 @@ enum SubjectCategory {
   ELECTIVE
 }
 
+// This is intentionally separate from formal teacher Assignment/Submission
+// records. It tracks an individual learner's CMS practice mastery loop.
+enum StudentMasteryStatus {
+  LOCKED
+  IN_PROGRESS
+  MASTERED
+  REMEDIAL
+}
+
+model StudentMasteryProgress {
+  id              String               @id @default(uuid())
+  studentId       Int                  @map("student_id")
+  moduleId        String               @map("module_id")
+  batchNumber     Int                  @default(1) @map("batch_number")
+  attemptCount    Int                  @default(0) @map("attempt_count")
+  bestScore       Float                @default(0) @map("best_score")
+  masteryStatus   StudentMasteryStatus @default(LOCKED) @map("mastery_status")
+  lastAttemptAt   DateTime?            @map("last_attempt_at")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  student         User                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  module          MasterModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, moduleId, batchNumber])
+  @@index([studentId, masteryStatus])
+  @@map("student_mastery_progress")
+}
+
 model MasterModule {
   batch_number           Int             @default(1)
   theory_cheatsheet      Json            @default("{}")
@@ -2850,6 +2879,7 @@ model MasterModule {
 
   distributions ContentDistribution[]
   assignments   ModuleAssignment[]
+  masteryProgress StudentMasteryProgress[]
 }
 
 model ModuleAssignment {

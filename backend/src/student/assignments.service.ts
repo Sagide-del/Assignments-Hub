@@ -21,7 +21,8 @@ export class StudentAssignmentsService {
     const labels = [scope.stream, scope.className].filter(
       (x): x is string => !!x,
     );
-    const assigned = await this.scopes.prisma.assignment.findMany({
+    const [assigned, mastery] = await Promise.all([
+      this.scopes.prisma.assignment.findMany({
       where: {
         schoolId: actor.schoolId,
         grade: `Grade ${scope.grade}`,
@@ -46,7 +47,11 @@ export class StudentAssignmentsService {
         },
       },
       orderBy: { createdAt: "desc" },
-    });
+      }),
+      this.scopes.prisma.studentMasteryProgress.findMany({
+        where: { studentId: actor.id, moduleId: { in: modules.map((m) => m.id) } },
+      }),
+    ]);
     const weakSubjects = new Set(
       (learner?.weakSubjects ?? []).map((subject) =>
         subject.trim().toLowerCase(),
@@ -54,10 +59,16 @@ export class StudentAssignmentsService {
     );
     return modules
       .map((m) => {
-        const a = assigned.find(
+        const candidates = assigned.filter(
           (a) => (a.rawJson as any)?.cms_module_id === m.id,
         );
+        const a =
+          candidates.find(
+            (candidate) =>
+              (candidate.rawJson as any)?.cms_student_id === actor.id,
+          ) ?? candidates.find((candidate) => !(candidate.rawJson as any)?.cms_student_id);
         const progress = a?.submissions[0];
+        const masteryRecord = mastery.find((row) => row.moduleId === m.id);
         const priorityFocus = weakSubjects.has(m.subject.trim().toLowerCase());
         return {
           ...m,
@@ -70,6 +81,19 @@ export class StudentAssignmentsService {
               : "COMPLETED"
             : "TO_START",
           priority_focus: priorityFocus,
+          mastery: masteryRecord
+            ? {
+                attempt_count: masteryRecord.attemptCount,
+                best_score: masteryRecord.bestScore,
+                mastery_status: masteryRecord.masteryStatus,
+                answers_unlocked:
+                  masteryRecord.masteryStatus === "MASTERED" ||
+                  masteryRecord.masteryStatus === "REMEDIAL",
+                attempts_remaining: Math.max(0, 3 - masteryRecord.attemptCount),
+                foundation_recommended:
+                  masteryRecord.masteryStatus === "REMEDIAL",
+              }
+            : null,
         };
       })
       .sort(

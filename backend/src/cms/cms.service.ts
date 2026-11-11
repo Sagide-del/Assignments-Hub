@@ -24,7 +24,12 @@ import {
   Optional,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { ContentStatus, Prisma, QuestionType } from "@prisma/client";
+import {
+  ContentStatus,
+  Prisma,
+  QuestionType,
+  StudentMasteryStatus,
+} from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateDraftDto } from "./dto/create-draft.dto";
 import { PublishDto, PublishTargetType } from "./dto/publish.dto";
@@ -36,6 +41,15 @@ export class CmsService {
     private readonly ai: AiProviderRouterService,
     @Optional() private readonly math?: MathValidatorService,
   ) {}
+
+  private shuffle<T>(values: readonly T[]): T[] {
+    const next = [...values];
+    for (let index = next.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(Math.random() * (index + 1));
+      [next[index], next[swap]] = [next[swap], next[index]];
+    }
+    return next;
+  }
 
   async generateAiContent(
     dto: GenerateAiContentDto,
@@ -209,6 +223,10 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
       orderBy: { updated_at: "desc" },
     });
     // A catalogue never delivers answers, snapshots or private grading config.
+    const progress = await this.prisma.studentMasteryProgress.findMany({
+      where: { studentId: actor.id, moduleId: { in: modules.map((m) => m.id) } },
+    });
+    const progressByModule = new Map(progress.map((row) => [row.moduleId, row]));
     return modules.map((module) => {
       const body = module.content_json as Record<string, Prisma.JsonValue>;
       return {
@@ -228,8 +246,30 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
         question_count: Array.isArray(body?.questions)
           ? body.questions.length
           : 0,
+        mastery: progressByModule.get(module.id)
+          ? this.masteryResponse(progressByModule.get(module.id)!)
+          : null,
       };
     });
+  }
+
+  private masteryResponse(progress: {
+    attemptCount: number;
+    bestScore: number;
+    masteryStatus: StudentMasteryStatus;
+  }) {
+    const answersUnlocked =
+      progress.masteryStatus === StudentMasteryStatus.MASTERED ||
+      progress.masteryStatus === StudentMasteryStatus.REMEDIAL;
+    return {
+      attempt_count: progress.attemptCount,
+      best_score: progress.bestScore,
+      mastery_status: progress.masteryStatus,
+      answers_unlocked: answersUnlocked,
+      attempts_remaining: Math.max(0, 3 - progress.attemptCount),
+      foundation_recommended:
+        progress.masteryStatus === StudentMasteryStatus.REMEDIAL,
+    };
   }
 
   async startLearningModule(id: string, actor: AuthenticatedUser) {
@@ -244,6 +284,27 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
       const body = module.content_json as Record<string, Prisma.JsonValue>;
       if (!body || !Array.isArray(body.questions) || !body.questions.length)
         throw new BadRequestException("This module has no questions.");
+      const progress = await tx.studentMasteryProgress.upsert({
+        where: {
+          studentId_moduleId_batchNumber: {
+            studentId: actor.id,
+            moduleId: id,
+            batchNumber: module.batch_number,
+          },
+        },
+        create: {
+          studentId: actor.id,
+          moduleId: id,
+          batchNumber: module.batch_number,
+          masteryStatus: StudentMasteryStatus.LOCKED,
+        },
+        update: {},
+      });
+      if (progress.masteryStatus === StudentMasteryStatus.MASTERED)
+        throw new ConflictException(
+          "This topic is mastered. Continue with the next recommended topic.",
+        );
+      const attemptNumber = Math.min(progress.attemptCount + 1, 3);
       const profile = await tx.studentProfile.findUnique({
         where: { userId: actor.id },
         select: { stream: true, className: true },
@@ -252,7 +313,7 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
       // answer privacy and released results all retain their existing behaviour.
       const targetStream = true ? (profile?.stream ?? null) : null;
       const targetClass = true ? (profile?.className ?? null) : null;
-      const existing = await tx.assignment.findFirst({
+      const existing = await tx.assignment.findMany({
         where: {
           schoolId: actor.schoolId,
           grade: actor.grade!,
@@ -260,9 +321,21 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
           targetClass,
           rawJson: { path: ["cms_module_id"], equals: id },
         },
-        select: { id: true },
+        select: { id: true, rawJson: true },
       });
-      if (existing) return existing;
+      const sameAttempt = existing.find((candidate) => {
+        const raw = candidate.rawJson as Record<string, unknown> | null;
+        return (
+          raw?.cms_student_id === actor.id &&
+          raw?.cms_attempt === attemptNumber
+        );
+      });
+      if (sameAttempt)
+        return {
+          id: sameAttempt.id,
+          mastery: this.masteryResponse(progress),
+          shuffled: attemptNumber > 1,
+        };
       const snapshots = Array.isArray(body.legacy_records)
         ? body.legacy_records
         : [];
@@ -278,7 +351,9 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
               "'": "&#39;",
             })[char]!,
         );
-      const questions = body.questions.map((value, index) => {
+      const questionPayload =
+        attemptNumber > 1 ? this.shuffle(body.questions) : body.questions;
+      const questions = questionPayload.map((value, index) => {
         if (!value || typeof value !== "object" || Array.isArray(value))
           throw new BadRequestException("Invalid question payload.");
         const original = snapshots.find(
@@ -294,9 +369,11 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
           questionType: original
             ? (original.questionType as QuestionType)
             : QuestionType.MULTIPLE_CHOICE,
-          options: (original?.options ??
-            value.options ??
-            Prisma.JsonNull) as Prisma.InputJsonValue,
+          options: (Array.isArray(original?.options)
+            ? this.shuffle(original.options)
+            : Array.isArray(value.options)
+              ? this.shuffle(value.options)
+              : Prisma.JsonNull) as Prisma.InputJsonValue,
           config: (original?.config ??
             Prisma.JsonNull) as Prisma.InputJsonValue,
           correctAnswer:
@@ -323,7 +400,7 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
         body.theory_text !== "Legacy content migrated from old system."
           ? body.theory_text
           : "";
-      return tx.assignment.create({
+      const assignment = await tx.assignment.create({
         data: {
           schoolId: actor.schoolId,
           grade: actor.grade!,
@@ -349,6 +426,9 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
           // Deliberately store only learner-safe metadata, never the CMS answer payload.
           rawJson: {
             cms_module_id: id,
+            cms_student_id: actor.id,
+            cms_attempt: attemptNumber,
+            cms_mastery: true,
             cms_content: {
               theory_cheatsheet: module.theory_cheatsheet,
               batch_number: module.batch_number,
@@ -375,7 +455,84 @@ Each question otherwise has exactly question_text, options (4 distinct non-empty
         },
         select: { id: true },
       });
+      return {
+        ...assignment,
+        mastery: this.masteryResponse(progress),
+        shuffled: attemptNumber > 1,
+      };
     });
+  }
+
+  async completeLearningModule(
+    moduleId: string,
+    assignmentId: number,
+    actor: AuthenticatedUser,
+  ) {
+    if (!Number.isInteger(assignmentId) || assignmentId < 1)
+      throw new BadRequestException("A valid practice assignment is required.");
+    const assignment = await this.prisma.assignment.findFirst({
+      where: { id: assignmentId, schoolId: actor.schoolId },
+      select: { id: true, maxPoints: true, rawJson: true },
+    });
+    const raw = assignment?.rawJson as Record<string, unknown> | null;
+    if (
+      !assignment ||
+      raw?.cms_module_id !== moduleId ||
+      raw?.cms_student_id !== actor.id ||
+      raw?.cms_mastery !== true
+    )
+      throw new ForbiddenException("This is not your mastery practice assignment.");
+    const submission = await this.prisma.submission.findFirst({
+      where: { assignmentId, studentId: actor.id, status: { not: "DRAFT" } },
+      orderBy: { completedAt: "desc" },
+      select: { score: true },
+    });
+    if (submission?.score == null)
+      throw new ConflictException("Finish the auto-marked practice before updating mastery.");
+    const score = assignment.maxPoints
+      ? Math.round((submission.score / assignment.maxPoints) * 100)
+      : 0;
+    const attempt = Number(raw.cms_attempt ?? 1);
+    const status =
+      score >= 80
+        ? StudentMasteryStatus.MASTERED
+        : attempt >= 3
+          ? StudentMasteryStatus.REMEDIAL
+          : StudentMasteryStatus.IN_PROGRESS;
+    const progress = await this.prisma.studentMasteryProgress.upsert({
+      where: {
+        studentId_moduleId_batchNumber: {
+          studentId: actor.id,
+          moduleId,
+          batchNumber: 1,
+        },
+      },
+      create: {
+        studentId: actor.id,
+        moduleId,
+        batchNumber: 1,
+        attemptCount: attempt,
+        bestScore: score,
+        masteryStatus: status,
+        lastAttemptAt: new Date(),
+      },
+      update: {
+        attemptCount: attempt,
+        bestScore: { set: score },
+        masteryStatus: status,
+        lastAttemptAt: new Date(),
+      },
+    });
+    return {
+      score,
+      ...this.masteryResponse(progress),
+      message:
+        status === StudentMasteryStatus.MASTERED
+          ? "EE mastery achieved. Your next topic is now ready."
+          : status === StudentMasteryStatus.REMEDIAL
+            ? "Let's try a foundation batch to build your confidence."
+            : `You need 80% for EE mastery. ${Math.max(0, 3 - attempt)} attempt${attempt === 2 ? "" : "s"} remaining.`,
+    };
   }
 
   async enrichModule(id: string, actor?: AuthenticatedUser) {
