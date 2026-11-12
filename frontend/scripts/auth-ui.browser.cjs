@@ -100,10 +100,10 @@ let browser;
       json = { elective_subjects: req.postDataJSON().elective_subjects };
     } else if (p.endsWith("/independent-students/public/payment-info"))
       json = { enabled: true, monthlyAmountKES: 300, annualAmountKES: 3600 };
-    else if (p.endsWith("/tuma/capabilities"))
+    else if (/\/(?:tuma|jenga)\/capabilities$/.test(p))
       json = { tumaPaymentsVersion: 1, configured: true };
-    else if (p.endsWith("/tuma/payment")) json = null;
-    else if (p.endsWith("/tuma/stk-push")) {
+    else if (/\/(?:tuma|jenga)\/payment$/.test(p)) json = null;
+    else if (/\/(?:tuma|jenga)\/stk-push$/.test(p)) {
       stk++;
       json = {};
     }

@@ -1,20 +1,14 @@
 import { PageHeader } from "../../components/ui/Saas";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlarmClock,
   ArrowRight,
   CheckCircle2,
   ChevronLeft,
-  CircleAlert,
-  Clock3,
   Lightbulb,
-  RotateCcw,
   Upload,
   Volume2,
   BrainCircuit,
-  Sparkles,
-  BookOpenCheck,
   Pause,
   Play,
   TimerReset,
@@ -27,7 +21,6 @@ import {
   type LearningPlan,
   type LearningCoachReportCard,
   type LearningSession,
-  type LearningTopic,
 } from "../../api/learning-coach.api";
 import { ReportCardPreview, type ReportScore } from "./ReportCardPreview";
 import { useAuthStore } from "../../store/auth.store";
@@ -438,35 +431,6 @@ function ReportCardPanel({
   );
 }
 
-function MasteryBadge({ score }: { score: number }) {
-  const tone =
-    score >= 70
-      ? "bg-emerald-100 text-emerald-800"
-      : score >= 40
-        ? "bg-amber-100 text-amber-800"
-        : "bg-rose-100 text-rose-800";
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
-      {score}% mastery
-    </span>
-  );
-}
-
-function formatReview(date: string | null) {
-  if (!date) return "after your first check-in";
-  const review = new Date(date);
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-  if (review.toDateString() === today.toDateString()) return "today";
-  if (review.toDateString() === tomorrow.toDateString()) return "tomorrow";
-  return review.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 function reportLevel(percentage: number) {
   if (percentage >= 70) return "EE · Strength";
   if (percentage >= 40) return "ME · Developing";
@@ -487,186 +451,6 @@ function FocusTimer({ subject, topic, onClose }: { subject: string; topic: strin
     <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#b5e719] text-[#101820]"><Target className="h-5 w-5" /></span><div><p className="text-xs font-bold uppercase tracking-[.13em] text-lime-200">Focus session</p><p className="text-sm font-semibold">{subject}: {topic}</p></div></div>
     <div className="mt-4 flex items-center gap-2 sm:mt-0"><span className="mr-auto font-mono text-2xl font-semibold tabular-nums">{minutes}:{remainder}</span><button type="button" onClick={() => setRunning((value) => !value)} className="grid h-10 w-10 place-items-center rounded-lg bg-white text-[#101820]" aria-label={running ? "Pause timer" : "Resume timer"}>{running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button><button type="button" onClick={() => { setSeconds(15 * 60); setRunning(false); }} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Reset timer"><TimerReset className="h-4 w-4" /></button><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Close timer"><X className="h-4 w-4" /></button></div>
   </aside>;
-}
-
-function PlanCard({
-  plan,
-  onPractice,
-  onFocus,
-  diagnosticReady,
-}: {
-  plan: LearningPlan;
-  onPractice: () => void;
-  onFocus: () => void;
-  diagnosticReady: boolean;
-}) {
-  const totalMinutes = plan.plan.reduce(
-    (total, step) => total + step.minutes,
-    0,
-  );
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(16,24,32,.04)]">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">
-            {plan.subject}
-          </p>
-          <h2 className="mt-1 text-base font-semibold text-[#101820]">{plan.topic}</h2>
-        </div>
-        <MasteryBadge score={plan.masteryScore} />
-      </div>
-      <p className="mt-3 text-sm leading-6 text-slate-600">{plan.recommendedTechnique}</p>
-      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-medium text-slate-500">
-        <span className="inline-flex items-center gap-1.5">
-          <Clock3 className="h-4 w-4" /> About {totalMinutes} min
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <AlarmClock className="h-4 w-4" /> Review{" "}
-          {formatReview(plan.nextReviewAt)}
-        </span>
-      </div>
-      <button type="button" onClick={diagnosticReady ? onPractice : onFocus} className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white hover:bg-[#1d2c38]">
-        {diagnosticReady ? <><RotateCcw className="h-4 w-4" /> Start diagnostic</> : <><Play className="h-4 w-4" /> Start 15-min session</>}
-      </button>
-    </article>
-  );
-}
-
-function TopicPicker({
-  topics,
-  plans,
-  onStart,
-  loading,
-}: {
-  topics: LearningTopic[];
-  plans: LearningPlan[];
-  onStart: (topic: LearningTopic, mode: "DIAGNOSTIC" | "PRACTICE") => void;
-  loading: boolean;
-}) {
-  const [subject, setSubject] = useState("");
-  const subjects = useMemo(
-    () => Array.from(new Set(topics.map((topic) => topic.subject))),
-    [topics],
-  );
-  const visible = topics
-    .filter((topic) => !subject || topic.subject === subject)
-    .sort(
-      (left, right) =>
-        Number(Boolean(right.isRecommended)) -
-          Number(Boolean(left.isRecommended)) ||
-        left.subject.localeCompare(right.subject) ||
-        left.topic.localeCompare(right.topic),
-    );
-  const planByTopic = new Map(
-    plans.map((plan) => [`${plan.subject}::${plan.topic}`, plan]),
-  );
-  const duePlan =
-    plans.find(
-      (plan) => !plan.nextReviewAt || new Date(plan.nextReviewAt) <= new Date(),
-    ) ?? plans[0];
-  const dueTopic = duePlan
-    ? topics.find(
-        (topic) =>
-          `${topic.subject}::${topic.topic}` ===
-          `${duePlan.subject}::${duePlan.topic}`,
-      )
-    : undefined;
-  return (
-    <section className="space-y-5">
-      {duePlan && dueTopic ? (
-          <div className="rounded-2xl bg-[#101820] p-5 text-white">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-300">
-                  Continue your practice
-                </p>
-                <h2 className="mt-1 text-xl font-semibold">
-                  {duePlan.subject}: {duePlan.topic}
-                </h2>
-                <p className="mt-1 text-sm text-slate-300">
-                  {duePlan.masteryScore}% mastery · Review{" "}
-                  {formatReview(duePlan.nextReviewAt)}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => onStart(dueTopic, "PRACTICE")}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-slate-900 disabled:opacity-60"
-              >
-                Continue coaching <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        ) : null}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          onClick={() => setSubject("")}
-          className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold ${!subject ? "bg-[#101820] text-white" : "border border-slate-200 bg-white text-slate-600"}`}
-        >
-          All subjects
-        </button>
-        {subjects.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setSubject(item)}
-            className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold ${subject === item ? "bg-[#101820] text-white" : "border border-slate-200 bg-white text-slate-600"}`}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-      {!visible.length ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-          There are no approved practice topics for your grade yet. Ask your
-          teacher or platform administrator to add curriculum questions.
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {visible.map((topic) => {
-            const plan = planByTopic.get(`${topic.subject}::${topic.topic}`);
-            return (
-              <article
-                key={`${topic.subject}-${topic.topic}`}
-                className="rounded-2xl border border-slate-200 bg-white p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">
-                      {topic.subject}
-                    </p>
-                    <h2 className="mt-1 text-lg font-semibold text-[#101820]">
-                      {topic.topic}
-                    </h2>
-                  </div>
-                  {plan ? (
-                    <MasteryBadge score={plan.masteryScore} />
-                  ) : topic.isRecommended ? (
-                    <span className="rounded-full bg-lime-100 px-2.5 py-1 text-xs font-semibold text-[#466000]">
-                      Suggested
-                    </span>
-                  ) : null}
-                </div>
-
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() =>
-                    onStart(topic, plan ? "PRACTICE" : "DIAGNOSTIC")
-                  }
-                  className="mt-5 min-h-11 w-full rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-[#101820] hover:text-white disabled:cursor-wait disabled:opacity-60"
-                >
-                  {plan ? "Resume mastery path" : "Begin diagnostic"}
-                </button>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
 }
 
 function SessionPlayer({

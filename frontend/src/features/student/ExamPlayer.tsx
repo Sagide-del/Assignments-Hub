@@ -1,3 +1,4 @@
+import { api } from "../../api/axios";
 import { NextModuleBatch } from './NextModuleBatch';
 import { DiagramRenderer } from "../../components/ExamDiagrams/DiagramRenderer";
 import { MathText } from "../../components/ExamDiagrams/MathText";
@@ -8,7 +9,7 @@ import { learningTitle } from "./assignment-presentation";
 import { ReleasedReview } from "./ReleasedReview";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
