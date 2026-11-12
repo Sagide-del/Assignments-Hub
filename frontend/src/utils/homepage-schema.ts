@@ -2,11 +2,17 @@
 const initialSchema =
   typeof document === "undefined"
     ? ""
-    : (document.querySelector('script[type="application/ld+json"]')
+    : (document.querySelector('script[type="application/ld+json"], #homepage-schema-template')
         ?.textContent ?? "");
 export function showHomepageFaq(show: boolean) {
-  const script = document.querySelector('script[type="application/ld+json"]');
-  if (!script || !initialSchema) return;
+  let script = document.querySelector('script[type="application/ld+json"]');
+  if (!initialSchema) return;
+  if (!script && show) {
+    script = document.createElement("script");
+    script.setAttribute("type", "application/ld+json");
+    document.head.append(script);
+  }
+  if (!script) return;
   try {
     const schema = JSON.parse(initialSchema);
     if (!Array.isArray(schema["@graph"])) return;

@@ -13,6 +13,10 @@ function simulate(mode) {
   writeFileSync(join(bucket,'index.html'), 'old frontend\n');
   writeFileSync(join(bucket,'shared.txt'), 'old shared\n');
   for (const f of ['publish-verified-rbac.sh','frontend-origin.py']) copyFileSync(join(source,f), join(scripts,f));
+  writeFileSync(join(scripts,'frontend-edge.py'), `import os,sys
+with open(os.environ['FAKE_CALLS'],'a') as f:f.write('edge-'+sys.argv[1]+'\\n')
+if sys.argv[1]=='prepare' and os.environ['FAKE_MODE']=='edge-pre-fail':sys.exit(9)
+`);
   writeFileSync(join(scripts,'publish-frontend.sh'), '#!/usr/bin/env bash\nset -e\nprintf "new frontend\\n" > "$FAKE_BUCKET/index.html"\nprintf "new shared\\n" > "$FAKE_BUCKET/shared.txt"\n');
   writeFileSync(join(bin,'aws'), `#!/usr/bin/env python3
 import os,sys,json,shutil
@@ -64,3 +68,5 @@ for (const mode of ['post-fail','browser-fail','asset-fail']) test(`restores pre
 test('does not write or contact AWS if initial RBAC verification fails',()=>{const r=simulate('pre-fail');assert.notEqual(r.status,0);assert.equal(r.index,'old frontend\n');assert(!r.calls.includes('aws '));});
 test('stops before publish if public HTML differs from the rollback snapshot',()=>{const r=simulate('snapshot-mismatch');assert.notEqual(r.status,0);assert.equal(r.index,'old frontend\n');assert(r.stderr.includes('Stop before deployment.'));});
 test('reports an unverified rollback instead of claiming restoration',()=>{const r=simulate('rollback-fail');assert.equal(r.status,1);assert(r.stderr.includes('ROLLBACK NOT VERIFIED'));assert(!r.stderr.includes('Verified: previous frontend restored.'));});
+
+test('edge permission/configuration failure stops before uploading frontend',()=>{const r=simulate('edge-pre-fail');assert.notEqual(r.status,0);assert.equal(r.index,'old frontend\n');assert(!r.calls.includes('verify-rbac-browser.cjs'));});

@@ -53,7 +53,7 @@ mkdirSync(artifacts, { recursive: true });
     await hero
       .getByRole("link", { name: "Try Free CBC Revision", exact: true })
       .click();
-    await staticPage.waitForURL("**/free-revision/");
+    await staticPage.waitForURL(/\/free-revision\/?$/);
     await staticPage
       .getByRole("heading", { name: /A clearer way to revise/ })
       .waitFor();
@@ -106,16 +106,7 @@ mkdirSync(artifacts, { recursive: true });
       await page.locator('#root [id="workflow-heading"]').count(),
       0,
     );
-    assert.equal(
-      await page
-        .locator('script[type="application/ld+json"]')
-        .evaluate((e) =>
-          JSON.parse(e.textContent)["@graph"].some(
-            (x) => x["@type"] === "FAQPage",
-          ),
-        ),
-      false,
-    );
+    assert.equal(await page.locator('script[type="application/ld+json"]').count(), 0);
     assert.deepEqual(errors, []);
     console.log(
       "PASS: homepage content without JavaScript, split lung hero, Problem/workflow sections, free-practice navigation, organisation schema, responsive interaction and clean staff deep links.",

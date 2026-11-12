@@ -1,3 +1,4 @@
+import NotFound from "../../pages/404";
 import SchoolSbaDashboard from "../../pages/admin/school/sba";
 import TeacherSba from "../../pages/teacher/sba";
 import { TeacherAssignments } from "../../features/school-admin/TeacherAssignments";
@@ -639,7 +640,7 @@ export const router = createBrowserRouter([
 
   {
     path: '*',
-    element: <Navigate to="/login" replace />,
+    element: <NotFound />,
   },
 
 ]);

@@ -55,7 +55,7 @@ jobs:
   deploy:
     # Playwright 1.56.1 supports Noble; avoid ubuntu-latest moving to 26.04.
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:16
@@ -78,6 +78,8 @@ jobs:
         working-directory: frontend
       - name: Test verified publish and rollback
         run: node --test scripts/deployment/public-routes.test.mjs scripts/deployment/publish-verified-rbac.test.mjs backend/scripts/deployment/provision-demo-academy.test.mjs
+      - name: Test public routing and cache configuration
+        run: python3 -m unittest discover -s scripts/deployment -p frontend_edge_test.py -v
       - name: Check live RBAC verification configuration
         env:
           DEMO_TEACHER_PASSWORD: ${{ secrets.RBAC_DEMO_TEACHER_PASSWORD }}
@@ -86,7 +88,7 @@ jobs:
           test -n "$DEMO_TEACHER_PASSWORD" || { echo 'Configure RBAC_DEMO_TEACHER_PASSWORD securely before publishing.' >&2; exit 1; }
           test -n "$RBAC_ALICE_ID" || { echo 'Configure RBAC_DEMO_ALICE_ID from the provisioning report before publishing.' >&2; exit 1; }
       - name: Verify learning activities
-        run: npm run test:math-readiness && npm run test:library && npm run test:cheatsheet && npm run test:student-scope && npm run test:exam-diagrams && npm run test:cms && npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
+        run: npm run test:static-seo && npm run test:math-readiness && npm run test:library && npm run test:cheatsheet && npm run test:student-scope && npm run test:exam-diagrams && npm run test:cms && npm run test:kjsea && npm run test:curriculum && npm run test:stem && npm run test:skills && npm run test:recall && npm run test:assignments && npm run test:revision
         working-directory: frontend
       - name: Type check frontend
         run: npx tsc -b
@@ -102,6 +104,9 @@ jobs:
         env:
           VITE_API_URL: https://assignments-hub-api.onrender.com/api/v1
           PUBLIC_REVISION_FEED_URL: https://assignments-hub-api.onrender.com/api/v1/cms/public-revision
+      - name: Verify generated static SEO documents
+        working-directory: frontend
+        run: node scripts/check-static-seo.mjs dist
       - name: Save frontend build for deployment recovery
         uses: actions/upload-artifact@v4
         with:
@@ -202,6 +207,7 @@ jobs:
           node scripts/auth-ui.browser.cjs
           node scripts/homepage.browser.cjs
           node scripts/public-revision.browser.cjs
+          node scripts/static-seo.browser.cjs
       - name: Verify live SBA import access restrictions
         working-directory: frontend
         run: node scripts/check-sba-import-access.mjs

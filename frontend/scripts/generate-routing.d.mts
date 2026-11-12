@@ -1,0 +1,1 @@
+export function routeRequest(request: { uri: string; [key: string]: unknown }, routes: unknown): { uri?: string; statusCode?: number; headers?: Record<string, { value: string }>; body?: { data: string } };

@@ -1,5 +1,7 @@
+import { appShell } from "./static-pages.mjs";
+import { generateRouting } from "./generate-routing.mjs";
 import { createServer } from "vite";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 process.env.NODE_ENV = "production";
 const { default: React } = await import("react");
@@ -27,25 +29,24 @@ try {
     !markup.includes("/product-previews/respiratory.webp")
   )
     throw Error("Homepage prerender is incomplete.");
+  const { default: NotFound } = await server.ssrLoadModule("/src/pages/404.tsx");
+  const notFound = renderToStaticMarkup(React.createElement(NotFound));
   const path = new URL("../dist/index.html", import.meta.url);
   const html = await readFile(path, "utf8");
   if (!html.includes('<div id="root"></div>'))
     throw Error(
       "Unexpected app shell; refusing to publish an unverified prerender.",
     );
-  // SPA deep links use the same S3 fallback. Clear marketing content before
-  // paint on those routes; authentication and private endpoints are unchanged.
-  const clearDeepLink =
-    '<script>(function(){if(location.pathname!=="/"){var r=document.getElementById("root");r.replaceChildren();r.removeAttribute("data-prerendered");}})();</script>';
-  await writeFile(
-    path,
-    html.replace(
-      '<div id="root"></div>',
-      `<div id="root" data-prerendered="homepage">${markup}</div>${clearDeepLink}`,
-    ),
-  );
+  await writeFile(new URL("../dist/app.html", import.meta.url), appShell(html, "/student"));
+  for (const route of ["login", "register"]) {
+    await mkdir(new URL(`../dist/${route}/`, import.meta.url), { recursive: true });
+    await writeFile(new URL(`../dist/${route}/index.html`, import.meta.url), appShell(html, `/${route}`));
+  }
+  await writeFile(new URL("../dist/404.html", import.meta.url), appShell(html, "/404", { notFound: true, body: notFound }));
+  await writeFile(path, html.replace('<div id="root"></div>', `<div id="root" data-prerendered="homepage">${markup}</div>`));
+  await generateRouting();
   console.log(
-    "Homepage prerendered: headings, grade coverage, workflow and FAQs are available without JavaScript.",
+    "Static pages generated: homepage, separate noindex account shells, app shell and branded 404.",
   );
 } finally {
   await server.close();

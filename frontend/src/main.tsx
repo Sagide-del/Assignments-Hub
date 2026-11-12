@@ -1,3 +1,4 @@
+import { applyRouteMetadata } from "./utils/page-metadata";
 import { showHomepageFaq } from "./utils/homepage-schema";
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -7,7 +8,13 @@ import { queryClient } from './app/providers/QueryProvider';
 import { router } from './app/router';
 import './index.css';
 
-showHomepageFaq(window.location.pathname === '/');
+function updateMetadata(state: typeof router.state) {
+  const notFound = state.matches.some((match) => match.route.path === "*");
+  applyRouteMetadata(state.location.pathname, notFound);
+  showHomepageFaq(state.location.pathname === "/");
+}
+updateMetadata(router.state);
+router.subscribe(updateMetadata);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
