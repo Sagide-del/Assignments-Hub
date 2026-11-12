@@ -62,6 +62,15 @@ integration("CMS PostgreSQL delivery records", () => {
       await prisma.$disconnect();
     }
   });
+  it("migrates mastery progress with a user foreign key, matching the Prisma relation", async () => {
+    const constraints = await prisma.$queryRaw<Array<{ parent_table: string; convalidated: boolean }>>`
+      SELECT confrelid::regclass::text AS parent_table, convalidated
+      FROM pg_constraint
+      WHERE conrelid = 'student_mastery_progress'::regclass
+        AND conname = 'student_mastery_progress_student_id_fkey'
+    `;
+    expect(constraints).toEqual([{ parent_table: "users", convalidated: true }]);
+  });
   it("saves a generated draft and atomically creates exactly two stream deliveries, even with concurrent retries", async () => {
     const school = await prisma.school.create({
       data: { name: "CMS integration school", code: `CMS${Date.now()}` },
