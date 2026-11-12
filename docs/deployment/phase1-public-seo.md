@@ -41,3 +41,8 @@ This grants only the named routing function and distribution actions to `Assignm
 - `node scripts/check-static-seo.mjs --live https://assignmenthub.co.ke` after deployment
 
 The live check verifies homepage body without JS, account metadata on all login variants, actual 404 status and sitemap cache headers. No login credentials, payment requests, database migrations or new backend features are required for these checks.
+
+
+## S3 snapshot format
+
+Rollback snapshots store each S3 object as `objects/<SHA-256 of key>` with its original key, headers, metadata and content checksum in `state.json`. This preserves conflicting keys such as `blog`, `blog/` and `blog/index.html`, which cannot coexist as ordinary filesystem paths. A copy of the previous homepage remains at `previous/index.html` for comparison. Do not upload the snapshot folder as a directory: recover it with `frontend-snapshot.mjs restore <bucket> <origin-prefix> <snapshot-directory>`. The verified wrapper restores this snapshot together with the saved CloudFront configuration and public route aliases automatically.

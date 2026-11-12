@@ -44,11 +44,19 @@ if os.environ['FAKE_MODE']=='snapshot-mismatch':value=b'different cached fronten
 Path(out).write_bytes(value)
 `, { mode: 0o755 });
   writeFileSync(join(bin,'node'), `#!/usr/bin/env python3
-import os,sys
+import os,sys,shutil
 from pathlib import Path
 if sys.argv[1]=='-e':sys.exit(0)
 name=Path(sys.argv[1]).name
 with open(os.environ['FAKE_CALLS'],'a') as f:f.write(name+'\\n')
+if name=='frontend-snapshot.mjs':
+ mode=sys.argv[2];snapshot=Path(sys.argv[5]);bucket=Path(os.environ['FAKE_BUCKET'])
+ if mode=='prepare':
+  if os.environ['FAKE_MODE']=='snapshot-fail':sys.exit(9)
+  shutil.copytree(bucket,snapshot,dirs_exist_ok=True)
+ else:
+  if os.environ['FAKE_MODE']=='rollback-fail':sys.exit(9)
+  shutil.copytree(snapshot,bucket,dirs_exist_ok=True)
 if name=='verify-rbac-live.mjs':
  p=Path(os.environ['FAKE_COUNT']);n=int(p.read_text())+1 if p.exists() else 1;p.write_text(str(n))
  if (n==1 and os.environ['FAKE_MODE']=='pre-fail') or (n==2 and os.environ['FAKE_MODE'] in ['post-fail','rollback-fail']):sys.exit(5)
@@ -70,3 +78,5 @@ test('stops before publish if public HTML differs from the rollback snapshot',()
 test('reports an unverified rollback instead of claiming restoration',()=>{const r=simulate('rollback-fail');assert.equal(r.status,1);assert(r.stderr.includes('ROLLBACK NOT VERIFIED'));assert(!r.stderr.includes('Verified: previous frontend restored.'));});
 
 test('edge permission/configuration failure stops before uploading frontend',()=>{const r=simulate('edge-pre-fail');assert.notEqual(r.status,0);assert.equal(r.index,'old frontend\n');assert(!r.calls.includes('verify-rbac-browser.cjs'));});
+
+test('snapshot failure stops before changing production files',()=>{const r=simulate('snapshot-fail');assert.notEqual(r.status,0);assert.equal(r.index,'old frontend\n');assert(!r.calls.includes('verify-rbac-browser.cjs'));});
