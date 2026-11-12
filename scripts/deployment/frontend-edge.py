@@ -23,7 +23,7 @@ def config_for(previous, function_arn):
     # A stable sitemap URL must never have an immutable/year-long edge lifetime.
     sitemap = copy.deepcopy(defaults)
     sitemap['PathPattern'] = '/sitemap.xml'
-    for field in ['CachePolicyId', 'OriginRequestPolicyId', 'ForwardedValues', 'MinTTL', 'DefaultTTL', 'MaxTTL', 'TrustedKeyGroups', 'TrustedSigners']:
+    for field in ['CachePolicyId', 'OriginRequestPolicyId', 'ForwardedValues', 'MinTTL', 'DefaultTTL', 'MaxTTL']:
         sitemap.pop(field, None)
     sitemap.update({
         'MinTTL': 0, 'DefaultTTL': 86400, 'MaxTTL': 86400,
@@ -71,14 +71,16 @@ def run(mode, distribution, dist, snapshot):
             if 'NoSuchFunction' not in str(error):
                 raise
         live = False
+        previous_live_function = None
         if existed:
             try:
+                previous_live_function = aws('cloudfront', 'describe-function', '--name', name, '--stage', 'LIVE')
                 aws('cloudfront', 'get-function', '--name', name, '--stage', 'LIVE', str(root / 'previous-function.js'))
                 live = True
             except RuntimeError as error:
                 if 'NoSuchFunction' not in str(error):
                     raise
-        state_path.write_text(json.dumps({'previous': current, 'planned': planned, 'existed': existed, 'previousFunction': previous_function, 'live': live, 'applied': False}))
+        state_path.write_text(json.dumps({'previous': current, 'planned': planned, 'existed': existed, 'previousFunction': previous_function, 'previousLiveFunction': previous_live_function, 'live': live, 'applied': False}))
         (root / 'planned.json').write_text(json.dumps(planned))
         print('Prepared CloudFront routing and rollback snapshot. No distribution changes made.')
         return
@@ -122,7 +124,7 @@ def run(mode, distribution, dist, snapshot):
             raise ValueError('Distribution was edited externally; preserve snapshot and inspect before rollback.')
         if state['live']:
             described = aws('cloudfront', 'describe-function', '--name', name, '--stage', 'DEVELOPMENT')
-            restored = aws('cloudfront', 'update-function', '--name', name, '--if-match', described['ETag'], '--function-config', json.dumps(state['previousFunction']['FunctionSummary']['FunctionConfig']), '--function-code', 'fileb://' + str((root / 'previous-function.js').resolve()))
+            restored = aws('cloudfront', 'update-function', '--name', name, '--if-match', described['ETag'], '--function-config', json.dumps(state['previousLiveFunction']['FunctionSummary']['FunctionConfig']), '--function-code', 'fileb://' + str((root / 'previous-function.js').resolve()))
             aws('cloudfront', 'publish-function', '--name', name, '--if-match', restored['ETag'])
         (root / 'previous.json').write_text(json.dumps(state['previous']['DistributionConfig']))
         aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'previous.json').resolve()))
