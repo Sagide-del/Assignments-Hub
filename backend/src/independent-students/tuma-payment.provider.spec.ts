@@ -6,6 +6,7 @@ import {
 jest.mock("axios");
 const http = axios as jest.Mocked<typeof axios>;
 const config = {
+  TUMA_ENABLED: "true",
   TUMA_API_KEY: "test-secret",
   TUMA_BUSINESS_EMAIL: "business@example.com",
   TUMA_CALLBACK_BASE_URL:
@@ -31,6 +32,13 @@ function setup() {
 }
 beforeEach(() => jest.resetAllMocks());
 describe("Tuma documented API contract", () => {
+  it.each([undefined, "false"])("does not contact Tuma when the provider is not explicitly enabled (%s)", async (enabled) => {
+    const provider = new TumaPaymentProvider({
+      get: (key: string) => key === "TUMA_ENABLED" ? enabled : (config as any)[key],
+    } as any);
+    await expect(provider.initiate(input)).rejects.toThrow("not configured");
+    expect(http.post).not.toHaveBeenCalled();
+  });
   for (const auth of [
     { success: true, token: "root-token", expires_in: 86400 },
     { success: true, data: { token: "nested-token" } },
