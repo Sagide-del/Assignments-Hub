@@ -8,7 +8,7 @@ import { pipeline } from 'node:stream/promises';
 import { stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, copyFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const execute = promisify(execFile);
@@ -89,21 +89,49 @@ async function parallel(items, action) {
   const failure = results.find(result => result.status === 'rejected');
   if (failure) throw failure.reason;
 }
-export async function run(mode, bucket, rawPrefix, directory, request = aws) {
-  const awsRequest = request;
+export async function retryRequest(request, args) {
+  for (let attempt = 0; ; attempt++) {
+    try { return await request(args); }
+    catch (error) {
+      const transient = ['ECONNRESET', 'ETIMEDOUT', 'EPIPE', 'TimeoutError', 'RequestTimeout', 'SlowDown', 'ServiceUnavailable', 'InternalError'].includes(error.code) || ['TimeoutError', 'RequestTimeout', 'SlowDown', 'ServiceUnavailable', 'InternalError'].includes(error.name) || error.$metadata?.httpStatusCode >= 500;
+      if (!transient || attempt >= 2) throw error;
+      // S3 retries write the same bytes to the same key. Each SDK invocation
+      // opens a fresh body stream, including after a mid-stream connection reset.
+      await new Promise(resolve => setTimeout(resolve, 250 * 2 ** attempt));
+    }
+  }
+}
+async function releaseAssets(dist, prefix) {
+  const keys = new Set();
+  async function walk(path, relative) {
+    for (const entry of await readdir(path, { withFileTypes: true })) {
+      const name = relative + entry.name;
+      if (entry.isDirectory()) await walk(join(path, entry.name), name + '/');
+      else keys.add(prefix + 'assets/' + name);
+    }
+  }
+  await walk(join(dist, 'assets'), '');
+  return keys;
+}
+export async function run(mode, bucket, rawPrefix, directory, request = aws, options = {}) {
+  const awsRequest = args => retryRequest(request, args);
   const prefix = rawPrefix ? rawPrefix.replace(/^\/+|\/+$/g, '') + '/' : '';
   const stateFile = join(directory, 'state.json');
   if (mode === 'prepare') {
     if (existsSync(stateFile)) throw Error('Recovery snapshot already exists; refusing to overwrite it.');
     await mkdir(join(directory, 'objects'), { recursive: true });
     const listed = await awsRequest(['s3api', 'list-objects-v2', '--bucket', bucket, '--prefix', prefix]);
-    const entries = (listed.Contents ?? []).map(object => {
+    const incomingAssets = options.dist ? await releaseAssets(options.dist, prefix) : null;
+    // Publication never deletes old assets. Snapshot every overwritable object,
+    // retaining untouched historical bundles in place instead of copying them.
+    const listedObjects = (listed.Contents ?? []).filter(object => !incomingAssets || !object.Key?.startsWith(prefix + 'assets/') || incomingAssets.has(object.Key));
+    const entries = listedObjects.map(object => {
       if (typeof object.Key !== 'string' || !object.Key.startsWith(prefix)) throw Error('Unexpected snapshot object key.');
       return { key: object.Key, file: 'objects/' + digest(object.Key) };
     });
     const home = entries.find(object => object.key === prefix + 'index.html');
     if (!home) throw Error('Production index.html is missing; stop before publishing.');
-    console.log(`Preparing recovery snapshot for ${entries.length} S3 objects.`);
+    console.log(`Preparing recovery snapshot for ${entries.length} replaceable S3 objects; retaining ${(listed.Contents?.length ?? 0) - entries.length} untouched historical assets in place.`);
     let completed = 0;
     await parallel(entries, async object => {
       const metadata = await awsRequest(['s3api', 'get-object', '--bucket', bucket, '--key', object.key, join(directory, object.file)]);
@@ -135,6 +163,7 @@ export async function run(mode, bucket, rawPrefix, directory, request = aws) {
   } else throw Error('Unknown snapshot operation.');
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try { await run(...process.argv.slice(2)); }
+  const [mode, bucket, prefix, directory, dist] = process.argv.slice(2);
+  try { await run(mode, bucket, prefix, directory, undefined, { dist }); }
   finally { productionClient?.destroy(); }
 }

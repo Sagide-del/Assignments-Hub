@@ -49,7 +49,7 @@ export EDGE_SNAPSHOT_DIR="$RBAC_TEMP/edge"
 python3 "$RBAC_SCRIPT_DIR/frontend-edge.py" prepare "$RBAC_DISTRIBUTION" "$FRONTEND_DIST" "$EDGE_SNAPSHOT_DIR"
 export PUBLIC_ROUTE_SNAPSHOT_DIR="$RBAC_TEMP/routes"
 node "$RBAC_SCRIPT_DIR/public-routes.mjs" prepare "${RBAC_ORIGIN[0]}" "${RBAC_ORIGIN[1]}" "$FRONTEND_DIST" "$PUBLIC_ROUTE_SNAPSHOT_DIR"
-node "$RBAC_SCRIPT_DIR/frontend-snapshot.mjs" prepare "${RBAC_ORIGIN[0]}" "${RBAC_ORIGIN[1]}" "$RBAC_TEMP/previous"
+node "$RBAC_SCRIPT_DIR/frontend-snapshot.mjs" prepare "${RBAC_ORIGIN[0]}" "${RBAC_ORIGIN[1]}" "$RBAC_TEMP/previous" "$FRONTEND_DIST"
 curl -fsS --max-time 30 https://assignmenthub.co.ke/ -o "$RBAC_TEMP/public-before.html"
 cmp -s "$RBAC_TEMP/previous/index.html" "$RBAC_TEMP/public-before.html" || { echo 'S3 snapshot does not match the current public homepage. Stop before deployment.' >&2; exit 1; }
 RBAC_NEEDS_ROLLBACK=true

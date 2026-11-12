@@ -27,7 +27,7 @@ def config_for(previous, function_arn):
         sitemap.pop(field, None)
     sitemap.update({
         'MinTTL': 0, 'DefaultTTL': 86400, 'MaxTTL': 86400,
-        'ForwardedValues': {'QueryString': False, 'Cookies': {'Forward': 'none'}},
+        'ForwardedValues': {'QueryString': False, 'Cookies': {'Forward': 'none'}, 'Headers': {'Quantity': 0}, 'QueryStringCacheKeys': {'Quantity': 0}},
         'AllowedMethods': {'Quantity': 2, 'Items': ['GET', 'HEAD'], 'CachedMethods': {'Quantity': 2, 'Items': ['GET', 'HEAD']}},
     })
     behaviours = [sitemap] + [item for item in config.get('CacheBehaviors', {}).get('Items', []) if item['PathPattern'] not in ['/sitemap.xml', 'sitemap.xml']]

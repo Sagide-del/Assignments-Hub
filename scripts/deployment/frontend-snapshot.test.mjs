@@ -153,3 +153,31 @@ test('reused S3 transport paginates, streams object bytes and restores metadata 
     for(const item of writes){assert.equal(item.CacheControl,metadata.CacheControl);assert.deepEqual(item.Metadata,metadata.Metadata);assert.equal(item.Expires.toISOString(),metadata.Expires.toISOString());}
   }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('release backup retains old bundles in place and protects assets that publication can overwrite', async () => {
+  await fixture(async ({ root,snapshot,store,object,metadata }) => {
+    const keys=['index.html','about','about/index.html','assets/old-untouched.js','assets/shared.js'];
+    await writeFile(join(store,'keys.json'),JSON.stringify(keys));
+    for (const key of keys) {await writeFile(object(key),`old ${key}`);await writeFile(object(key)+'.json',JSON.stringify(metadata));}
+    const dist=join(root,'dist');await mkdir(join(dist,'assets'),{recursive:true});
+    await writeFile(join(dist,'assets/shared.js'),'new shared');
+    await writeFile(join(dist,'assets/new-hash.js'),'new bundle');
+    await snapshotRun('prepare','fixture','',snapshot,cliTransport,{dist});
+    const state=JSON.parse(await readFile(join(snapshot,'state.json'),'utf8'));
+    assert.deepEqual(state.entries.map(x=>x.key),['index.html','about','about/index.html','assets/shared.js']);
+    await writeFile(object('assets/shared.js'),'new shared');
+    await snapshotRun('restore','fixture','',snapshot,cliTransport);
+    assert.equal(await readFile(object('assets/shared.js'),'utf8'),'old assets/shared.js');
+    assert.equal(await readFile(object('assets/old-untouched.js'),'utf8'),'old assets/old-untouched.js');
+  });
+});
+
+test('connection resets retry with a fresh request while access denials fail immediately', async () => {
+  const {retryRequest}=await import('./frontend-snapshot.mjs');
+  let calls=0;
+  assert.equal(await retryRequest(async()=>{if(++calls===1)throw Object.assign(Error('connection reset'),{code:'ECONNRESET'});return 'restored';},[]),'restored');
+  assert.equal(calls,2);
+  calls=0;
+  await assert.rejects(retryRequest(async()=>{calls++;throw Object.assign(Error('denied'),{name:'AccessDenied'});},[]),/denied/);
+  assert.equal(calls,1);
+});

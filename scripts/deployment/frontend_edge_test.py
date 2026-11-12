@@ -33,6 +33,8 @@ class RoutingConfigTests(unittest.TestCase):
         self.assertEqual(sitemap['DefaultTTL'],86400)
         self.assertEqual(sitemap['MinTTL'],0)
         self.assertNotIn('CachePolicyId',sitemap)
+        self.assertEqual(sitemap['ForwardedValues']['Headers'], {'Quantity': 0})
+        self.assertEqual(sitemap['ForwardedValues']['QueryStringCacheKeys'], {'Quantity': 0})
         self.assertEqual(result['CacheBehaviors']['Items'][1]['CachePolicyId'],'immutable-assets')
 
     def test_preserves_response_function_and_rejects_unrelated_request_function(self):
