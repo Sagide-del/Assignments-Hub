@@ -78,7 +78,8 @@ class EdgeDeploymentTests(unittest.TestCase):
                     uri=event['request']['uri']
                     outputs={'/':'/index.html','/login':'/login/index.html','/student/assignments/123':'/app.html'}
                     output={'uri':outputs[uri]} if uri in outputs else {'statusCode':404}
-                    return {'TestResult':{'FunctionOutput':json.dumps(output)}}
+                    envelope={'request':output} if uri in outputs else {'response':output}
+                    return {'TestResult':{'FunctionOutput':json.dumps(envelope)}}
                 if action=='update-distribution':
                     self.assertEqual(args[args.index('--if-match')+1],state['etag'])
                     state['config']=json.loads(Path(args[args.index('--distribution-config')+1][7:]).read_text())

@@ -109,8 +109,12 @@ def run(mode, distribution, dist, snapshot):
             execution = tested['TestResult']
             if execution.get('FunctionErrorMessage'):
                 raise ValueError('CloudFront runtime rejected routing: ' + execution['FunctionErrorMessage'])
-            result = json.loads(execution['FunctionOutput'])
-            if (result.get('uri') if isinstance(expected, str) else result.get('statusCode')) != expected:
+            output = json.loads(execution['FunctionOutput'])
+            # AWS TestFunction wraps the handler's output as request/response.
+            # This differs from directly invoking handler() in the local VM.
+            result = output.get('request') or output.get('response') or output
+            actual = result.get('uri') if isinstance(expected, str) else int(result.get('statusCode', 0))
+            if actual != expected:
                 raise ValueError('CloudFront runtime returned an unexpected route for ' + uri)
         aws('cloudfront', 'publish-function', '--name', name, '--if-match', function['ETag'])
         aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'planned.json').resolve()))
