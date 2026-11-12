@@ -13,7 +13,10 @@ from pathlib import Path
 def aws(*args):
     result = subprocess.run(['aws', *args, '--output', 'json'], capture_output=True, text=True)
     if result.returncode:
-        raise RuntimeError(result.stderr.strip())
+        message = result.stderr.strip()
+        annotation = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+        print(f'::error title=AWS {args[0]} {args[1]}::{annotation}', flush=True)
+        raise RuntimeError(message)
     return json.loads(result.stdout) if result.stdout.strip() else {}
 
 
@@ -117,8 +120,11 @@ def run(mode, distribution, dist, snapshot):
             if actual != expected:
                 raise ValueError('CloudFront runtime returned an unexpected route for ' + uri)
         aws('cloudfront', 'publish-function', '--name', name, '--if-match', function['ETag'])
-        aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'planned.json').resolve()))
-        aws('cloudfront', 'wait', 'distribution-deployed', '--id', distribution)
+        if current['DistributionConfig'] != state['planned']:
+            aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'planned.json').resolve()))
+            aws('cloudfront', 'wait', 'distribution-deployed', '--id', distribution)
+        else:
+            print('CloudFront distribution already matches the planned routing; no configuration update needed.')
         print('CloudFront public routing and one-day sitemap policy deployed.')
     elif mode == 'restore':
         if not state['applied']:
@@ -131,8 +137,9 @@ def run(mode, distribution, dist, snapshot):
             restored = aws('cloudfront', 'update-function', '--name', name, '--if-match', described['ETag'], '--function-config', json.dumps(state['previousLiveFunction']['FunctionSummary']['FunctionConfig']), '--function-code', 'fileb://' + str((root / 'previous-function.js').resolve()))
             aws('cloudfront', 'publish-function', '--name', name, '--if-match', restored['ETag'])
         (root / 'previous.json').write_text(json.dumps(state['previous']['DistributionConfig']))
-        aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'previous.json').resolve()))
-        aws('cloudfront', 'wait', 'distribution-deployed', '--id', distribution)
+        if current['DistributionConfig'] != state['previous']['DistributionConfig']:
+            aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'previous.json').resolve()))
+            aws('cloudfront', 'wait', 'distribution-deployed', '--id', distribution)
         print('Previous CloudFront configuration restored.')
     else:
         raise ValueError('Unknown edge operation')

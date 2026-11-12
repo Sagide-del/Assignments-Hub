@@ -97,6 +97,40 @@ class EdgeDeploymentTests(unittest.TestCase):
                 edge.run('restore','D',root/'dist',root/'snapshot')
                 self.assertEqual(state['config'],original)
 
+    def test_existing_routing_updates_function_without_rewriting_distribution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'dist').mkdir()
+            (root / 'dist/cloudfront-function.js').write_text('function handler(e){return e.request;}')
+            original = edge.config_for(RoutingConfigTests().config(), ARN)
+            calls = []
+            def fake(*args):
+                calls.append(args)
+                action = args[1]
+                if action == 'get-distribution-config':
+                    return {'ETag': 'stable', 'DistributionConfig': copy.deepcopy(original)}
+                if action in ['describe-function', 'update-function']:
+                    return {'ETag': 'function', 'FunctionSummary': {'FunctionConfig': {'Comment': 'Existing live config', 'Runtime': 'cloudfront-js-2.0'}}}
+                if action == 'get-function':
+                    Path(args[-1]).write_text('previous function')
+                    return {}
+                if action == 'test-function':
+                    event = json.loads(Path(args[args.index('--event-object') + 1][8:]).read_text())
+                    uri = event['request']['uri']
+                    routes = {'/': '/index.html', '/login': '/login/index.html', '/student/assignments/123': '/app.html'}
+                    result = {'request': {'uri': routes[uri]}} if uri in routes else {'response': {'statusCode': 404}}
+                    return {'TestResult': {'FunctionOutput': json.dumps(result)}}
+                if action == 'publish-function':
+                    return {}
+                raise AssertionError('Unexpected AWS operation: ' + str(args))
+            with patch.object(edge, 'aws', side_effect=fake):
+                edge.run('prepare', 'D', root / 'dist', root / 'snapshot')
+                edge.run('apply', 'D', root / 'dist', root / 'snapshot')
+                edge.run('restore', 'D', root / 'dist', root / 'snapshot')
+            self.assertTrue(any(call[1] == 'test-function' for call in calls))
+            self.assertEqual(sum(call[1] == 'publish-function' for call in calls), 2)
+            self.assertFalse(any(call[1] in ['update-distribution', 'wait'] for call in calls))
+
     def test_permission_denial_during_prepare_never_mutates_distribution(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
