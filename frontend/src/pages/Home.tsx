@@ -1,3 +1,4 @@
+import "./home-mobile.css";
 import { useEffect } from "react";
 import { showHomepageFaq } from "../utils/homepage-schema";
 import homeContent from "../content/homepage.json";
@@ -157,14 +158,14 @@ export default function Home() {
         </nav>
       </header>
 
-      <main>
-        <section className="relative overflow-hidden border-b border-slate-200 bg-white">
+      <main className="home-page">
+        <section className="home-hero relative overflow-hidden border-b border-slate-200 bg-white">
           <div
             className="absolute -right-28 top-16 h-80 w-80 rounded-full bg-[#B5E61D]/15 blur-3xl"
             aria-hidden="true"
           />
           <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:px-8 lg:py-28">
-            <div className="relative max-w-3xl">
+            <div className="hero-copy relative max-w-3xl">
               <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#526b00]">
                 Digital learning for Kenyan schools and families
               </p>
@@ -174,7 +175,7 @@ export default function Home() {
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
                 {homeContent.subtitle}
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="hero-actions mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="/free-revision"
                   className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#101820] px-6 text-sm font-bold text-white transition hover:bg-[#1c2a38] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B5E61D] focus-visible:ring-offset-2"
@@ -190,13 +191,7 @@ export default function Home() {
                   Talk to us on WhatsApp
                 </a>
               </div>
-              <a
-                href="/blog/"
-                className="mt-5 inline-flex items-center text-sm font-bold text-[#365000] underline decoration-[#B5E61D] decoration-2 underline-offset-4 transition hover:text-[#101820]"
-              >
-                Read the Assignment Hub blog
-              </a>
-              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-slate-600">
+              <div className="hero-trust mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-slate-600">
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> No app to
                   install
@@ -207,13 +202,68 @@ export default function Home() {
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6f8c09]" /> Works on
-                  modern phones
+                  everyday phones
                 </span>
               </div>
+              <a
+                href="/blog/"
+                className="mt-5 inline-flex items-center text-sm font-bold text-[#365000] underline decoration-[#B5E61D] decoration-2 underline-offset-4 transition hover:text-[#101820]"
+              >
+                Read the Assignment Hub blog
+              </a>
             </div>
 
             <HomeProductPreview />
           </div>
+        </section>
+
+        <a href="#pricing" className="early-pricing block bg-[#eaf7bb] px-4 py-4 text-center text-sm font-semibold text-[#101820] underline decoration-[#607d00]/40 underline-offset-4">
+          Individual: 300 KES/month <span aria-hidden="true">•</span> Schools: 200 KES/learner/year
+        </a>
+
+        <section
+          className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
+          aria-labelledby="revision-heading"
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">
+            Free CBC / CBE practice · Grade 7
+          </p>
+          <h2
+            id="revision-heading"
+            className="mt-4 text-3xl font-bold tracking-tight"
+          >
+            Try a topic before creating an account
+          </h2>
+          <p className="mt-4 max-w-2xl leading-7 text-slate-600">
+            Five questions, worked answers and a fresh start whenever you need
+            one. No registration or payment needed for these public practice
+            quizzes.
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              ["grade-7-mathematics-fractions", "Mathematics: Fractions"],
+              ["grade-7-mathematics-algebra", "Mathematics: Algebra"],
+              [
+                "grade-7-integrated-science-laboratory-safety",
+                "Integrated Science: Laboratory safety",
+              ],
+            ].map(([slug, title]) => (
+              <a
+                key={slug}
+                href={`/revision/${slug}/`}
+                className="rounded-2xl border border-slate-200 bg-white p-6 font-bold text-[#101820] hover:border-[#607b00]"
+              >
+                {title}
+                <span className="mt-3 block text-sm font-semibold text-[#526b00]">
+                  Try 5 free questions →
+                </span>
+              </a>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-slate-600">
+            Supplementary practice to use alongside class notes and teacher
+            guidance.
+          </p>
         </section>
 
         <section
@@ -442,51 +492,6 @@ export default function Home() {
               })}
             </div>
           </div>
-        </section>
-
-        <section
-          className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
-          aria-labelledby="revision-heading"
-        >
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#526b00]">
-            Free CBC / CBE practice · Grade 7
-          </p>
-          <h2
-            id="revision-heading"
-            className="mt-4 text-3xl font-bold tracking-tight"
-          >
-            Try a topic before creating an account
-          </h2>
-          <p className="mt-4 max-w-2xl leading-7 text-slate-600">
-            Five questions, worked answers and a fresh start whenever you need
-            one. No registration or payment needed for these public practice
-            quizzes.
-          </p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {[
-              ["grade-7-mathematics-fractions", "Mathematics: Fractions"],
-              ["grade-7-mathematics-algebra", "Mathematics: Algebra"],
-              [
-                "grade-7-integrated-science-laboratory-safety",
-                "Integrated Science: Laboratory safety",
-              ],
-            ].map(([slug, title]) => (
-              <a
-                key={slug}
-                href={`/revision/${slug}/`}
-                className="rounded-2xl border border-slate-200 bg-white p-6 font-bold text-[#101820] hover:border-[#607b00]"
-              >
-                {title}
-                <span className="mt-3 block text-sm font-semibold text-[#526b00]">
-                  Try 5 free questions →
-                </span>
-              </a>
-            ))}
-          </div>
-          <p className="mt-4 text-sm text-slate-600">
-            Supplementary practice to use alongside class notes and teacher
-            guidance.
-          </p>
         </section>
 
         <section

@@ -93,7 +93,7 @@ export function HomeProductPreview() {
       </div>
     );
   return (
-    <div className="relative mx-auto w-full max-w-xl lg:mx-0">
+    <div className="home-preview relative mx-auto w-full max-w-xl lg:mx-0">
       <div className="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-600">
         <span
           className="h-2 w-2 rounded-full bg-[#607d00]"
@@ -134,12 +134,13 @@ export function HomeProductPreview() {
             {preview.description}
           </p>
           {preview.id === "respiratory" && (
-            <Link
-              to="/student/stem-labs"
+            <button
+              type="button"
+              onClick={() => dialog.current?.showModal()}
               className="mt-2 inline-flex min-h-10 items-center text-sm font-semibold text-[#526b00]"
             >
               Explore STEM Labs →
-            </Link>
+            </button>
           )}
         </figcaption>
       </figure>
@@ -193,6 +194,7 @@ export function HomeProductPreview() {
           </button>
         </div>
         <div className="overflow-auto p-2 sm:p-4">{image(true)}</div>
+        {preview.id === "respiratory" && <div className="border-t border-slate-200 p-4 text-center"><Link to="/login" className="inline-flex min-h-12 items-center rounded-xl bg-[#101820] px-5 text-sm font-bold text-white">Sign in to interact with the full 3D model.</Link></div>}
       </dialog>
     </div>
   );

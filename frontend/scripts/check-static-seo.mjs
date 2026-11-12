@@ -4,8 +4,8 @@ import { resolve } from 'node:path';
 
 export function checkHome(html) {
   assert.match(html, /data-prerendered="homepage"/, 'Homepage must be statically rendered');
-  assert.match(html, /<h1\b[^>]*>[\s\S]*?Grades 1–12[\s\S]*?<\/h1>/, 'Homepage H1 is missing');
-  assert.match(html, /topic-led assignments/, 'Homepage subtitle is missing');
+  assert.match(html, /<h1\b[^>]*>[\s\S]*?Understand more. Revise with confidence.[\s\S]*?<\/h1>/, 'Homepage H1 is missing');
+  assert.match(html, /Topic practice, clear feedback/, 'Homepage subtitle is missing');
   assert.match(html, /<img\b[^>]*src="\/product-previews\/respiratory.webp"/, 'Lung image is missing');
   assert.match(html, /id="problem-heading"/);
   assert.match(html, /id="workflow-heading"/);

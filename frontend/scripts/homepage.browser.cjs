@@ -24,7 +24,7 @@ mkdirSync(artifacts, { recursive: true });
     const response = await staticPage.goto(base + "/");
     assert((await response.text()).includes('data-prerendered="homepage"'));
     const heading = staticPage.getByRole("heading", { level: 1 });
-    assert((await heading.textContent()).includes("Grades 1–12"));
+    assert((await heading.textContent()).includes("Understand more. Revise with confidence."));
     await staticPage
       .getByRole("heading", {
         name: "One topic. Three clear steps.",
@@ -81,6 +81,25 @@ mkdirSync(artifacts, { recursive: true });
         fullPage: true,
       });
     }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => document.fonts.ready);
+    const mobile = await page.evaluate(() => ({
+      height: document.documentElement.scrollHeight,
+      pricing: document.querySelector('.early-pricing').getBoundingClientRect().bottom + scrollY,
+      lungs: document.querySelector('#home-product-image').getBoundingClientRect().top + scrollY,
+      practice: document.querySelector('[aria-labelledby="revision-heading"]').getBoundingClientRect().top + scrollY,
+      problem: document.querySelector('[aria-labelledby="problem-heading"]').getBoundingClientRect().top + scrollY,
+    }));
+    assert(mobile.height <= 844 * 8, JSON.stringify(mobile));
+    assert(mobile.pricing <= 844, 'Pricing banner must fit the first mobile screen');
+    assert(mobile.lungs < 844, 'Lungs must appear on the first mobile screen');
+    assert(mobile.practice < mobile.problem, 'Free practice must appear before the Problem section');
+    await page.getByRole('button', { name: 'Explore STEM Labs' }).click();
+    await page.getByRole('dialog').waitFor();
+    assert.equal(new URL(page.url()).pathname, '/');
+    await page.getByRole('link', { name: 'Sign in to interact with the full 3D model.' }).waitFor();
+    await page.getByRole('button', { name: 'Close product screenshot', exact: true }).click();
+    console.log('Mobile layout measurements:', JSON.stringify(mobile));
     await page
       .getByRole("button", { name: "Enlarge product screenshot", exact: true })
       .click();
