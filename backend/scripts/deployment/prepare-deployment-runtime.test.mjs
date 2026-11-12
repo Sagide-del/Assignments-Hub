@@ -13,7 +13,7 @@ test('Render and CI build the existing private runtime instead of deploying a mi
 });
 test('Railway does not assume Python exists or undo its prior build workaround', () => {
   let called = false;
-  assert.equal(prepareDeploymentRuntime({ RAILWAY_ENVIRONMENT_ID: 'fixture', RENDER: 'false' }, () => { called = true; }, () => {}), false);
+  assert.equal(prepareDeploymentRuntime({ RAILWAY_ENVIRONMENT_ID: 'fixture', RENDER: 'false', CI: 'true' }, () => { called = true; }, () => {}), false);
   assert.equal(called, false);
 });
 test('external engine configuration uses the existing preparation script and failed preparation blocks the build', () => {
