@@ -4,7 +4,9 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { run } from './frontend-snapshot.mjs';
+import { run as snapshotRun, cliTransport, sdkTransport } from './frontend-snapshot.mjs';
+import { Readable } from 'node:stream';
+const run = (...args) => snapshotRun(...args, cliTransport);
 
 const hash = key => createHash('sha256').update(key).digest('hex');
 async function fixture(action) {
@@ -113,4 +115,41 @@ test('origin prefixes stay isolated and an existing recovery snapshot cannot be 
     assert.equal(await readFile(object('frontend/blog'),'utf8'),'original frontend/blog');
     assert.equal(await readFile(object('index.html'),'utf8'),'outside prefix unchanged');
   });
+});
+
+
+test('reused S3 transport paginates, streams object bytes and restores metadata without spawning commands', async () => {
+  const root=await mkdtemp(join(tmpdir(),'snapshot-sdk-'));
+  const commands={
+    ListObjectsV2Command: class {constructor(input){this.operation='list';this.input=input;}},
+    GetObjectCommand: class {constructor(input){this.operation='get';this.input=input;}},
+    PutObjectCommand: class {constructor(input){this.operation='put';this.input=input;}},
+  };
+  const objects=new Map([['index.html',Buffer.from('home')],['blog',Buffer.from('alias')],['blog/',Buffer.alloc(0)],['blog/index.html',Buffer.from('page')]]);
+  const metadata={ContentType:'text/html',CacheControl:'public,max-age=86400',Expires:new Date('2027-01-01T00:00:00Z'),Metadata:{build:'old'}};
+  const writes=[];let listings=0;
+  const client={send:async command=>{
+    const input=command.input;
+    if(command.operation==='list'){
+      listings++;
+      const keys=[...objects.keys()];
+      return input.ContinuationToken ? {Contents:keys.slice(2).map(Key=>({Key})),IsTruncated:false} : {Contents:keys.slice(0,2).map(Key=>({Key})),IsTruncated:true,NextContinuationToken:'next'};
+    }
+    if(command.operation==='get')return {...metadata,Body:Readable.from([objects.get(input.Key)])};
+    const chunks=[];for await(const chunk of input.Body)chunks.push(chunk);
+    const body=Buffer.concat(chunks);assert.equal(input.ContentLength,body.length);
+    objects.set(input.Key,body);writes.push(input);return {};
+  }};
+  const request=sdkTransport(client,commands);
+  try{
+    await snapshotRun('prepare','fixture','',root,request);
+    assert.equal(listings,2);
+    for(const key of objects.keys())objects.set(key,Buffer.from('changed'));
+    await snapshotRun('restore','fixture','',root,request);
+    assert.equal(objects.get('blog').toString(),'alias');
+    assert.equal(objects.get('blog/').length,0);
+    assert.equal(objects.get('blog/index.html').toString(),'page');
+    assert.equal(writes.length,4);
+    for(const item of writes){assert.equal(item.CacheControl,metadata.CacheControl);assert.deepEqual(item.Metadata,metadata.Metadata);assert.equal(item.Expires.toISOString(),metadata.Expires.toISOString());}
+  }finally{await rm(root,{recursive:true,force:true});}
 });

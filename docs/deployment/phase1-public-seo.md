@@ -46,3 +46,5 @@ The live check verifies homepage body without JS, account metadata on all login 
 ## S3 snapshot format
 
 Rollback snapshots store each S3 object as `objects/<SHA-256 of key>` with its original key, headers, metadata and content checksum in `state.json`. This preserves conflicting keys such as `blog`, `blog/` and `blog/index.html`, which cannot coexist as ordinary filesystem paths. A copy of the previous homepage remains at `previous/index.html` for comparison. Do not upload the snapshot folder as a directory: recover it with `frontend-snapshot.mjs restore <bucket> <origin-prefix> <snapshot-directory>`. The verified wrapper restores this snapshot together with the saved CloudFront configuration and public route aliases automatically.
+
+The production snapshot reuses the backend’s existing AWS S3 SDK and a bounded connection pool. It does not spawn an AWS CLI process for every object. Paginated listings, zero-byte markers, original headers and metadata are covered by the snapshot tests. Manual recovery falls back to the AWS CLI when the backend dependencies are not installed.
