@@ -82,7 +82,7 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - name: Test verified publish and rollback
-        run: node --test scripts/deployment/frontend-snapshot.test.mjs scripts/deployment/public-routes.test.mjs scripts/deployment/publish-verified-rbac.test.mjs backend/scripts/deployment/provision-demo-academy.test.mjs backend/scripts/deployment/prepare-deployment-runtime.test.mjs
+        run: node --test scripts/deployment/frontend-snapshot.test.mjs scripts/deployment/public-routes.test.mjs scripts/deployment/publish-verified-rbac.test.mjs backend/scripts/deployment/provision-demo-academy.test.mjs backend/scripts/deployment/prepare-deployment-runtime.test.mjs backend/scripts/deployment/recover-music-migration.test.mjs
       - name: Test public routing and cache configuration
         run: python3 -m unittest discover -s scripts/deployment -p frontend_edge_test.py -v
       - name: Check live RBAC verification configuration

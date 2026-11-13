@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
+const {recoveryPlan}=createRequire(import.meta.url)('./recover-music-migration.cjs');
+const failed=[{migration_name:'20261113190000_music_studio_projects',logs:'Database error code: 42P01\nERROR: relation "User" does not exist'}];
+const state={schema_name:'public',music_table:null,users_table:'users'};
+test('permits only the exact failed table-name migration when no project table exists',()=>{assert.equal(recoveryPlan(failed,state).action,'ROLL_BACK_FAILED_RECORD');assert.equal(recoveryPlan([] ,state).action,'NONE');});
+test('refuses existing tables, unrelated failures and unexpected schemas',()=>{assert.throws(()=>recoveryPlan(failed,{...state,music_table:'"Music_Studio_Project"'}),/already exists/);assert.throws(()=>recoveryPlan(failed,{...state,schema_name:'other'}),/Unexpected/);assert.throws(()=>recoveryPlan(failed,{...state,users_table:null}),/Unexpected/);assert.throws(()=>recoveryPlan([...failed,{migration_name:'other'}],state),/Another/);assert.throws(()=>recoveryPlan([{...failed[0],migration_name:'other'}],state),/Another/);assert.throws(()=>recoveryPlan([{...failed[0],logs:'permission denied'}],state),/does not match/);});
+test('uses hosting backend dependencies, requires apply and never deploys old files or deletes data',()=>{const code=readFileSync(new URL('./recover-music-migration.cjs',import.meta.url),'utf8');assert.match(code,/createRequire\(resolve\('package.json'\)\)/);assert.match(code,/includes\('--apply'\)/);assert.match(code,/'--rolled-back',MIGRATION/);assert.doesNotMatch(code,/DROP TABLE|TRUNCATE|DELETE FROM|migrate','deploy|migrate','reset|prisma:seed/);});
