@@ -120,6 +120,11 @@ def run(mode, distribution, dist, snapshot):
             if actual != expected:
                 raise ValueError('CloudFront runtime returned an unexpected route for ' + uri)
         aws('cloudfront', 'publish-function', '--name', name, '--if-match', function['ETag'])
+        # Publishing an associated function can advance the distribution ETag.
+        # Refresh it, but reject unrelated configuration edits during publication.
+        current = aws('cloudfront', 'get-distribution-config', '--id', distribution)
+        if current['DistributionConfig'] not in [state['previous']['DistributionConfig'], state['planned']]:
+            raise ValueError('Distribution was edited during function publication; refusing to overwrite it.')
         if current['DistributionConfig'] != state['planned']:
             aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'planned.json').resolve()))
             aws('cloudfront', 'wait', 'distribution-deployed', '--id', distribution)
@@ -136,6 +141,9 @@ def run(mode, distribution, dist, snapshot):
             described = aws('cloudfront', 'describe-function', '--name', name, '--stage', 'DEVELOPMENT')
             restored = aws('cloudfront', 'update-function', '--name', name, '--if-match', described['ETag'], '--function-config', json.dumps(state['previousLiveFunction']['FunctionSummary']['FunctionConfig']), '--function-code', 'fileb://' + str((root / 'previous-function.js').resolve()))
             aws('cloudfront', 'publish-function', '--name', name, '--if-match', restored['ETag'])
+            current = aws('cloudfront', 'get-distribution-config', '--id', distribution)
+            if current['DistributionConfig'] not in [state['planned'], state['previous']['DistributionConfig']]:
+                raise ValueError('Distribution was edited during function restoration; preserve snapshot for inspection.')
         (root / 'previous.json').write_text(json.dumps(state['previous']['DistributionConfig']))
         if current['DistributionConfig'] != state['previous']['DistributionConfig']:
             aws('cloudfront', 'update-distribution', '--id', distribution, '--if-match', current['ETag'], '--distribution-config', 'file://' + str((root / 'previous.json').resolve()))

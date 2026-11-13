@@ -87,7 +87,11 @@ class EdgeDeploymentTests(unittest.TestCase):
                     state['config']=json.loads(Path(args[args.index('--distribution-config')+1][7:]).read_text())
                     state['etag']+='x'
                     return {}
-                if action in ['wait','publish-function']:return {}
+                if action == 'publish-function':
+                    # AWS may advance this version when an associated function publishes.
+                    state['etag'] += 'published'
+                    return {}
+                if action == 'wait': return {}
                 raise AssertionError(args)
             with patch.object(edge,'aws',side_effect=fake):
                 edge.run('prepare','D',root/'dist',root/'snapshot')
