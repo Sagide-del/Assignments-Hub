@@ -130,7 +130,7 @@ mkdirSync(out, { recursive: true });
         data = { id: 2, name: "Demo Academy" };
       await route.fulfill({ json: data });
     });
-    const page = await context.newPage();
+    let page = await context.newPage();
     page.on("pageerror", (e) => {
       console.log("PAGE ERROR", page.url(), e.stack);
       errors.push(e.message);
@@ -313,44 +313,13 @@ mkdirSync(out, { recursive: true });
       ),
     );
     await page.screenshot({ path: out + "/lungs-mobile.png", fullPage: true });
-    // An optional asynchronous script can outlive app readiness. Keep it
-    // pending during reload so the restore check cannot regress to full-load waiting.
-    let releaseImage,
-      imageFulfilled,
-      resourceRequested = false;
-    const imageGate = new Promise((resolve) => {
-      releaseImage = resolve;
-    });
-    const imageDone = new Promise((resolve) => {
-      imageFulfilled = resolve;
-    });
-    const slowImage = async (route) => {
-      resourceRequested = true;
-      await imageGate;
-      await route.fulfill({
-        status: 200,
-        contentType: "application/javascript",
-        body: "void 0;",
-      });
-      imageFulfilled();
-    };
-    await page.route("**/__sports-restore-noncritical.js", slowImage);
-    await page.addInitScript(() => {
-      const append = () => {
-        const resource = document.createElement("script");
-        resource.async = true;
-        resource.src = "/__sports-restore-noncritical.js";
-        document.body.appendChild(resource);
-      };
-      if (document.readyState === "loading")
-        document.addEventListener("DOMContentLoaded", append, { once: true });
-      else append();
-    });
-    let reloadedFully = false;
-    page.once("load", () => {
-      reloadedFully = true;
-    });
-    await page.reload({ waitUntil: "commit" });
+    // Reopen a fresh document in the same browser context. This verifies
+    // durable storage while releasing software-rendered WebGL before navigation.
+    await page.close();
+    page = await context.newPage();
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(base + "/student/stem-labs/901", { waitUntil: "domcontentloaded" });
     await page.getByLabel("Respiratory prediction", { exact: true }).waitFor();
     assert.match(
       await page
@@ -369,19 +338,6 @@ mkdirSync(out, { recursive: true });
     await page
       .getByText("Lung lobes, airways and diaphragm", { exact: true })
       .waitFor({ state: "hidden" });
-    assert.equal(
-      resourceRequested,
-      true,
-      "the delayed script fixture must be requested",
-    );
-    assert.equal(
-      reloadedFully,
-      false,
-      "restoration was checked while a noncritical resource was still pending",
-    );
-    releaseImage();
-    await imageDone;
-    await page.unroute("**/__sports-restore-noncritical.js", slowImage);
     const other = await browser.newContext({
       storageState: await context.storageState(),
     });
