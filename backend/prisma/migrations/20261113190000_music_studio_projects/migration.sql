@@ -4,6 +4,6 @@ CREATE TABLE "Music_Studio_Project" (
  "tracks_json" JSONB NOT NULL, "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
  "updated_at" TIMESTAMP(3) NOT NULL,
  CONSTRAINT "Music_Studio_Project_pkey" PRIMARY KEY ("id"),
- CONSTRAINT "Music_Studio_Project_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+ CONSTRAINT "Music_Studio_Project_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE INDEX "Music_Studio_Project_student_id_updated_at_idx" ON "Music_Studio_Project"("student_id", "updated_at");
