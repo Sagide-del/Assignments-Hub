@@ -1,0 +1,518 @@
+{
+  "source": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+  "revision": "6ffffec1d9b17ed3db355903bbd762582cb2328e",
+  "license": "CC-BY-SA-4.0",
+  "modifications": "Named anatomical subsets, structural-modifier baking, curve-to-surface conversion, polygon reduction, smooth normals, glTF export. Illustrative materials applied by the viewer; no anatomical deformation.",
+  "assets": [
+    {
+      "kind": "energy",
+      "file": "energy-atlas-v1.glb",
+      "bytes": 984064,
+      "sha256": "688c8137ed814886f94cd6c9bd81bb135d6e7192eaa860d731e2fa4c7c3d1c59",
+      "structures": [
+        {
+          "name": "Vastus medialis muscle.r",
+          "structure": "quadriceps",
+          "bounds_m": [
+            0.07160390168428421,
+            0.06848565489053726,
+            0.40790048241615295
+          ]
+        },
+        {
+          "name": "Vastus lateralis muscle.r",
+          "structure": "quadriceps",
+          "bounds_m": [
+            0.07405506819486618,
+            0.07921358942985535,
+            0.45739102363586426
+          ]
+        },
+        {
+          "name": "Vastus intermedius muscle.r",
+          "structure": "quadriceps",
+          "bounds_m": [
+            0.05662689357995987,
+            0.04774784669280052,
+            0.40839678049087524
+          ]
+        },
+        {
+          "name": "Tibia.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.0784469023346901,
+            0.06802313774824142,
+            0.3579631745815277
+          ]
+        },
+        {
+          "name": "Patella.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.04318312183022499,
+            0.022752253338694572,
+            0.04092850536108017
+          ]
+        },
+        {
+          "name": "Short head of biceps femoris.r",
+          "structure": "hamstrings",
+          "bounds_m": [
+            0.03684629872441292,
+            0.04188012331724167,
+            0.3013487756252289
+          ]
+        },
+        {
+          "name": "Rectus femoris muscle.r",
+          "structure": "quadriceps",
+          "bounds_m": [
+            0.08161210268735886,
+            0.06934035569429398,
+            0.5453277230262756
+          ]
+        },
+        {
+          "name": "Long head of biceps femoris.r",
+          "structure": "hamstrings",
+          "bounds_m": [
+            0.07824508100748062,
+            0.05582732707262039,
+            0.425405889749527
+          ]
+        },
+        {
+          "name": "Hip bone.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.1319572627544403,
+            0.1428522914648056,
+            0.21460051834583282
+          ]
+        },
+        {
+          "name": "Fibula.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.03622346743941307,
+            0.032926153391599655,
+            0.36249247193336487
+          ]
+        },
+        {
+          "name": "Femur.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.11659260094165802,
+            0.07811092585325241,
+            0.4544392228126526
+          ]
+        },
+        {
+          "name": "Femoral artery.r",
+          "structure": "artery",
+          "bounds_m": [
+            0.03203736990690231,
+            0.06960810720920563,
+            0.3384022116661072
+          ]
+        },
+        {
+          "name": "Deep femoral artery.r",
+          "structure": "artery",
+          "bounds_m": [
+            0.04249658063054085,
+            0.07839175313711166,
+            0.2597794830799103
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "reflex",
+      "file": "reflex-atlas-v1.glb",
+      "bytes": 1799012,
+      "sha256": "c5e9340692fb27db4c184e0814b9c6f5ca902108b27273025a9a431771f41ae9",
+      "structures": [
+        {
+          "name": "White matter of spinal cord",
+          "structure": "cord",
+          "bounds_m": [
+            0.014710252173244953,
+            0.059911344200372696,
+            0.49049586057662964
+          ]
+        },
+        {
+          "name": "Vertebra C7",
+          "structure": "bone",
+          "bounds_m": [
+            0.07122080773115158,
+            0.07030614465475082,
+            0.027013041079044342
+          ]
+        },
+        {
+          "name": "Vertebra C6",
+          "structure": "bone",
+          "bounds_m": [
+            0.06126151606440544,
+            0.06362228840589523,
+            0.024600109085440636
+          ]
+        },
+        {
+          "name": "Vertebra C5",
+          "structure": "bone",
+          "bounds_m": [
+            0.061431773006916046,
+            0.0564405731856823,
+            0.02249879762530327
+          ]
+        },
+        {
+          "name": "Ulna.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.05239299684762955,
+            0.08323949575424194,
+            0.25543949007987976
+          ]
+        },
+        {
+          "name": "Superior trunk of brachial plexus.r",
+          "structure": "plexus",
+          "bounds_m": [
+            0.035751935094594955,
+            0.01737844944000244,
+            0.03677104413509369
+          ]
+        },
+        {
+          "name": "Scapula.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.1129642203450203,
+            0.1140720546245575,
+            0.16356508433818817
+          ]
+        },
+        {
+          "name": "Roots of brachial plexus.r",
+          "structure": "plexus",
+          "bounds_m": [
+            0.04293582960963249,
+            0.029638206586241722,
+            0.07168123126029968
+          ]
+        },
+        {
+          "name": "Radius.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.06179000809788704,
+            0.0686710849404335,
+            0.23700763285160065
+          ]
+        },
+        {
+          "name": "Short head of biceps brachii.r",
+          "structure": "muscle",
+          "bounds_m": [
+            0.08149081468582153,
+            0.034431248903274536,
+            0.2730574905872345
+          ]
+        },
+        {
+          "name": "Proper palmar digital branches of median nerve.r",
+          "structure": "nerve",
+          "bounds_m": [
+            0.06700823456048965,
+            0.06111447513103485,
+            0.12626194953918457
+          ]
+        },
+        {
+          "name": "Posterior horn of spinal cord",
+          "structure": "cord",
+          "bounds_m": [
+            0.008244508877396584,
+            0.05294249579310417,
+            0.4901648163795471
+          ]
+        },
+        {
+          "name": "Musculocutaneous nerve.r",
+          "structure": "motor",
+          "bounds_m": [
+            0.0490712895989418,
+            0.020880021154880524,
+            0.2192605882883072
+          ]
+        },
+        {
+          "name": "Middle trunk of brachial plexus.r",
+          "structure": "plexus",
+          "bounds_m": [
+            0.033406008034944534,
+            0.005455974023789167,
+            0.025118615478277206
+          ]
+        },
+        {
+          "name": "Median nerve.r",
+          "structure": "nerve",
+          "bounds_m": [
+            0.15350259840488434,
+            0.06175309047102928,
+            0.5541667342185974
+          ]
+        },
+        {
+          "name": "Long head of biceps brachii.r",
+          "structure": "muscle",
+          "bounds_m": [
+            0.09519664943218231,
+            0.049703530967235565,
+            0.3571183383464813
+          ]
+        },
+        {
+          "name": "Inferior trunk of brachial plexus.r",
+          "structure": "plexus",
+          "bounds_m": [
+            0.029709165915846825,
+            0.007746672723442316,
+            0.021798213943839073
+          ]
+        },
+        {
+          "name": "Humerus.r",
+          "structure": "bone",
+          "bounds_m": [
+            0.10422623157501221,
+            0.05236704647541046,
+            0.3175819218158722
+          ]
+        },
+        {
+          "name": "Common palmar digital branches of median nerve.r",
+          "structure": "nerve",
+          "bounds_m": [
+            0.03688102215528488,
+            0.010886763222515583,
+            0.05929440259933472
+          ]
+        },
+        {
+          "name": "Brachialis muscle.r",
+          "structure": "muscle",
+          "bounds_m": [
+            0.0608956441283226,
+            0.02714790776371956,
+            0.23230189085006714
+          ]
+        },
+        {
+          "name": "Anterior horn of spinal cord",
+          "structure": "cord",
+          "bounds_m": [
+            0.00817744992673397,
+            0.05231822654604912,
+            0.4895327091217041
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "circulation",
+      "file": "circulation-atlas-v1.glb",
+      "bytes": 1805288,
+      "sha256": "185252a32dcd03a829a15602cb143b5a0f493fa3b51692fcca1685f9910b743b",
+      "structures": [
+        {
+          "name": "Thoracic aorta",
+          "structure": "aorta",
+          "bounds_m": [
+            0.03156684711575508,
+            0.04837704822421074,
+            0.16038917005062103
+          ]
+        },
+        {
+          "name": "Superior vena cava",
+          "structure": "vena-cava",
+          "bounds_m": [
+            0.02491682954132557,
+            0.02703140489757061,
+            0.03767337277531624
+          ]
+        },
+        {
+          "name": "Superior lobe of right lung",
+          "structure": "lungs",
+          "bounds_m": [
+            0.11020755022764206,
+            0.13739371299743652,
+            0.15565603971481323
+          ]
+        },
+        {
+          "name": "Superior lobe of left lung",
+          "structure": "lungs",
+          "bounds_m": [
+            0.11412356793880463,
+            0.21149742603302002,
+            0.17077115178108215
+          ]
+        },
+        {
+          "name": "Right ventricle",
+          "structure": "right-ventricle",
+          "bounds_m": [
+            0.08255349099636078,
+            0.09241735190153122,
+            0.06702034920454025
+          ]
+        },
+        {
+          "name": "Right superior pulmonary vein",
+          "structure": "pulmonary-vein",
+          "bounds_m": [
+            0.03226841986179352,
+            0.020765377208590508,
+            0.03534889966249466
+          ]
+        },
+        {
+          "name": "Right inferior pulmonary vein",
+          "structure": "pulmonary-vein",
+          "bounds_m": [
+            0.023518836125731468,
+            0.013188743963837624,
+            0.014634165912866592
+          ]
+        },
+        {
+          "name": "Right atrium",
+          "structure": "right-atrium",
+          "bounds_m": [
+            0.044662944972515106,
+            0.0986097976565361,
+            0.0737309455871582
+          ]
+        },
+        {
+          "name": "Right pulmonary artery",
+          "structure": "pulmonary-artery",
+          "bounds_m": [
+            0.05230884626507759,
+            0.026377659291028976,
+            0.027811679989099503
+          ]
+        },
+        {
+          "name": "Pulmonary trunk",
+          "structure": "pulmonary-artery",
+          "bounds_m": [
+            0.031157471239566803,
+            0.03780177980661392,
+            0.03291456028819084
+          ]
+        },
+        {
+          "name": "Middle lobe of right lung",
+          "structure": "lungs",
+          "bounds_m": [
+            0.1178426593542099,
+            0.10362052917480469,
+            0.14998728036880493
+          ]
+        },
+        {
+          "name": "Left ventricle",
+          "structure": "left-ventricle",
+          "bounds_m": [
+            0.07985898852348328,
+            0.08961247652769089,
+            0.08739925175905228
+          ]
+        },
+        {
+          "name": "Left superior pulmonary vein",
+          "structure": "pulmonary-vein",
+          "bounds_m": [
+            0.017529886215925217,
+            0.013080313801765442,
+            0.012280378490686417
+          ]
+        },
+        {
+          "name": "Left pulmonary artery",
+          "structure": "pulmonary-artery",
+          "bounds_m": [
+            0.06740722060203552,
+            0.03984149545431137,
+            0.09194761514663696
+          ]
+        },
+        {
+          "name": "Left inferior pulmonary vein",
+          "structure": "pulmonary-vein",
+          "bounds_m": [
+            0.015166174620389938,
+            0.010288354009389877,
+            0.013881884515285492
+          ]
+        },
+        {
+          "name": "Left atrium",
+          "structure": "left-atrium",
+          "bounds_m": [
+            0.08939459919929504,
+            0.07522999495267868,
+            0.08632459491491318
+          ]
+        },
+        {
+          "name": "Inferior vena cava (thoracic part)",
+          "structure": "vena-cava",
+          "bounds_m": [
+            0.02594117633998394,
+            0.03385277837514877,
+            0.0927824079990387
+          ]
+        },
+        {
+          "name": "Inferior lobe of right lung",
+          "structure": "lungs",
+          "bounds_m": [
+            0.12838703393936157,
+            0.18047869205474854,
+            0.17582610249519348
+          ]
+        },
+        {
+          "name": "Inferior lobe of left lung",
+          "structure": "lungs",
+          "bounds_m": [
+            0.1114569902420044,
+            0.19348526000976562,
+            0.1819116622209549
+          ]
+        },
+        {
+          "name": "Ascending aorta",
+          "structure": "aorta",
+          "bounds_m": [
+            0.04159339517354965,
+            0.039897385984659195,
+            0.055546775460243225
+          ]
+        }
+      ]
+    }
+  ]
+}

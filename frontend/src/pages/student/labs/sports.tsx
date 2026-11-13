@@ -15,15 +15,6 @@ import {
   Save,
   RotateCcw,
 } from "lucide-react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
-} from "recharts";
 import { api, apiErrorMessage } from "../../../api/axios";
 import { useAuthStore } from "../../../store/auth.store";
 import {
@@ -39,9 +30,8 @@ import {
 const Scene = lazy(
   () => import("../../../features/student/sports/SportsScene"),
 );
-const LungScene = lazy(
-  () =>
-    import("../../../features/student/stem-workspace/studios/RespiratoryScene"),
+const SystemsExplorer = lazy(
+  () => import("../../../features/student/sports/SystemsExplorer"),
 );
 interface Activity {
   id: SportsId;
@@ -313,8 +303,7 @@ function SportsActivity({
     [storageError, setStorageError] = useState(false),
     [notice, setNotice] = useState("");
   const revision = useRef(0),
-    mounted = useRef(true),
-    motion = useRef({ time: 0, running: true });
+    mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -329,19 +318,6 @@ function SportsActivity({
       setStorageError(true);
     }
   }, [draft, storageKey]);
-  useEffect(() => {
-    let frame = 0,
-      last = performance.now();
-    const tick = (now: number) => {
-      if (running)
-        motion.current.time += Math.max(0, Math.min(0.1, (now - last) / 1000));
-      motion.current.running = running;
-      last = now;
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [running]);
   function change(p: Partial<Draft>) {
     revision.current++;
     setResult(null);
@@ -503,22 +479,20 @@ function SportsActivity({
               </p>
             }
           >
-            {a.id === "respiratory" ? (
-              <div className="relative h-[340px] sm:h-[470px]">
-                <LungScene
-                  config={{
-                    rate: 12,
-                    tidalVolume: 0.5,
-                  }}
-                  motion={motion}
-                  view="surface"
-                  selected="right-lung"
-                  cameraView="front"
-                  resetKey={0}
-                  labels={false}
-                  onSelect={() => {}}
-                />
-              </div>
+            {a.id === "respiratory" ||
+            a.id === "energy" ||
+            a.id === "reflex" ? (
+              <SystemsExplorer
+                kind={a.id}
+                config={draft.config}
+                running={running}
+                stimulus={stimulus}
+                onConfig={(config) => change({ config })}
+                onStimulus={() => {
+                  setRunning(true);
+                  setStimulus((s) => s + 1);
+                }}
+              />
             ) : (
               <Scene
                 kind={a.id}
@@ -596,75 +570,6 @@ function SportsActivity({
                   Correct location: the femur is in the thigh.
                 </p>
               )}
-            </div>
-          )}
-          {a.id === "energy" && (
-            <div
-              aria-label="Relative energy system contributions"
-              className="h-60 border-t border-slate-100 p-4"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={results}
-                  margin={{ left: 0, right: 10, top: 10, bottom: 0 }}
-                >
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={30} />
-                  <Tooltip
-                    formatter={(v: number) => [
-                      `${v.toFixed(1)} relative %`,
-                      "Contribution",
-                    ]}
-                  />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {results.map((r, i) => (
-                      <Cell
-                        key={r.label}
-                        fill={["#9b864d", "#ac7372", "#6d8f7a"][i]}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-          {a.id === "respiratory" && (
-            <Circulation running={running} heartRate={draft.config.heartRate} />
-          )}
-          {a.id === "reflex" && (
-            <div className="space-y-3 border-t border-slate-100 p-4">
-              <button
-                className={primary}
-                onClick={() => {
-                  setRunning(true);
-                  setStimulus((s) => s + 1);
-                }}
-              >
-                Apply virtual heat stimulus
-              </button>
-              <ol className="flex flex-wrap gap-2 text-[10px] text-slate-500">
-                {[
-                  "Receptor",
-                  "Sensory neurone",
-                  "Spinal interneurone",
-                  "Motor neurone",
-                  "Muscle response",
-                ].map((s, i) => (
-                  <li key={s} className="rounded-lg bg-slate-50 px-2 py-2">
-                    {i + 1} · {s}
-                  </li>
-                ))}
-              </ol>
-              <p className="text-[11px] leading-5 text-slate-500">
-                Gold pathway = spinal reflex. Ascending information also reaches
-                the brain. Animation is slowed to four seconds; the calculated
-                time below is illustrative.
-              </p>
             </div>
           )}
         </section>
@@ -975,80 +880,6 @@ function SportsActivity({
           </a>
         </div>
       </details>
-    </div>
-  );
-}
-function Circulation({
-  running,
-  heartRate,
-}: {
-  running: boolean;
-  heartRate: number;
-}) {
-  return (
-    <div className="border-t border-slate-100 p-4">
-      <h3 className="text-xs font-medium">Trace the two circuits</h3>
-      <svg
-        role="img"
-        aria-label="Pulmonary and systemic blood flow: right heart to lungs, lungs to left heart, left heart to body, body to right heart"
-        viewBox="0 0 440 250"
-        className="mx-auto mt-2 max-h-72 w-full"
-      >
-        <style>
-          {"@keyframes sports-blood-flow{to{stroke-dashoffset:-36}}"}
-        </style>
-        {[
-          { d: "M170 125 Q70 20 205 32", c: "#6d89ad" },
-          { d: "M235 32 Q365 20 270 125", c: "#b87578" },
-          { d: "M270 125 Q365 230 235 220", c: "#b87578" },
-          { d: "M205 220 Q70 230 170 125", c: "#6d89ad" },
-        ].map((p, i) => (
-          <path
-            key={i}
-            d={p.d}
-            fill="none"
-            stroke={p.c}
-            strokeWidth="7"
-            strokeDasharray="10 8"
-            style={{
-              animation: `sports-blood-flow ${360 / heartRate}s linear infinite`,
-              animationPlayState: running ? "running" : "paused",
-            }}
-          />
-        ))}
-        {[
-          { x: 220, y: 32, t: "Lungs" },
-          { x: 170, y: 125, t: "Right heart" },
-          { x: 270, y: 125, t: "Left heart" },
-          { x: 220, y: 220, t: "Working muscle" },
-        ].map((n) => (
-          <g key={n.t}>
-            <rect
-              x={n.x - 48}
-              y={n.y - 17}
-              width="96"
-              height="34"
-              rx="12"
-              fill="#f1f4eb"
-              stroke="#d4ddc7"
-            />
-            <text
-              x={n.x}
-              y={n.y + 4}
-              textAnchor="middle"
-              fontSize="10"
-              fill="#34452e"
-            >
-              {n.t}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <p className="text-[10px] leading-5 text-slate-500">
-        Rose: oxygen-rich blood · Blue: oxygen-poor blood. Pulmonary arteries
-        carry oxygen-poor blood; pulmonary veins carry oxygen-rich blood. Flow
-        arrows are schematic.
-      </p>
     </div>
   );
 }

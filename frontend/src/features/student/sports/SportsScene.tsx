@@ -72,8 +72,7 @@ function AtlasScene(props: Props) {
     scene.add(light);
     const body = new THREE.Group();
     scene.add(body);
-    const targets: THREE.Mesh[] = [],
-      heads: THREE.Mesh[] = [];
+    const targets: THREE.Mesh[] = [];
     function material(color: string) {
       return new THREE.MeshStandardMaterial({
         color,
@@ -81,19 +80,6 @@ function AtlasScene(props: Props) {
         metalness: 0,
       });
     }
-    function ball(x: number, y: number, z: number, r: number, color: string) {
-      const m = new THREE.Mesh(
-        new THREE.SphereGeometry(r, 14, 10),
-        material(color),
-      );
-      m.position.set(x, y, z);
-      scene.add(m);
-      return m;
-    }
-    const vec = (x: number, y: number, z = 0) => new THREE.Vector3(x, y, z);
-    let path: THREE.CatmullRomCurve3 | undefined,
-      impulse: THREE.Mesh | undefined,
-      brain: THREE.Mesh | undefined;
     {
       new GLTFLoader().load(
         "/stem/anatomy/sports/skeleton-atlas-v1.glb",
@@ -132,63 +118,6 @@ function AtlasScene(props: Props) {
         undefined,
         () => !disposed && setStatus("error"),
       );
-      if (props.kind === "reflex") {
-        const plate = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.26, 0.28, 0.08, 32),
-          material("#38454b"),
-        );
-        plate.position.set(1, -0.23, 0.35);
-        plate.userData.stimulus = true;
-        scene.add(plate);
-        targets.push(plate);
-        for (const radius of [0.09, 0.15, 0.21]) {
-          const heat = new THREE.Mesh(
-            new THREE.TorusGeometry(radius, 0.012, 8, 32),
-            new THREE.MeshStandardMaterial({
-              color: "#b75b42",
-              emissive: "#7b2f1f",
-              emissiveIntensity: 0.5,
-            }),
-          );
-          heat.rotation.x = Math.PI / 2;
-          heat.position.set(1, -0.18, 0.35);
-          scene.add(heat);
-        }
-        path = new THREE.CatmullRomCurve3([
-          vec(1, -0.1, 0.35),
-          vec(0.6, 0.3, 0.35),
-          vec(0, 0.35, 0.35),
-          vec(0.05, 0.5, 0.36),
-          vec(0.6, 0.5, 0.36),
-          vec(1, 0.1, 0.35),
-        ]);
-        scene.add(
-          new THREE.Mesh(
-            new THREE.TubeGeometry(path, 60, 0.018, 8, false),
-            material("#bd9756"),
-          ),
-        );
-        impulse = ball(1, -0.1, 0.35, 0.06, "#a45146");
-        brain = ball(0, 1.4, 0.3, 0.09, "#6d7d9c");
-      }
-      if (props.kind === "energy") {
-        for (const [i, color] of ["#9b864d", "#ac7372", "#6d8f7a"].entries()) {
-          const curve = new THREE.CatmullRomCurve3([
-            vec(-1.4, i * 0.5 - 0.4, 0.3),
-            vec(-0.7, i * 0.35 - 0.3, 0.5),
-            vec(0, 0, 0.4),
-          ]);
-          scene.add(
-            new THREE.Mesh(
-              new THREE.TubeGeometry(curve, 30, 0.02, 6, false),
-              material(color),
-            ),
-          );
-          const marker = ball(0, 0, 0, 0.07, color);
-          marker.userData.curve = curve;
-          heads.push(marker);
-        }
-      }
     }
     let down = { x: 0, y: 0 };
     const start = (e: PointerEvent) => {
@@ -223,16 +152,9 @@ function AtlasScene(props: Props) {
       camera.updateProjectionMatrix();
     });
     resize.observe(el);
-    let time = 0,
-      last = performance.now(),
-      lastStimulus = 0,
-      stimulusTime = -10;
-    const draw = (now: number) => {
+    const draw = () => {
       if (disposed) return;
       const p = live.current;
-      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
-      last = now;
-      if (p.running) time += dt;
       targets.forEach((m) => {
         if (m.userData.stimulus) return;
         const selected = m.userData.bone === p.selected,
@@ -240,31 +162,6 @@ function AtlasScene(props: Props) {
         mat.color.set(selected ? "#9cac77" : "#ded7c5");
         mat.emissive.set(selected ? "#18200c" : "#000000");
       });
-      if (p.kind === "energy") {
-        body.position.y = Math.sin(time * 5) * 0.025;
-        heads.forEach((m, i) => {
-          const curve = m.userData.curve as THREE.CatmullRomCurve3;
-          m.position.copy(
-            curve.getPoint(
-              (((time * (0.2 + p.config.intensity / 200) + i * 0.3) % 1) + 1) %
-                1,
-            ),
-          );
-        });
-      }
-      if (p.kind === "reflex" && path && impulse) {
-        if (p.stimulus !== lastStimulus) {
-          lastStimulus = p.stimulus;
-          stimulusTime = time;
-        }
-        const phase = (time - stimulusTime) / 4;
-        impulse.visible = lastStimulus > 0 && phase >= 0 && phase <= 1;
-        impulse.position.copy(path.getPoint(Math.max(0, Math.min(1, phase))));
-        if (brain)
-          (brain.material as THREE.MeshStandardMaterial).emissive.set(
-            phase > 0.25 && phase < 1 ? "#4b647e" : "#000000",
-          );
-      }
       controls.update();
       renderer.render(scene, camera);
       frame = requestAnimationFrame(draw);
@@ -286,6 +183,7 @@ function AtlasScene(props: Props) {
         }
       });
       renderer.dispose();
+      renderer.forceContextLoss();
       renderer.domElement.remove();
     };
   }, [props.kind, attempt]);

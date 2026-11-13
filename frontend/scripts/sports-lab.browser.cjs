@@ -160,13 +160,15 @@ mkdirSync(out, { recursive: true });
           exact: true,
         })
         .waitFor();
-      if (id !== "respiratory") {
+      {
         await page
           .getByRole("img", {
             name:
               id === "muscle"
                 ? "Interactive three-dimensional muscle muscle cutaway"
-                : "Interactive anatomical atlas skeleton",
+                : id === "skeletal"
+                  ? "Interactive anatomical atlas skeleton"
+                  : `Interactive ${id} anatomical atlas`,
             exact: true,
           })
           .waitFor();
@@ -234,13 +236,88 @@ mkdirSync(out, { recursive: true });
         });
         await page.setViewportSize({ width: 1440, height: 1000 });
       }
-      if (id === "reflex")
+      if (["energy", "reflex", "respiratory"].includes(id)) {
+        await page
+          .getByText("Preparing anatomical structures…", { exact: true })
+          .waitFor({ state: "hidden" });
+        await page
+          .getByLabel("Isolate selected structure", { exact: true })
+          .check();
+        await page
+          .getByRole("button", { name: "Focus structure", exact: true })
+          .click();
+        await page
+          .getByLabel("Isolate selected structure", { exact: true })
+          .uncheck();
+        await page
+          .getByRole("button", { name: "Reset system camera", exact: true })
+          .click();
+      }
+      if (id === "energy") {
+        await page.getByRole("button", { name: /Sustained effort/ }).click();
+        await page
+          .getByRole("img", {
+            name: "Overlapping ATP supply over 180 seconds",
+            exact: true,
+          })
+          .waitFor();
+        assert.equal(
+          await page
+            .getByLabel("Exercise duration", { exact: true })
+            .inputValue(),
+          "180",
+        );
+        await page.getByRole("button", { name: /Short sprint/ }).click();
+        assert.equal(
+          await page
+            .getByLabel("Exercise duration", { exact: true })
+            .inputValue(),
+          "5",
+        );
+      }
+      if (id === "reflex") {
         await page
           .getByRole("button", {
             name: "Apply virtual heat stimulus",
             exact: true,
           })
           .click();
+        await page.getByRole("button", { name: /03.*Spinal relay/ }).click();
+        await page
+          .getByText(
+            "Synapses and interneurones within the spinal cord connect sensory input to a motor response.",
+            { exact: true },
+          )
+          .waitFor();
+        await page
+          .getByRole("button", { name: "Start reaction trial", exact: true })
+          .click();
+        await page
+          .getByRole("button", {
+            name: "NOW — click or press Space",
+            exact: true,
+          })
+          .click();
+        await page.getByText(/Recent trials:/).waitFor();
+      }
+      if (id === "respiratory") {
+        const inspector = page.getByLabel("Inspect system structures", {
+          exact: true,
+        });
+        await inspector
+          .getByRole("button", { name: "Pulmonary arteries", exact: true })
+          .click();
+        await page.getByText(/Artery means away from the heart/).waitFor();
+        await page
+          .getByRole("button", { name: "Hard effort", exact: true })
+          .click();
+        await page
+          .getByText("19.80 L/min cardiac output", { exact: true })
+          .waitFor();
+      }
+      if (["energy","reflex","respiratory"].includes(id)) {
+        await page.screenshot({path: out + `/systems-${id}-desktop.png`,fullPage:true});
+      }
       await page
         .getByLabel("Investigation prediction", { exact: true })
         .fill(
@@ -343,10 +420,11 @@ mkdirSync(out, { recursive: true });
       name: "Record observation",
       exact: true,
     });
-    await page.waitForFunction(() =>
-      Array.from(document.querySelectorAll("button")).some(
-        (b) => b.textContent.trim() === "Record observation" && !b.disabled,
-      ),
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll("button")).some(
+          (b) => b.textContent.trim() === "Record observation" && !b.disabled,
+        ),
       undefined,
       { timeout: 90000 },
     );

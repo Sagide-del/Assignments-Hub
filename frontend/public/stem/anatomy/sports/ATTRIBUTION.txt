@@ -17,3 +17,11 @@ reducing dense meshes and converting to glTF; illustrative materials applied
 in the viewer. Geometry is a resting anatomical model, not a simulated elbow.
 Reproduction script: frontend/scripts/assets/export-muscle-atlas.py.
 Checksums and modification details: arm-muscles-manifest.json.
+
+energy-atlas-v1.glb, reflex-atlas-v1.glb and circulation-atlas-v1.glb:
+Z-Anatomy / BodyParts3D subsets, CC BY-SA 4.0, same upstream revision and
+credits above. Adaptations: named tissue subsets, curve-to-surface conversion
+for nerves and blood vessels, polygon reduction, smooth normals and glTF
+export. Illustrative viewer colours do not change anatomical geometry.
+Exporter: frontend/scripts/assets/export-sports-systems.py.
+Checksums, sources, modifications and included structures: systems-manifest.json.

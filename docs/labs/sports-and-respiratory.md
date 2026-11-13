@@ -48,3 +48,29 @@ Browser regression checks inspect all three scales, structure selection, manual
 ATP-detachment explanation, mobile overflow, and the existing investigations and
 respiratory persistence checks. Asset checks verify checksum, provenance, known
 muscle structures and size budget.
+
+### Dedicated energy, neural and circulation investigations
+
+The three generic scene reuses are replaced with dedicated atlas subsets and
+mechanism-specific investigations. All use the same pinned CC BY-SA 4.0 source,
+with reproducible export, curve-to-surface conversion for nerves/vessels,
+bounded meshes, checksums and provenance in systems-manifest.json.
+
+- Energy: thigh muscle and femoral artery anatomy; intensity/duration presets,
+  accelerated timeline and overlapping normalized contribution curves from the
+  existing teaching model. No ATP/calorie/athlete measurements or running gait
+  are claimed.
+- Protective response: median sensory route, brachial plexus, spinal cord and
+  musculocutaneous motor route with elbow-flexor context. A five-stage replay
+  highlights regions, not individual axons. The actual innervation distinction
+  is explained. A separate voluntary visual-reaction experiment records recent
+  device-dependent timings; it is explicitly not a spinal reflex test.
+- Circulation: actual four chambers, venae cavae, aorta, pulmonary vessels and
+  lung lobes; layer/isolation/focus controls; a clickable complete-circuit guide;
+  exercise presets with cardiac-output and Fick-style uptake calculations.
+  Resting anatomy, illustrative colours and model assumptions remain explicit.
+  Valve mechanics, clinical outputs and blood velocity are not simulated.
+
+No AI calls, new endpoints, payment changes, grading rules or data migrations
+are introduced. Existing predictions, comparison trials and assessed submissions
+remain in the original pipeline. GPU contexts are released on navigation.
