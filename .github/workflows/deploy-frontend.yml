@@ -195,6 +195,7 @@ jobs:
         working-directory: frontend
         run: node scripts/check-content-api.mjs
       - name: Wait for dynamic lab router storage
+        working-directory: frontend
         run: node scripts/check-lab-router-api.mjs
 
       - name: Wait for Grade 10 guide storage
