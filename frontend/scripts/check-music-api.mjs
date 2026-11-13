@@ -8,7 +8,13 @@ for (let n = 0; n < 36; n++) {
       signal: AbortSignal.timeout(10000),
     });
     const d = await r.json();
-    if (r.ok && d.ready === true && d.version === 1) {
+    if (
+      r.ok &&
+      d.ready === true &&
+      d.version === 1 &&
+      d.loopLibraryVersion === 2 &&
+      d.loops >= 24
+    ) {
       ready = true;
       console.log("Music Studio project storage ready.");
       break;
@@ -28,7 +34,14 @@ for (let n = 0; n < 36; n++) {
       signal: AbortSignal.timeout(10000),
     });
     const d = await r.json();
-    if (r.ok && d.ready === true && d.version === 1 && d.songs >= 18 && d.sampleStudioVersion === 1) {
+    if (
+      r.ok &&
+      d.ready === true &&
+      d.version === 1 &&
+      d.songs >= 18 &&
+      d.sampleStudioVersion === 2 &&
+      d.playableArrangements >= 12
+    ) {
       productionReady = true;
       console.log("Music production storage and 18 catalog entries ready.");
       break;

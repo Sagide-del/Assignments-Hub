@@ -1,0 +1,86 @@
+[
+  {
+    "id": "ode-to-joy-band-v1",
+    "song_slug": "ode-to-joy-theme",
+    "bpm": 100,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "isukuti-circle-band-v1",
+    "song_slug": "isukuti-circle",
+    "bpm": 110,
+    "time_signature": "6/8",
+    "bars": 4
+  },
+  {
+    "id": "benga-daybreak-band-v1",
+    "song_slug": "benga-daybreak",
+    "bpm": 120,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "coastal-sunset-band-v1",
+    "song_slug": "coastal-sunset",
+    "bpm": 110,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "gospel-praise-band-v1",
+    "song_slug": "gospel-praise",
+    "bpm": 130,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "rhumba-evening-band-v1",
+    "song_slug": "rhumba-evening",
+    "bpm": 90,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "afrobeat-crossroads-band-v1",
+    "song_slug": "afrobeat-crossroads",
+    "bpm": 105,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "western-pop-beat-band-v1",
+    "song_slug": "western-pop-beat",
+    "bpm": 128,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "ocean-ballad-band-v1",
+    "song_slug": "ocean-ballad",
+    "bpm": 72,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "township-pop-band-v1",
+    "song_slug": "township-pop",
+    "bpm": 112,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "twinkle-theme-band-v1",
+    "song_slug": "twinkle-theme",
+    "bpm": 100,
+    "time_signature": "4/4",
+    "bars": 4
+  },
+  {
+    "id": "frere-jacques-theme-band-v1",
+    "song_slug": "frere-jacques-theme",
+    "bpm": 100,
+    "time_signature": "4/4",
+    "bars": 4
+  }
+]

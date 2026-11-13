@@ -1,3 +1,4 @@
+import { ARRANGEMENTS } from "./stem-engine";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Music2, Play, ExternalLink, X, Sparkles } from "lucide-react";
@@ -6,10 +7,12 @@ export function StudioLibrary({
   songs,
   onClose,
   onChoose,
+  onPlayAlong,
 }: {
   songs: StudioSong[];
   onClose: () => void;
   onChoose?: (song: StudioSong) => void;
+  onPlayAlong?: (id: string) => void;
 }) {
   const [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all");
@@ -56,7 +59,9 @@ export function StudioLibrary({
   const list = songs
     .filter(
       (s) =>
-        normalize(s.title + " " + s.artist).includes(normalize(search)) &&
+        normalize(s.title + " " + s.artist + " " + s.genre).includes(
+          normalize(search),
+        ) &&
         (filter === "all" ||
           (filter === "playable"
             ? s.content_kind !== "LISTENING_REFERENCE"
@@ -134,7 +139,7 @@ export function StudioLibrary({
             >
               <div className="flex gap-3">
                 <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${s.slug === "ode-to-joy-theme" ? "bg-[#e9f0d9] text-[#526b10]" : "bg-slate-100 text-slate-500"}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ARRANGEMENTS.some((a) => a.song_slug === s.slug) ? "bg-[#e9f0d9] text-[#526b10]" : "bg-slate-100 text-slate-500"}`}
                 >
                   <Music2 size={18} />
                 </span>
@@ -163,7 +168,7 @@ export function StudioLibrary({
               ) : (
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1 text-[10px] text-[#526b10]">
-                    {s.slug === "ode-to-joy-theme" ? (
+                    {ARRANGEMENTS.some((a) => a.song_slug === s.slug) ? (
                       <>
                         <HeadphoneMark />
                         Recorded backing
@@ -186,17 +191,32 @@ export function StudioLibrary({
                       <Play size={11} />
                       Open
                     </button>
+                  ) : onPlayAlong &&
+                    ARRANGEMENTS.some((a) => a.song_slug === s.slug) ? (
+                    <button
+                      onClick={() => {
+                        onPlayAlong(
+                          ARRANGEMENTS.find((a) => a.song_slug === s.slug)!.id,
+                        );
+                        onClose();
+                      }}
+                      className="rounded-lg bg-[#101820] px-3 py-2 text-xs text-white"
+                    >
+                      Play along
+                    </button>
                   ) : (
                     <Link
                       onClick={onClose}
                       to={
-                        s.slug === "ode-to-joy-theme"
-                          ? "/student/labs/music"
+                        ARRANGEMENTS.some((a) => a.song_slug === s.slug)
+                          ? `/student/labs/music?arrangement=${encodeURIComponent(ARRANGEMENTS.find((a) => a.song_slug === s.slug)!.id)}`
                           : `/student/labs/music/composition?song=${s.id}`
                       }
                       className="rounded-lg bg-[#101820] px-3 py-2 text-xs text-white"
                     >
-                      {s.slug === "ode-to-joy-theme" ? "Play along" : "Compose"}
+                      {ARRANGEMENTS.some((a) => a.song_slug === s.slug)
+                        ? "Play along"
+                        : "Compose"}
                     </Link>
                   )}
                 </div>

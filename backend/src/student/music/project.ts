@@ -1,11 +1,5 @@
-export const LOOP_IDS = [
-  "sikuti_lead",
-  "sikuti_response",
-  "benga_guitar",
-  "chakacha_percussion",
-  "afrobeat_drums",
-  "amapiano_log",
-] as const;
+import loopIds from "./loop-ids.json";
+export const LOOP_IDS: readonly string[] = loopIds;
 export type LoopId = (typeof LOOP_IDS)[number];
 export type Meter = "4/4" | "6/8" | "12/8";
 export interface MusicTrack {

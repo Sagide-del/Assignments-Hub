@@ -1,3 +1,6 @@
+import arrangements from "./arrangements.json";
+export const arrangementConfig = (id: string) =>
+  arrangements.find((a) => a.id === id);
 export const METERS = ["4/4", "6/8", "12/8"] as const;
 export type ProductionMeter = (typeof METERS)[number];
 export const TRACK_IDS = [
@@ -61,16 +64,18 @@ export interface StemSetting {
   solo: boolean;
 }
 export interface PlayAlongMix {
-  arrangement_id: "ode-to-joy-band-v1";
+  arrangement_id: string;
   stems: StemSetting[];
   start_bar: number;
   end_bar: number;
   count_in: boolean;
   loop: boolean;
 }
-export function newPlayAlong(): PlayAlongMix {
+export function newPlayAlong(
+  arrangement_id = "ode-to-joy-band-v1",
+): PlayAlongMix {
   return {
-    arrangement_id: "ode-to-joy-band-v1",
+    arrangement_id,
     stems: STEM_IDS.map((id) => ({
       id,
       volume: id === "strings" ? 0.4 : 0.7,
@@ -88,7 +93,7 @@ export function validPlayAlong(value: unknown): value is PlayAlongMix {
   if (!value || typeof value !== "object") return false;
   const p = value as PlayAlongMix;
   return (
-    p.arrangement_id === "ode-to-joy-band-v1" &&
+    !!arrangementConfig(p.arrangement_id) &&
     typeof p.loop === "boolean" &&
     typeof p.count_in === "boolean" &&
     Number.isInteger(p.start_bar) &&

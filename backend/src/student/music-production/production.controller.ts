@@ -1,3 +1,4 @@
+import arrangements from "./arrangements.json";
 import {
   Body,
   Controller,
@@ -28,7 +29,13 @@ export class MusicProductionController {
   @Get("capabilities") @Public() async capabilities() {
     await this.db.music_Project.findFirst({ select: { id: true } });
     const songs = await this.db.music_Song.count();
-    return { ready: songs >= 18, version: 1, sampleStudioVersion: 1, songs };
+    return {
+      ready: songs >= 18,
+      version: 1,
+      sampleStudioVersion: 2,
+      playableArrangements: arrangements.length,
+      songs,
+    };
   }
   @Get("songs") @Roles(Role.STUDENT) songs(
     @CurrentUser() a: AuthenticatedUser,

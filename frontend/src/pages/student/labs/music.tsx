@@ -66,6 +66,7 @@ export default function MusicStudio() {
     [projectId, setProjectId] = useState<string | null>(null),
     [activeTrack, setActiveTrack] = useState(1),
     [category, setCategory] = useState("Kenyan Rhythms"),
+    [loopSearch, setLoopSearch] = useState(""),
     [mobilePanel, setMobilePanel] = useState("compose"),
     [context, setContext] = useState<StudioLoop | null>(null),
     [playing, setPlaying] = useState(false),
@@ -252,7 +253,17 @@ export default function MusicStudio() {
   }
   return (
     <div className="mx-auto max-w-7xl space-y-4 text-[#101820]">
-      <nav aria-label="Music workspaces" className="flex flex-wrap gap-2"><span className="rounded-lg bg-[#101820] px-3 py-2 text-xs text-white">Loop studio</span><Link to="/student/labs/music/composition" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs">Songs, notation & production →</Link></nav>
+      <nav aria-label="Music workspaces" className="flex flex-wrap gap-2">
+        <span className="rounded-lg bg-[#101820] px-3 py-2 text-xs text-white">
+          Loop studio
+        </span>
+        <Link
+          to="/student/labs/music/composition"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+        >
+          Songs, notation & production →
+        </Link>
+      </nav>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -464,23 +475,34 @@ export default function MusicStudio() {
         >
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">Loop library</h2>
-            <span className="text-xs text-slate-400">6 loops</span>
+            <span className="text-xs text-slate-400">
+              {library.length} loops
+            </span>
           </div>
           <div
             className="mt-3 flex flex-wrap gap-1"
             aria-label="Loop categories"
           >
-            {["Kenyan Rhythms", "Afrobeat", "Amapiano"].map((c) => (
-              <button
-                key={c}
-                aria-pressed={category === c}
-                onClick={() => setCategory(c)}
-                className={`rounded-md px-2 py-2 text-[11px] font-medium ${category === c ? "bg-[#101820] text-white" : "bg-slate-50 text-slate-600"}`}
-              >
-                {c}
-              </button>
-            ))}
+            {["All styles", ...new Set(library.map((l) => l.category))].map(
+              (c) => (
+                <button
+                  key={c}
+                  aria-pressed={category === c}
+                  onClick={() => setCategory(c)}
+                  className={`rounded-md px-2 py-2 text-[11px] font-medium ${category === c ? "bg-[#101820] text-white" : "bg-slate-50 text-slate-600"}`}
+                >
+                  {c}
+                </button>
+              ),
+            )}
           </div>
+          <input
+            aria-label="Search loops"
+            placeholder="Find a sound or style"
+            value={loopSearch}
+            onChange={(e) => setLoopSearch(e.target.value)}
+            className="mt-3 min-h-10 w-full rounded-lg border border-slate-200 px-3 text-xs"
+          />
           <label className="mt-4 flex items-center justify-between text-xs text-slate-500">
             Add to
             <select
@@ -509,9 +531,15 @@ export default function MusicStudio() {
               </button>
             </p>
           ) : (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 max-h-[60vh] space-y-2 overflow-y-auto pr-1">
               {library
-                .filter((l) => l.category === category)
+                .filter(
+                  (l) =>
+                    (category === "All styles" || l.category === category) &&
+                    `${l.name} ${l.category}`
+                      .toLowerCase()
+                      .includes(loopSearch.toLowerCase()),
+                )
                 .map((loop) => (
                   <article
                     key={loop.id}
@@ -584,8 +612,8 @@ export default function MusicStudio() {
             </div>
           )}
           <p className="mt-4 text-[11px] leading-5 text-slate-400">
-            Original synthesized teaching loops. Inspired by musical styles; not
-            traditional recordings.
+            Original sample-based and synthesized teaching loops. Style-inspired
+            exercises, not traditional recordings.
           </p>
         </aside>
         <div

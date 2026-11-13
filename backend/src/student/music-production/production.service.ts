@@ -1,3 +1,4 @@
+import { arrangementConfig } from "./model";
 import {
   BadRequestException,
   ConflictException,
@@ -67,14 +68,18 @@ export class MusicProductionService {
       const song = dto.song_id
         ? await this.db.music_Song.findUnique({ where: { id: dto.song_id } })
         : null;
+      const arrangement = arrangementConfig(
+        dto.tracks_json.play_along.arrangement_id,
+      );
       if (
         !song ||
-        song.slug !== "ode-to-joy-theme" ||
-        dto.bpm !== 100 ||
-        dto.time_signature !== "4/4"
+        !arrangement ||
+        song.slug !== arrangement.song_slug ||
+        dto.bpm !== arrangement.bpm ||
+        dto.time_signature !== arrangement.time_signature
       )
         throw new BadRequestException(
-          "This recorded arrangement uses Ode to Joy at 100 BPM in 4/4.",
+          "Use the selected recorded arrangement’s song, tempo and meter.",
         );
     }
     const data = {

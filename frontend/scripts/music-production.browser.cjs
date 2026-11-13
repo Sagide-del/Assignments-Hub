@@ -441,10 +441,76 @@ mkdirSync(artifacts, { recursive: true });
       path: artifacts + "/play-along-mobile.png",
       fullPage: true,
     });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const arrangementLibrary = JSON.parse(
+      readFileSync(
+        resolve(__dirname, "../public/assets/music/recorded/arrangements.json"),
+        "utf8",
+      ),
+    ).arrangements;
+    const picker = page.getByLabel("Play-along piece", { exact: true });
+    assert.equal(await picker.locator("option").count(), 12);
+    for (const arrangement of arrangementLibrary) {
+      await picker.selectOption(arrangement.id);
+      await page
+        .getByRole("heading", { name: arrangement.title, exact: true })
+        .waitFor();
+      await page.getByLabel("Count in", { exact: true }).uncheck();
+      await page
+        .getByRole("button", { name: "Play backing", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Pause backing", exact: true })
+        .waitFor();
+      await page.waitForTimeout(150);
+      await page
+        .getByRole("button", { name: "Stop backing", exact: true })
+        .click();
+      if (
+        ["isukuti-circle", "rhumba-evening"].includes(arrangement.song_slug)
+      ) {
+        const exported = page.waitForEvent("download");
+        await page
+          .getByRole("button", { name: "Export backing MP3", exact: true })
+          .click();
+        const file = await exported,
+          bytes = readFileSync(await file.path());
+        const audio = await page.evaluate(async (b64) => {
+          const c = new AudioContext(),
+            b = await c.decodeAudioData(
+              Uint8Array.from(atob(b64), (v) => v.charCodeAt(0)).buffer,
+            );
+          const energy = b.getChannelData(0).reduce((sum, v) => sum + v * v, 0);
+          await c.close();
+          return { duration: b.duration, energy };
+        }, bytes.toString("base64"));
+        assert.ok(Math.abs(audio.duration - arrangement.duration) < 0.1);
+        assert.ok(audio.energy > 0.01);
+        await page
+          .getByRole("button", { name: "Save session", exact: true })
+          .click();
+        await page
+          .getByRole("status")
+          .filter({ hasText: "Saved to your account" })
+          .waitFor();
+        assert.equal(records[0].bpm, arrangement.bpm);
+        assert.equal(records[0].time_signature, arrangement.time_signature);
+        assert.equal(
+          records[0].tracks_json.play_along.arrangement_id,
+          arrangement.id,
+        );
+      }
+    }
+    await page.getByRole("button", { name: "Library", exact: true }).click();
+    await page
+      .getByLabel("Search studio library", { exact: true })
+      .fill("Benga");
+    await page.getByRole("button", { name: "Play along", exact: true }).click();
+    assert.equal(await picker.inputValue(), "benga-daybreak-band-v1");
     assert.deepEqual(errors, []);
     await ctx.close();
     console.log(
-      "PASS: commercial listening references, original exercises, SATB/instrument notation, 12-step rhythm, four-bar melody, six tracks, synth instruments, Music icon, measure highlight, audible MP3 decode, saving/submission, teacher assessment and mobile layout.",
+      "PASS: commercial listening references, original exercises, SATB/instrument notation, 12-step rhythm, four-bar melody, six tracks, synth instruments, Music icon, measure highlight, audible MP3 decode, saving/submission, teacher assessment, twelve recorded pieces, dynamic meters, genre search and mobile layout.",
     );
   } finally {
     await browser.close();

@@ -22,9 +22,10 @@ import { useAuthStore } from "../../../../store/auth.store";
 import { StudioNav } from "../../../../features/student/music-production/StudioNav";
 import { StudioLibrary } from "../../../../features/student/music-production/StudioLibrary";
 import {
-  PLAY_ALONG,
+  ARRANGEMENTS,
+  getArrangement,
+  secondsPerBar,
   StemEngine,
-  barSeconds,
 } from "../../../../features/student/music-production/stem-engine";
 import {
   ProductionAudio,
@@ -120,6 +121,8 @@ export default function PlayAlong() {
       api.get<StudioSong[]>("/music-production/songs").then((r) => r.data),
     staleTime: 60000,
   });
+  const PLAY_ALONG = getArrangement(mix.arrangement_id),
+    barSeconds = secondsPerBar(PLAY_ALONG);
   const song = songs.data?.find((s) => s.slug === PLAY_ALONG.song_slug),
     stem = mix.stems.find((s) => s.id === selected)!,
     definition = PLAY_ALONG.stems.find((s) => s.id === selected)!;
@@ -130,10 +133,43 @@ export default function PlayAlong() {
       ...p,
       title,
       bpm: PLAY_ALONG.bpm,
-      time_signature: "4/4" as const,
+      time_signature:
+        PLAY_ALONG.time_signature as ProductionDraft["time_signature"],
       tracks_json: { ...p.tracks_json, play_along: mix, reflection },
     };
   }, [song, mix, title, reflection]);
+  function chooseArrangement(arrangementId: string) {
+    if (arrangementId === mix.arrangement_id) return;
+    if (
+      saved === "Unsaved changes" &&
+      !confirm("Start another piece? Save this session first to keep your mix.")
+    )
+      return;
+    const a = getArrangement(arrangementId);
+    engine.current?.dispose();
+    engine.current = null;
+    setPlaying(false);
+    setLoading(false);
+    setCount(0);
+    setPosition(0);
+    setMix(newPlayAlong(a.id));
+    setTitle(a.title + " — my session");
+    setId(null);
+    setStatus("DRAFT");
+    setFeedback(null);
+    setReflection("");
+    changed();
+  }
+  const arrangementParam = params.get("arrangement");
+  useEffect(() => {
+    if (
+      ready &&
+      !requested &&
+      arrangementParam &&
+      ARRANGEMENTS.some((a) => a.id === arrangementParam)
+    )
+      chooseArrangement(arrangementParam);
+  }, [ready, arrangementParam, requested]);
   function audio() {
     return engine.current ?? (engine.current = new StemEngine());
   }
@@ -348,6 +384,30 @@ export default function PlayAlong() {
   return (
     <div className="mx-auto max-w-7xl space-y-5 pb-28 text-[#101820]">
       <StudioNav />
+      <section
+        aria-label="Play-along collection"
+        className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+      >
+        <div className="mr-auto">
+          <h2 className="text-sm font-semibold">Choose your sound</h2>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {ARRANGEMENTS.length} playable pieces · five-part arrangements
+          </p>
+        </div>
+        <select
+          aria-label="Play-along piece"
+          value={mix.arrangement_id}
+          onChange={(e) => chooseArrangement(e.target.value)}
+          className="min-h-11 max-w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs"
+        >
+          {ARRANGEMENTS.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.title} · {a.genre}
+            </option>
+          ))}
+        </select>
+      </section>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <span
@@ -417,22 +477,25 @@ export default function PlayAlong() {
               Your play-along session
             </p>
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              Ode to Joy
+              {PLAY_ALONG.title}
             </h2>
             <p className="mt-2 text-xs text-slate-400">
-              Beethoven’s theme · an original acoustic arrangement
+              {PLAY_ALONG.genre} · original recorded-sample accompaniment
             </p>
             <div className="mt-5 flex flex-wrap gap-2 text-[10px] text-white/70">
-              {["100 BPM", "4/4", "4 bars", "5 recorded-sample parts"].map(
-                (v) => (
-                  <span
-                    key={v}
-                    className="rounded-full border border-white/15 px-2.5 py-1"
-                  >
-                    {v}
-                  </span>
-                ),
-              )}
+              {[
+                `${PLAY_ALONG.bpm} BPM`,
+                PLAY_ALONG.time_signature,
+                "4 bars",
+                "5 recorded-sample parts",
+              ].map((v) => (
+                <span
+                  key={v}
+                  className="rounded-full border border-white/15 px-2.5 py-1"
+                >
+                  {v}
+                </span>
+              ))}
             </div>
           </div>
           <div
@@ -681,8 +744,8 @@ export default function PlayAlong() {
           </summary>
           <MusicNotation
             notation_json={scoreFor(draft, song)}
-            timeSignature="4/4"
-            bpm={100}
+            timeSignature={PLAY_ALONG.time_signature}
+            bpm={PLAY_ALONG.bpm}
             currentMeasure={
               playing ? Math.min(3, Math.floor(position / barSeconds)) : -1
             }
@@ -755,7 +818,7 @@ export default function PlayAlong() {
                       : "Ready when you are"}
               </span>
               <span className="mt-1 block text-[10px] text-white/40">
-                100 BPM · 4/4
+                {PLAY_ALONG.bpm} BPM · {PLAY_ALONG.time_signature}
               </span>
             </div>
           </div>
@@ -842,6 +905,7 @@ export default function PlayAlong() {
         <StudioLibrary
           songs={songs.data ?? []}
           onClose={() => setLibrary(false)}
+          onPlayAlong={chooseArrangement}
         />
       )}
       {songs.isError && (

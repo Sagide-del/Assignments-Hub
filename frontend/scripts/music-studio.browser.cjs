@@ -239,6 +239,50 @@ mkdirSync(artifacts, { recursive: true });
       path: artifacts + "/music-mobile.png",
       fullPage: true,
     });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    for (const [category, name] of [
+      ["Dancehall", "Dancehall Drums"],
+      ["Reggae", "Reggae Drums"],
+      ["Kenyan Folk-inspired", "Kenyan Folk-inspired Call & Response"],
+    ]) {
+      await page.getByRole("button", { name: category, exact: true }).click();
+      await page.getByRole("article", { name, exact: true }).waitFor();
+      await page
+        .getByLabel("Selected track", { exact: true })
+        .selectOption("1");
+      await page
+        .getByRole("button", { name: `Add ${name} to Track 1`, exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Solo Track 2", exact: true })
+        .evaluate((e) => {
+          if (e.getAttribute("aria-pressed") === "true") e.click();
+        });
+      await page
+        .getByRole("button", { name: "Mute Track 1", exact: true })
+        .evaluate((e) => {
+          if (e.getAttribute("aria-pressed") === "true") e.click();
+        });
+      await page
+        .getByRole("button", { name: "Play composition", exact: true })
+        .click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector('meter[aria-label="Output level"]')?.value >
+          0.002,
+      );
+      await page
+        .getByRole("button", { name: "Stop composition", exact: true })
+        .click();
+    }
+    await page.getByRole("button", { name: "All styles", exact: true }).click();
+    await page.getByLabel("Search loops", { exact: true }).fill("reggae");
+    assert.equal(await page.getByRole("article").count(), 3);
+    await page.getByLabel("Search loops", { exact: true }).fill("");
+    await page.screenshot({
+      path: artifacts + "/expanded-loop-library.png",
+      fullPage: true,
+    });
     assert.deepEqual(errors, []);
     await context.close();
     console.log(

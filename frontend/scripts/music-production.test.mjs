@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import ts from 'typescript';
 const transpile=path=>ts.transpileModule(readFileSync(new URL(path,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2020}}).outputText;
-const modelUrl=`data:text/javascript;base64,${Buffer.from(transpile('../../backend/src/student/music-production/model.ts')).toString('base64')}`;
+const modelUrl=`data:text/javascript;base64,${Buffer.from(transpile('../../backend/src/student/music-production/model.ts').replace(/import arrangements from [^;]+;/, 'const arrangements='+JSON.stringify(JSON.parse(readFileSync(new URL('../../backend/src/student/music-production/arrangements.json',import.meta.url))))+';')).toString('base64')}`;
 const model=await import(modelUrl);
 let scoreCode=transpile('../src/features/student/music-production/score.ts').replace(/from "[^"]+\/model"/g,`from "${modelUrl}"`);const score=await import(`data:text/javascript;base64,${Buffer.from(scoreCode).toString('base64')}`);
 const catalog=JSON.parse(readFileSync(new URL('../public/assets/music/songs/songs.json',import.meta.url)));

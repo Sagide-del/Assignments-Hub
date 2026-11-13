@@ -15,6 +15,7 @@ export async function recordedBuffer(url: string): Promise<AudioBuffer> {
         throw e;
       });
     decoded.set(url, pending);
+    while (decoded.size > 24) decoded.delete(decoded.keys().next().value!);
   }
   return pending;
 }

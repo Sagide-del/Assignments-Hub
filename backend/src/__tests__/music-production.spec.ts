@@ -1,3 +1,4 @@
+import arrangements from "../student/music-production/arrangements.json";
 import "reflect-metadata";
 import { PrismaClient } from "@prisma/client";
 import { plainToInstance } from "class-transformer";
@@ -139,12 +140,10 @@ describe("Music production", () => {
     const create = jest.fn().mockImplementation(({ data }) => data),
       db: any = {
         music_Song: {
-          findUnique: jest
-            .fn()
-            .mockResolvedValue({
-              slug: "ode-to-joy-theme",
-              content_kind: "PUBLIC_DOMAIN_STUDY",
-            }),
+          findUnique: jest.fn().mockResolvedValue({
+            slug: "ode-to-joy-theme",
+            content_kind: "PUBLIC_DOMAIN_STUDY",
+          }),
         },
         music_Project: { create },
       };
@@ -181,6 +180,34 @@ describe("Music production", () => {
     await expect(service.save(payload, actor)).rejects.toMatchObject({
       status: 400,
     });
+  });
+  test("all recorded pieces persist only with their own catalog song, tempo and meter", async () => {
+    const song = jest.fn(),
+      create = jest.fn().mockImplementation(({ data }) => data),
+      db: any = { music_Song: { findUnique: song }, music_Project: { create } };
+    const service = new MusicProductionService(db, {
+      getLabConfig: async () => ({ category: "ARTS_MUSIC" }),
+    } as any);
+    for (const a of arrangements) {
+      song.mockResolvedValue({ slug: a.song_slug, content_kind: "ORIGINAL" });
+      const payload: any = {
+        ...draft(),
+        song_id: a.song_slug,
+        bpm: a.bpm,
+        time_signature: a.time_signature,
+        tracks_json: {
+          ...newMix(a.time_signature as any),
+          play_along: newPlayAlong(a.id),
+        },
+      };
+      await service.save(payload, actor);
+      expect(
+        create.mock.calls.at(-1)[0].data.tracks_json.play_along.arrangement_id,
+      ).toBe(a.id);
+      await expect(
+        service.save({ ...payload, bpm: a.bpm + 1 }, actor),
+      ).rejects.toMatchObject({ status: 400 });
+    }
   });
   test("reference patterns vary across musical exercises rather than repeating one generic beat", () => {
     const patterns = new Set(

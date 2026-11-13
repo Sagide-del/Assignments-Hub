@@ -1,4 +1,9 @@
-import { StemEngine, renderStems } from "./stem-engine";
+import {
+  StemEngine,
+  renderStems,
+  getArrangement,
+  secondsPerBar,
+} from "./stem-engine";
 import { hasRecordedVoice, loadVoice, sampler } from "./sample-bank";
 import * as Tone from "tone";
 import {
@@ -260,7 +265,17 @@ export class ProductionAudio {
   }
   measure() {
     if (this.current?.tracks_json.play_along && this.stems)
-      return Math.min(3, Math.floor(this.stems.position() / 2.4));
+      return Math.min(
+        3,
+        Math.floor(
+          this.stems.position() /
+            secondsPerBar(
+              getArrangement(
+                this.current.tracks_json.play_along.arrangement_id,
+              ),
+            ),
+        ),
+      );
     if (!this.running || !this.current) return 0;
     return Math.min(
       3,

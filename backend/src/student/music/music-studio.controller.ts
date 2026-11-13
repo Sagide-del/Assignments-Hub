@@ -1,3 +1,4 @@
+import { LOOP_IDS } from "./project";
 import {
   Body,
   Controller,
@@ -24,7 +25,12 @@ export class MusicStudioController {
   ) {}
   @Get("capabilities") @Public() async capabilities() {
     await this.db.music_Studio_Project.findFirst({ select: { id: true } });
-    return { ready: true, version: 1 };
+    return {
+      ready: true,
+      version: 1,
+      loopLibraryVersion: 2,
+      loops: LOOP_IDS.length,
+    };
   }
   @Get("projects")
   @Roles(Role.STUDENT)

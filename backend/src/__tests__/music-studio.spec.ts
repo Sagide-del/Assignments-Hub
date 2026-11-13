@@ -120,7 +120,7 @@ describe("Music Studio", () => {
           (beatsPerBar(target) * 60) / 120,
         );
       }
-    expect(LOOP_IDS).toHaveLength(6);
+    expect(LOOP_IDS).toHaveLength(24);
   });
   test("project endpoints require student role", () => {
     for (const method of ["list", "get", "save", "update"] as const)
