@@ -19,6 +19,13 @@ test('generates five searchable branded blog articles', async () => {
     assert.match(html, /Assignment Hub Team/);
     assert.match(html, /application\/ld\+json/);
     assert.match(html, /Try free revision/);
+    const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+    const faq = schema['@graph'].find(item => item['@type'] === 'FAQPage');
+    assert.equal(faq.mainEntity.length, 3);
+    for (const question of faq.mainEntity) assert.ok(html.includes(question.name));
+    assert.match(html, /href="\/revision\/grade-7-mathematics-fractions\/"/);
+    assert.match(html, /KES 300\/month/);
+    assert.match(html, /Related parent guides/);
   }
   const sitemap = await readFile(join(root, 'sitemap.xml'), 'utf8');
   assert.match(sitemap, /cbc-grading-levels-explained/);

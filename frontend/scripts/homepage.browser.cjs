@@ -83,6 +83,7 @@ mkdirSync(artifacts, { recursive: true });
         fullPage: true,
       });
     }
+    await page.getByRole('link', { name: 'Parent guides & blog' }).waitFor({ state: 'visible' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => document.fonts.ready);
     const mobile = await page.evaluate(() => ({

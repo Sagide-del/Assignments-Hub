@@ -156,6 +156,9 @@ export default function Home() {
             Sign in
           </Link>
         </nav>
+        <a href="/blog/" data-blog-mobile-link className="flex min-h-11 items-center justify-center gap-2 border-t border-slate-100 bg-white px-4 text-sm font-semibold text-[#365000] md:hidden">
+          <BookOpenCheck size={17} aria-hidden="true" /> Parent guides &amp; blog <ArrowRight size={15} aria-hidden="true" />
+        </a>
       </header>
 
       <main className="home-page">
