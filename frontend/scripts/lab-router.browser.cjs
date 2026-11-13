@@ -77,7 +77,7 @@ mkdirSync(artifacts, { recursive: true });
       await page.goto(base + "/student/labs");
       await page
         .getByRole("heading", {
-          name: slug === "music" ? "Music Production" : label,
+          name: slug === "music" ? "Music Studio" : label,
           exact: true,
         })
         .waitFor();
@@ -97,7 +97,7 @@ mkdirSync(artifacts, { recursive: true });
           .waitFor();
       if (slug === "music")
         await page
-          .getByRole("heading", { name: "Music Production", exact: true })
+          .getByRole("heading", { name: "Music Studio", exact: true })
           .waitFor();
       await page.screenshot({
         path: `${artifacts}/${slug || "junior"}-desktop.png`,

@@ -32,6 +32,8 @@ export interface MixTrack {
   id: (typeof TRACK_IDS)[number];
   volume: number;
   muted: boolean;
+  pan?: number;
+  solo?: boolean;
   pattern: boolean[];
   instrument: Instrument;
 }
@@ -42,6 +44,76 @@ export interface ProductionMix {
   melody: MelodyNote[];
   completed_activities: string[];
   reflection: string;
+  play_along?: PlayAlongMix;
+}
+export const STEM_IDS = [
+  "melody",
+  "keys",
+  "bass",
+  "strings",
+  "percussion",
+] as const;
+export interface StemSetting {
+  id: (typeof STEM_IDS)[number];
+  volume: number;
+  pan: number;
+  muted: boolean;
+  solo: boolean;
+}
+export interface PlayAlongMix {
+  arrangement_id: "ode-to-joy-band-v1";
+  stems: StemSetting[];
+  start_bar: number;
+  end_bar: number;
+  count_in: boolean;
+  loop: boolean;
+}
+export function newPlayAlong(): PlayAlongMix {
+  return {
+    arrangement_id: "ode-to-joy-band-v1",
+    stems: STEM_IDS.map((id) => ({
+      id,
+      volume: id === "strings" ? 0.4 : 0.7,
+      pan: id === "keys" ? -0.2 : id === "strings" ? 0.25 : 0,
+      muted: false,
+      solo: false,
+    })),
+    start_bar: 0,
+    end_bar: 4,
+    count_in: true,
+    loop: false,
+  };
+}
+export function validPlayAlong(value: unknown): value is PlayAlongMix {
+  if (!value || typeof value !== "object") return false;
+  const p = value as PlayAlongMix;
+  return (
+    p.arrangement_id === "ode-to-joy-band-v1" &&
+    typeof p.loop === "boolean" &&
+    typeof p.count_in === "boolean" &&
+    Number.isInteger(p.start_bar) &&
+    p.start_bar >= 0 &&
+    p.start_bar < 4 &&
+    Number.isInteger(p.end_bar) &&
+    p.end_bar > p.start_bar &&
+    p.end_bar <= 4 &&
+    Array.isArray(p.stems) &&
+    p.stems.length === 5 &&
+    new Set(p.stems.map((s) => s?.id)).size === 5 &&
+    p.stems.every(
+      (s) =>
+        s &&
+        STEM_IDS.includes(s.id) &&
+        Number.isFinite(s.volume) &&
+        s.volume >= 0 &&
+        s.volume <= 1 &&
+        Number.isFinite(s.pan) &&
+        s.pan >= -1 &&
+        s.pan <= 1 &&
+        typeof s.muted === "boolean" &&
+        typeof s.solo === "boolean",
+    )
+  );
 }
 export interface ProductionDraft {
   title: string;
@@ -91,6 +163,7 @@ export function validMix(
   const m = value as ProductionMix,
     steps = stepsFor(meter);
   if (
+    (m.play_along !== undefined && !validPlayAlong(m.play_along)) ||
     m.version !== 2 ||
     !Object.keys(SCALES).includes(m.scale) ||
     !Array.isArray(m.tracks) ||
@@ -102,6 +175,9 @@ export function validMix(
         TRACK_IDS.includes(t.id) &&
         INSTRUMENTS.includes(t.instrument) &&
         typeof t.muted === "boolean" &&
+        (t.pan === undefined ||
+          (Number.isFinite(t.pan) && t.pan >= -1 && t.pan <= 1)) &&
+        (t.solo === undefined || typeof t.solo === "boolean") &&
         Number.isFinite(t.volume) &&
         t.volume >= 0 &&
         t.volume <= 1 &&

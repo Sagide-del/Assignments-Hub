@@ -63,6 +63,20 @@ export class MusicProductionService {
           "Choose a playable original exercise or the supplied-note study.",
         );
     }
+    if (dto.tracks_json.play_along) {
+      const song = dto.song_id
+        ? await this.db.music_Song.findUnique({ where: { id: dto.song_id } })
+        : null;
+      if (
+        !song ||
+        song.slug !== "ode-to-joy-theme" ||
+        dto.bpm !== 100 ||
+        dto.time_signature !== "4/4"
+      )
+        throw new BadRequestException(
+          "This recorded arrangement uses Ode to Joy at 100 BPM in 4/4.",
+        );
+    }
     const data = {
       title: dto.title.trim(),
       song_id: dto.song_id ?? null,
@@ -76,6 +90,8 @@ export class MusicProductionService {
           instrument: t.instrument,
           volume: t.volume,
           muted: t.muted,
+          ...(t.pan !== undefined ? { pan: t.pan } : {}),
+          ...(t.solo !== undefined ? { solo: t.solo } : {}),
           pattern: [...t.pattern],
         })),
         melody: dto.tracks_json.melody.map((n) => ({
@@ -86,6 +102,24 @@ export class MusicProductionService {
         })),
         completed_activities: [...dto.tracks_json.completed_activities],
         reflection: dto.tracks_json.reflection.trim(),
+        ...(dto.tracks_json.play_along
+          ? {
+              play_along: {
+                arrangement_id: dto.tracks_json.play_along.arrangement_id,
+                start_bar: dto.tracks_json.play_along.start_bar,
+                end_bar: dto.tracks_json.play_along.end_bar,
+                count_in: dto.tracks_json.play_along.count_in,
+                loop: dto.tracks_json.play_along.loop,
+                stems: dto.tracks_json.play_along.stems.map((s) => ({
+                  id: s.id,
+                  volume: s.volume,
+                  pan: s.pan,
+                  muted: s.muted,
+                  solo: s.solo,
+                })),
+              },
+            }
+          : {}),
       } as Prisma.InputJsonObject,
     };
     if (!id)
@@ -110,12 +144,20 @@ export class MusicProductionService {
       mix = p.tracks_json as unknown as ProductionMix;
     if (
       !validMix(mix, p.time_signature as any) ||
-      !mix.tracks.some(
-        (t) =>
-          !t.muted &&
-          t.volume > 0 &&
-          (t.id === "melody" ? mix.melody.length : t.pattern.some(Boolean)),
-      )
+      !(mix.play_along
+        ? mix.play_along.stems.some(
+            (s) =>
+              !s.muted &&
+              s.volume > 0 &&
+              (!mix.play_along!.stems.some((x) => x.solo) || s.solo),
+          )
+        : mix.tracks.some(
+            (t) =>
+              !t.muted &&
+              t.volume > 0 &&
+              (!mix.tracks.some((x) => x.solo) || t.solo) &&
+              (t.id === "melody" ? mix.melody.length : t.pattern.some(Boolean)),
+          ))
     )
       throw new BadRequestException(
         "Add an audible melody or rhythm before submitting.",

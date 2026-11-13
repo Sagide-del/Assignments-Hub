@@ -1,8 +1,14 @@
+import { StudioNav } from "../../../../features/student/music-production/StudioNav";
+import { StudioLibrary } from "../../../../features/student/music-production/StudioLibrary";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import {
+  Link,
+  useParams,
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Music2,
   Play,
   Pause,
   Square,
@@ -13,7 +19,6 @@ import {
   Plus,
   Volume2,
   Check,
-  ExternalLink,
   Loader2,
   Piano,
 } from "lucide-react";
@@ -108,8 +113,7 @@ export default function MusicProductionStudio() {
     [measure, setMeasure] = useState(-1),
     [busy, setBusy] = useState(""),
     [projectsOpen, setProjectsOpen] = useState(false),
-    [genre, setGenre] = useState(""),
-    [search, setSearch] = useState(""),
+    [libraryOpen, setLibraryOpen] = useState(false),
     [bar, setBar] = useState(0),
     [noteLength, setNoteLength] = useState(2),
     [instrument, setInstrument] = useState<Instrument>("Piano"),
@@ -128,6 +132,41 @@ export default function MusicProductionStudio() {
       api.get<StudioSong[]>("/music-production/songs").then((r) => r.data),
     staleTime: 60000,
   });
+  const [searchParams] = useSearchParams(),
+    navigate = useNavigate();
+  const projectParam = searchParams.get("project"),
+    songParam = searchParams.get("song");
+  useEffect(() => {
+    if (!projectParam) return;
+    let live = true;
+    api
+      .get<SavedMix>(
+        `/music-production/projects/${encodeURIComponent(projectParam)}`,
+      )
+      .then((r) => {
+        if (!live) return;
+        if (r.data.tracks_json.play_along) {
+          navigate(
+            `/student/labs/music?project=${encodeURIComponent(projectParam)}`,
+            { replace: true },
+          );
+          return;
+        }
+        replace(r.data, r.data.id, r.data.status, {
+          score: r.data.score,
+          comment: r.data.review_comment,
+        });
+      })
+      .catch(() => live && setError("This project could not be opened."));
+    return () => {
+      live = false;
+    };
+  }, [projectParam]);
+  useEffect(() => {
+    const song = songs.data?.find((s) => s.id === songParam);
+    if (song && song.content_kind !== "LISTENING_REFERENCE")
+      replace(draftFromSong(song), null);
+  }, [songParam, songs.data]);
   const projects = useQuery({
     queryKey: ["production-projects", user?.id, user?.schoolId],
     queryFn: () =>
@@ -328,7 +367,7 @@ export default function MusicProductionStudio() {
     melody:
       "Compose four bars using the selected scale. Leave space for rhythm and try a clear ending.",
     instrument:
-      "Compare synthesized practice voices. Listen to how attack and decay change the same melody.",
+      "Compare recorded piano and marimba with modeled practice voices. Listen to how the same melody changes.",
     composition:
       "Layer your melody and percussion. Balance the parts and explain one arrangement choice.",
     production:
@@ -336,21 +375,7 @@ export default function MusicProductionStudio() {
   };
   return (
     <div className="mx-auto max-w-7xl space-y-4 text-[#101820]">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <Music2 className="text-[#617c17]" size={25} />
-            Music Production
-          </h1>
-          <p className="mt-1 text-xs text-slate-500">
-            Grade {scope.data?.grade ?? 10} · Original work, musical skills and
-            reflection
-          </p>
-        </div>
-        <Link to="/student/labs/music/loops" className={button}>
-          Loop studio
-        </Link>
-      </header>
+      <StudioNav subtitle="Build a rhythm. Find a melody. Arrange your own sound." />
       <nav
         aria-label="Music activities"
         className="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1"
@@ -548,95 +573,17 @@ export default function MusicProductionStudio() {
         </button>
       </section>
       {activity === "composition" && (
-        <section
-          aria-label="Song and exercise library"
-          className="rounded-xl border border-slate-200 bg-white p-4"
-        >
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="mr-auto text-sm font-semibold">
-              Songs, exercises & listening
-            </h2>
-            <input
-              aria-label="Search songs"
-              placeholder="Song or artist"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-xs"
-            />
-            <select
-              aria-label="Song genre"
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
-              className="rounded-lg border border-slate-200 p-2 text-xs"
-            >
-              <option value="">All genres</option>
-              {[...new Set((songs.data ?? []).map((s) => s.genre))]
-                .sort()
-                .map((g) => (
-                  <option key={g}>{g}</option>
-                ))}
-            </select>
-          </div>
-          {songs.isLoading ? (
-            <p className="mt-3 text-sm">Loading library…</p>
-          ) : songs.isError ? (
-            <p role="alert" className="mt-3 text-sm">
-              The library could not load.{" "}
-              <button
-                onClick={() => void songs.refetch()}
-                className="underline"
-              >
-                Retry
-              </button>
-            </p>
-          ) : (
-            <div className="mt-3 grid max-h-72 gap-2 overflow-auto sm:grid-cols-2 lg:grid-cols-3">
-              {songs.data
-                ?.filter(
-                  (s) =>
-                    (!genre || s.genre === genre) &&
-                    `${s.title} ${s.artist}`
-                      .toLowerCase()
-                      .includes(search.toLowerCase()),
-                )
-                .map((s) => (
-                  <article
-                    key={s.id}
-                    className={`rounded-lg border p-3 ${draft.song_id === s.id ? "border-[#b9cc83] bg-[#f5f7ef]" : "border-slate-200"}`}
-                  >
-                    <h3 className="text-xs font-semibold">{s.title}</h3>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      {s.artist} · {s.genre}
-                    </p>
-                    {s.content_kind === "LISTENING_REFERENCE" ? (
-                      <>
-                        <p className="mt-2 text-[11px] text-slate-400">
-                          Listening reference · no score or recording supplied
-                        </p>
-                        <a
-                          href={s.reference_url ?? "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-2 inline-flex items-center gap-1 text-xs underline"
-                        >
-                          Find recording
-                          <ExternalLink size={11} />
-                        </a>
-                      </>
-                    ) : (
-                      <button
-                        disabled={!!busy}
-                        onClick={() => replace(draftFromSong(s), null)}
-                        className="mt-2 text-xs font-medium text-[#526b10] underline"
-                      >
-                        Load exercise · {s.bpm} BPM · {s.time_signature}
-                      </button>
-                    )}
-                  </article>
-                ))}
-            </div>
-          )}
-        </section>
+        <button className={button} onClick={() => setLibraryOpen(true)}>
+          <FolderOpen size={15} />
+          Choose a piece
+        </button>
+      )}
+      {libraryOpen && (
+        <StudioLibrary
+          songs={songs.data ?? []}
+          onClose={() => setLibraryOpen(false)}
+          onChoose={(s) => replace(draftFromSong(s), null)}
+        />
       )}
       {selected && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -685,8 +632,8 @@ export default function MusicProductionStudio() {
         <section className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="text-sm font-semibold">Instrument practice</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Synthesized practice voices, not recordings of the original
-            instruments.
+            Recorded piano and marimba. Other instruments use modeled practice
+            voices.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {INSTRUMENTS.map((i) => (
@@ -706,6 +653,9 @@ export default function MusicProductionStudio() {
               >
                 <Piano size={18} className="mb-2 text-slate-500" />
                 <strong className="text-xs">{i}</strong>
+                <span className="ml-2 text-[9px] text-slate-400">
+                  {["Piano", "Marimba"].includes(i) ? "Recorded" : "Modeled"}
+                </span>
                 <p className="mt-1 text-[11px] leading-5 text-slate-500">
                   {origin[i]}
                 </p>

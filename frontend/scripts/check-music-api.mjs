@@ -28,7 +28,7 @@ for (let n = 0; n < 36; n++) {
       signal: AbortSignal.timeout(10000),
     });
     const d = await r.json();
-    if (r.ok && d.ready === true && d.version === 1 && d.songs >= 18) {
+    if (r.ok && d.ready === true && d.version === 1 && d.songs >= 18 && d.sampleStudioVersion === 1) {
       productionReady = true;
       console.log("Music production storage and 18 catalog entries ready.");
       break;

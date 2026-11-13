@@ -104,7 +104,9 @@ mkdirSync(artifacts, { recursive: true });
         )
           data = records;
         else if (path.includes("/music-production/projects")) {
-          if (path.endsWith("/submit")) {
+          if (req.method() === "GET") {
+            data = records.find((r) => r.id === path.split("/").pop());
+          } else if (path.endsWith("/submit")) {
             const id = path.split("/").at(-2),
               record = records.find((r) => r.id === id);
             record.status = "SUBMITTED";
@@ -141,7 +143,7 @@ mkdirSync(artifacts, { recursive: true });
     const { ctx, page } = await context();
     await page.goto(base + "/student/labs/music/composition");
     await page
-      .getByRole("heading", { name: "Music Production", exact: true })
+      .getByRole("heading", { name: "Music Studio", exact: true })
       .waitFor();
     assert.equal(
       await page
@@ -170,28 +172,33 @@ mkdirSync(artifacts, { recursive: true });
       await score.getAttribute("aria-label"),
       /Organ, Acoustic Guitar, Acoustic Bass, Drumset 1, Drumset 2/,
     );
-    await page.getByLabel("Search songs", { exact: true }).fill("Brenda");
+    await page
+      .getByRole("button", { name: "Choose a piece", exact: true })
+      .click();
+    await page
+      .getByLabel("Search studio library", { exact: true })
+      .fill("Brenda");
     await page
       .getByRole("heading", { name: "Vulindlela", exact: true })
       .waitFor();
     await page
       .getByRole("heading", { name: "Weekend Special", exact: true })
       .waitFor();
-    await page.getByLabel("Search songs", { exact: true }).fill("My Heart");
+    await page
+      .getByLabel("Search studio library", { exact: true })
+      .fill("My Heart");
     const ref = page.getByRole("article").filter({
       has: page.getByRole("heading", {
         name: "My Heart Will Go On",
         exact: true,
       }),
     });
-    await ref
-      .getByRole("link", { name: "Find recording", exact: true })
-      .waitFor();
+    await ref.getByRole("link", { name: "Listen", exact: true }).waitFor();
     assert.equal(await ref.getByRole("button").count(), 0);
     await page
-      .getByLabel("Search songs", { exact: true })
+      .getByLabel("Search studio library", { exact: true })
       .fill("Isukuti Circle");
-    await page.getByRole("button", { name: /Load exercise/ }).click();
+    await page.getByRole("button", { name: "Open", exact: true }).click();
     await page.getByRole("img", { name: /6\/8 score/ }).waitFor();
     assert.equal(await page.getByRole("alert").count(), 0);
     await page
@@ -344,6 +351,96 @@ mkdirSync(artifacts, { recursive: true });
         exact: true,
       })
       .waitFor();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(base + "/student/labs/music");
+    await page
+      .getByRole("heading", { name: "Shape the band", exact: true })
+      .waitFor();
+    await page.getByLabel("Count in", { exact: true }).uncheck();
+    await page
+      .getByRole("button", { name: "Play backing", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Pause backing", exact: true })
+      .waitFor();
+    await page.waitForTimeout(850);
+    await page
+      .getByRole("button", { name: "Pause backing", exact: true })
+      .click();
+    const paused = Number(
+      await page.getByLabel("Playback position", { exact: true }).inputValue(),
+    );
+    assert.ok(paused > 0.5);
+    await page
+      .getByRole("button", { name: "Solo keys stem", exact: true })
+      .click();
+    await page.getByLabel("Selected stem pan", { exact: true }).fill("-0.7");
+    const backingDownload = page.waitForEvent("download");
+    await page
+      .getByRole("button", { name: "Export backing MP3", exact: true })
+      .click();
+    const backing = await backingDownload,
+      backingBytes = readFileSync(await backing.path());
+    const analysis = await page.evaluate(async (b64) => {
+      const context = new AudioContext(),
+        buffer = await context.decodeAudioData(
+          Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)).buffer,
+        );
+      const channels = [0, 1].map((i) =>
+        buffer.getChannelData(i).reduce((sum, v) => sum + v * v, 0),
+      );
+      await context.close();
+      return { duration: buffer.duration, channels };
+    }, backingBytes.toString("base64"));
+    assert.ok(analysis.duration > 10 && analysis.duration < 11);
+    assert.ok(analysis.channels[0] > analysis.channels[1] * 2);
+    assert.ok(analysis.channels[0] > 0.01);
+    await backing.saveAs(artifacts + "/recorded-backing.mp3");
+    await page
+      .getByRole("button", { name: "Save session", exact: true })
+      .click();
+    await page
+      .getByRole("status")
+      .filter({ hasText: "Saved to your account" })
+      .waitFor();
+    const practiceId = records[0].id;
+    assert.equal(
+      records[0].tracks_json.play_along.stems.find((s) => s.id === "keys").pan,
+      -0.7,
+    );
+    await page
+      .getByRole("navigation", { name: "Studio workspace" })
+      .getByRole("link", { name: "My projects", exact: true })
+      .click();
+    await page
+      .getByRole("link")
+      .filter({
+        has: page.getByRole("heading", {
+          name: "Ode to Joy — my session",
+          exact: true,
+        }),
+      })
+      .click();
+    await page
+      .getByRole("status")
+      .filter({ hasText: "Loaded from your account" })
+      .waitFor();
+    assert.ok(page.url().includes(practiceId));
+    await page.screenshot({
+      path: artifacts + "/play-along-desktop.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(250);
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    );
+    await page.screenshot({
+      path: artifacts + "/play-along-mobile.png",
+      fullPage: true,
+    });
     assert.deepEqual(errors, []);
     await ctx.close();
     console.log(

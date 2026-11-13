@@ -4,6 +4,7 @@ import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import {
   newMix,
+  newPlayAlong,
   validMix,
   changeMeter,
   stepsFor,
@@ -132,6 +133,53 @@ describe("Music production", () => {
     } as any);
     await expect(nonMusic.projects(actor)).rejects.toMatchObject({
       status: 403,
+    });
+  });
+  test("recorded backing saves only bounded settings and cannot use another song or tempo", async () => {
+    const create = jest.fn().mockImplementation(({ data }) => data),
+      db: any = {
+        music_Song: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({
+              slug: "ode-to-joy-theme",
+              content_kind: "PUBLIC_DOMAIN_STUDY",
+            }),
+        },
+        music_Project: { create },
+      };
+    const service = new MusicProductionService(db, {
+      getLabConfig: async () => ({ category: "ARTS_MUSIC" }),
+    } as any);
+    const payload: any = {
+      ...draft(),
+      bpm: 100,
+      time_signature: "4/4",
+      song_id: "ode",
+      tracks_json: {
+        ...newMix("4/4"),
+        play_along: {
+          ...newPlayAlong(),
+          untrusted_url: "https://invalid.example",
+        },
+      },
+    };
+    await service.save(payload, actor);
+    expect(
+      create.mock.calls[0][0].data.tracks_json.play_along.untrusted_url,
+    ).toBeUndefined();
+    expect(
+      create.mock.calls[0][0].data.tracks_json.play_along.stems,
+    ).toHaveLength(5);
+    await expect(
+      service.save({ ...payload, bpm: 120 }, actor),
+    ).rejects.toMatchObject({ status: 400 });
+    db.music_Song.findUnique.mockResolvedValue({
+      slug: "other",
+      content_kind: "ORIGINAL_EXERCISE",
+    });
+    await expect(service.save(payload, actor)).rejects.toMatchObject({
+      status: 400,
     });
   });
   test("reference patterns vary across musical exercises rather than repeating one generic beat", () => {

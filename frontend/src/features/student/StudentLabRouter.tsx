@@ -2,6 +2,12 @@ import { lazy, Suspense } from "react";
 const MusicProduction = lazy(
   () => import("../../pages/student/labs/music/studio"),
 );
+const PlayAlong = lazy(
+  () => import("../../pages/student/labs/music/PlayAlong"),
+);
+const MusicProjects = lazy(
+  () => import("../../pages/student/labs/music/Projects"),
+);
 const MusicStudio = lazy(() => import("../../pages/student/labs/music"));
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useLocation } from "react-router-dom";
@@ -73,6 +79,12 @@ export default function StudentLabRouter() {
       <Suspense fallback={<p role="status">Loading Music Studio…</p>}>
         {location.pathname === lab.route + "/loops" ? (
           <MusicStudio />
+        ) : location.pathname === lab.route + "/projects" ? (
+          <MusicProjects />
+        ) : [lab.route, lab.route + "/play-along"].includes(
+            location.pathname,
+          ) ? (
+          <PlayAlong />
         ) : (
           <MusicProduction />
         )}

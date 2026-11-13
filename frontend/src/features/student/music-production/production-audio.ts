@@ -1,3 +1,5 @@
+import { StemEngine, renderStems } from "./stem-engine";
+import { hasRecordedVoice, loadVoice, sampler } from "./sample-bank";
 import * as Tone from "tone";
 import {
   pitchName,
@@ -13,6 +15,7 @@ export interface ProductionSound {
   setMix: (m: ProductionMix) => void;
 }
 function melodic(instrument: Instrument, context: Tone.BaseContext) {
+  if (hasRecordedVoice(instrument)) return sampler(instrument, context);
   if (["Marimba", "Kalimba", "Nyatiti", "Sitar"].includes(instrument))
     return new Tone.Synth({
       context,
@@ -52,10 +55,12 @@ export function buildProductionSound(
   const limiter = new Tone.Limiter({ context, threshold: -1 }).toDestination(),
     master = new Tone.Gain({ context, gain: 0.35 }).connect(limiter);
   const tracks = p.tracks_json.tracks.map((t) => {
+    const solo = p.tracks_json.tracks.some((t) => t.solo);
+    const pan = new Tone.Panner({ context, pan: t.pan ?? 0 }).connect(master);
     const gain = new Tone.Gain({
       context,
-      gain: t.muted ? 0 : t.volume,
-    }).connect(master);
+      gain: t.muted || (solo && !t.solo) ? 0 : t.volume,
+    }).connect(pan);
     const synth =
       t.id === "melody"
         ? melodic(t.instrument, context)
@@ -91,7 +96,7 @@ export function buildProductionSound(
                 },
               });
     synth.connect(gain);
-    return { id: t.id, gain, synth };
+    return { id: t.id, gain, pan, synth };
   });
   const eventIds: number[] = [];
   for (const t of p.tracks_json.tracks) {
@@ -151,8 +156,16 @@ export function buildProductionSound(
     play: () => transport.start(),
     setMix: (mix) => {
       for (const t of mix.tracks) {
-        const gain = tracks.find((x) => x.id === t.id)?.gain;
-        if (gain) gain.gain.rampTo(t.muted ? 0 : t.volume, 0.02);
+        const node = tracks.find((x) => x.id === t.id);
+        if (node) {
+          node.gain.gain.rampTo(
+            t.muted || (mix.tracks.some((x) => x.solo) && !t.solo)
+              ? 0
+              : t.volume,
+            0.02,
+          );
+          node.pan.pan.rampTo(t.pan ?? 0, 0.02);
+        }
       }
     },
     dispose: () => {
@@ -160,6 +173,7 @@ export function buildProductionSound(
       tracks.forEach((t) => {
         t.synth.dispose();
         t.gain.dispose();
+        t.pan.dispose();
       });
       master.dispose();
       limiter.dispose();
@@ -167,6 +181,11 @@ export function buildProductionSound(
   };
 }
 export class ProductionAudio {
+  private stems?: StemEngine;
+  private audition?: {
+    instrument: Instrument;
+    voice: ReturnType<typeof melodic>;
+  };
   private sound?: ProductionSound;
   private running = false;
   private attempt = 0;
@@ -176,6 +195,16 @@ export class ProductionAudio {
   async play(p: ProductionDraft) {
     const attempt = ++this.attempt;
     await Tone.start();
+    if (this.disposed || attempt !== this.attempt) return false;
+    if (p.tracks_json.play_along) {
+      this.current = p;
+      this.stems ??= new StemEngine();
+      return this.stems.play(p.tracks_json.play_along);
+    }
+    await loadVoice(
+      p.tracks_json.tracks.find((t) => t.id === "melody")?.instrument ??
+        "Piano",
+    );
     if (this.disposed || attempt !== this.attempt) return false;
     if (this.sound && this.signature === this.structure(p)) {
       this.current = p;
@@ -205,16 +234,22 @@ export class ProductionAudio {
   }
   update(p: ProductionDraft) {
     this.current = p;
+    if (p.tracks_json.play_along) {
+      this.stems?.update(p.tracks_json.play_along);
+      return;
+    }
     if (!this.running) return;
     if (this.signature !== this.structure(p)) {
       void this.play(p);
     } else this.sound?.setMix(p.tracks_json);
   }
   pause() {
+    this.stems?.pause();
     Tone.getTransport().pause();
     this.running = false;
   }
   stop() {
+    this.stems?.stop();
     this.attempt++;
     if (this.sound) {
       Tone.getTransport().stop();
@@ -224,6 +259,8 @@ export class ProductionAudio {
     this.running = false;
   }
   measure() {
+    if (this.current?.tracks_json.play_along && this.stems)
+      return Math.min(3, Math.floor(this.stems.position() / 2.4));
     if (!this.running || !this.current) return 0;
     return Math.min(
       3,
@@ -236,17 +273,28 @@ export class ProductionAudio {
   async instrument(note: string, instrument: Instrument) {
     await Tone.start();
     if (this.disposed) return;
-    const synth = melodic(instrument, Tone.getContext()).toDestination();
-    synth.volume.value = -12;
-    synth.triggerAttackRelease(note, 0.4);
-    setTimeout(() => synth.dispose(), 1200);
+    await loadVoice(instrument);
+    if (this.disposed) return;
+    if (this.audition?.instrument !== instrument) {
+      this.audition?.voice.dispose();
+      const voice = melodic(instrument, Tone.getContext()).toDestination();
+      voice.volume.value = -12;
+      this.audition = { instrument, voice };
+    }
+    this.audition!.voice.triggerAttackRelease(note, 0.45);
   }
   dispose() {
     this.disposed = true;
     this.stop();
+    this.stems?.dispose();
+    this.audition?.voice.dispose();
   }
 }
 export async function renderProduction(p: ProductionDraft) {
+  if (p.tracks_json.play_along) return renderStems(p.tracks_json.play_along);
+  await loadVoice(
+    p.tracks_json.tracks.find((t) => t.id === "melody")?.instrument ?? "Piano",
+  );
   let sound: ProductionSound | undefined;
   const duration = (quarterBeats(p.time_signature) * 4 * 60) / p.bpm + 1;
   try {
