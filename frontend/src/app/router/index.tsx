@@ -5,6 +5,8 @@ import SchoolSbaDashboard from "../../pages/admin/school/sba";
 import TeacherSba from "../../pages/teacher/sba";
 import { TeacherAssignments } from "../../features/school-admin/TeacherAssignments";
 import { lazy } from 'react';
+const StudentLabRouter = lazy(() => import("../../features/student/StudentLabRouter"));
+
 const StudentLibrary = lazy(() => import('../../pages/study-hub/library'));
 import { createBrowserRouter, Link, Navigate, useLocation } from 'react-router-dom';
 
@@ -18,7 +20,6 @@ import Home from '../../pages/Home';
 import FreeRevision from '../../pages/FreeRevision';
 import IndependentRegister from '../../pages/IndependentRegister';
 
-import { StemLabsPage } from '../../features/student/StemLabs';
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
 import { LearnSkillsPage } from '../../features/student/LearnSkills';
 import { SkillDetailPage } from '../../features/student/SkillDetail';
@@ -306,9 +307,11 @@ export const router = createBrowserRouter([
             path: '/student/assignments/:id',
             element: <ExamPlayer />,
           },
+          { path: '/student/labs', element: <StudentLabRouter /> },
+          { path: '/student/labs/:kind', element: <StudentLabRouter /> },
           {
             path: '/student/stem-labs',
-            element: <StemLabsPage />,
+            element: <Navigate to="/student/labs" replace />,
           },
           {
             path: '/student/stem-labs/:id',

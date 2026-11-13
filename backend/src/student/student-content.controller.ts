@@ -1,3 +1,4 @@
+import { StudentLabsService } from "./labs.service";
 import { StudentAssignmentsService } from "./assignments.service";
 import { Controller, Get, Query } from "@nestjs/common";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -9,7 +10,7 @@ import { LibraryService } from "./library.service";
 import { StudentScopeService } from "./student-scope.service";
 @Controller("student")
 export class StudentContentController {
-  constructor(private readonly scopes: StudentScopeService,private readonly assignmentService:StudentAssignmentsService) {}
+  constructor(private readonly labsService: StudentLabsService, private readonly scopes: StudentScopeService,private readonly assignmentService:StudentAssignmentsService) {}
   @Get("content-capabilities") @Public() capabilities() {
     return { studentFilteringVersion: 2 };
   }
@@ -47,7 +48,7 @@ export class StudentContentController {
   @Get("labs") @Roles(Role.STUDENT) async labs(
     @CurrentUser() a: AuthenticatedUser,
   ) {
-    return this.catalog(a, "LAB_3D");
+    return this.labsService.getLabsForStudent(a.id, a.schoolId);
   }
   @Get("library") @Roles(Role.STUDENT) async library(
     @CurrentUser() a: AuthenticatedUser,

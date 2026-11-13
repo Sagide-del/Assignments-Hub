@@ -1,3 +1,4 @@
+import { useLabConfig } from "../hooks/useLabConfig";
 import { useStudentContentScope, studentToolAvailable } from '../hooks/useStudentContentScope';
 import "../workspace.css";
 import { useEffect, useState, type ReactNode } from "react";
@@ -100,7 +101,7 @@ function iconForNavigation(path: string): LucideIcon {
   if (path.includes("kcse-papers") || path.includes("kjsea-mock-test"))
     return FileText;
   if (path.includes("learning-coach")) return BrainCircuit;
-  if (path.includes("stem")) return FlaskConical;
+  if (path.includes("stem") || path.startsWith("/student/labs")) return FlaskConical;
   if (path.includes("learn-skills") || path.includes("skill-studio"))
     return GraduationCap;
   if (path.includes("my-pathway") || path.includes("pathways")) return Compass;
@@ -131,6 +132,7 @@ function iconForNavigation(path: string): LucideIcon {
 export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const user = useAuthStore((s) => s.user);
   const contentScope = useStudentContentScope();
+  const { labConfig } = useLabConfig();
   const queryCache=useQueryClient();
   const scopeIdentity=contentScope.data ? JSON.stringify([contentScope.data.grade,contentScope.data.pathway,contentScope.data.track]) : '';
   useEffect(()=>{
@@ -203,13 +205,14 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const isStudentPortal = nav.some((item) => item.to.startsWith("/student"));
   const gradeScopedNav = isStudent
     ? nav.filter((item) => {
+        if (item.to === "/student/stem-labs") return !!labConfig;
         if (!studentToolAvailable(item.to, contentScope.data)) return false;
         if (isEarlyYearsGrade(studentGrade)) return item.to === '/student';
         if (item.to === '/student/csl') return gradeTier(studentGrade) === 'senior';
         if (item.to === '/student/kjsea-mock-test') return isKjseaGrade(studentGrade);
         if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(studentGrade) || gradeTier(studentGrade) === 'senior';
         return true;
-      })
+      }).map(item => item.to === "/student/stem-labs" && labConfig ? {...item, to: labConfig.route, label: labConfig.label} : item)
     : nav;
   const visibleNav =
     isStudent && user?.isIndependentTrial

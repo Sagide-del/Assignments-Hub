@@ -108,7 +108,7 @@ function presentation(lab: Lab) {
     image: "/stem/science-workspace.png",
   };
 }
-export function StemLabsPage() {
+export function StemLabsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const contentScope = useStudentContentScope();
   const user = useAuthStore((s) => s.user),
     [search, setSearch] = useState(""),
@@ -166,8 +166,8 @@ export function StemLabsPage() {
   );
   return (
     <div className="mx-auto max-w-6xl space-y-4 text-slate-800">
-      <PageHeader title="STEM Labs" actions={<span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade} aligned · {labs.length} practicals</span>} />
-      <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#375000]">These investigations are filtered to your grade. Junior School labs build safe inquiry and measurement; Senior School labs deepen pathway and subject practice.</p>
+      {!embedded && <PageHeader title="STEM Labs" actions={<span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade} aligned · {labs.length} practicals</span>} />}
+      {!embedded && <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#375000]">These investigations are filtered to your grade. Junior School labs build safe inquiry and measurement; Senior School labs deepen pathway and subject practice.</p>}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav
           className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1"

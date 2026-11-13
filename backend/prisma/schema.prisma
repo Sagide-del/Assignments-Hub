@@ -2865,7 +2865,23 @@ model StudentMasteryProgress {
   @@map("student_mastery_progress")
 }
 
+enum LabCategory {
+  STEM_PURE
+  STEM_TECHNICAL
+  STEM_APPLIED
+  ARTS_MUSIC
+  ARTS_VISUAL
+  ARTS_SPORTS
+  SOCIAL_HUMANITIES
+  SOCIAL_LANGUAGES
+  CTS_CULINARY
+  CTS_TRADES
+  LOWER_PLAY
+  LOWER_EXPLORER
+}
+
 model MasterModule {
+  lab_category           LabCategory?
   batch_number           Int             @default(1)
   theory_cheatsheet      Json            @default("{}")
   id                     String          @id @default(uuid())

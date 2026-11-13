@@ -71,7 +71,8 @@ const combination = {
         path = new URL(req.url()).pathname,
         body = req.postData() ? JSON.parse(req.postData()) : null;
       let json = [];
-      if (path.endsWith("/career/kjsea-results")) {
+      if (path.endsWith("/student/lab-config")) json = {label: grade <= 9 ? "Junior Science Lab" : "Labs", route: "/student/labs", category: null};
+      else if (path.endsWith("/career/kjsea-results")) {
         if (req.method() === "PUT") {
           writes.push({ path, body });
           savedResults = body.results;

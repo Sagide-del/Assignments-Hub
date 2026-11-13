@@ -1,0 +1,11 @@
+# Shared student lab router
+
+The authenticated `GET /student/lab-config` endpoint resolves the current student's persisted grade and active pathway selection. It does not accept a student ID, grade, pathway or track from query parameters. Grades 1–3 use Play Lab; Grades 4–6 use Explorer Lab; Grades 7–9 retain Junior Science Lab. Senior categories cover STEM, Arts, Social Sciences and CTS. Existing stored aliases (Technical and Engineering, Fine Arts, Performing Arts and Languages & Literature) resolve to the matching route. Unknown senior profiles get the generic Labs empty state.
+
+`MasterModule.lab_category` is a nullable Prisma enum. The additive migration leaves all existing modules unchanged. CMS lab modules use `content_json.content_type = LAB_3D` and the category. `GET /student/labs` and `/student/lab-modules` reuse existing grade, subject, subscription and public-store/school/stream publication policies and return only allowed metadata; no answers or private CMS payloads are exposed. The module cards open the existing scoped library view.
+
+The actual project uses integer user IDs, text grades and approved modules with ContentDistribution records, not the example's string IDs, User.pathway/User.track fields or a PUBLISHED status. No primary_language field is added because the existing profile has no such field and this router does not require it.
+
+The sidebar and dashboard use the same cached useLabConfig hook, keyed by actor and curriculum scope. Existing /student/stem-labs links redirect through the new router. Existing lab players and practical interactions remain intact. New categories are infrastructure only: no fabricated activities are shown; teachers must publish content for each category. CTS routes are supported but do not create a new official pathway or alter enrolment.
+
+Before frontend publication, CI checks /student/lab-router-capabilities to confirm backend code and the database category column are deployed. Backend tests cover mappings, tenant-scoped ownership, role restrictions and the new column on real PostgreSQL in CI. Playwright covers desktop/mobile routes and navigation, category-specific modules, empty states, cross-pathway handling and old links.

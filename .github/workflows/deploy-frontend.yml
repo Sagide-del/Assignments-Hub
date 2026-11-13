@@ -194,6 +194,9 @@ jobs:
       - name: Wait for central content library
         working-directory: frontend
         run: node scripts/check-content-api.mjs
+      - name: Wait for dynamic lab router storage
+        run: node scripts/check-lab-router-api.mjs
+
       - name: Wait for Grade 10 guide storage
         working-directory: frontend
         run: node scripts/check-grade10-api.mjs
@@ -217,6 +220,7 @@ jobs:
           node scripts/auth-ui.browser.cjs
           node scripts/homepage.browser.cjs
           node scripts/public-revision.browser.cjs
+          node scripts/lab-router.browser.cjs
           node scripts/grade10-guide.browser.cjs
           node scripts/static-seo.browser.cjs
       - name: Verify live SBA import access restrictions

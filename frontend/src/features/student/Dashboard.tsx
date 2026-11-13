@@ -1,3 +1,4 @@
+import { useLabConfig } from "../../hooks/useLabConfig";
 import { useStudentContentScope, studentToolAvailable } from '../../hooks/useStudentContentScope';
 import { subjectAppearance } from "./subject-appearance";
 import { groupAssignments } from "./assignment-catalogue";
@@ -203,6 +204,7 @@ function AssignmentRow({
 
 export function StudentDashboard() {
   const contentScope = useStudentContentScope();
+  const { labConfig } = useLabConfig();
   const user = useAuthStore((state) => state.user);
   const [subject, setSubject] = useState("");
   const [status, setStatus] = useState<AssignmentState | "ALL">("ALL");
@@ -543,11 +545,12 @@ export function StudentDashboard() {
           </div>
           <div className="divide-y divide-slate-100 px-3">
             {(user?.isIndependentTrial ? [] : TOOLS.filter((tool) => {
+              if (tool.href === "/student/stem-labs") return !!labConfig;
               if (!studentToolAvailable(tool.href, contentScope.data)) return false;
               if (tool.href === '/student/kjsea-mock-test') return isKjseaGrade(contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade);
               if (tool.href === '/student/my-pathway') return isPathwayGuidanceGrade(contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade);
               return true;
-            })).map(
+            }).map(tool => tool.href === "/student/stem-labs" && labConfig ? {...tool, href: labConfig.route, title: labConfig.label} : tool)).map(
               ({ title, href, Icon }) => (
                 <Link
                   key={href}

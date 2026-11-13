@@ -1,3 +1,5 @@
+import { StudentLabsService } from "./labs.service";
+import { StudentLabsController } from "./labs.controller";
 import { SubjectEnrollmentService } from "./subject-enrollment.service";
 import { SubjectEnrollmentController } from "./subject-enrollment.controller";
 import { StudentAssignmentsService } from "./assignments.service";
@@ -21,6 +23,7 @@ import {
 @Module({
   imports: [ConfigModule],
   providers: [
+    StudentLabsService,
     SubjectEnrollmentService,
     StudentAssignmentsService,
     StudentScopeService,
@@ -30,6 +33,7 @@ import {
   ],
   exports: [StudentScopeService, SubjectEnrollmentService],
   controllers: [
+    StudentLabsController,
     SubjectEnrollmentController,
     StudentContentController,
     StudentLibraryController,
