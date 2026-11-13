@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
-const MusicProduction = lazy(() => import("../../pages/student/labs/music/studio"));
+const MusicProduction = lazy(
+  () => import("../../pages/student/labs/music/studio"),
+);
 const MusicStudio = lazy(() => import("../../pages/student/labs/music"));
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useLocation } from "react-router-dom";
@@ -52,7 +54,9 @@ export default function StudentLabRouter() {
   const lab = config.labConfig;
   if (location.pathname === "/student/labs" && lab.route !== location.pathname)
     return <Navigate to={lab.route} replace />;
-  const productionRoute = lab.category === "ARTS_MUSIC" && location.pathname.startsWith(lab.route + "/");
+  const productionRoute =
+    lab.category === "ARTS_MUSIC" &&
+    location.pathname.startsWith(lab.route + "/");
   if (location.pathname !== lab.route && !productionRoute)
     return (
       <div className="p-6">
@@ -67,7 +71,11 @@ export default function StudentLabRouter() {
   if (lab.category === "ARTS_MUSIC")
     return (
       <Suspense fallback={<p role="status">Loading Music Studio…</p>}>
-        {productionRoute ? <MusicProduction /> : <MusicStudio />}
+        {location.pathname === lab.route + "/loops" ? (
+          <MusicStudio />
+        ) : (
+          <MusicProduction />
+        )}
       </Suspense>
     );
   const legacy =

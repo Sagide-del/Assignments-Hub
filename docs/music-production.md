@@ -14,7 +14,7 @@ The public catalog and backend canonical JSON are kept identical. The additive m
 
 ## Activities and notation
 
-Music students retain /student/labs/music as Loop Studio. Five additional routes are /rhythm, /melody, /instrument, /composition, /production, with /studio as an arrangement alias. The shared lab router gates every activity by saved grade/pathway/track. The sidebar and dashboard use Music2, and the backend Music config returns icon=Music.
+Music students open the new arrangement workspace at /student/labs/music. Existing Loop Studio projects remain accessible at /student/labs/music/loops. Five additional routes are /rhythm, /melody, /instrument, /composition, /production, with /studio as an arrangement alias. The shared lab router gates every activity by saved grade/pathway/track. The sidebar and dashboard use Music2, and the backend Music config returns icon=Music.
 
 The activities practise pulse, ostinato/call-response, scales, four-bar melodic shape, timbre, balance, arrangement and reflection, with additional prompts for Grades 11–12. This is curriculum-oriented skill practice, not a claim of KICD certification or a complete verified curriculum design. Activity completion markers are learner self-reports; teacher assessment remains explicit.
 

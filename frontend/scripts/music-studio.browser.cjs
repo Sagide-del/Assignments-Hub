@@ -84,7 +84,7 @@ mkdirSync(artifacts, { recursive: true });
     const page = await context.newPage(),
       errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(base + "/student/labs/music");
+    await page.goto(base + "/student/labs/music/loops");
     await page
       .getByRole("heading", { name: "Music Studio", exact: true })
       .waitFor();

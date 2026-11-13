@@ -75,7 +75,12 @@ mkdirSync(artifacts, { recursive: true });
       });
       const page = await context.newPage();
       await page.goto(base + "/student/labs");
-      await page.getByRole("heading", { name: label, exact: true }).waitFor();
+      await page
+        .getByRole("heading", {
+          name: slug === "music" ? "Music Production" : label,
+          exact: true,
+        })
+        .waitFor();
       assert.equal(new URL(page.url()).pathname, target);
       const nav = page.getByRole("navigation", {
         name: "Workspace navigation",
@@ -91,7 +96,9 @@ mkdirSync(artifacts, { recursive: true });
           .getByRole("heading", { name: "No activities published yet" })
           .waitFor();
       if (slug === "music")
-        await page.getByRole("heading", { name: "Your composition", exact:true }).waitFor();
+        await page
+          .getByRole("heading", { name: "Music Production", exact: true })
+          .waitFor();
       await page.screenshot({
         path: `${artifacts}/${slug || "junior"}-desktop.png`,
         fullPage: true,

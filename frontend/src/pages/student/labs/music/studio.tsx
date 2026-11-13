@@ -347,7 +347,7 @@ export default function MusicProductionStudio() {
             reflection
           </p>
         </div>
-        <Link to="/student/labs/music" className={button}>
+        <Link to="/student/labs/music/loops" className={button}>
           Loop studio
         </Link>
       </header>
