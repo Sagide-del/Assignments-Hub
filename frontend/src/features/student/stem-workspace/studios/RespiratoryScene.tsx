@@ -21,6 +21,7 @@ interface Props {
   cameraView: "front" | "back" | "side";
   resetKey: number;
   labels: boolean;
+  ribCage?: boolean;
   onSelect: (id: RespiratoryStructure) => void;
   onLoaded?: () => void;
 }
@@ -88,7 +89,9 @@ export default function RespiratoryScene(props: Props) {
     rim.position.set(1, 3, -3);
     scene.add(rim);
     const anatomy = new THREE.Group(),
-      micro = new THREE.Group();
+      micro = new THREE.Group(),
+      ribCage = new THREE.Group();
+    anatomy.add(ribCage);
     scene.add(anatomy, micro);
     micro.visible = false;
     const materials: THREE.Material[] = [],
@@ -178,6 +181,8 @@ export default function RespiratoryScene(props: Props) {
           });
         }
       });
+    let loadThorax: (() => void) | undefined,
+      thoraxStarted = false;
     new GLTFLoader().load(
       "/stem/anatomy/respiratory-atlas.glb",
       (gltf) => {
@@ -212,6 +217,35 @@ export default function RespiratoryScene(props: Props) {
           if (!anchors[part]) anchors[part] = anchor.clone();
           if (part === "trachea") anchors.trachea = anchor.clone();
         });
+        loadThorax = () => {
+          // Keep the thorax in the same atlas coordinates as the lung geometry.
+          new GLTFLoader().load(
+            "/stem/anatomy/sports/thorax-atlas-v1.glb",
+            (thorax) => {
+              if (disposed || lost) {
+                disposeLoaded(thorax.scene);
+                return;
+              }
+              thorax.scene.updateMatrixWorld(true);
+              thorax.scene.traverse((o) => {
+                if (!(o instanceof THREE.Mesh)) return;
+                const geo = o.geometry.clone().applyMatrix4(o.matrixWorld);
+                geo.translate(-centre.x, -centre.y, -centre.z);
+                geo.scale(scale, scale, scale);
+                geometries.push(geo);
+                const mat = makeMat("#c3bfb1");
+                mat.transparent = true;
+                mat.opacity = 0.18;
+                mat.depthWrite = false;
+                const bone = new THREE.Mesh(geo, mat);
+                ribCage.add(bone);
+              });
+              disposeLoaded(thorax.scene);
+            },
+            undefined,
+            () => {},
+          );
+        };
         disposeLoaded(gltf.scene);
         const labels: {
           part: RespiratoryStructure;
@@ -463,6 +497,16 @@ export default function RespiratoryScene(props: Props) {
           r.mesh.position.y -= 0.08 * sample.fraction;
         } else r.mesh.scale.setScalar(1);
       }
+      if (p.ribCage && !thoraxStarted && loadThorax) {
+        thoraxStarted = true;
+        loadThorax();
+      }
+      ribCage.visible = !!p.ribCage && p.view !== "alveoli";
+      ribCage.scale.set(
+        1 + 0.012 * sample.fraction,
+        1 + 0.008 * sample.fraction,
+        1 + 0.025 * sample.fraction,
+      );
       micro.scale.setScalar(1 + 0.025 * sample.fraction);
       gasParticles.forEach((g, i) => {
         g.mesh.position.lerpVectors(g.start, g.end, (now / 2500 + i / 12) % 1);
@@ -506,7 +550,7 @@ export default function RespiratoryScene(props: Props) {
   }, [attempt]);
   return (
     <div
-      className="relative h-full min-h-[440px] overflow-hidden rounded-xl"
+      className="relative h-full min-h-0 overflow-hidden rounded-xl"
       style={{
         background:
           "radial-gradient(ellipse at 50% 35%,#f7f4f2 0%,#e7eaf0 72%,#dde3ec 100%)",
@@ -514,7 +558,7 @@ export default function RespiratoryScene(props: Props) {
     >
       <div
         ref={host}
-        className={`relative h-full min-h-[440px] ${status === "context" || status === "error" ? "hidden" : ""}`}
+        className={`relative h-full min-h-0 ${status === "context" || status === "error" ? "hidden" : ""}`}
       />
       {status === "loading" && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[#edf0f4]/90">

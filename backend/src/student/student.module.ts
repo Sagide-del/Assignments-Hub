@@ -1,3 +1,5 @@
+import { SportsLabService } from "./sports/sports.service";
+import { SportsLabController } from "./sports/sports.controller";
 import { MusicProductionService } from "./music-production/production.service";
 import { MusicProductionController } from "./music-production/production.controller";
 import { MusicStudioController } from "./music/music-studio.controller";
@@ -27,6 +29,7 @@ import {
 @Module({
   imports: [ConfigModule],
   providers: [
+    SportsLabService,
     MusicProductionService,
     MusicStudioService,
     StudentLabsService,
@@ -39,6 +42,7 @@ import {
   ],
   exports: [StudentScopeService, SubjectEnrollmentService],
   controllers: [
+    SportsLabController,
     MusicProductionController,
     MusicStudioController,
     StudentLabsController,

@@ -312,6 +312,7 @@ export const router = createBrowserRouter([
           { path: '/student/labs', element: <StudentLabRouter /> },
           { path: '/student/labs/:kind', element: <StudentLabRouter /> },
           { path: '/student/labs/music/:activity', element: <StudentLabRouter /> },
+          { path: '/student/labs/sports/:activity', element: <StudentLabRouter /> },
           {
             path: '/student/stem-labs',
             element: <Navigate to="/student/labs" replace />,

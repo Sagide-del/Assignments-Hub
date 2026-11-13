@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+const SportsLab = lazy(() => import("../../pages/student/labs/sports"));
 const MusicProduction = lazy(
   () => import("../../pages/student/labs/music/studio"),
 );
@@ -61,7 +62,7 @@ export default function StudentLabRouter() {
   if (location.pathname === "/student/labs" && lab.route !== location.pathname)
     return <Navigate to={lab.route} replace />;
   const productionRoute =
-    lab.category === "ARTS_MUSIC" &&
+    ["ARTS_MUSIC", "ARTS_SPORTS"].includes(lab.category ?? "") &&
     location.pathname.startsWith(lab.route + "/");
   if (location.pathname !== lab.route && !productionRoute)
     return (
@@ -73,6 +74,12 @@ export default function StudentLabRouter() {
           Open {lab.label}
         </Link>
       </div>
+    );
+  if (lab.category === "ARTS_SPORTS")
+    return (
+      <Suspense fallback={<p role="status">Loading Sports Lab…</p>}>
+        <SportsLab />
+      </Suspense>
     );
   if (lab.category === "ARTS_MUSIC")
     return (

@@ -1,0 +1,570 @@
+{
+  "source": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+  "revision": "6ffffec1d9b17ed3db355903bbd762582cb2328e",
+  "license": "CC-BY-SA-4.0",
+  "modifications": "Bone subset, label removal, polygon reduction on large meshes, smooth normals, glTF export.",
+  "assets": [
+    {
+      "file": "skeleton-atlas-v1.glb",
+      "bytes": 5359812,
+      "sha256": "69f9e58dbb6bd98f1a1a891dd59d5271229a313db112ceee49e21113e0e7c845"
+    },
+    {
+      "file": "thorax-atlas-v1.glb",
+      "bytes": 1918788,
+      "sha256": "ced0c3afaedca0c24485204f2a90ce3364c73bf8347a7d8e4b820727ed107d40"
+    }
+  ],
+  "bones": [
+    {
+      "name": "skull_Zygomatic_bone.r",
+      "key": "skull",
+      "source_name": "Zygomatic bone.r"
+    },
+    {
+      "name": "skull_Zygomatic_bone.l",
+      "key": "skull",
+      "source_name": "Zygomatic bone.l"
+    },
+    {
+      "name": "sternum_Xiphoid_process",
+      "key": "sternum",
+      "source_name": "Xiphoid process"
+    },
+    {
+      "name": "skull_Vomer",
+      "key": "skull",
+      "source_name": "Vomer"
+    },
+    {
+      "name": "vertebra_Vertebra_T9",
+      "key": "vertebra",
+      "source_name": "Vertebra T9"
+    },
+    {
+      "name": "vertebra_Vertebra_T8",
+      "key": "vertebra",
+      "source_name": "Vertebra T8"
+    },
+    {
+      "name": "vertebra_Vertebra_T7",
+      "key": "vertebra",
+      "source_name": "Vertebra T7"
+    },
+    {
+      "name": "vertebra_Vertebra_T6",
+      "key": "vertebra",
+      "source_name": "Vertebra T6"
+    },
+    {
+      "name": "vertebra_Vertebra_T5",
+      "key": "vertebra",
+      "source_name": "Vertebra T5"
+    },
+    {
+      "name": "vertebra_Vertebra_T4",
+      "key": "vertebra",
+      "source_name": "Vertebra T4"
+    },
+    {
+      "name": "vertebra_Vertebra_T3",
+      "key": "vertebra",
+      "source_name": "Vertebra T3"
+    },
+    {
+      "name": "vertebra_Vertebra_T2",
+      "key": "vertebra",
+      "source_name": "Vertebra T2"
+    },
+    {
+      "name": "vertebra_Vertebra_T12",
+      "key": "vertebra",
+      "source_name": "Vertebra T12"
+    },
+    {
+      "name": "vertebra_Vertebra_T11",
+      "key": "vertebra",
+      "source_name": "Vertebra T11"
+    },
+    {
+      "name": "vertebra_Vertebra_T10",
+      "key": "vertebra",
+      "source_name": "Vertebra T10"
+    },
+    {
+      "name": "vertebra_Vertebra_T1",
+      "key": "vertebra",
+      "source_name": "Vertebra T1"
+    },
+    {
+      "name": "vertebra_Vertebra_L5",
+      "key": "vertebra",
+      "source_name": "Vertebra L5"
+    },
+    {
+      "name": "vertebra_Vertebra_L4",
+      "key": "vertebra",
+      "source_name": "Vertebra L4"
+    },
+    {
+      "name": "vertebra_Vertebra_L3",
+      "key": "vertebra",
+      "source_name": "Vertebra L3"
+    },
+    {
+      "name": "vertebra_Vertebra_L2",
+      "key": "vertebra",
+      "source_name": "Vertebra L2"
+    },
+    {
+      "name": "vertebra_Vertebra_L1",
+      "key": "vertebra",
+      "source_name": "Vertebra L1"
+    },
+    {
+      "name": "vertebra_Vertebra_C7",
+      "key": "vertebra",
+      "source_name": "Vertebra C7"
+    },
+    {
+      "name": "vertebra_Vertebra_C6",
+      "key": "vertebra",
+      "source_name": "Vertebra C6"
+    },
+    {
+      "name": "vertebra_Vertebra_C5",
+      "key": "vertebra",
+      "source_name": "Vertebra C5"
+    },
+    {
+      "name": "vertebra_Vertebra_C4",
+      "key": "vertebra",
+      "source_name": "Vertebra C4"
+    },
+    {
+      "name": "vertebra_Vertebra_C3",
+      "key": "vertebra",
+      "source_name": "Vertebra C3"
+    },
+    {
+      "name": "ulna_Ulna.r",
+      "key": "ulna",
+      "source_name": "Ulna.r"
+    },
+    {
+      "name": "ulna_Ulna.l",
+      "key": "ulna",
+      "source_name": "Ulna.l"
+    },
+    {
+      "name": "ribs_Twelfth_rib.r",
+      "key": "ribs",
+      "source_name": "Twelfth rib.r"
+    },
+    {
+      "name": "ribs_Twelfth_rib.l",
+      "key": "ribs",
+      "source_name": "Twelfth rib.l"
+    },
+    {
+      "name": "tibia_Tibia.r",
+      "key": "tibia",
+      "source_name": "Tibia.r"
+    },
+    {
+      "name": "tibia_Tibia.l",
+      "key": "tibia",
+      "source_name": "Tibia.l"
+    },
+    {
+      "name": "ribs_Third_rib.r",
+      "key": "ribs",
+      "source_name": "Third rib.r"
+    },
+    {
+      "name": "ribs_Third_rib.l",
+      "key": "ribs",
+      "source_name": "Third rib.l"
+    },
+    {
+      "name": "third-metatarsal-bone_Third_metatarsal_bone.r",
+      "key": "third-metatarsal-bone",
+      "source_name": "Third metatarsal bone.r"
+    },
+    {
+      "name": "third-metatarsal-bone_Third_metatarsal_bone.l",
+      "key": "third-metatarsal-bone",
+      "source_name": "Third metatarsal bone.l"
+    },
+    {
+      "name": "third-metacarpal-bone_Third_metacarpal_bone.r",
+      "key": "third-metacarpal-bone",
+      "source_name": "Third metacarpal bone.r"
+    },
+    {
+      "name": "third-metacarpal-bone_Third_metacarpal_bone.l",
+      "key": "third-metacarpal-bone",
+      "source_name": "Third metacarpal bone.l"
+    },
+    {
+      "name": "ribs_Tenth_rib.r",
+      "key": "ribs",
+      "source_name": "Tenth rib.r"
+    },
+    {
+      "name": "ribs_Tenth_rib.l",
+      "key": "ribs",
+      "source_name": "Tenth rib.l"
+    },
+    {
+      "name": "skull_Temporal_bone.r",
+      "key": "skull",
+      "source_name": "Temporal bone.r"
+    },
+    {
+      "name": "skull_Temporal_bone.l",
+      "key": "skull",
+      "source_name": "Temporal bone.l"
+    },
+    {
+      "name": "talus_Talus.r",
+      "key": "talus",
+      "source_name": "Talus.r"
+    },
+    {
+      "name": "talus_Talus.l",
+      "key": "talus",
+      "source_name": "Talus.l"
+    },
+    {
+      "name": "ribs_Sixth_rib.r",
+      "key": "ribs",
+      "source_name": "Sixth rib.r"
+    },
+    {
+      "name": "ribs_Sixth_rib.l",
+      "key": "ribs",
+      "source_name": "Sixth rib.l"
+    },
+    {
+      "name": "ribs_Seventh_rib.r",
+      "key": "ribs",
+      "source_name": "Seventh rib.r"
+    },
+    {
+      "name": "ribs_Seventh_rib.l",
+      "key": "ribs",
+      "source_name": "Seventh rib.l"
+    },
+    {
+      "name": "ribs_Second_rib.l",
+      "key": "ribs",
+      "source_name": "Second rib.l"
+    },
+    {
+      "name": "second-metatarsal-bone_Second_metatarsal_bone.l",
+      "key": "second-metatarsal-bone",
+      "source_name": "Second metatarsal bone.l"
+    },
+    {
+      "name": "second-metacarpal-bone_Second_metacarpal_bone.r",
+      "key": "second-metacarpal-bone",
+      "source_name": "Second metacarpal bone.r"
+    },
+    {
+      "name": "second-metacarpal-bone_Second_metacarpal_bone.l",
+      "key": "second-metacarpal-bone",
+      "source_name": "Second metacarpal bone.l"
+    },
+    {
+      "name": "scapula_Scapula.r",
+      "key": "scapula",
+      "source_name": "Scapula.r"
+    },
+    {
+      "name": "scapula_Scapula.l",
+      "key": "scapula",
+      "source_name": "Scapula.l"
+    },
+    {
+      "name": "sacrum_Sacrum",
+      "key": "sacrum",
+      "source_name": "Sacrum"
+    },
+    {
+      "name": "radius_Radius.r",
+      "key": "radius",
+      "source_name": "Radius.r"
+    },
+    {
+      "name": "radius_Radius.l",
+      "key": "radius",
+      "source_name": "Radius.l"
+    },
+    {
+      "name": "patella_Patella.r",
+      "key": "patella",
+      "source_name": "Patella.r"
+    },
+    {
+      "name": "skull_Sphenoid_bone",
+      "key": "skull",
+      "source_name": "Sphenoid bone"
+    },
+    {
+      "name": "ribs_Second_rib.r",
+      "key": "ribs",
+      "source_name": "Second rib.r"
+    },
+    {
+      "name": "second-metatarsal-bone_Second_metatarsal_bone.r",
+      "key": "second-metatarsal-bone",
+      "source_name": "Second metatarsal bone.r"
+    },
+    {
+      "name": "patella_Patella.l",
+      "key": "patella",
+      "source_name": "Patella.l"
+    },
+    {
+      "name": "skull_Parietal_bone.r",
+      "key": "skull",
+      "source_name": "Parietal bone.r"
+    },
+    {
+      "name": "skull_Parietal_bone.l",
+      "key": "skull",
+      "source_name": "Parietal bone.l"
+    },
+    {
+      "name": "skull_Occipital_bone",
+      "key": "skull",
+      "source_name": "Occipital bone"
+    },
+    {
+      "name": "ribs_Ninth_rib.r",
+      "key": "ribs",
+      "source_name": "Ninth rib.r"
+    },
+    {
+      "name": "ribs_Ninth_rib.l",
+      "key": "ribs",
+      "source_name": "Ninth rib.l"
+    },
+    {
+      "name": "skull_Nasal_bone.r",
+      "key": "skull",
+      "source_name": "Nasal bone.r"
+    },
+    {
+      "name": "skull_Nasal_bone.l",
+      "key": "skull",
+      "source_name": "Nasal bone.l"
+    },
+    {
+      "name": "skull_Maxilla.r",
+      "key": "skull",
+      "source_name": "Maxilla.r"
+    },
+    {
+      "name": "skull_Maxilla.l",
+      "key": "skull",
+      "source_name": "Maxilla.l"
+    },
+    {
+      "name": "sternum_Manubrium_of_sternum",
+      "key": "sternum",
+      "source_name": "Manubrium of sternum"
+    },
+    {
+      "name": "skull_Mandible",
+      "key": "skull",
+      "source_name": "Mandible"
+    },
+    {
+      "name": "humerus_Humerus.r",
+      "key": "humerus",
+      "source_name": "Humerus.r"
+    },
+    {
+      "name": "humerus_Humerus.l",
+      "key": "humerus",
+      "source_name": "Humerus.l"
+    },
+    {
+      "name": "hip-bone_Hip_bone.r",
+      "key": "hip-bone",
+      "source_name": "Hip bone.r"
+    },
+    {
+      "name": "hip-bone_Hip_bone.l",
+      "key": "hip-bone",
+      "source_name": "Hip bone.l"
+    },
+    {
+      "name": "frontal-bone_Frontal_bone",
+      "key": "frontal-bone",
+      "source_name": "Frontal bone"
+    },
+    {
+      "name": "ribs_Fourth_rib.r",
+      "key": "ribs",
+      "source_name": "Fourth rib.r"
+    },
+    {
+      "name": "ribs_Fourth_rib.l",
+      "key": "ribs",
+      "source_name": "Fourth rib.l"
+    },
+    {
+      "name": "fourth-metatarsal-bone_Fourth_metatarsal_bone.r",
+      "key": "fourth-metatarsal-bone",
+      "source_name": "Fourth metatarsal bone.r"
+    },
+    {
+      "name": "fourth-metatarsal-bone_Fourth_metatarsal_bone.l",
+      "key": "fourth-metatarsal-bone",
+      "source_name": "Fourth metatarsal bone.l"
+    },
+    {
+      "name": "fourth-metacarpal-bone_Fourth_metacarpal_bone.r",
+      "key": "fourth-metacarpal-bone",
+      "source_name": "Fourth metacarpal bone.r"
+    },
+    {
+      "name": "fourth-metacarpal-bone_Fourth_metacarpal_bone.l",
+      "key": "fourth-metacarpal-bone",
+      "source_name": "Fourth metacarpal bone.l"
+    },
+    {
+      "name": "ribs_First_rib.r",
+      "key": "ribs",
+      "source_name": "First rib.r"
+    },
+    {
+      "name": "ribs_First_rib.l",
+      "key": "ribs",
+      "source_name": "First rib.l"
+    },
+    {
+      "name": "first-metatarsal-bone_First_metatarsal_bone.r",
+      "key": "first-metatarsal-bone",
+      "source_name": "First metatarsal bone.r"
+    },
+    {
+      "name": "first-metatarsal-bone_First_metatarsal_bone.l",
+      "key": "first-metatarsal-bone",
+      "source_name": "First metatarsal bone.l"
+    },
+    {
+      "name": "first-metacarpal-bone_First_metacarpal_bone.r",
+      "key": "first-metacarpal-bone",
+      "source_name": "First metacarpal bone.r"
+    },
+    {
+      "name": "first-metacarpal-bone_First_metacarpal_bone.l",
+      "key": "first-metacarpal-bone",
+      "source_name": "First metacarpal bone.l"
+    },
+    {
+      "name": "ribs_Fifth_rib.r",
+      "key": "ribs",
+      "source_name": "Fifth rib.r"
+    },
+    {
+      "name": "ribs_Fifth_rib.l",
+      "key": "ribs",
+      "source_name": "Fifth rib.l"
+    },
+    {
+      "name": "fifth-metatarsal-bone_Fifth_metatarsal_bone.r",
+      "key": "fifth-metatarsal-bone",
+      "source_name": "Fifth metatarsal bone.r"
+    },
+    {
+      "name": "fifth-metatarsal-bone_Fifth_metatarsal_bone.l",
+      "key": "fifth-metatarsal-bone",
+      "source_name": "Fifth metatarsal bone.l"
+    },
+    {
+      "name": "fifth-metacarpal-bone_Fifth_metacarpal_bone.r",
+      "key": "fifth-metacarpal-bone",
+      "source_name": "Fifth metacarpal bone.r"
+    },
+    {
+      "name": "fifth-metacarpal-bone_Fifth_metacarpal_bone.l",
+      "key": "fifth-metacarpal-bone",
+      "source_name": "Fifth metacarpal bone.l"
+    },
+    {
+      "name": "fibula_Fibula.r",
+      "key": "fibula",
+      "source_name": "Fibula.r"
+    },
+    {
+      "name": "fibula_Fibula.l",
+      "key": "fibula",
+      "source_name": "Fibula.l"
+    },
+    {
+      "name": "femur_Femur.r",
+      "key": "femur",
+      "source_name": "Femur.r"
+    },
+    {
+      "name": "femur_Femur.l",
+      "key": "femur",
+      "source_name": "Femur.l"
+    },
+    {
+      "name": "skull_Ethmoid_bone",
+      "key": "skull",
+      "source_name": "Ethmoid bone"
+    },
+    {
+      "name": "ribs_Eleventh_rib.r",
+      "key": "ribs",
+      "source_name": "Eleventh rib.r"
+    },
+    {
+      "name": "ribs_Eleventh_rib.l",
+      "key": "ribs",
+      "source_name": "Eleventh rib.l"
+    },
+    {
+      "name": "ribs_Eighth_rib.r",
+      "key": "ribs",
+      "source_name": "Eighth rib.r"
+    },
+    {
+      "name": "ribs_Eighth_rib.l",
+      "key": "ribs",
+      "source_name": "Eighth rib.l"
+    },
+    {
+      "name": "clavicle_Clavicle.r",
+      "key": "clavicle",
+      "source_name": "Clavicle.r"
+    },
+    {
+      "name": "clavicle_Clavicle.l",
+      "key": "clavicle",
+      "source_name": "Clavicle.l"
+    },
+    {
+      "name": "calcaneus_Calcaneus.r",
+      "key": "calcaneus",
+      "source_name": "Calcaneus.r"
+    },
+    {
+      "name": "calcaneus_Calcaneus.l",
+      "key": "calcaneus",
+      "source_name": "Calcaneus.l"
+    },
+    {
+      "name": "sternum_Body_of_sternum",
+      "key": "sternum",
+      "source_name": "Body of sternum"
+    }
+  ]
+}

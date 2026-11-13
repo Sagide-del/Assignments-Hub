@@ -25,6 +25,7 @@
     "test:library": "node --test scripts/student-library.test.mjs",
     "test:math-readiness": "node --test scripts/math-readiness.test.mjs",
     "test:static-seo": "node --test scripts/static-seo.test.mjs",
+    "test:sports": "node --test scripts/sports-lab.test.mjs",
     "test:music": "node --test scripts/music.test.mjs scripts/music-production.test.mjs scripts/recorded-music.test.mjs"
   },
   "dependencies": {

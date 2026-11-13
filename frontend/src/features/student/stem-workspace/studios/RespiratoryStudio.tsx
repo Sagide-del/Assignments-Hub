@@ -50,12 +50,33 @@ export default function RespiratoryStudio({
     [selected, setSelected] = useState<RespiratoryStructure>("right-lung"),
     [cameraView, setCameraView] = useState<"front" | "back" | "side">("front"),
     [labels, setLabels] = useState(true),
+    [ribCage, setRibCage] = useState(false),
+    [compareGraphs, setCompareGraphs] = useState(false),
+    [prediction, setPrediction] = useState(() => {
+      try {
+        return (
+          localStorage.getItem(`respiratory-prediction:${userId}:${lab.id}`) ??
+          ""
+        );
+      } catch {
+        return "";
+      }
+    }),
     [running, setRunning] = useState(true),
     [speed, setSpeed] = useState(1),
     [ready, setReady] = useState(false),
     [notes, setNotes] = useState(""),
     [display, setDisplay] = useState({ time: 0, cycles: 0 });
   const [resetKey, setResetKey] = useState(0);
+  const grade = Number(String(lab.grade).match(/\d+/)?.[0] ?? 10);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        `respiratory-prediction:${userId}:${lab.id}`,
+        prediction,
+      );
+    } catch {}
+  }, [prediction, userId, lab.id]);
   const motion = useRef<RespiratoryMotion>({ time: 0, running: true }),
     lastPaint = useRef(0),
     config = useRef(state.config);
@@ -66,7 +87,8 @@ export default function RespiratoryStudio({
       last = performance.now();
     motion.current.running = true;
     const tick = (now: number) => {
-      motion.current.time += Math.min((now - last) / 1000, 0.1) * speed;
+      motion.current.time +=
+        Math.max(0, Math.min((now - last) / 1000, 0.1)) * speed;
       last = now;
       if (now - lastPaint.current > 100) {
         lastPaint.current = now;
@@ -111,7 +133,8 @@ export default function RespiratoryStudio({
     (ready || tab === "graphs") &&
     !state.recorded &&
     display.cycles >= 2 &&
-    notes.trim().length >= 12;
+    notes.trim().length >= 12 &&
+    prediction.trim().length >= 12;
   return (
     <div className="mx-auto max-w-[1500px] space-y-5 pb-6 text-slate-800">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5">
@@ -171,6 +194,53 @@ export default function RespiratoryStudio({
           {studio.message}
         </p>
       )}
+      <section
+        aria-label="Respiratory investigation"
+        className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">
+            How does breathing depth change effective ventilation?
+          </h2>
+          <span className="text-[10px] text-[#526b10]">
+            {grade <= 10
+              ? "Structure → pressure → airflow"
+              : grade === 11
+                ? "Compare ventilation using evidence"
+                : "Evaluate assumptions and explain the limits"}
+          </span>
+        </div>
+        <ol className="mt-4 flex flex-wrap gap-2 text-[10px] text-slate-500">
+          {[
+            "Explore the anatomy",
+            "Predict a difference",
+            "Change one condition",
+            "Compare three trials",
+            "Explain your evidence",
+          ].map((text, i) => (
+            <li key={text} className="rounded-lg bg-slate-50 px-3 py-2">
+              {i + 1} · {text}
+            </li>
+          ))}
+        </ol>
+        <label className="mt-4 block text-xs text-slate-500">
+          Your prediction and reasoning
+          <textarea
+            aria-label="Respiratory prediction"
+            value={prediction}
+            onChange={(e) => setPrediction(e.target.value)}
+            maxLength={600}
+            rows={2}
+            placeholder="If the total air moved per minute stays the same, I predict… because…"
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:ring-2 focus:ring-[#a5b582]"
+          />
+        </label>
+        <p className="mt-2 text-[10px] leading-5 text-slate-500">
+          Breathing moves air; gas exchange transfers gases between air and
+          blood; cellular respiration releases energy in cells. This
+          investigation focuses on breathing and ventilation.
+        </p>
+      </section>
       {(tab === "anatomy" || tab === "graphs") && (
         <>
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -221,6 +291,16 @@ export default function RespiratoryStudio({
                   </div>
                   <label className="flex min-h-9 items-center gap-2 text-[11px] text-slate-500">
                     <input
+                      aria-label="Show rib cage"
+                      type="checkbox"
+                      checked={ribCage}
+                      onChange={(e) => setRibCage(e.target.checked)}
+                      className="accent-[#667e3c]"
+                    />
+                    Rib cage
+                  </label>
+                  <label className="flex min-h-9 items-center gap-2 text-[11px] text-slate-500">
+                    <input
                       aria-label="Show anatomical labels"
                       type="checkbox"
                       checked={labels}
@@ -230,47 +310,80 @@ export default function RespiratoryStudio({
                     Labels
                   </label>
                 </div>
-                <div className="relative h-[520px] sm:h-[620px]">
-                  <Suspense
-                    fallback={
-                      <p className="p-6 text-sm">
-                        Preparing the anatomical viewer…
-                      </p>
-                    }
-                  >
-                    <Scene
-                      config={state.config}
-                      motion={motion}
-                      view={view}
-                      selected={selected}
-                      cameraView={cameraView}
-                      resetKey={resetKey}
-                      labels={labels}
-                      onSelect={inspect}
-                      onLoaded={() => {
-                        if (!ready) {
-                          motion.current.time = 0;
-                          setDisplay({ time: 0, cycles: 0 });
-                        }
-                        setReady(true);
-                      }}
-                    />
-                  </Suspense>
-                  <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/80 bg-white/90 px-4 py-3 text-xs backdrop-blur-sm">
-                    <span className="flex items-center gap-2 text-slate-700">
-                      <span
-                        className={`h-2 w-2 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`}
+                <div
+                  className={compareGraphs ? "grid min-w-0 lg:grid-cols-2" : ""}
+                >
+                  <div className="relative h-[350px] sm:h-[560px]">
+                    <Suspense
+                      fallback={
+                        <p className="p-6 text-sm">
+                          Preparing the anatomical viewer…
+                        </p>
+                      }
+                    >
+                      <Scene
+                        config={state.config}
+                        motion={motion}
+                        view={view}
+                        selected={selected}
+                        cameraView={cameraView}
+                        resetKey={resetKey}
+                        labels={labels}
+                        ribCage={ribCage}
+                        onSelect={inspect}
+                        onLoaded={() => {
+                          if (!ready) {
+                            motion.current.time = 0;
+                            setDisplay({ time: 0, cycles: 0 });
+                          }
+                          setReady(true);
+                        }}
                       />
-                      {running
-                        ? sample.inhale
-                          ? "Inspiration · air entering"
-                          : "Expiration · air leaving"
-                        : "Breathing paused"}
-                    </span>
-                    <span className="font-mono text-slate-500">
-                      {display.cycles} complete breaths
-                    </span>
+                    </Suspense>
+                    <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/80 bg-white/90 px-4 py-3 text-xs backdrop-blur-sm">
+                      <span className="flex items-center gap-2 text-slate-700">
+                        <span
+                          className={`h-2 w-2 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`}
+                        />
+                        {running
+                          ? sample.inhale
+                            ? "Inspiration · air entering"
+                            : "Expiration · air leaving"
+                          : "Breathing paused"}
+                      </span>
+                      <span className="font-mono text-slate-500">
+                        {display.cycles} complete breaths
+                      </span>
+                    </div>
                   </div>
+                  {compareGraphs && (
+                    <Suspense
+                      fallback={<p className="p-4 text-xs">Preparing graph…</p>}
+                    >
+                      <RespiratoryGraphs
+                        config={state.config}
+                        time={display.time}
+                        running={running}
+                        compact
+                      />
+                    </Suspense>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+                  <p className="text-[11px] text-slate-500">
+                    {sample.inhale
+                      ? "Inspiration: diaphragm contracts → chest volume increases → alveolar pressure falls below atmospheric pressure."
+                      : "Expiration: diaphragm relaxes → elastic recoil reduces volume → alveolar pressure rises above atmospheric pressure."}
+                  </p>
+                  <button
+                    className="min-h-9 rounded-lg border px-3 text-xs"
+                    aria-pressed={compareGraphs}
+                    onClick={() => setCompareGraphs((v) => !v)}
+                  >
+                    {compareGraphs
+                      ? "Hide comparison graph"
+                      : "Show graph with model"}
+                  </button>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4">
                   <p className="max-w-md text-[11px] leading-6 text-slate-500">
@@ -364,7 +477,7 @@ export default function RespiratoryStudio({
                           rate: Number(e.target.value),
                         })
                       }
-                      className="mt-3 w-full accent-rose-700"
+                      className="mt-3 w-full accent-[#667e3c]"
                     />
                   </label>
                   <label className="block">
@@ -387,7 +500,7 @@ export default function RespiratoryStudio({
                           tidalVolume: Number(e.target.value),
                         })
                       }
-                      className="mt-3 w-full accent-rose-700"
+                      className="mt-3 w-full accent-[#667e3c]"
                     />
                   </label>
                 </div>
@@ -463,9 +576,9 @@ export default function RespiratoryStudio({
                 ventilation = rate × (tidal volume − 0.15 L dead space).
               </p>
               <p className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] leading-6 text-slate-500">
-                Try all three breathing patterns. Each moves 6 L/min overall,
-                but rapid shallow breathing sends less fresh air to gas-exchange
-                surfaces in this model.
+                {state.observations.length >= 3
+                  ? "All three presets move 6 L/min overall. Compare their alveolar ventilation to explain why depth matters under the model’s fixed dead-space assumption."
+                  : "Try quiet, rapid-shallow, and slower-deeper breathing. Keep track of total ventilation and alveolar ventilation before drawing a conclusion."}
               </p>
             </section>
             <section className="rounded-xl border bg-white p-5">
@@ -482,7 +595,7 @@ export default function RespiratoryStudio({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  maxLength={2000}
+                  maxLength={1300}
                   placeholder="Describe diaphragm movement, airflow, or the difference between breathing patterns."
                   className="mt-2 w-full rounded-lg border border-slate-300 p-3 text-sm leading-6 focus:border-rose-400 focus:outline-none"
                 />
@@ -498,13 +611,13 @@ export default function RespiratoryStudio({
                         elapsed:
                           (Math.min(20, display.cycles) * 60) /
                           state.config.rate,
-                        notes,
+                        notes: `Prediction: ${prediction.trim()}\nEvidence: ${notes.trim()}`,
                       })
                     ) {
                       setNotes("");
                     }
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-rose-800 px-4 text-xs font-semibold text-white disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#526b10] px-4 text-xs font-semibold text-white disabled:opacity-40"
                 >
                   {state.recorded ? (
                     <CheckCircle2 className="h-4 w-4" />

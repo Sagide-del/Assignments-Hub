@@ -49,12 +49,14 @@ export default function RespiratoryGraphs({
   config,
   time,
   running,
+  compact = false,
 }: {
   config: RespiratoryConfig;
   time: number;
   running: boolean;
+  compact?: boolean;
 }) {
-  const [mode, setMode] = useState<Mode>("gases"),
+  const [mode, setMode] = useState<Mode>(compact ? "volume" : "gases"),
     [windowSeconds, setWindow] = useState(20),
     [inspection, setInspection] = useState<number | null>(null);
   const plotHost = useRef<HTMLDivElement>(null),
@@ -154,27 +156,39 @@ export default function RespiratoryGraphs({
   return (
     <section
       aria-label="Live respiratory graphs"
-      className="min-w-0 space-y-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+      className={
+        compact
+          ? "min-w-0 space-y-3 rounded-xl border border-slate-200 bg-white p-3"
+          : "min-w-0 space-y-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+      }
     >
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
-            <LineChart className="h-3.5 w-3.5" />
-            Live graphs
-          </p>
-          <h2 className="mt-2 text-lg font-semibold tracking-tight">
-            See what changes with each breath
-          </h2>
-        </div>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${running ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
-        >
+      {!compact && (
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
+              <LineChart className="h-3.5 w-3.5" />
+              Live graphs
+            </p>
+            <h2 className="mt-2 text-lg font-semibold tracking-tight">
+              See what changes with each breath
+            </h2>
+          </div>
           <span
-            className={`h-1.5 w-1.5 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`}
-          />
-          {running ? "Following breathing" : "Paused with breathing"}
-        </span>
-      </header>
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${running ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`}
+            />
+            {running ? "Following breathing" : "Paused with breathing"}
+          </span>
+        </header>
+      )}
+      {compact && (
+        <p className="flex items-center gap-2 text-xs font-medium text-slate-600">
+          <LineChart size={14} />
+          Live comparison · {running ? "following breathing" : "paused"}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav
           aria-label="Respiratory graph type"
@@ -221,9 +235,11 @@ export default function RespiratoryGraphs({
         <figcaption className="text-sm font-semibold text-slate-800">
           {info.title}
         </figcaption>
-        <p className="mt-2 text-xs leading-6 text-slate-500">
-          {info.description}
-        </p>
+        {!compact && (
+          <p className="mt-2 text-xs leading-6 text-slate-500">
+            {info.description}
+          </p>
+        )}
         <div
           ref={plotHost}
           tabIndex={0}
@@ -392,7 +408,7 @@ export default function RespiratoryGraphs({
           a sample. End or Esc returns to live.
         </p>
       </figure>
-      {mode === "gases" && (
+      {!compact && mode === "gases" && (
         <>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {[
@@ -450,7 +466,13 @@ export default function RespiratoryGraphs({
           </details>
         </>
       )}
-      <details className="border-t pt-3">
+      {compact && mode === "gases" && (
+        <p className="text-[10px] leading-5 text-slate-500">
+          Fixed example gas fractions at the mouth; these curves do not measure
+          oxygen uptake into blood.
+        </p>
+      )}
+      <details className={compact ? "hidden" : "border-t pt-3"}>
         <summary className="cursor-pointer text-[11px] font-medium text-slate-500">
           View numeric samples
         </summary>
@@ -481,7 +503,13 @@ export default function RespiratoryGraphs({
           </table>
         </div>
       </details>
-      <p className="flex items-start gap-2 text-[11px] leading-6 text-slate-500">
+      <p
+        className={
+          compact
+            ? "hidden"
+            : "flex items-start gap-2 text-[11px] leading-6 text-slate-500"
+        }
+      >
         <Activity className="mt-1 h-3.5 w-3.5 shrink-0" />
         Use the breathing controls beside this graph to change rate or depth.
         Playback and pause are shared with the 3D lungs; a new breathing

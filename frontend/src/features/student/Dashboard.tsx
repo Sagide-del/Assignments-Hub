@@ -25,6 +25,7 @@ import {
   FileCheck2,
   FlaskConical,
   Music2,
+  Dumbbell,
   LibraryBig,
   Search,
   type LucideIcon,
@@ -551,7 +552,7 @@ export function StudentDashboard() {
               if (tool.href === '/student/kjsea-mock-test') return isKjseaGrade(contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade);
               if (tool.href === '/student/my-pathway') return isPathwayGuidanceGrade(contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade);
               return true;
-            }).map(tool => tool.href === "/student/stem-labs" && labConfig ? {...tool, href: labConfig.route, title: labConfig.label, Icon: labConfig.category === "ARTS_MUSIC" ? Music2 : tool.Icon} : tool)).map(
+            }).map(tool => tool.href === "/student/stem-labs" && labConfig ? {...tool, href: labConfig.route, title: labConfig.label, Icon: labConfig.category === "ARTS_MUSIC" ? Music2 : labConfig.category === "ARTS_SPORTS" ? Dumbbell : tool.Icon} : tool)).map(
               ({ title, href, Icon }) => (
                 <Link
                   key={href}

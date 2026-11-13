@@ -22,6 +22,7 @@ import {
   FileText,
   FlaskConical,
   Music2,
+  Dumbbell,
   GraduationCap,
   LayoutDashboard,
   LibraryBig,
@@ -105,6 +106,7 @@ function iconForNavigation(path: string): LucideIcon {
   if (path.includes("learning-coach")) return BrainCircuit;
   if (path === "/teacher/music") return Music2;
   if (path.startsWith("/student/labs/music")) return Music2;
+  if (path.startsWith("/student/labs/sports")) return Dumbbell;
   if (path.includes("stem") || path.startsWith("/student/labs")) return FlaskConical;
   if (path.includes("learn-skills") || path.includes("skill-studio"))
     return GraduationCap;

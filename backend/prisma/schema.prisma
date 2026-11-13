@@ -383,6 +383,7 @@ model School {
 }
 
 model User {
+  sportsLabProgress Sports_Lab_Progress[]
   musicProductionProjects Music_Project[] @relation("MusicComposer")
   musicProductionReviews Music_Project[] @relation("MusicReviewer")
   musicProjects Music_Studio_Project[]
@@ -3248,4 +3249,15 @@ model Music_Project {
  song Music_Song? @relation(fields:[song_id],references:[id],onDelete:SetNull)
  @@index([student_id, updated_at])
  @@index([status,submitted_at])
+}
+
+model Sports_Lab_Progress {
+ id String @id @default(uuid())
+ student_id Int
+ simulation String
+ score Int @default(0)
+ completed_at DateTime?
+ student User @relation(fields:[student_id],references:[id],onDelete:Cascade)
+ @@unique([student_id,simulation])
+ @@index([student_id,completed_at])
 }

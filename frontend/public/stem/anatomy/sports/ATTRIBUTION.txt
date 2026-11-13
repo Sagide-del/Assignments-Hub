@@ -1,0 +1,11 @@
+Assignment Hub sports anatomy and thorax atlas subsets.
+Source: Z-Anatomy / Gauthier Kervyn and Marcin Zielinski, derived from BodyParts3D / Kousaku Okubo, DBCLS.
+Source repository: https://github.com/Z-Anatomy/Models-of-human-anatomy
+Pinned commit: 6ffffec1d9b17ed3db355903bbd762582cb2328e
+License: Creative Commons Attribution–ShareAlike 4.0 International.
+https://creativecommons.org/licenses/by-sa/4.0/
+Original BodyParts3D notice: CC-BY-SA 2.1 Japan. See UPSTREAM-LICENSE.txt.
+Modifications: skeletal and thorax subset extraction, removal of atlas label objects, polygon reduction on large meshes, smooth normals and glTF export. Display materials and illustrative motion applied at runtime.
+Adapted anatomical model data are shared under CC BY-SA 4.0. Retain attribution and share adaptations under the same license. No endorsement is implied.
+Reproducible source: frontend/scripts/assets/export-sports-atlas.py
+The muscle, energy and neural pathways are original teaching schematics and do not constitute measured physiological data.
