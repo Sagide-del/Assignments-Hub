@@ -6,6 +6,7 @@ const { createRequire } = require("node:module"),
 const { provisionSportsDemo } = require("./provision-sports-demo.cjs");
 const {
   passwordHash: DEMO_HASH,
+  provisionUntil,
 } = require("../../src/student/sports/demo-seed.json");
 function isTargetProduction(env) {
   return (
