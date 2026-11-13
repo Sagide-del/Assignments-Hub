@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'backend/src/analytics/**'
+      - 'backend/src/__tests__/acquisition.spec.ts'
       - 'backend/src/kjsea/**'
       - 'backend/src/cms/**'
       - 'backend/src/sba/**'
@@ -190,6 +192,9 @@ jobs:
       - name: Wait for central content library
         working-directory: frontend
         run: node scripts/check-content-api.mjs
+      - name: Wait for first-party journey tracking
+        working-directory: frontend
+        run: node scripts/check-acquisition-api.mjs
       - name: Install live verification browser
         run: |
           npm install --prefix "$RUNNER_TEMP/rbac-browser" --no-package-lock --ignore-scripts playwright@1.56.1

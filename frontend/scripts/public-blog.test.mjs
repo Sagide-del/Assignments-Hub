@@ -5,12 +5,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { generateBlog, posts } from './generate-public-blog.mjs';
 
-test('generates five searchable branded blog articles', async () => {
+test('generates six searchable branded blog articles', async () => {
   const root = await mkdtemp(join(tmpdir(), 'assignment-hub-blog-'));
   await writeFile(join(root, 'sitemap.xml'), '<?xml version="1.0"?><urlset></urlset>');
   await generateBlog(root);
-  assert.equal(posts.length, 5);
-  assert.equal(new Set(posts.map((post) => post.slug)).size, 5);
+  assert.equal(posts.length, 6);
+  assert.equal(new Set(posts.map((post) => post.slug)).size, posts.length);
   const index = await readFile(join(root, 'blog', 'index.html'), 'utf8');
   assert.match(index, /Kenyan Parent/);
   for (const post of posts) {

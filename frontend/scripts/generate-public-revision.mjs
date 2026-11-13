@@ -113,31 +113,16 @@ function shell(title, description, path, body, schema) {
 }
 export function renderDirectory(pages, taxonomy = seed) {
   const grades = Array.from({ length: 12 }, (_, i) => i + 1);
-  const sections = grades
-    .map((grade) => {
-      const subjects = [
-        ...new Set([
-          ...taxonomy.filter((t) => t.grade === grade).map((t) => t.subject),
-          ...pages.filter((p) => p.grade === grade).map((p) => p.subject),
-        ]),
-      ].sort();
-      return `<section id="grade-${grade}" class="grade-section"><div class="section-heading"><h2>Grade ${grade}</h2><span class="muted">${grade <= 6 ? "Primary school" : grade <= 9 ? "Junior school" : "Senior school"}</span></div><div class="subject-grid">${subjects
-        .map((subject) => {
-          const p = pages.find(
-            (p) => p.grade === grade && p.subject === subject,
-          );
-          return p
-            ? `<a class="subject available" href="${pathFor(p)}"><span>${e(subject)}</span><small>${p.topics.reduce((n, t) => n + t.questions.length, 0)} free questions <span aria-hidden="true">↗</span></small></a>`
-            : `<div class="subject unavailable"><span>${e(subject)}</span><small>Samples coming soon</small></div>`;
-        })
-        .join("")}</div></section>`;
-    })
-    .join("");
+  const cards = pages.map(p => `<a class="subject available" href="${pathFor(p)}"><span>Grade ${p.grade} · ${e(p.subject)}</span><small>${p.topics.reduce((n,t)=>n+t.questions.length,0)} free questions <span aria-hidden="true">↗</span></small></a>`).join('');
+  const planned = grades.map(grade => {
+    const subjects = [...new Set(taxonomy.filter(t=>t.grade===grade).map(t=>t.subject))].sort();
+    return `<p><strong>Grade ${grade}:</strong> ${subjects.map(e).join(', ') || 'Subject coverage being prepared'}</p>`;
+  }).join('');
   return shell(
     "Free CBC Revision by Grade & Subject | Assignment Hub Kenya",
-    "Find free CBC revision questions and explained answers for Kenyan learners. Browse the Grade 1–12 subject directory and try available practice samples.",
+    "Try free Grade 7 Mathematics, Integrated Science and Sports revision questions in Kenya, with worked answers and no login. More grades are being prepared.",
     "/free-revision/",
-    `<section class="hero"><span class="eyebrow">Kenya · Free practice</span><h1>A clearer way to revise.</h1><p>Choose your grade and subject. Try available questions, check your understanding and learn from every answer.</p><span class="badge">No login · No payment · Worked answers</span></section><nav class="grade-nav" aria-label="Choose a grade">${grades.map((g) => `<a href="#grade-${g}">Grade ${g}</a>`).join("")}</nav><p class="availability">Available now: ${pages.map((p) => `Grade ${p.grade} ${e(p.subject)}`).join(", ")}. The directory shows planned coverage, not complete published content. Senior-school subjects depend on the learner’s pathway and electives.</p>${sections}<section class="panel"><h2>How to make practice count</h2><ol><li>Try the questions before opening the worked answers.</li><li>Explain the method aloud or write it in your own words.</li><li>Return tomorrow and attempt the difficult questions again.</li></ol><p>Subject labels come from our curriculum directory; outlines are not proof of official approval or exhaustive curriculum coverage.</p></section>`,
+    `<section class="hero"><span class="eyebrow">Kenya · Free practice</span><h1>A clearer way to revise.</h1><p>Start with a ready-to-use practice set. Answer the questions, check the worked answers and try again.</p><span class="badge">No login · No payment · Worked answers</span></section><section aria-labelledby="available-heading"><h2 id="available-heading">Available practice</h2><div class="subject-grid">${cards || '<p>New practice is being prepared. Please check back soon.</p>'}</div></section><details class="panel"><summary><strong>More grades coming soon</strong></summary><p>Planned coverage for Grades 1–12. These subjects are not all available as free practice yet. Senior-school subjects depend on pathway and electives.</p>${planned}</details><section class="panel"><h2>Make your ten minutes count</h2><ol><li>Answer before opening the worked explanation.</li><li>Explain one corrected answer in your own words.</li><li>Come back tomorrow and try the difficult questions again.</li></ol><p><a href="/blog/grade-7-mathematics-revision-help/">Help your child with fractions</a> · <a href="/blog/kjsea-past-papers-and-mocks/">A parent’s guide to KJSEA revision</a> · <a href="/blog/cbc-grading-levels-explained/">Understand CBC report-card levels</a></p></section>`,
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
@@ -289,6 +274,9 @@ export async function generatePublic({ publicDir = root, feed } = {}) {
     sitemapPath,
     sitemap.replace("</urlset>", entries + "\n</urlset>"),
   );
+  await mkdir(resolve(publicDir, 'revision/assets'), { recursive: true });
+  const apiBase = (process.env.VITE_API_URL || 'https://assignments-hub-api.onrender.com/api/v1').replace(/\/$/, '');
+  await writeFile(resolve(publicDir, 'revision/assets/acquisition-config.json'), JSON.stringify({ endpoint: `${apiBase}/analytics/acquisition/events` }));
   const katexDir = dirname(fileURLToPath(import.meta.resolve("katex")));
   await mkdir(resolve(publicDir, "revision/assets/katex"), { recursive: true });
   await cp(

@@ -12,7 +12,7 @@
     "prebuild": "node scripts/generate-revision.mjs && node scripts/generate-public-revision.mjs && node scripts/generate-home-seo.mjs && node scripts/generate-public-blog.mjs",
     "test:cheatsheet": "node --test scripts/cheatsheet.test.mjs",
     "test:student-scope": "node --test scripts/student-scope.test.mjs",
-    "test:revision": "node --test scripts/revision.test.mjs scripts/home-seo.test.mjs scripts/public-revision.test.mjs scripts/public-blog.test.mjs",
+    "test:revision": "node --test scripts/revision.test.mjs scripts/home-seo.test.mjs scripts/public-revision.test.mjs scripts/public-blog.test.mjs scripts/acquisition.test.mjs",
     "test:assignments": "node --test scripts/assignment-list.test.mjs scripts/assignment-catalogue.test.mjs scripts/review-presentation.test.mjs",
     "test:skills": "node --test scripts/skill-progress.test.mjs scripts/skill-lessons.test.mjs",
     "check:firstaid-assets": "node scripts/check-firstaid-assets.mjs",

@@ -1,3 +1,4 @@
+import { trackAcquisition } from '../../utils/acquisition';
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -146,6 +147,7 @@ export function TrialActivationPage() {
       ["FAILED", "CANCELLED", "AWAITING_VERIFICATION"].includes(p.status)
     )
       key.current = crypto.randomUUID();
+    trackAcquisition("payment_attempt");
     stk.mutate();
   };
   return (

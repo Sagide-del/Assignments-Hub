@@ -1,9 +1,10 @@
+import './acquisition.mjs';
 export function scoreQuiz(answers, correctAnswers) {
   return correctAnswers.reduce((score, answer, index) => score + Number(answers[index] === answer), 0);
 }
 
-// These events stay inside the page. No personal information, answers, cookies,
-// storage or network analytics are collected by this module.
+// Learning events contain only a stage and resource label. The first-party
+// acquisition listener records anonymous stages, never answers or scores.
 export function emitLearningEvent(name, resource) {
   window.dispatchEvent(new CustomEvent('assignmenthub:learning', {
     detail: { name, resource },

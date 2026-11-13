@@ -18,8 +18,10 @@ test("starter subjects group actual public topics without inventing coverage", (
   assert.equal(pages.length, 2);
   assert.equal(pages.find((p) => p.subject === "Mathematics").topics.length, 2);
   const html = renderDirectory(pages);
-  assert(html.includes('id="grade-12"'));
-  assert(html.includes("Samples coming soon"));
+  assert(html.includes('<strong>Grade 12:</strong>'));
+  assert(html.indexOf('Available practice') < html.indexOf('<details'));
+  assert(!html.includes('Samples coming soon'));
+  assert(html.includes("More grades coming soon"));
   assert(html.includes('href="/revision/grade-7/mathematics/"'));
   assert(!html.includes('href="/revision/grade-12/'));
 });

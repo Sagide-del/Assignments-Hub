@@ -1,4 +1,5 @@
-import { useId, useState, type FormEvent } from "react";
+import { trackAcquisition } from '../utils/acquisition';
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, School, ShieldCheck, Eye, EyeOff } from "lucide-react";
@@ -57,6 +58,7 @@ export default function IndependentRegister() {
   );
 }
 export function IndependentRegistrationForm() {
+  useEffect(() => { trackAcquisition("registration_open"); }, []);
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
@@ -100,6 +102,7 @@ export function IndependentRegistrationForm() {
         email: form.email.trim().toLowerCase() || undefined,
         password: form.password,
       });
+      trackAcquisition("registration_complete");
       setAccount(result);
       await continueToPayment(result);
     },
