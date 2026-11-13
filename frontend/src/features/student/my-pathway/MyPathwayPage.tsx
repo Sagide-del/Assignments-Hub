@@ -1,3 +1,4 @@
+import { Grade10SelectionGuide } from './Grade10SelectionGuide';
 import { useState } from 'react';
 import { PageHeader } from '../../../components/ui/Saas';
 import { useAuthStore } from '../../../store/auth.store';
@@ -25,6 +26,8 @@ export function MyPathwayPage() {
   const user = useAuthStore((state) => state.user);
   const tier = gradeTier(user?.grade);
   const [tab, setTab] = useState<MyPathwayTab>('dashboard');
+
+  if (Number(user?.grade?.match(/\d+/)?.[0]) === 9) return <Grade10SelectionGuide />;
 
   if (tier === 'senior') return <SeniorPathwayExecution />;
 

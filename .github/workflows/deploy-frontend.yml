@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'backend/src/career/**'
+      - 'backend/src/__tests__/matcher.spec.ts'
       - 'backend/src/analytics/**'
       - 'backend/src/__tests__/acquisition.spec.ts'
       - 'backend/src/kjsea/**'
@@ -192,6 +194,9 @@ jobs:
       - name: Wait for central content library
         working-directory: frontend
         run: node scripts/check-content-api.mjs
+      - name: Wait for Grade 10 guide storage
+        working-directory: frontend
+        run: node scripts/check-grade10-api.mjs
       - name: Wait for first-party journey tracking
         working-directory: frontend
         run: node scripts/check-acquisition-api.mjs
@@ -212,6 +217,7 @@ jobs:
           node scripts/auth-ui.browser.cjs
           node scripts/homepage.browser.cjs
           node scripts/public-revision.browser.cjs
+          node scripts/grade10-guide.browser.cjs
           node scripts/static-seo.browser.cjs
       - name: Verify live SBA import access restrictions
         working-directory: frontend

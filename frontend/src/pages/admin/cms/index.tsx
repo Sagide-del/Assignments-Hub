@@ -63,6 +63,7 @@ export default function CmsDashboard() {
           </Link>
         }
       />
+      <Link to="/platform/subject-combinations" className="inline-flex min-h-11 items-center text-sm font-semibold text-slate-600">Grade 10 subject combinations →</Link>
       {message && (
         <p
           role="status"

@@ -338,7 +338,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
                     strokeWidth={1.75}
                     aria-hidden="true"
                   />
-                  <span className="truncate">{item.to === '/student/my-pathway' && gradeTier(studentGrade) === 'senior' ? 'My Senior Journey' : item.label}</span>
+                  <span className="truncate">{item.to === '/student/my-pathway' ? (Number(studentGrade?.match(/\d+/)?.[0]) === 9 ? 'Grade 10 Selection Guide' : gradeTier(studentGrade) === 'senior' ? 'Career Compass' : item.label) : item.label}</span>
                 </NavLink>
               );
             })}

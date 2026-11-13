@@ -383,6 +383,8 @@ model School {
 }
 
 model User {
+  grade10Choice Grade10CombinationChoice?
+
   weeklyTimetables   Study_Timetable[]
   cslHourLogs        CSL_Logbook[]         @relation("CslHourStudent")
   cslHourApprovals   CSL_Logbook[]         @relation("CslHourApprover")
@@ -1985,6 +1987,8 @@ model Pathway {
 //   universitiesIntl:  [{ name, country, programs: string[] }]
 //   nextSteps / extracurriculars / certifications / workExperience: string[]
 model Track {
+  grade10Choices Grade10CombinationChoice[]
+
   id        Int     @id @default(autoincrement())
   pathwayId Int     @map("pathway_id")
   pathway   Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
@@ -3122,4 +3126,36 @@ model ContentDistribution {
 
   @@index([module_id])
   @@index([audience, school_id, stream_id])
+}
+
+model MoE_Combination {
+  id          String                     @id @default(uuid())
+  code        String                     @unique
+  pathway     String
+  track       String
+  subjects    String[]
+  source_url  String
+  verified_at DateTime?
+  is_verified Boolean                    @default(false)
+  updated_at  DateTime                   @updatedAt
+  choices     Grade10CombinationChoice[]
+
+  @@index([is_verified, pathway, track])
+  @@map("moe_combinations")
+}
+
+model Grade10CombinationChoice {
+  id             String           @id @default(uuid())
+  student_id     Int              @unique
+  school_id      Int
+  combination_id String?
+  track_id       Int?
+  updated_at     DateTime         @updatedAt
+  student        User             @relation(fields: [student_id, school_id], references: [id, schoolId], onDelete: Cascade)
+  combination    MoE_Combination? @relation(fields: [combination_id], references: [id], onDelete: Restrict)
+  track          Track?           @relation(fields: [track_id], references: [id], onDelete: Restrict)
+
+  @@unique([student_id, school_id])
+  @@index([school_id])
+  @@map("grade10_combination_choices")
 }

@@ -1,3 +1,5 @@
+import CombinationCatalog from '../../pages/admin/cms/combinations';
+import { Grade10SelectionGuide } from '../../features/student/my-pathway/Grade10SelectionGuide';
 import NotFound from "../../pages/404";
 import SchoolSbaDashboard from "../../pages/admin/school/sba";
 import TeacherSba from "../../pages/teacher/sba";
@@ -334,6 +336,7 @@ export const router = createBrowserRouter([
             path: '/student/my-future',
             element: <Navigate to="/student/my-pathway" replace />,
           },
+          { path: '/student/career/navigator', element: <Grade10SelectionGuide /> },
           {
             path: '/student/my-pathway',
             element: <MyPathwayPage />,
@@ -538,6 +541,7 @@ export const router = createBrowserRouter([
           { path: '/platform/cms/create', element: <CmsCreatePage /> },
           { path: '/platform/cms/review/:id', element: <CmsReviewPage /> },
           { path: '/admin/cms/*', element: <CmsLegacyRedirect /> },
+          { path: '/platform/subject-combinations', element: <CombinationCatalog /> },
           { path: '/platform/analytics', element: <CmsAnalyticsPage /> },
 
           {
