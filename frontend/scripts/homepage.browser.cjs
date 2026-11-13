@@ -37,9 +37,9 @@ mkdirSync(artifacts, { recursive: true });
         exact: true,
       })
       .waitFor();
-    await staticPage
-      .getByText("P.O. Box 14069 · 00100 · Nairobi, Kenya", { exact: true })
-      .waitFor();
+    await staticPage.getByRole('link', { name: /WhatsApp support/ }).waitFor();
+    assert.equal(await staticPage.locator('.early-pricing').count(), 0);
+    assert.equal(await staticPage.getByRole('navigation', { name: 'Footer navigation' }).count(), 0);
     const hero = staticPage.locator("main>section").first();
     const h = await heading.boundingBox(),
       image = await hero.locator("#home-product-image").boundingBox();
@@ -85,13 +85,11 @@ mkdirSync(artifacts, { recursive: true });
     await page.evaluate(() => document.fonts.ready);
     const mobile = await page.evaluate(() => ({
       height: document.documentElement.scrollHeight,
-      pricing: document.querySelector('.early-pricing').getBoundingClientRect().bottom + scrollY,
       lungs: document.querySelector('#home-product-image').getBoundingClientRect().top + scrollY,
       practice: document.querySelector('[aria-labelledby="revision-heading"]').getBoundingClientRect().top + scrollY,
       problem: document.querySelector('[aria-labelledby="problem-heading"]').getBoundingClientRect().top + scrollY,
     }));
     assert(mobile.height <= 844 * 8, JSON.stringify(mobile));
-    assert(mobile.pricing <= 844, 'Pricing banner must fit the first mobile screen');
     assert(mobile.lungs < 844, 'Lungs must appear on the first mobile screen');
     assert(mobile.practice < mobile.problem, 'Free practice must appear before the Problem section');
     await page.getByRole('button', { name: 'Explore STEM Labs' }).click();

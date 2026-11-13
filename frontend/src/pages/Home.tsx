@@ -217,10 +217,6 @@ export default function Home() {
           </div>
         </section>
 
-        <a href="#pricing" className="early-pricing block bg-[#eaf7bb] px-4 py-4 text-center text-sm font-semibold text-[#101820] underline decoration-[#607d00]/40 underline-offset-4">
-          Individual: 300 KES/month <span aria-hidden="true">•</span> Schools: 200 KES/learner/year
-        </a>
-
         <section
           className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
           aria-labelledby="revision-heading"
@@ -666,48 +662,19 @@ export default function Home() {
       </main>
 
       <footer className="bg-[#0a1117] text-slate-300">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] lg:px-8">
-          <div>
-            <p className="font-bold text-white">Assignment Hub</p>
-            <p className="mt-2 text-sm">
-              CBC revision, topic-led assignments, AI study support and
-              practical skills for Grades 1–12.
-            </p>
-            <a
-              href={WHATSAPP_CONTACT_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-lg font-bold text-[#B5E61D] hover:text-white"
-            >
-              WhatsApp 0748 519 923
-            </a>
-            <p className="mt-3 text-sm text-slate-300">
-              P.O. Box 14069 · 00100 · Nairobi, Kenya
-            </p>
-          </div>
-          <nav
-            className="flex flex-wrap gap-x-5 gap-y-3 text-sm"
-            aria-label="Footer navigation"
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <p className="font-bold text-white">Assignment Hub</p>
+          <a
+            href={WHATSAPP_CONTACT_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 items-center gap-3 self-start rounded-lg text-sm font-semibold text-[#B5E61D] transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#B5E61D]"
           >
-            <a href="/about/" className="hover:text-white">
-              About
-            </a>
-            <a href="/free-revision/" className="hover:text-white">
-              Free revision
-            </a>
-            <a href="#for-parents" className="hover:text-white">
-              For parents
-            </a>
-            <a href="#for-schools" className="hover:text-white">
-              For schools
-            </a>
-            <a href="#pricing" className="hover:text-white">
-              Pricing
-            </a>
-            <Link to="/login" className="hover:text-white">
-              Login
-            </Link>
-          </nav>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 shrink-0" aria-hidden="true">
+              <path d="M20.52 3.48A11.86 11.86 0 0 0 12.05 0C5.44 0 .06 5.38.06 11.99c0 2.11.55 4.17 1.6 5.99L0 24l6.18-1.62a11.98 11.98 0 0 0 5.87 1.5h.01c6.61 0 11.99-5.38 11.99-11.99a11.9 11.9 0 0 0-3.53-8.41Zm-8.47 18.38a9.92 9.92 0 0 1-5.06-1.39l-.36-.21-3.75.98 1-3.66-.24-.38a9.9 9.9 0 0 1-1.52-5.21c0-5.5 4.48-9.98 9.98-9.98a9.9 9.9 0 0 1 7.06 2.93 9.9 9.9 0 0 1 2.92 7.06c0 5.5-4.48 9.98-9.98 9.98Zm5.47-7.47c-.3-.15-1.77-.87-2.04-.97-.28-.1-.48-.15-.68.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.18-.3-.02-.46.13-.61.13-.13.3-.35.45-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49s1.07 2.89 1.22 3.09c.15.2 2.1 3.2 5.09 4.49.71.31 1.27.49 1.71.63.72.23 1.37.2 1.88.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35Z" />
+            </svg>
+            <span>WhatsApp support <span className="block text-xs font-normal text-slate-300 sm:inline sm:pl-2">0748 519 923</span></span>
+          </a>
         </div>
         <div className="border-t border-white/10 px-4 py-5 text-center text-xs text-slate-500">
           © 2026 Andolih EdTech Studios. All rights reserved.
