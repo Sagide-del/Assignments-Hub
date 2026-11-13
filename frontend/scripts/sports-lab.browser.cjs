@@ -165,7 +165,7 @@ mkdirSync(out, { recursive: true });
           .getByRole("img", {
             name:
               id === "muscle"
-                ? "Interactive three-dimensional sarcomere schematic"
+                ? "Interactive three-dimensional muscle muscle cutaway"
                 : "Interactive anatomical atlas skeleton",
             exact: true,
           })
@@ -181,6 +181,58 @@ mkdirSync(out, { recursive: true });
           path: out + "/sports-skeleton.png",
           fullPage: true,
         });
+      }
+      if (id === "muscle") {
+        await page
+          .getByRole("button", { name: "Biceps brachii", exact: true })
+          .click();
+        await page.screenshot({
+          path: out + "/muscle-cutaway-desktop.png",
+          fullPage: true,
+        });
+        await page.getByRole("button", { name: /02.*Fibre/ }).click();
+        await page
+          .getByRole("img", {
+            name: "Interactive three-dimensional muscle fibre cutaway",
+            exact: true,
+          })
+          .waitFor();
+        await page
+          .getByRole("button", { name: "Mitochondria", exact: true })
+          .click();
+        await page.screenshot({
+          path: out + "/muscle-fibre-desktop.png",
+          fullPage: true,
+        });
+        await page.getByRole("button", { name: /03.*Sarcomere/ }).click();
+        await page
+          .getByRole("img", {
+            name: "Interactive three-dimensional muscle sarcomere cutaway",
+            exact: true,
+          })
+          .waitFor();
+        await page.getByRole("button", { name: /3 · Detach/ }).click();
+        await page
+          .getByText(
+            "A new ATP molecule binds myosin, allowing it to release actin.",
+            { exact: true },
+          )
+          .waitFor();
+        await page.screenshot({
+          path: out + "/muscle-sarcomere-desktop.png",
+          fullPage: true,
+        });
+        await page.setViewportSize({ width: 390, height: 844 });
+        assert.ok(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        );
+        await page.screenshot({
+          path: out + "/muscle-mobile.png",
+          fullPage: true,
+        });
+        await page.setViewportSize({ width: 1440, height: 1000 });
       }
       if (id === "reflex")
         await page
@@ -319,7 +371,9 @@ mkdirSync(out, { recursive: true });
     page = await context.newPage();
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(base + "/student/stem-labs/901", { waitUntil: "domcontentloaded" });
+    await page.goto(base + "/student/stem-labs/901", {
+      waitUntil: "domcontentloaded",
+    });
     await page.getByLabel("Respiratory prediction", { exact: true }).waitFor();
     assert.match(
       await page

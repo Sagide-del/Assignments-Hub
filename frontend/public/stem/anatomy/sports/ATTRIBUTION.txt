@@ -9,3 +9,11 @@ Modifications: skeletal and thorax subset extraction, removal of atlas label obj
 Adapted anatomical model data are shared under CC BY-SA 4.0. Retain attribution and share adaptations under the same license. No endorsement is implied.
 Reproducible source: frontend/scripts/assets/export-sports-atlas.py
 The muscle, energy and neural pathways are original teaching schematics and do not constitute measured physiological data.
+
+arm-muscles-atlas-v1.glb: right biceps (long and short heads), triceps
+(three heads), brachialis, scapula, humerus, radius and ulna, from the same
+pinned Z-Anatomy atlas revision. CC BY-SA 4.0. Adapted by selecting a subset,
+reducing dense meshes and converting to glTF; illustrative materials applied
+in the viewer. Geometry is a resting anatomical model, not a simulated elbow.
+Reproduction script: frontend/scripts/assets/export-muscle-atlas.py.
+Checksums and modification details: arm-muscles-manifest.json.

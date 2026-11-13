@@ -488,7 +488,7 @@ function SportsActivity({
               {a.id === "skeletal"
                 ? "Inspect the skeleton"
                 : a.id === "muscle"
-                  ? "Inside a sarcomere"
+                  ? "Muscle anatomy & movement"
                   : a.id === "reflex"
                     ? "Follow the neural pathway"
                     : a.id === "energy"
@@ -596,14 +596,6 @@ function SportsActivity({
                   Correct location: the femur is in the thigh.
                 </p>
               )}
-            </div>
-          )}
-          {a.id === "muscle" && (
-            <div className="flex flex-wrap gap-4 border-t border-slate-100 p-4 text-[11px] text-slate-500">
-              <span>Rose · actin</span>
-              <span>Blue · myosin</span>
-              <span>Gold · cross-bridges</span>
-              <span>Green · Z-lines</span>
             </div>
           )}
           {a.id === "energy" && (

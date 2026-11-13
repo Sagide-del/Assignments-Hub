@@ -27,3 +27,24 @@ Checks include model/assessment tests, isolated PostgreSQL migration and ownersh
 The explicit demo request is provisioned only during the configured production backend’s pre-deploy, within an initial 48-hour setup window. It creates one isolated SPORTSDEMO school, Grade 10 stream 10S and SPORTS1001 learner with a 14-day account expiry and a persisted Sports Science selection. The PIN is delivered privately to the owner; only its bcrypt hash is in the deployment seed. No existing account is reset, no subscription payment is fabricated and no email or STK request is sent. Subsequent deployments do not renew or overwrite the account. The setup window prevents deleted demos from being recreated indefinitely.
 
 The public capability response exposes only a demo-ready boolean after checking the expected active role, grade, expiry, credential hash and Sports Science scope. A separate one-off CI check verifies this readiness. Manual setup remains available through the explicit provision-sports-demo.cjs --apply command; it prints a newly generated PIN only in the invoking shell and checks login and access. Tests verify actual hashed-PIN login and persisted scope in PostgreSQL.
+
+### Muscle explorer revision
+
+The muscle activity now opens with actual atlas-derived right upper-limb
+geometry (biceps long/short heads, triceps heads, brachialis, scapula, humerus,
+radius and ulna). The bounded 645 KB asset is an adaptation of the existing
+pinned Z-Anatomy/BodyParts3D source under CC BY-SA 4.0, with exporter, provenance
+and attribution shipped alongside it. Materials are illustrative. This is
+resting anatomy, not a musculoskeletal force or elbow-joint simulation.
+
+Fibre and sarcomere tabs are separate procedural educational reconstructions.
+They provide selectable structure descriptions, a four-stage cross-bridge guide,
+pause/reset controls, and retain the existing calcium/ATP investigation model.
+Thin and thick filament lengths stay constant while overlap changes. Severe ATP
+depletion stops the illustrative cycle; it must not be presented as ordinary
+exercise fatigue. No clinical quantities or photorealism are claimed.
+
+Browser regression checks inspect all three scales, structure selection, manual
+ATP-detachment explanation, mobile overflow, and the existing investigations and
+respiratory persistence checks. Asset checks verify checksum, provenance, known
+muscle structures and size budget.

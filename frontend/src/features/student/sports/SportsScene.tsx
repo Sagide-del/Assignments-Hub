@@ -4,9 +4,9 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
   BONE_GUIDE,
-  sportsResult,
   type SportsId,
 } from "../../../../../backend/src/student/sports/sports-engine";
+import MuscleScene from "./MuscleScene";
 interface Props {
   kind: SportsId;
   config: Record<string, number>;
@@ -17,6 +17,13 @@ interface Props {
   onStimulus?: () => void;
 }
 export default function SportsScene(props: Props) {
+  return props.kind === "muscle" ? (
+    <MuscleScene config={props.config} running={props.running} />
+  ) : (
+    <AtlasScene {...props} />
+  );
+}
+function AtlasScene(props: Props) {
   const host = useRef<HTMLDivElement>(null),
     live = useRef(props);
   live.current = props;
@@ -66,8 +73,6 @@ export default function SportsScene(props: Props) {
     const body = new THREE.Group();
     scene.add(body);
     const targets: THREE.Mesh[] = [],
-      thin: THREE.Group[] = [],
-      plates: THREE.Mesh[] = [],
       heads: THREE.Mesh[] = [];
     function material(color: string) {
       return new THREE.MeshStandardMaterial({
@@ -85,74 +90,11 @@ export default function SportsScene(props: Props) {
       scene.add(m);
       return m;
     }
-    function rod(
-      a: THREE.Vector3,
-      b: THREE.Vector3,
-      r: number,
-      color: string,
-      parent: THREE.Object3D = scene,
-    ) {
-      const delta = b.clone().sub(a),
-        m = new THREE.Mesh(
-          new THREE.CylinderGeometry(r, r, delta.length(), 10),
-          material(color),
-        );
-      m.position.copy(a).add(b).multiplyScalar(0.5);
-      m.quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        delta.normalize(),
-      );
-      parent.add(m);
-      return m;
-    }
     const vec = (x: number, y: number, z = 0) => new THREE.Vector3(x, y, z);
     let path: THREE.CatmullRomCurve3 | undefined,
       impulse: THREE.Mesh | undefined,
       brain: THREE.Mesh | undefined;
-    if (props.kind === "muscle") {
-      for (const sign of [-1, 1]) {
-        const group = new THREE.Group();
-        scene.add(group);
-        thin.push(group);
-        const plate = new THREE.Mesh(
-          new THREE.BoxGeometry(0.08, 1.65, 0.65),
-          material("#596e65"),
-        );
-        scene.add(plate);
-        plates.push(plate);
-        for (const y of [-0.55, 0, 0.55]) {
-          rod(
-            vec(sign * 1.65, y, 0.1),
-            vec(sign * 0.25, y, 0.1),
-            0.035,
-            "#b8616c",
-            group,
-          );
-          for (let x = 0.35; x < 1.6; x += 0.14) {
-            const bead = new THREE.Mesh(
-              new THREE.SphereGeometry(0.048, 10, 8),
-              material("#c97780"),
-            );
-            bead.position.set(sign * x, y, 0.1);
-            group.add(bead);
-          }
-        }
-      }
-      for (const y of [-0.28, 0.28]) {
-        rod(vec(-0.85, y, 0), vec(0.85, y, 0), 0.08, "#667ea6");
-        for (let x = -0.7; x <= 0.7; x += 0.2) {
-          const head = rod(
-            vec(x, y, 0),
-            vec(x + 0.09, y + Math.sign(y) * 0.18, 0.08),
-            0.025,
-            "#c0a16c",
-          );
-          heads.push(head);
-        }
-      }
-      camera.position.set(0, 0.3, 5);
-      setStatus("ready");
-    } else {
+    {
       new GLTFLoader().load(
         "/stem/anatomy/sports/skeleton-atlas-v1.glb",
         (g) => {
@@ -298,19 +240,6 @@ export default function SportsScene(props: Props) {
         mat.color.set(selected ? "#9cac77" : "#ded7c5");
         mat.emissive.set(selected ? "#18200c" : "#000000");
       });
-      if (p.kind === "muscle") {
-        const contraction = sportsResult("muscle", p.config)[1].value / 100,
-          slide = contraction * 1.1 * (0.7 + 0.3 * Math.sin(time * 2));
-        thin.forEach((g, i) => (g.position.x = (i === 0 ? 1 : -1) * slide));
-        plates.forEach(
-          (m, i) => (m.position.x = (i === 0 ? -1 : 1) * (1.65 - slide)),
-        );
-        heads.forEach(
-          (m, i) =>
-            (m.rotation.z =
-              p.config.atp < 3 ? 0 : Math.sin(time * 4 + i) * 0.12),
-        );
-      }
       if (p.kind === "energy") {
         body.position.y = Math.sin(time * 5) * 0.025;
         heads.forEach((m, i) => {

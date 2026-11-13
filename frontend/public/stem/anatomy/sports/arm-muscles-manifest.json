@@ -1,0 +1,9 @@
+{
+  "source": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+  "revision": "6ffffec1d9b17ed3db355903bbd762582cb2328e",
+  "license": "CC-BY-SA-4.0",
+  "file": "arm-muscles-atlas-v1.glb",
+  "bytes": 645412,
+  "sha256": "6f4bce83df6f9f05c2c3a194bc1d9e0a97e60a63571db6b2cebb7a30ad0f1a6e",
+  "modifications": "Right upper-limb subset, polygon reduction, glTF conversion. Viewer applies illustrative material colours. Original shapes and attachment locations retained."
+}
