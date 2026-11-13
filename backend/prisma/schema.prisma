@@ -383,6 +383,7 @@ model School {
 }
 
 model User {
+  musicProjects Music_Studio_Project[]
   kjseaResult Student_KJSEA_Result?
 
   grade10Choice Grade10CombinationChoice?
@@ -3189,4 +3190,17 @@ model Student_KJSEA_Result {
   @@unique([student_id, school_id])
   @@index([school_id])
   @@map("student_kjsea_results")
+}
+
+model Music_Studio_Project {
+  id String @id @default(uuid())
+  student_id Int
+  title String
+  bpm Int @default(120)
+  time_signature String @default("4/4")
+  tracks_json Json
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  student User @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  @@index([student_id, updated_at])
 }

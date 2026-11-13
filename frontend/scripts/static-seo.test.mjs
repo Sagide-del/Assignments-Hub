@@ -37,6 +37,7 @@ test('unknown public or private routes are HTTP 404, never successful login resp
   }
   assert.equal(routeRequest({uri:'/revision/grade-7/mathematics/'},routes).uri,'/revision/grade-7/mathematics/index.html');
   assert.equal(routeRequest({uri:'/assets/app-abc.js'},routes).uri,'/assets/app-abc.js');
+  assert.equal(routeRequest({uri:'/assets/music-loops/sikuti_lead.wav'},routes).uri,'/assets/music-loops/sikuti_lead.wav');
 });
 test('generated CloudFront handler implements the same routes within AWS size limit', async () => {
   const root=await mkdtemp(join(tmpdir(),'seo-routing-'));

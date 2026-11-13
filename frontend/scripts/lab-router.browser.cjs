@@ -91,7 +91,7 @@ mkdirSync(artifacts, { recursive: true });
           .getByRole("heading", { name: "No activities published yet" })
           .waitFor();
       if (slug === "music")
-        await page.getByRole("heading", { name: "Rhythm and tempo" }).waitFor();
+        await page.getByRole("heading", { name: "Your composition", exact:true }).waitFor();
       await page.screenshot({
         path: `${artifacts}/${slug || "junior"}-desktop.png`,
         fullPage: true,

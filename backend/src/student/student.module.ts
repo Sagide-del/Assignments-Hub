@@ -1,3 +1,5 @@
+import { MusicStudioController } from "./music/music-studio.controller";
+import { MusicStudioService } from "./music/music-studio.service";
 import { StudentLabsService } from "./labs.service";
 import { StudentLabsController } from "./labs.controller";
 import { SubjectEnrollmentService } from "./subject-enrollment.service";
@@ -23,6 +25,7 @@ import {
 @Module({
   imports: [ConfigModule],
   providers: [
+    MusicStudioService,
     StudentLabsService,
     SubjectEnrollmentService,
     StudentAssignmentsService,
@@ -33,6 +36,7 @@ import {
   ],
   exports: [StudentScopeService, SubjectEnrollmentService],
   controllers: [
+    MusicStudioController,
     StudentLabsController,
     SubjectEnrollmentController,
     StudentContentController,

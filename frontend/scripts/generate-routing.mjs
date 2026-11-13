@@ -39,7 +39,7 @@ export function routeRequest(request, routes) {
       return request;
     }
   }
-  if (/\.(?:css|js|mjs|map|json|xml|txt|webmanifest|png|jpe?g|webp|avif|svg|ico|gif|woff2?|ttf|wasm|mp3|mp4|pdf|glb|gltf|bin)$/i.test(path)) return request;
+  if (/\.(?:css|js|mjs|map|json|xml|txt|webmanifest|png|jpe?g|webp|avif|svg|ico|gif|woff2?|ttf|wasm|mp3|wav|mp4|pdf|glb|gltf|bin)$/i.test(path)) return request;
   return {
     statusCode: 404, statusDescription: 'Not Found',
     headers: { 'content-type': { value: 'text/html; charset=utf-8' }, 'cache-control': { value: 'no-store' }, 'x-robots-tag': { value: 'noindex, nofollow' } },

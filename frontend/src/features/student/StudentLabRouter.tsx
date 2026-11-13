@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+const MusicStudio = lazy(() => import("../../pages/student/labs/music"));
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { ArrowRight, FlaskConical, RefreshCw } from "lucide-react";
@@ -59,6 +61,12 @@ export default function StudentLabRouter() {
           Open {lab.label}
         </Link>
       </div>
+    );
+  if (lab.category === "ARTS_MUSIC")
+    return (
+      <Suspense fallback={<p role="status">Loading Music Studio…</p>}>
+        <MusicStudio />
+      </Suspense>
     );
   const legacy =
     lab.category?.startsWith("STEM_") ||
