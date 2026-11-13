@@ -37,7 +37,9 @@ mkdirSync(artifacts, { recursive: true });
         exact: true,
       })
       .waitFor();
-    await staticPage.getByRole('link', { name: /WhatsApp support/ }).waitFor();
+    await staticPage.getByRole('link', { name: 'Book a demo on WhatsApp', exact: true }).waitFor();
+    assert.equal(await staticPage.locator('footer a, footer svg').count(), 0);
+    assert(!(await staticPage.locator('body').innerText()).includes('0748 519 923'));
     assert.equal(await staticPage.locator('.early-pricing').count(), 0);
     assert.equal(await staticPage.getByRole('navigation', { name: 'Footer navigation' }).count(), 0);
     const hero = staticPage.locator("main>section").first();
