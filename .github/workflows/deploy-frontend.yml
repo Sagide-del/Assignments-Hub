@@ -226,15 +226,15 @@ jobs:
           npm run preview -- --host 127.0.0.1 --port 4196 > "$RUNNER_TEMP/auth-preview.log" 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
-          node scripts/auth-ui.browser.cjs
-          node scripts/homepage.browser.cjs
-          node scripts/public-revision.browser.cjs
-          node scripts/music-production.browser.cjs
-          node scripts/sports-lab.browser.cjs
-          node scripts/music-studio.browser.cjs
-          node scripts/lab-router.browser.cjs
-          node scripts/grade10-guide.browser.cjs
-          node scripts/static-seo.browser.cjs
+          node scripts/run-browser-check.mjs scripts/auth-ui.browser.cjs
+          node scripts/run-browser-check.mjs scripts/homepage.browser.cjs
+          node scripts/run-browser-check.mjs scripts/public-revision.browser.cjs
+          node scripts/run-browser-check.mjs scripts/music-production.browser.cjs
+          node scripts/run-browser-check.mjs scripts/sports-lab.browser.cjs
+          node scripts/run-browser-check.mjs scripts/music-studio.browser.cjs
+          node scripts/run-browser-check.mjs scripts/lab-router.browser.cjs
+          node scripts/run-browser-check.mjs scripts/grade10-guide.browser.cjs
+          node scripts/run-browser-check.mjs scripts/static-seo.browser.cjs
       - name: Verify live SBA import access restrictions
         working-directory: frontend
         run: node scripts/check-sba-import-access.mjs
