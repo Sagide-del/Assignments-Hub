@@ -313,7 +313,50 @@ mkdirSync(out, { recursive: true });
       ),
     );
     await page.screenshot({ path: out + "/lungs-mobile.png", fullPage: true });
-    await page.reload();
+    // A decorative resource can outlive the application’s readiness. Keep it
+    // pending during reload so the restore check cannot regress to full-load waiting.
+    let releaseImage, imageFulfilled;
+    const imageGate = new Promise((resolve) => {
+      releaseImage = resolve;
+    });
+    const imageDone = new Promise((resolve) => {
+      imageFulfilled = resolve;
+    });
+    const slowImage = async (route) => {
+      await imageGate;
+      await route.fulfill({
+        status: 200,
+        contentType: "image/gif",
+        body: Buffer.from(
+          "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
+          "base64",
+        ),
+      });
+      imageFulfilled();
+    };
+    await page.route("**/__sports-restore-decorative.gif", slowImage);
+    await page.addInitScript(() => {
+      if (location.pathname === "/student/stem-labs/901") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          () => {
+            const image = document.createElement("img");
+            image.hidden = true;
+            image.src = "/__sports-restore-decorative.gif";
+            document.body.appendChild(image);
+          },
+          { once: true },
+        );
+      }
+    });
+    const imageRequested = page.waitForRequest(
+      "**/__sports-restore-decorative.gif",
+    );
+    let reloadedFully = false;
+    page.once("load", () => {
+      reloadedFully = true;
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByLabel("Respiratory prediction", { exact: true }).waitFor();
     assert.match(
       await page
@@ -321,6 +364,26 @@ mkdirSync(out, { recursive: true });
         .inputValue(),
       /Deeper breaths/,
     );
+    const restored = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("respiratory-studio-v1:10:901")),
+    );
+    assert.deepEqual(restored.events, stored.events);
+    await page
+      .getByRole("button", { name: "Notebook (1)", exact: true })
+      .waitFor();
+    await page.getByRole("img", { name: /Anatomical atlas model/ }).waitFor();
+    await page
+      .getByText("Lung lobes, airways and diaphragm", { exact: true })
+      .waitFor({ state: "hidden" });
+    await imageRequested;
+    assert.equal(
+      reloadedFully,
+      false,
+      "restoration was checked while a noncritical resource was still pending",
+    );
+    releaseImage();
+    await imageDone;
+    await page.unroute("**/__sports-restore-decorative.gif", slowImage);
     const other = await browser.newContext({
       storageState: await context.storageState(),
     });
@@ -363,5 +426,15 @@ mkdirSync(out, { recursive: true });
   }
 })().catch((e) => {
   console.error(e);
+  if (process.env.GITHUB_ACTIONS === "true") {
+    const detail = String(e.stack || e)
+      .slice(0, 3000)
+      .replace(/%/g, "%25")
+      .replace(/\r/g, "%0D")
+      .replace(/\n/g, "%0A");
+    console.log(
+      `::error title=Sports and respiratory browser verification::${detail}`,
+    );
+  }
   process.exit(1);
 });
