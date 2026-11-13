@@ -6,6 +6,7 @@ export interface LabConfig {
   label: string;
   route: string;
   category: string | null;
+  icon?: "Music";
 }
 export function useLabConfig() {
   const user = useAuthStore((s) => s.user);

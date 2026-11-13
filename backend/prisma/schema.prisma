@@ -383,6 +383,8 @@ model School {
 }
 
 model User {
+  musicProductionProjects Music_Project[] @relation("MusicComposer")
+  musicProductionReviews Music_Project[] @relation("MusicReviewer")
   musicProjects Music_Studio_Project[]
   kjseaResult Student_KJSEA_Result?
 
@@ -3203,4 +3205,47 @@ model Music_Studio_Project {
   updated_at DateTime @updatedAt
   student User @relation(fields: [student_id], references: [id], onDelete: Cascade)
   @@index([student_id, updated_at])
+}
+
+model Music_Song {
+ id String @id @default(uuid())
+ slug String @unique
+ title String
+ artist String
+ genre String
+ key String
+ bpm Int
+ time_signature String
+ chord_progression String[]
+ notation_json Json
+ lyrics_json Json?
+ isukuti_pattern Json?
+ audio_url String?
+ content_kind String @default("ORIGINAL")
+ source_note String
+ reference_url String?
+ projects Music_Project[]
+}
+model Music_Project {
+ id String @id @default(uuid())
+ student_id Int
+ title String
+ song_id String?
+ bpm Int @default(90)
+ time_signature String @default("6/8")
+ tracks_json Json
+ mp3_url String?
+ status String @default("DRAFT")
+ submitted_at DateTime?
+ reviewed_by Int?
+ reviewed_at DateTime?
+ score Float?
+ review_comment String?
+ created_at DateTime @default(now())
+ updated_at DateTime @updatedAt
+ student User @relation("MusicComposer",fields:[student_id],references:[id],onDelete:Cascade)
+ reviewer User? @relation("MusicReviewer",fields:[reviewed_by],references:[id],onDelete:SetNull)
+ song Music_Song? @relation(fields:[song_id],references:[id],onDelete:SetNull)
+ @@index([student_id, updated_at])
+ @@index([status,submitted_at])
 }

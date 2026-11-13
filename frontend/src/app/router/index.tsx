@@ -5,6 +5,7 @@ import SchoolSbaDashboard from "../../pages/admin/school/sba";
 import TeacherSba from "../../pages/teacher/sba";
 import { TeacherAssignments } from "../../features/school-admin/TeacherAssignments";
 import { lazy } from 'react';
+const MusicAssessment = lazy(() => import("../../pages/teacher/MusicAssessment"));
 const StudentLabRouter = lazy(() => import("../../features/student/StudentLabRouter"));
 
 const StudentLibrary = lazy(() => import('../../pages/study-hub/library'));
@@ -150,6 +151,7 @@ const studentNav = [
 
 
 const teacherNav = [
+  {to:"/teacher/music",label:"Music submissions"},
   { to: "/teacher/sba", label: "SBA scorebook" },
   {
     to: '/teacher',
@@ -309,6 +311,7 @@ export const router = createBrowserRouter([
           },
           { path: '/student/labs', element: <StudentLabRouter /> },
           { path: '/student/labs/:kind', element: <StudentLabRouter /> },
+          { path: '/student/labs/music/:activity', element: <StudentLabRouter /> },
           {
             path: '/student/stem-labs',
             element: <Navigate to="/student/labs" replace />,
@@ -402,6 +405,7 @@ export const router = createBrowserRouter([
       {
         element: <DashboardLayout nav={teacherNav} />,
         children: [
+          {path:'/teacher/music',element:<MusicAssessment/>},
           {
             path: '/teacher',
             element: <TeacherDashboard />,

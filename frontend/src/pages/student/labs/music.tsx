@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Play,
@@ -251,6 +252,7 @@ export default function MusicStudio() {
   }
   return (
     <div className="mx-auto max-w-7xl space-y-4 text-[#101820]">
+      <nav aria-label="Music workspaces" className="flex flex-wrap gap-2"><span className="rounded-lg bg-[#101820] px-3 py-2 text-xs text-white">Loop studio</span><Link to="/student/labs/music/composition" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs">Songs, notation & production →</Link></nav>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">

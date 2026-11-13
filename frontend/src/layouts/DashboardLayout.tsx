@@ -1,3 +1,4 @@
+import { teacherApi } from "../api/teacher.api";
 import { useLabConfig } from "../hooks/useLabConfig";
 import { useStudentContentScope, studentToolAvailable } from '../hooks/useStudentContentScope';
 import "../workspace.css";
@@ -20,6 +21,7 @@ import {
   FileChartColumn,
   FileText,
   FlaskConical,
+  Music2,
   GraduationCap,
   LayoutDashboard,
   LibraryBig,
@@ -101,6 +103,8 @@ function iconForNavigation(path: string): LucideIcon {
   if (path.includes("kcse-papers") || path.includes("kjsea-mock-test"))
     return FileText;
   if (path.includes("learning-coach")) return BrainCircuit;
+  if (path === "/teacher/music") return Music2;
+  if (path.startsWith("/student/labs/music")) return Music2;
   if (path.includes("stem") || path.startsWith("/student/labs")) return FlaskConical;
   if (path.includes("learn-skills") || path.includes("skill-studio"))
     return GraduationCap;
@@ -133,6 +137,8 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
   const user = useAuthStore((s) => s.user);
   const contentScope = useStudentContentScope();
   const { labConfig } = useLabConfig();
+  const musicClasses = useQuery({queryKey:["teaching-classes",user?.id,user?.schoolId],queryFn:teacherApi.classes,enabled:user?.role==="TEACHER",staleTime:30000});
+  const teachesMusic = musicClasses.data?.some(c=>["music","musicanddance"].includes(c.subject.toLowerCase().replace(/&/g,"and").replace(/[^a-z]/g,"")))??false;
   const queryCache=useQueryClient();
   const scopeIdentity=contentScope.data ? JSON.stringify([contentScope.data.grade,contentScope.data.pathway,contentScope.data.track]) : '';
   useEffect(()=>{
@@ -213,7 +219,7 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
         if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(studentGrade) || gradeTier(studentGrade) === 'senior';
         return true;
       }).map(item => item.to === "/student/stem-labs" && labConfig ? {...item, to: labConfig.route, label: labConfig.label} : item)
-    : nav;
+    : nav.filter(item=>item.to!=="/teacher/music" || teachesMusic);
   const visibleNav =
     isStudent && user?.isIndependentTrial
       ? [

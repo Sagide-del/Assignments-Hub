@@ -98,7 +98,12 @@ describe("Dynamic lab router", () => {
           pathway: pathway as string | null,
           track: track as string | null,
         }),
-      ).toEqual({ label, route: `/student/labs/${slug}`, category });
+      ).toEqual({
+        label,
+        route: `/student/labs/${slug}`,
+        category,
+        ...(category === "ARTS_MUSIC" ? { icon: "Music" } : {}),
+      });
     },
   );
   test("junior and missing senior profiles retain honest fallback routes", () => {

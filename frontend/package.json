@@ -25,16 +25,18 @@
     "test:library": "node --test scripts/student-library.test.mjs",
     "test:math-readiness": "node --test scripts/math-readiness.test.mjs",
     "test:static-seo": "node --test scripts/static-seo.test.mjs",
-    "test:music": "node --test scripts/music.test.mjs"
+    "test:music": "node --test scripts/music.test.mjs scripts/music-production.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@tanstack/react-query": "^5.56.2",
+    "@tonejs/midi": "^2.0.28",
     "axios": "^1.7.7",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.12",
     "howler": "^2.2.4",
     "katex": "^0.18.1",
+    "lamejs": "npm:@breezystack/lamejs@^1.2.7",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -45,6 +47,7 @@
     "tesseract.js": "^7.0.0",
     "three": "^0.180.0",
     "tone": "^15.1.22",
+    "vexflow": "^4.2.5",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"
   },

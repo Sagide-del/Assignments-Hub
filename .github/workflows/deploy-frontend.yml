@@ -7,6 +7,7 @@ on:
       - 'backend/src/career/**'
       - 'backend/src/__tests__/matcher.spec.ts'
       - 'backend/src/__tests__/music-studio.spec.ts'
+      - 'backend/src/__tests__/music-production.spec.ts'
       - 'backend/src/analytics/**'
       - 'backend/src/__tests__/acquisition.spec.ts'
       - 'backend/src/kjsea/**'
@@ -225,6 +226,7 @@ jobs:
           node scripts/auth-ui.browser.cjs
           node scripts/homepage.browser.cjs
           node scripts/public-revision.browser.cjs
+          node scripts/music-production.browser.cjs
           node scripts/music-studio.browser.cjs
           node scripts/lab-router.browser.cjs
           node scripts/grade10-guide.browser.cjs

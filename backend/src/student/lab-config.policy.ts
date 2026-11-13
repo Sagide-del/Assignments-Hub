@@ -4,12 +4,18 @@ export interface LabConfig {
   label: string;
   route: string;
   category: LabCategory | null;
+  icon?: "Music";
 }
 const config = (
   label: string,
   slug: string,
   category: LabCategory,
-): LabConfig => ({ label, route: `/student/labs/${slug}`, category });
+): LabConfig => ({
+  label,
+  route: `/student/labs/${slug}`,
+  category,
+  ...(category === "ARTS_MUSIC" ? { icon: "Music" as const } : {}),
+});
 export function labConfigFor(student: {
   grade: number;
   pathway: string | null;
