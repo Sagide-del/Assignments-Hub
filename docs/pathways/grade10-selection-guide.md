@@ -69,3 +69,23 @@ workspace's enforced network allowlist rejected the connection. A reviewed draft
 adds the selection portal and the existing KEMIS mirror without removing current
 access. Apply/publish that environment configuration before retrieving official
 data. No 418/571 count or prerequisites are treated as verified in the meantime.
+
+## Owner-confirmed portal copy — 13 November 2026
+
+The owner supplied 60 records and explicitly confirmed they were copied from
+https://selection.education.go.ke/pathways. The supplied JSON is versioned at
+`backend/src/career/data/owner-supplied-combinations-20261113.json`, with an
+accompanying provenance/checksum manifest. This is owner-confirmed source review,
+not a claim that the assistant independently downloaded the portal. The copy
+contains 20 Applied Sciences, 20 Languages & Literature, and 20 Arts entries; it
+is not represented as the complete national catalogue. Original subject names
+are preserved.
+
+Migration `20261113160000_supplied_combination_reference` imports these records
+idempotently by code, activates unreviewed matching entries, and leaves existing
+reviewed records untouched. It preserves record IDs and existing shortlists.
+Readiness version 3 checks that all 60 supplied codes exist before deployment.
+Students can search by code/subject or expand the full results list. Careers are
+exploratory references from published tracks; no official eligibility threshold
+is invented. The earlier note about awaiting a JSON file is historical: this
+owner-confirmed copy now provides a usable partial catalogue.

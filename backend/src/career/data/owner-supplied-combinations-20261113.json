@@ -1,0 +1,602 @@
+[
+  {
+    "code": "ST2007",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Business Studies",
+      "Computer Studies",
+      "Physics"
+    ]
+  },
+  {
+    "code": "ST2045",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Building & Construction",
+      "Business Studies"
+    ]
+  },
+  {
+    "code": "ST2070",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Aviation",
+      "Geography"
+    ]
+  },
+  {
+    "code": "ST2067",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Computer Studies",
+      "Physics"
+    ]
+  },
+  {
+    "code": "ST2075",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Geography",
+      "Physics"
+    ]
+  },
+  {
+    "code": "ST2019",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Computer Studies",
+      "Home Science",
+      "Wood Work"
+    ]
+  },
+  {
+    "code": "ST2048",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Business Studies",
+      "Electricity"
+    ]
+  },
+  {
+    "code": "ST2049",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Business Studies",
+      "General Science"
+    ]
+  },
+  {
+    "code": "ST2058",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Building & Construction",
+      "Computer Studies"
+    ]
+  },
+  {
+    "code": "ST2097",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Biology",
+      "Business Studies",
+      "Computer Studies"
+    ]
+  },
+  {
+    "code": "ST2056",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Aviation",
+      "Computer Studies"
+    ]
+  },
+  {
+    "code": "ST2096",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Aviation",
+      "Business Studies",
+      "Computer Studies"
+    ]
+  },
+  {
+    "code": "ST2059",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Chemistry",
+      "Computer Studies"
+    ]
+  },
+  {
+    "code": "ST2020",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Aviation",
+      "Computer Studies",
+      "Home Science"
+    ]
+  },
+  {
+    "code": "ST2092",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Home Science",
+      "Metal Work"
+    ]
+  },
+  {
+    "code": "ST2017",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Computer Studies",
+      "Geography",
+      "Metal Work"
+    ]
+  },
+  {
+    "code": "ST2083",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Building & Construction",
+      "Home Science"
+    ]
+  },
+  {
+    "code": "ST2090",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Home Science",
+      "Marine & Fisheries"
+    ]
+  },
+  {
+    "code": "ST2024",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Chemistry",
+      "Computer Studies",
+      "Home Science"
+    ]
+  },
+  {
+    "code": "ST2095",
+    "pathway": "STEM",
+    "track": "Applied Sciences",
+    "subjects": [
+      "Agriculture",
+      "Home Science",
+      "Wood Work"
+    ]
+  },
+  {
+    "code": "SS1006",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Arabic",
+      "Computer Studies",
+      "French"
+    ]
+  },
+  {
+    "code": "SS1040",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Computer Studies",
+      "Fasihi ya Kiswahili",
+      "Indigenous Language"
+    ]
+  },
+  {
+    "code": "SS1060",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "General Science",
+      "Indigenous Language",
+      "Literature in English"
+    ]
+  },
+  {
+    "code": "SS1014",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Arabic",
+      "French",
+      "General Science"
+    ]
+  },
+  {
+    "code": "SS1065",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "German",
+      "Indigenous Language",
+      "Literature in English"
+    ]
+  },
+  {
+    "code": "SS1001",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "French",
+      "Indigenous Language",
+      "Literature in English"
+    ]
+  },
+  {
+    "code": "SS1002",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Fasihi ya Kiswahili",
+      "Indigenous Language",
+      "Literature in English"
+    ]
+  },
+  {
+    "code": "SS1043",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Arabic",
+      "Fasihi ya Kiswahili",
+      "Indigenous Language"
+    ]
+  },
+  {
+    "code": "SS1011",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Arabic",
+      "French",
+      "Hindu Religious Education"
+    ]
+  },
+  {
+    "code": "SS1029",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Fasihi ya Kiswahili",
+      "General Science",
+      "Indigenous Language"
+    ]
+  },
+  {
+    "code": "SS1050",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "French",
+      "German",
+      "Islamic Religious Education"
+    ]
+  },
+  {
+    "code": "SS1025",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Fasihi ya Kiswahili",
+      "German",
+      "Indigenous Language"
+    ]
+  },
+  {
+    "code": "SS1036",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Fasihi ya Kiswahili",
+      "Hindu Religious Education",
+      "Indigenous Language"
+    ]
+  },
+  {
+    "code": "SS1022",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Fasihi ya Kiswahili",
+      "Indigenous Language",
+      "Mandarine Chinese"
+    ]
+  },
+  {
+    "code": "SS1055",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "French",
+      "Geography",
+      "Mandarine Chinese"
+    ]
+  },
+  {
+    "code": "SS1007",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Indigenous Language",
+      "Islamic Religious Education",
+      "Literature in English"
+    ]
+  },
+  {
+    "code": "SS1077",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Christian Religious Education",
+      "French",
+      "Mandarine Chinese"
+    ]
+  },
+  {
+    "code": "SS1080",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Business Studies",
+      "Fasihi ya Kiswahili",
+      "Literature in English"
+    ]
+  },
+  {
+    "code": "SS1038",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "Fasihi ya Kiswahili",
+      "Indigenous Language",
+      "Islamic Religious Education"
+    ]
+  },
+  {
+    "code": "SS1051",
+    "pathway": "Social Sciences",
+    "track": "Languages & Literature",
+    "subjects": [
+      "French",
+      "Geography",
+      "German"
+    ]
+  },
+  {
+    "code": "AS1021",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Computer Studies",
+      "Fine Arts",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1027",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "General Science",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1007",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "Hindu Religious Education",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1005",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Christian Religious Education",
+      "Fine Arts",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1001",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Arabic",
+      "Fine Arts",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1012",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "German",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1032",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "Mandarine Chinese",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1029",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "German",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1009",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "French",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1022",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Christian Religious Education",
+      "Fine Arts",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1030",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "History & Citizenship",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1018",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Arabic",
+      "Fine Arts",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1023",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "Islamic Religious Education",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1024",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "Hindu Religious Education",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1015",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "Mandarine Chinese",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1026",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "French",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1010",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fine Arts",
+      "General Science",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1008",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Fasihi ya Kiswahili",
+      "Fine Arts",
+      "Theatre & Film"
+    ]
+  },
+  {
+    "code": "AS1020",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Business Studies",
+      "Fine Arts",
+      "Music & Dance"
+    ]
+  },
+  {
+    "code": "AS1004",
+    "pathway": "Arts & Sports Science",
+    "track": "Arts",
+    "subjects": [
+      "Computer Studies",
+      "Fine Arts",
+      "Theatre & Film"
+    ]
+  }
+]

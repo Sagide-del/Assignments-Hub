@@ -11,7 +11,9 @@ for (let n = 0; n < 36; n++) {
     if (
       r.ok &&
       data.ready === true &&
-      data.version === 2 &&
+      data.version === 3 &&
+      data.catalogue_revision === "owner-portal-copy-20261113" &&
+      data.provided_combinations === 60 &&
       data.results_storage === true
     ) {
       ready = true;

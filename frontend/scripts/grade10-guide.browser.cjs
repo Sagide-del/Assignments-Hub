@@ -159,6 +159,12 @@ const combination = {
       .getByRole("heading", { name: "Grade 10 Selection Guide", exact: true })
       .waitFor();
     await p.getByRole("heading", { name: "ST0000", exact: true }).waitFor();
+    const search = p.getByRole("textbox", { name: "Search combination code or subject" });
+    await search.fill("nonexistent subject");
+    await p.getByText("No matching combinations. Try another subject, code or pathway.").waitFor();
+    await search.fill("Biology");
+    await p.getByRole("heading", { name: "ST0000", exact: true }).waitFor();
+    await search.fill("");
     await p.getByRole("button", { name: "Shortlist combination" }).click();
     await p
       .getByRole("status")

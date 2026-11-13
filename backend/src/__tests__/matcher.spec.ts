@@ -237,3 +237,119 @@ describe("stored KJSEA results", () => {
     ]);
   });
 });
+
+import suppliedCombinations from "../career/data/owner-supplied-combinations-20261113.json";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { PrismaClient } from "@prisma/client";
+import { pathwayKey, relatedTrackNames } from "../career/matcher.engine";
+test("owner-confirmed portal copy contains 60 unique three-subject records across the supplied tracks", () => {
+  expect(suppliedCombinations).toHaveLength(60);
+  expect(new Set(suppliedCombinations.map((c) => c.code)).size).toBe(60);
+  expect(
+    suppliedCombinations.filter((c) => c.track === "Applied Sciences"),
+  ).toHaveLength(20);
+  expect(
+    suppliedCombinations.filter((c) => c.track === "Languages & Literature"),
+  ).toHaveLength(20);
+  expect(suppliedCombinations.filter((c) => c.track === "Arts")).toHaveLength(
+    20,
+  );
+  for (const row of suppliedCombinations)
+    expect(new Set(row.subjects).size).toBe(3);
+  expect(pathwayKey("Arts & Sports Science")).toBe(pathwayKey("Arts & Sports"));
+  expect(relatedTrackNames("Languages & Literature")).toContain("languages");
+  const arts = preparation(
+    ["Fine Arts", "Music & Dance"],
+    [{ subject: "Creative Arts", performance_level: "EE" }],
+    60,
+  );
+  expect(arts.indicators).toHaveLength(1);
+  expect(arts.indicators[0].performance_level).toBe("EE");
+  expect(arts.average).toBeNull();
+});
+const dbTest = process.env.CMS_TEST_DATABASE_URL ? test : test.skip;
+dbTest(
+  "data migration seeds the copy and reimport preserves reviewed records and record identity",
+  async () => {
+    const url = new URL(process.env.CMS_TEST_DATABASE_URL!);
+    if (!["127.0.0.1", "localhost"].includes(url.hostname))
+      throw Error(
+        "This migration test requires a loopback-only test database.",
+      );
+    const prisma = new PrismaClient({
+      datasources: { db: { url: process.env.CMS_TEST_DATABASE_URL! } },
+    });
+    try {
+      const codes = suppliedCombinations.map((c) => c.code),
+        rows = await prisma.moE_Combination.findMany({
+          where: { code: { in: codes } },
+        });
+      expect(rows).toHaveLength(60);
+      const first = suppliedCombinations[0],
+        original = rows.find((r) => r.code === first.code)!;
+      const migration = readFileSync(
+        resolve(
+          __dirname,
+          "../../prisma/migrations/20261113160000_supplied_combination_reference/migration.sql",
+        ),
+        "utf8",
+      );
+      const statement = migration
+        .split("\n")
+        .find(
+          (line) =>
+            line.startsWith("INSERT INTO") && line.includes(`'${first.code}'`),
+        )!;
+      expect(statement).toBeTruthy();
+      await expect(
+        prisma.$transaction(async (tx) => {
+          await tx.moE_Combination.update({
+            where: { code: first.code },
+            data: {
+              is_verified: true,
+              subjects: [
+                "Reviewed subject A",
+                "Reviewed subject B",
+                "Reviewed subject C",
+              ],
+            },
+          });
+          await tx.$executeRawUnsafe(statement);
+          expect(
+            (
+              await tx.moE_Combination.findUniqueOrThrow({
+                where: { code: first.code },
+              })
+            ).subjects,
+          ).toEqual([
+            "Reviewed subject A",
+            "Reviewed subject B",
+            "Reviewed subject C",
+          ]);
+          await tx.moE_Combination.update({
+            where: { code: first.code },
+            data: { is_verified: false },
+          });
+          await tx.$executeRawUnsafe(statement);
+          const reimported = await tx.moE_Combination.findUniqueOrThrow({
+            where: { code: first.code },
+          });
+          expect(reimported.id).toBe(original.id);
+          expect(reimported.subjects).toEqual(first.subjects);
+          expect(reimported.is_verified).toBe(true);
+          throw Error("ROLLBACK_CATALOG_TEST");
+        }),
+      ).rejects.toThrow("ROLLBACK_CATALOG_TEST");
+      expect(
+        (
+          await prisma.moE_Combination.findUniqueOrThrow({
+            where: { code: first.code },
+          })
+        ).subjects,
+      ).toEqual(original.subjects);
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+);

@@ -1,3 +1,4 @@
+import suppliedCombinations from "./data/owner-supplied-combinations-20261113.json";
 import {
   BadRequestException,
   ForbiddenException,
@@ -6,7 +7,13 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
-import { checkedCatalog, normalized, preparation } from "./matcher.engine";
+import {
+  checkedCatalog,
+  normalized,
+  preparation,
+  pathwayKey,
+  relatedTrackNames,
+} from "./matcher.engine";
 import {
   ImportCombinationsDto,
   JuniorScoreDto,
@@ -40,7 +47,11 @@ export class MatcherService {
     await this.prisma.student_KJSEA_Result.count();
     return {
       ready: true,
-      version: 2,
+      version: 3,
+      catalogue_revision: "owner-portal-copy-20261113",
+      provided_combinations: await this.prisma.moE_Combination.count({
+        where: { code: { in: suppliedCombinations.map((c) => c.code) } },
+      }),
       results_storage: true,
       verified_combinations: await this.prisma.moE_Combination.count({
         where: { is_verified: true },
@@ -236,12 +247,19 @@ export class MatcherService {
     };
     const matches = catalog
       .map((item) => {
-        const track = tracks.find(
+        const related = tracks.filter(
           (t) =>
-            normalized(t.name) === normalized(item.track) &&
-            normalized(t.pathway.name) === normalized(item.pathway),
+            pathwayKey(t.pathway.name) === pathwayKey(item.pathway) &&
+            relatedTrackNames(item.track).includes(normalized(t.name)),
         );
-        const careers = careerTitles(track).slice(0, 3),
+        const allCareers = [...new Set(related.flatMap(careerTitles))];
+        const careers = allCareers
+            .sort(
+              (a, b) =>
+                Number(!!career && normalized(b).includes(career)) -
+                Number(!!career && normalized(a).includes(career)),
+            )
+            .slice(0, 3),
           prep = preparation(item.subjects, scores, target);
         const context = normalized(
             [...item.subjects, item.track, item.pathway, ...careers].join(" "),

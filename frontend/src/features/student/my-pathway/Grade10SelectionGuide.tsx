@@ -69,13 +69,19 @@ const subjects = [
   "Social Studies",
   "Creative Arts",
 ];
-const label = (area: string) =>
+const label = (area: string, subject?: string) =>
   ({
     integratedscience: "Integrated Science",
     pretechnicalstudies: "Pre-Technical Studies",
     agricultureandnutrition: "Agriculture and Nutrition",
     mathematics: "Mathematics",
-  })[area] ?? area;
+    socialstudies: "Social Studies",
+    creativeartsandsports: "Creative Arts and Sports",
+    english: "English",
+    kiswahili: "Kiswahili",
+  })[area] ??
+  subject ??
+  area;
 export function Grade10SelectionGuide() {
   const user = useAuthStore((s) => s.user),
     client = useQueryClient(),
@@ -93,6 +99,8 @@ export function Grade10SelectionGuide() {
     [career, setCareer] = useState(""),
     [target, setTarget] = useState("60"),
     [pathway, setPathway] = useState(""),
+    [search, setSearch] = useState(""),
+    [showAll, setShowAll] = useState(false),
     [status, setStatus] = useState("");
   const analyze = useMutation({
     mutationFn: () => {
@@ -149,14 +157,22 @@ export function Grade10SelectionGuide() {
     );
   const data = query.data,
     options = [
-      ...new Set([
-        ...data.catalog.map((c) => c.pathway),
-        ...data.pathways.map((t) => t.pathway),
-      ]),
+      ...new Set(
+        data.catalog_count
+          ? data.catalog.map((c) => c.pathway)
+          : data.pathways.map((t) => t.pathway),
+      ),
     ],
-    matches = data.catalog
-      .filter((c) => !pathway || c.pathway === pathway)
-      .slice(0, 3),
+    filtered = data.catalog.filter(
+      (c) =>
+        (!pathway || c.pathway === pathway) &&
+        (!search ||
+          [c.code, c.track, ...c.subjects]
+            .join(" ")
+            .toLowerCase()
+            .includes(search.trim().toLowerCase())),
+    ),
+    matches = filtered.slice(0, showAll ? filtered.length : 3),
     tracks = data.pathways.filter((t) => !pathway || t.pathway === pathway);
   const button =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#101820] px-4 text-sm font-semibold text-white disabled:opacity-50";
@@ -296,6 +312,29 @@ export function Grade10SelectionGuide() {
           ))}
         </select>
       </div>
+      {data.catalog_count > 0 && (
+        <div className="flex flex-wrap gap-3">
+          <input
+            aria-label="Search combination code or subject"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setShowAll(false);
+            }}
+            placeholder="Search a code or subject, e.g. ST2056 or Aviation"
+            className="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm"
+          />
+          {filtered.length > 3 && (
+            <button
+              type="button"
+              onClick={() => setShowAll(!showAll)}
+              className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold"
+            >
+              {showAll ? "Show top 3" : `Show all ${filtered.length} results`}
+            </button>
+          )}
+        </div>
+      )}
       {data.catalog_count === 0 && (
         <p className="rounded-lg bg-slate-100 p-4 text-sm leading-6 text-slate-600">
           The official combinations catalogue is awaiting a source-reviewed
@@ -336,7 +375,7 @@ export function Grade10SelectionGuide() {
                 </p>
                 {c.preparation.indicators.map((i) => (
                   <p key={i.area} className="mt-2 text-xs text-slate-600">
-                    {label(i.area)}:{" "}
+                    {label(i.area, i.subject)}:{" "}
                     {i.percentage === null
                       ? i.performance_level
                         ? `${i.performance_level} · reported level`
@@ -381,7 +420,7 @@ export function Grade10SelectionGuide() {
           ))}
         </div>
       ) : data.catalog_count > 0 ? (
-        <EmptyState title="No combinations in this pathway are published yet." />
+        <EmptyState title="No matching combinations. Try another subject, code or pathway." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tracks.map((t) => (

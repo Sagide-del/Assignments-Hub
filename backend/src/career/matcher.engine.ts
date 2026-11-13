@@ -2,6 +2,22 @@ import { BadRequestException } from "@nestjs/common";
 import { ImportCombinationsDto, KjseaResultEntryDto } from "./matcher.dto";
 export const normalized = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]/g, "");
+export function pathwayKey(value: string) {
+  const key = normalized(value);
+  return key.includes("arts") && key.includes("sport")
+    ? "arts"
+    : key.includes("social")
+      ? "social"
+      : key;
+}
+export function relatedTrackNames(track: string) {
+  const key = normalized(track);
+  return key === "languagesliterature" || key === "languagesandliterature"
+    ? ["languages"]
+    : key === "arts"
+      ? ["finearts", "performingarts"]
+      : [key];
+}
 export function officialSource(value: string) {
   try {
     const u = new URL(value);
@@ -58,7 +74,7 @@ export function preparation(
   for (const subject of subjects) {
     const n = normalized(subject);
     if (/math/.test(n)) areas.add("mathematics");
-    else if (/biology|chemistry|physics|science/.test(n))
+    else if (n !== "homescience" && /biology|chemistry|physics|science/.test(n))
       areas.add("integratedscience");
     else if (
       /aviation|computer|electrical|building|technical|construction|engineering/.test(
@@ -68,10 +84,22 @@ export function preparation(
       areas.add("pretechnicalstudies");
     else if (/agricultur|nutrition|homescience/.test(n))
       areas.add("agricultureandnutrition");
+    else if (/fasihi|kiswahili/.test(n)) areas.add("kiswahili");
+    else if (/literatureinenglish/.test(n)) areas.add("english");
+    else if (/history|geography/.test(n)) areas.add("socialstudies");
+    else if (/business/.test(n)) areas.add("pretechnicalstudies");
+    else if (/finearts|music|dance|theatre|film/.test(n))
+      areas.add("creativeartsandsports");
     else areas.add(n);
   }
   const used = [...areas].map((area) => {
     const aliases: Record<string, string[]> = {
+      creativeartsandsports: [
+        "creativeartsandsports",
+        "creativeartssports",
+        "creativearts",
+      ],
+      mandarinechinese: ["mandarinechinese", "mandarinchinese"],
       mathematics: ["mathematics", "maths", "coremathematics"],
       integratedscience: ["integratedscience"],
       pretechnicalstudies: ["pretechnicalstudies", "pretechnical"],
@@ -85,7 +113,10 @@ export function preparation(
     );
     return {
       area,
-      subject: row?.subject ?? area,
+      subject:
+        row?.subject ??
+        subjects.find((subject) => normalized(subject) === area) ??
+        area,
       percentage: row?.percentage ?? null,
       performance_level: row?.performance_level ?? null,
       gap:
