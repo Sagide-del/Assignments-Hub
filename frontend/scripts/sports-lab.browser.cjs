@@ -304,6 +304,10 @@ mkdirSync(out, { recursive: true });
     await page
       .getByText("5/5 investigations complete", { exact: true })
       .waitFor();
+    // Release accumulated software WebGL contexts before the timed lung trial.
+    await page.close();
+    page = await context.newPage();
+    page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(base + "/student/stem-labs/901");
     await page
       .getByRole("heading", {
@@ -343,6 +347,8 @@ mkdirSync(out, { recursive: true });
       Array.from(document.querySelectorAll("button")).some(
         (b) => b.textContent.trim() === "Record observation" && !b.disabled,
       ),
+      undefined,
+      { timeout: 90000 },
     );
     await record.click();
     const stored = await page.evaluate(() =>

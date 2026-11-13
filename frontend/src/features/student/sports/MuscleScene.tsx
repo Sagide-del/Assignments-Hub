@@ -484,6 +484,7 @@ export default function MuscleScene({
       tissue.dispose();
       [crimson, light, deep, ivory, gold, blue].forEach((m) => m.dispose());
       renderer.dispose();
+      renderer.forceContextLoss();
       renderer.domElement.remove();
     };
   }, [scale, reset]);
