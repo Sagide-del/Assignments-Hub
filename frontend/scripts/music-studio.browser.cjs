@@ -1,6 +1,6 @@
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
-const { mkdirSync } = require("node:fs");
+const { mkdirSync, readFileSync } = require("node:fs");
 const base = process.env.AUTH_UI_BASE_URL || "http://127.0.0.1:4209";
 const artifacts =
   process.env.AUTH_UI_ARTIFACT_DIR || "/tmp/music-studio-browser";
@@ -81,6 +81,9 @@ mkdirSync(artifacts, { recursive: true });
         data = { id: 2, name: "Demo Academy" };
       await route.fulfill({ json: data });
     });
+    // Simulate a returning browser/CDN retaining the old stable manifest for a year.
+    const legacyManifest=JSON.parse(readFileSync(require('node:path').resolve(__dirname,'../public/assets/music-loops/loops.json'),'utf8'));legacyManifest.loops=legacyManifest.loops.slice(0,6);
+    await context.route('**/assets/music-loops/loops.json*',route=>route.fulfill({json:legacyManifest}));
     const page = await context.newPage(),
       errors = [];
     page.on("pageerror", (e) => errors.push(e.message));

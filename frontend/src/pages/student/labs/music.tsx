@@ -1,3 +1,4 @@
+import loopLibrary from "../../../../public/assets/music-loops/loops.json";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -83,12 +84,8 @@ export default function MusicStudio() {
     revision = useRef(0),
     mounted = useRef(true);
   const loops = useQuery({
-    queryKey: ["music-loop-library"],
-    queryFn: async () => {
-      const r = await fetch("/assets/music-loops/loops.json");
-      if (!r.ok) throw Error("Loop library unavailable");
-      return (await r.json()).loops as StudioLoop[];
-    },
+    queryKey: ["music-loop-library", 2],
+    queryFn: async () => loopLibrary.loops as StudioLoop[],
     staleTime: Infinity,
   });
   const projects = useQuery({
