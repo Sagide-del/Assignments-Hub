@@ -1,0 +1,24 @@
+name: Verify Sports demo learner
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/src/student/sports/demo-seed.json'
+      - 'backend/scripts/deployment/ensure-requested-sports-demo.cjs'
+      - 'backend/scripts/deployment/provision-sports-demo.cjs'
+      - 'backend/scripts/deployment/verify-sports-demo-access.cjs'
+      - '.github/workflows/verify-sports-demo.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated Grade 10 demo readiness and Sports scope
+        run: node backend/scripts/deployment/verify-sports-demo-access.cjs

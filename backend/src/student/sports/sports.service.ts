@@ -1,3 +1,4 @@
+import demo from "./demo-seed.json";
 import {
   BadRequestException,
   ForbiddenException,
@@ -30,6 +31,46 @@ export class SportsLabService {
         "Sports Lab is available to learners in the Sports Science track.",
       );
     return s;
+  }
+  async demoReady() {
+    const user = await this.db.user.findFirst({
+      where: {
+        admissionNumber: demo.admissionNumber,
+        name: demo.studentName,
+        role: "STUDENT",
+        isActive: true,
+        school: {
+          code: demo.schoolCode,
+          name: demo.schoolName,
+          subscriptionStatus: "ACTIVE",
+        },
+      },
+      select: {
+        id: true,
+        schoolId: true,
+        grade: true,
+        passwordHash: true,
+        subscriptionExpiresAt: true,
+      },
+    });
+    if (
+      !user ||
+      user.grade !== "Grade 10" ||
+      user.passwordHash !== demo.passwordHash ||
+      !user.subscriptionExpiresAt ||
+      user.subscriptionExpiresAt <= new Date()
+    )
+      return false;
+    try {
+      const scope = await this.scope({
+        id: user.id,
+        schoolId: user.schoolId,
+        role: "STUDENT",
+      } as AuthenticatedUser);
+      return scope.grade === 10;
+    } catch {
+      return false;
+    }
   }
   async activities(a: AuthenticatedUser) {
     const s = await this.scope(a);

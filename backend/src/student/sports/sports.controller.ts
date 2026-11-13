@@ -58,7 +58,12 @@ export class SportsLabController {
   ) {}
   @Get("capabilities") @Public() async capabilities() {
     await this.db.sports_Lab_Progress.findFirst({ select: { id: true } });
-    return { ready: true, version: 1, simulations: 5 };
+    return {
+      ready: true,
+      version: 1,
+      simulations: 5,
+      demoReady: await this.service.demoReady(),
+    };
   }
   @Get("activities")
   @Roles(Role.STUDENT)

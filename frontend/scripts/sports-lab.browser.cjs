@@ -313,9 +313,11 @@ mkdirSync(out, { recursive: true });
       ),
     );
     await page.screenshot({ path: out + "/lungs-mobile.png", fullPage: true });
-    // A decorative resource can outlive the application’s readiness. Keep it
+    // An optional asynchronous script can outlive app readiness. Keep it
     // pending during reload so the restore check cannot regress to full-load waiting.
-    let releaseImage, imageFulfilled;
+    let releaseImage,
+      imageFulfilled,
+      resourceRequested = false;
     const imageGate = new Promise((resolve) => {
       releaseImage = resolve;
     });
@@ -323,40 +325,32 @@ mkdirSync(out, { recursive: true });
       imageFulfilled = resolve;
     });
     const slowImage = async (route) => {
+      resourceRequested = true;
       await imageGate;
       await route.fulfill({
         status: 200,
-        contentType: "image/gif",
-        body: Buffer.from(
-          "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
-          "base64",
-        ),
+        contentType: "application/javascript",
+        body: "void 0;",
       });
       imageFulfilled();
     };
-    await page.route("**/__sports-restore-decorative.gif", slowImage);
+    await page.route("**/__sports-restore-noncritical.js", slowImage);
     await page.addInitScript(() => {
-      if (location.pathname === "/student/stem-labs/901") {
-        document.addEventListener(
-          "DOMContentLoaded",
-          () => {
-            const image = document.createElement("img");
-            image.hidden = true;
-            image.src = "/__sports-restore-decorative.gif";
-            document.body.appendChild(image);
-          },
-          { once: true },
-        );
-      }
+      const append = () => {
+        const resource = document.createElement("script");
+        resource.async = true;
+        resource.src = "/__sports-restore-noncritical.js";
+        document.body.appendChild(resource);
+      };
+      if (document.readyState === "loading")
+        document.addEventListener("DOMContentLoaded", append, { once: true });
+      else append();
     });
-    const imageRequested = page.waitForRequest(
-      "**/__sports-restore-decorative.gif",
-    );
     let reloadedFully = false;
     page.once("load", () => {
       reloadedFully = true;
     });
-    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.reload({ waitUntil: "commit" });
     await page.getByLabel("Respiratory prediction", { exact: true }).waitFor();
     assert.match(
       await page
@@ -375,7 +369,11 @@ mkdirSync(out, { recursive: true });
     await page
       .getByText("Lung lobes, airways and diaphragm", { exact: true })
       .waitFor({ state: "hidden" });
-    await imageRequested;
+    assert.equal(
+      resourceRequested,
+      true,
+      "the delayed script fixture must be requested",
+    );
     assert.equal(
       reloadedFully,
       false,
@@ -383,7 +381,7 @@ mkdirSync(out, { recursive: true });
     );
     releaseImage();
     await imageDone;
-    await page.unroute("**/__sports-restore-decorative.gif", slowImage);
+    await page.unroute("**/__sports-restore-noncritical.js", slowImage);
     const other = await browser.newContext({
       storageState: await context.storageState(),
     });
