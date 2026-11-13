@@ -1,5 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
-import { ImportCombinationsDto, JuniorScoreDto } from "./matcher.dto";
+import { ImportCombinationsDto, KjseaResultEntryDto } from "./matcher.dto";
 export const normalized = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]/g, "");
 export function officialSource(value: string) {
@@ -51,7 +51,7 @@ export function checkedCatalog(dto: ImportCombinationsDto) {
 // can share a junior foundation; each junior score is used at most once.
 export function preparation(
   subjects: string[],
-  scores: JuniorScoreDto[],
+  scores: KjseaResultEntryDto[],
   target: number,
 ) {
   const areas = new Set<string>();
@@ -87,7 +87,11 @@ export function preparation(
       area,
       subject: row?.subject ?? area,
       percentage: row?.percentage ?? null,
-      gap: row ? Math.max(0, target - row.percentage) : null,
+      performance_level: row?.performance_level ?? null,
+      gap:
+        typeof row?.percentage === "number"
+          ? Math.max(0, target - row.percentage)
+          : null,
     };
   });
   const known = used.filter((s) => s.percentage !== null);

@@ -8,7 +8,12 @@ for (let n = 0; n < 36; n++) {
       signal: AbortSignal.timeout(10000),
     });
     const data = await r.json();
-    if (r.ok && data.ready === true && data.version === 1) {
+    if (
+      r.ok &&
+      data.ready === true &&
+      data.version === 2 &&
+      data.results_storage === true
+    ) {
       ready = true;
       console.log(
         `Grade 10 guide ready: ${data.verified_combinations} source-reviewed combinations.`,

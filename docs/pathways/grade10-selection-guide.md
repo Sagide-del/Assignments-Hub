@@ -49,3 +49,23 @@ Migration: `20261113110000_grade10_combination_guide`. No taxonomy reseed is nee
 Deployment waits for `/api/v1/career/capabilities` to confirm the new tables before
 publishing. The readiness count may correctly be zero while official data is
 awaiting review. Existing payment, SBA, CSL and teacher scope logic are unchanged.
+
+## Saved Grade 9 results
+
+`Student_KJSEA_Result` stores the signed-in learner's self-reported subject
+percentages or original EE/ME/AE/BE (including 1/2 sublevels). A subject may have
+one representation, never both. Bands remain bands; no percentage or admission
+chance is inferred. Missing data is not a missing senior-subject prerequisite.
+
+The learner may save/edit results in the guide. Saved results take precedence
+over confirmed Learning Coach percentages for the same subject; a preview
+percentage request is temporary. Endpoints `GET/PUT /career/kjsea-results` are
+Grade-9, STUDENT and actor/school scoped. The new model uses the actual integer
+User ID and a composite school/student foreign key.
+
+Source supplied on 13 November 2026: https://selection.education.go.ke/pathways.
+The source has not been downloaded or its catalogue count verified: this
+workspace's enforced network allowlist rejected the connection. A reviewed draft
+adds the selection portal and the existing KEMIS mirror without removing current
+access. Apply/publish that environment configuration before retrieving official
+data. No 418/571 count or prerequisites are treated as verified in the meantime.

@@ -1,3 +1,4 @@
+import { KjseaResultsEditor } from "./KjseaResultsEditor";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,7 +13,10 @@ import { api, apiErrorMessage } from "../../../api/axios";
 import { useAuthStore } from "../../../store/auth.store";
 import { PageHeader, EmptyState } from "../../../components/ui/Saas";
 type Track = {
-  preparation?: { average: number | null };
+  preparation?: {
+    average: number | null;
+    indicators?: { performance_level?: string | null }[];
+  };
   id: number;
   name: string;
   pathway: string;
@@ -36,6 +40,7 @@ type Combination = {
       area: string;
       subject: string;
       percentage: number | null;
+      performance_level?: string | null;
       gap: number | null;
     }[];
   };
@@ -193,6 +198,7 @@ export function Grade10SelectionGuide() {
           </span>
         </div>
       )}
+      <KjseaResultsEditor />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -332,7 +338,9 @@ export function Grade10SelectionGuide() {
                   <p key={i.area} className="mt-2 text-xs text-slate-600">
                     {label(i.area)}:{" "}
                     {i.percentage === null
-                      ? "No result yet"
+                      ? i.performance_level
+                        ? `${i.performance_level} · reported level`
+                        : "No result recorded"
                       : `${i.percentage}%${i.gap ? ` · ${Math.round(i.gap * 10) / 10} points to your goal` : " · personal goal met"}`}
                   </p>
                 ))}
@@ -391,7 +399,9 @@ export function Grade10SelectionGuide() {
               <p className="mt-3 text-xs font-medium text-slate-600">
                 Junior preparation:{" "}
                 {t.preparation?.average == null
-                  ? "Results not entered"
+                  ? t.preparation?.indicators?.some((i) => i.performance_level)
+                    ? "Performance levels recorded; no percentage inferred"
+                    : "Results not entered"
                   : `${t.preparation.average}% across available indicators`}
               </p>
               {t.careers.length > 0 && (

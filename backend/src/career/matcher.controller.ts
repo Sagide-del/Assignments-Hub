@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
 } from "@nestjs/common";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
@@ -17,12 +18,26 @@ import {
   ImportCombinationsDto,
   MatchCombinationsDto,
   SaveCombinationDto,
+  SaveKjseaResultsDto,
 } from "./matcher.dto";
 @Controller("career")
 export class MatcherController {
   constructor(private readonly matcher: MatcherService) {}
   @Get("capabilities") @Public() capabilities() {
     return this.matcher.capabilities();
+  }
+  @Get("kjsea-results")
+  @Roles(Role.STUDENT)
+  results(@CurrentUser() actor: AuthenticatedUser) {
+    return this.matcher.results(actor);
+  }
+  @Put("kjsea-results")
+  @Roles(Role.STUDENT)
+  saveResults(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body() dto: SaveKjseaResultsDto,
+  ) {
+    return this.matcher.saveResults(actor, dto);
   }
   @Post("recommend-combinations")
   @Roles(Role.STUDENT)

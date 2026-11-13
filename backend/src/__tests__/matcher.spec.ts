@@ -29,26 +29,29 @@ function fixture(grade = "Grade 9", schoolId = 2) {
       upsert: jest.fn(),
     },
     track: {
-      findMany: jest
-        .fn()
-        .mockResolvedValue([
-          {
-            id: 1,
-            name: "Pure Sciences",
-            pathway: { name: "STEM" },
-            description: "Explore science",
-            careers: [{ title: "Scientist" }],
-            requiredSubjects: [{ subject: "Mathematics" }],
-          },
-        ]),
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          name: "Pure Sciences",
+          pathway: { name: "STEM" },
+          description: "Explore science",
+          careers: [{ title: "Scientist" }],
+          requiredSubjects: [{ subject: "Mathematics" }],
+        },
+      ]),
       findFirst: jest.fn().mockResolvedValue({ id: 1 }),
     },
     learningCoachReportCard: {
-      findFirst: jest
-        .fn()
-        .mockResolvedValue({
-          extractedScores: [{ subject: "Integrated Science", percentage: 20 }],
-        }),
+      findFirst: jest.fn().mockResolvedValue({
+        extractedScores: [{ subject: "Integrated Science", percentage: 20 }],
+      }),
+    },
+    student_KJSEA_Result: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      upsert: jest.fn().mockImplementation(async ({ create }) => ({
+        ...create,
+        updated_at: new Date(),
+      })),
     },
     grade10CombinationChoice: {
       findUnique: jest.fn().mockResolvedValue(null),
@@ -172,5 +175,65 @@ describe("Grade 10 guide", () => {
     expect(
       Reflect.getMetadata(ROLES_KEY, MatcherController.prototype.save),
     ).toEqual([Role.STUDENT]);
+  });
+});
+
+describe("stored KJSEA results", () => {
+  test("preserves bands, missing data and numeric zero without conversions", async () => {
+    const p = fixture();
+    p.student_KJSEA_Result.findUnique.mockResolvedValue({
+      scores_json: [
+        { subject: "Integrated Science", performance_level: "EE1" },
+        { subject: "Mathematics", percentage: 0 },
+      ],
+    });
+    const r = await new MatcherService(p as any).recommend(actor, {});
+    expect(r.score_source).toBe("saved_kjsea");
+    expect(r.matches[0].preparation.average).toBeNull();
+    expect(r.matches[0].preparation.indicators[0]).toMatchObject({
+      percentage: null,
+      performance_level: "EE1",
+      gap: null,
+    });
+    expect(r.scores.find((s) => s.subject === "Mathematics")?.percentage).toBe(
+      0,
+    );
+  });
+  test("writes only actor-owned self-reported results and rejects dual representations", async () => {
+    const p = fixture(),
+      s = new MatcherService(p as any);
+    await s.saveResults(actor, {
+      results: [{ subject: "Mathematics", performance_level: "ME" }],
+    });
+    expect(p.student_KJSEA_Result.upsert.mock.calls[0][0]).toMatchObject({
+      where: { student_id: 10 },
+      create: {
+        student_id: 10,
+        school_id: 2,
+        source: "SELF_REPORTED",
+        scores_json: [{ subject: "Mathematics", performance_level: "ME" }],
+      },
+    });
+    await expect(
+      s.saveResults(actor, {
+        results: [
+          { subject: "Mathematics", percentage: 75, performance_level: "ME" },
+        ],
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      new MatcherService(fixture("Grade 9", 99) as any).results(actor),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+  test("understands legacy dictionary-shaped grade JSON but never invents percentages", () => {
+    const rows = new MatcherService(fixture() as any).cleanResults({
+      Mathematics: "EE",
+      English: 70,
+      Physics: "invented",
+    });
+    expect(rows).toEqual([
+      { subject: "Mathematics", performance_level: "EE" },
+      { subject: "English", percentage: 70 },
+    ]);
   });
 });

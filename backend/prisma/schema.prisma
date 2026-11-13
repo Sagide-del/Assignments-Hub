@@ -383,6 +383,8 @@ model School {
 }
 
 model User {
+  kjseaResult Student_KJSEA_Result?
+
   grade10Choice Grade10CombinationChoice?
 
   weeklyTimetables   Study_Timetable[]
@@ -3158,4 +3160,17 @@ model Grade10CombinationChoice {
   @@unique([student_id, school_id])
   @@index([school_id])
   @@map("grade10_combination_choices")
+}
+
+model Student_KJSEA_Result {
+  id String @id @default(uuid())
+  student_id Int @unique
+  school_id Int
+  scores_json Json
+  source String @default("SELF_REPORTED")
+  updated_at DateTime @updatedAt
+  student User @relation(fields: [student_id, school_id], references: [id, schoolId], onDelete: Cascade)
+  @@unique([student_id, school_id])
+  @@index([school_id])
+  @@map("student_kjsea_results")
 }

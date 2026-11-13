@@ -6,6 +6,7 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -70,4 +71,38 @@ export class ImportCombinationsDto {
 export class SaveCombinationDto {
   @IsOptional() @IsUUID("4") combination_id?: string;
   @IsOptional() @IsInt() @Min(1) track_id?: number;
+}
+
+export const kjseaLevels = [
+  "EE",
+  "ME",
+  "AE",
+  "BE",
+  "EE1",
+  "EE2",
+  "ME1",
+  "ME2",
+  "AE1",
+  "AE2",
+  "BE1",
+  "BE2",
+] as const;
+export class KjseaResultEntryDto {
+  @IsString() @MinLength(2) @MaxLength(100) subject!: string;
+  @IsOptional()
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Max(100)
+  percentage?: number;
+  @IsOptional()
+  @IsIn(kjseaLevels)
+  performance_level?: (typeof kjseaLevels)[number];
+}
+export class SaveKjseaResultsDto {
+  @IsArray()
+  @ArrayMinSize(0)
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => KjseaResultEntryDto)
+  results!: KjseaResultEntryDto[];
 }

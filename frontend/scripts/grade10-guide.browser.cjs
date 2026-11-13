@@ -41,7 +41,8 @@ const combination = {
       }),
       writes = [];
     let choice = null,
-      imported = [];
+      imported = [],
+      savedResults = [];
     await ctx.addInitScript(
       ({ grade, role }) =>
         localStorage.setItem(
@@ -70,7 +71,17 @@ const combination = {
         path = new URL(req.url()).pathname,
         body = req.postData() ? JSON.parse(req.postData()) : null;
       let json = [];
-      if (path.endsWith("/student/content-scope"))
+      if (path.endsWith("/career/kjsea-results")) {
+        if (req.method() === "PUT") {
+          writes.push({ path, body });
+          savedResults = body.results;
+        }
+        json = {
+          results: savedResults,
+          source: "SELF_REPORTED",
+          updated_at: "2026-11-13",
+        };
+      } else if (path.endsWith("/student/content-scope"))
         json = {
           grade,
           pathway: null,
@@ -85,7 +96,29 @@ const combination = {
         if (body && Object.keys(body).length) writes.push({ path, body });
         json = {
           catalog_count: empty ? 0 : 1,
-          catalog: empty ? [] : [combination],
+          catalog: empty
+            ? []
+            : [
+                {
+                  ...combination,
+                  preparation: savedResults.some((r) => r.performance_level)
+                    ? {
+                        average: null,
+                        indicators: [
+                          {
+                            area: "integratedscience",
+                            subject: "Integrated Science",
+                            percentage: null,
+                            performance_level: savedResults.find(
+                              (r) => r.performance_level,
+                            ).performance_level,
+                            gap: null,
+                          },
+                        ],
+                      }
+                    : combination.preparation,
+                },
+              ],
           pathways: [
             {
               id: 1,
@@ -149,6 +182,27 @@ const combination = {
         .scores[0].percentage,
       0,
     );
+    await p.locator("summary").filter({ hasText: "Grade 9 results" }).click();
+    await p
+      .getByLabel("Integrated Science saved level", { exact: true })
+      .selectOption("EE1");
+    await p
+      .getByRole("button", { name: "Save Grade 9 results", exact: true })
+      .click();
+    await p.getByRole("status").filter({ hasText: "Results saved." }).waitFor();
+    assert.deepEqual(
+      s.writes.find((w) => w.path.endsWith("/kjsea-results")).body,
+      {
+        results: [{ subject: "Integrated Science", performance_level: "EE1" }],
+      },
+    );
+    await p.getByText("EE1 · reported level", { exact: false }).waitFor();
+    assert.equal(
+      await p
+        .getByLabel("Integrated Science saved percentage", { exact: true })
+        .inputValue(),
+      "",
+    );
     await p.screenshot({
       path: dir + "/grade9-guide-desktop.png",
       fullPage: true,
@@ -209,22 +263,20 @@ const combination = {
     await a
       .getByLabel("Official source page")
       .fill("https://education.go.ke/catalog");
-    await a
-      .getByLabel("Catalogue JSON file")
-      .setInputFiles({
-        name: "synthetic-test.json",
-        mimeType: "application/json",
-        buffer: Buffer.from(
-          JSON.stringify([
-            {
-              code: "ST0000",
-              pathway: "STEM",
-              track: "Pure Sciences",
-              subjects: ["Biology", "Chemistry", "Physics"],
-            },
-          ]),
-        ),
-      });
+    await a.getByLabel("Catalogue JSON file").setInputFiles({
+      name: "synthetic-test.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(
+        JSON.stringify([
+          {
+            code: "ST0000",
+            pathway: "STEM",
+            track: "Pure Sciences",
+            subjects: ["Biology", "Chemistry", "Physics"],
+          },
+        ]),
+      ),
+    });
     await a
       .getByRole("button", { name: "Validate without publishing" })
       .click();

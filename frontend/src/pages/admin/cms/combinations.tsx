@@ -19,7 +19,9 @@ export default function CombinationCatalog() {
       queryKey: ["moe-catalog"],
       queryFn: () => api.get<Row[]>("/career/combinations").then((r) => r.data),
     });
-  const [source, setSource] = useState(""),
+  const [source, setSource] = useState(
+      "https://selection.education.go.ke/pathways",
+    ),
     [reviewed, setReviewed] = useState(false),
     [rows, setRows] = useState<unknown[]>([]),
     [message, setMessage] = useState(""),

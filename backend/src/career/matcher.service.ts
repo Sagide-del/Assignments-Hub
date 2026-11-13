@@ -10,6 +10,9 @@ import { checkedCatalog, normalized, preparation } from "./matcher.engine";
 import {
   ImportCombinationsDto,
   JuniorScoreDto,
+  KjseaResultEntryDto,
+  SaveKjseaResultsDto,
+  kjseaLevels,
   MatchCombinationsDto,
   SaveCombinationDto,
 } from "./matcher.dto";
@@ -34,13 +37,92 @@ export class MatcherService {
   }
   async capabilities() {
     await this.prisma.grade10CombinationChoice.count();
+    await this.prisma.student_KJSEA_Result.count();
     return {
       ready: true,
-      version: 1,
+      version: 2,
+      results_storage: true,
       verified_combinations: await this.prisma.moE_Combination.count({
         where: { is_verified: true },
       }),
     };
+  }
+  cleanResults(value: unknown): KjseaResultEntryDto[] {
+    const raw = Array.isArray(value)
+      ? value
+      : value && typeof value === "object"
+        ? Object.entries(value).map(([subject, v]) =>
+            typeof v === "number"
+              ? { subject, percentage: v }
+              : { subject, performance_level: v },
+          )
+        : [];
+    return raw.flatMap((r: any) => {
+      if (
+        typeof r?.subject !== "string" ||
+        r.subject.trim().length < 2 ||
+        r.subject.length > 100
+      )
+        return [];
+      const percentage =
+        typeof r.percentage === "number" &&
+        Number.isFinite(r.percentage) &&
+        r.percentage >= 0 &&
+        r.percentage <= 100
+          ? r.percentage
+          : undefined;
+      const performance_level = kjseaLevels.includes(r.performance_level)
+        ? r.performance_level
+        : undefined;
+      if ((percentage !== undefined) === (performance_level !== undefined))
+        return [];
+      return [
+        {
+          subject: r.subject.trim(),
+          ...(percentage !== undefined
+            ? { percentage }
+            : { performance_level }),
+        },
+      ];
+    });
+  }
+  async results(actor: AuthenticatedUser) {
+    const student = await this.assertStudent(actor);
+    const record = await this.prisma.student_KJSEA_Result.findUnique({
+      where: {
+        student_id_school_id: {
+          student_id: student.id,
+          school_id: student.schoolId,
+        },
+      },
+    });
+    return {
+      results: this.cleanResults(record?.scores_json),
+      source: record?.source ?? null,
+      updated_at: record?.updated_at ?? null,
+    };
+  }
+  async saveResults(actor: AuthenticatedUser, dto: SaveKjseaResultsDto) {
+    const student = await this.assertStudent(actor),
+      results = this.cleanResults(dto.results);
+    if (
+      results.length !== dto.results.length ||
+      new Set(results.map((r) => normalized(r.subject))).size !== results.length
+    )
+      throw new BadRequestException(
+        "Enter each subject once, with either a percentage or a reported performance level.",
+      );
+    const data = {
+      school_id: student.schoolId,
+      scores_json: results as any,
+      source: "SELF_REPORTED",
+    };
+    const record = await this.prisma.student_KJSEA_Result.upsert({
+      where: { student_id: student.id },
+      create: { student_id: student.id, ...data },
+      update: data,
+    });
+    return { results, source: record.source, updated_at: record.updated_at };
   }
   async catalog() {
     return this.prisma.moE_Combination.findMany({
@@ -81,7 +163,7 @@ export class MatcherService {
   }
   async recommend(actor: AuthenticatedUser, dto: MatchCombinationsDto) {
     const student = await this.assertStudent(actor);
-    const [catalog, tracks, report, choice] = await Promise.all([
+    const [catalog, tracks, report, choice, savedResult] = await Promise.all([
       this.catalog(),
       this.prisma.track.findMany({
         where: { isPublished: true },
@@ -100,6 +182,14 @@ export class MatcherService {
         where: { student_id: student.id },
         include: { combination: true, track: { include: { pathway: true } } },
       }),
+      this.prisma.student_KJSEA_Result.findUnique({
+        where: {
+          student_id_school_id: {
+            student_id: student.id,
+            school_id: student.schoolId,
+          },
+        },
+      }),
     ]);
     const extracted = Array.isArray(report?.extractedScores)
       ? report!.extractedScores
@@ -113,7 +203,12 @@ export class MatcherService {
         ? [{ subject: r.subject, percentage: r.percentage }]
         : [],
     );
-    const scores: JuniorScoreDto[] = dto.scores ?? existing;
+    const stored = this.cleanResults(savedResult?.scores_json);
+    const savedNames = new Set(stored.map((r) => normalized(r.subject)));
+    const scores: KjseaResultEntryDto[] = dto.scores ?? [
+      ...stored,
+      ...existing.filter((r) => !savedNames.has(normalized(r.subject))),
+    ];
     if (
       new Set(scores.map((s) => normalized(s.subject))).size !== scores.length
     )
@@ -210,9 +305,11 @@ export class MatcherService {
       scores,
       score_source: dto.scores
         ? "manual"
-        : existing.length
-          ? "confirmed_report"
-          : "none",
+        : stored.length
+          ? "saved_kjsea"
+          : existing.length
+            ? "confirmed_report"
+            : "none",
       target_score: target,
       choice,
       advisory:
