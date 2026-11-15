@@ -1,3 +1,4 @@
+import {careerCompassGuide} from './career-compass-guide.mjs';
 // Editorial summaries distinguish published findings from practical suggestions.
 // No birth-order career prediction, causal social-media claim or unverified Kenyan job percentage.
 const sources = {
@@ -76,16 +77,6 @@ export const researchGuides = [
   career:'Fractions support measurement, recipes, budgeting and later science. A secure foundation keeps options open without deciding a career in Grade 7.',
   cta:{title:'Try five free fraction questions.',description:'Attempt, check the worked answers and retry.',button_text:'Start free fractions practice',button_link:'/revision/grade-7-mathematics-fractions/'},
  },
- {
-  slug:'career-compass-kenyan-students',category:'Career decisions',icon:'Compass',publishedAt:'2026-11-15',title:'Career Compass: How to Choose the Right Path for Your Child',
-  description:'Align your child’s interests, family hopes and Kenyan opportunities with a practical, evidence-informed career conversation.',
-  excerpt:'Bring three voices together: the student’s dream, the parent’s hopes and Kenyan reality.',
-  takeaways:['Listen to the learner before prescribing a profession.','Check costs, subject requirements and opportunities together.'],
-  answer:'Career Compass starts a three-way conversation: what the student wants, what the parent hopes for, and what Kenyan education and work opportunities actually require.',
-  bullets:['Student’s dream: name interests and show work they enjoy improving.','Parent’s dream: explain hopes about security, costs and family responsibilities.','Kenyan reality: check combinations, training costs, scholarships, TVET, university and enterprise routes.'],
-  research:{text:'Rohrer et al. found no lasting birth-order effects on extraversion or conscientiousness; OECD PISA links social background with educational expectations. Neither predicts an individual career. Ask about opportunities and constraints instead of treating sibling position or income as destiny.',sources:[sources.birthOrder,sources.opportunity]},
-  career:'Agree on two possible routes and one practical experiment. Career Compass supports exploration; schools and institutions confirm eligibility and admission.',
-  cta:{title:'Start the conversation together.',description:'Open the learner’s pathway workspace. Sign-in required.',button_text:'Try the Career Compass for your child',button_link:'/student/my-pathway'},
- },
+ careerCompassGuide,
 ];
 export const countWords = text => text.trim().split(/\s+/u).filter(Boolean).length;

@@ -343,6 +343,7 @@ export const router = createBrowserRouter([
             path: '/student/my-future',
             element: <Navigate to="/student/my-pathway" replace />,
           },
+          { path: '/student/career', element: <MyPathwayPage /> },
           { path: '/student/career/navigator', element: <Grade10SelectionGuide /> },
           {
             path: '/student/my-pathway',

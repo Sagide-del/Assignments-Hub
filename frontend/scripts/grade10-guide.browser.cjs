@@ -155,7 +155,7 @@ const combination = {
   try {
     const s = await context(9),
       p = await s.ctx.newPage();
-    await p.goto(base + "/student/career/navigator");
+    await p.goto(base + "/student/career");
     await p
       .getByRole("heading", { name: "Grade 10 Selection Guide", exact: true })
       .waitFor();
