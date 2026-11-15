@@ -141,12 +141,15 @@ jobs:
           DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           CMS_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/cms_publish_test
+          SEO_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/seo_attribution_test
           MATH_ENGINE_TEST_PYTHON: ${{ github.workspace }}/backend/.math-venv/bin/python
           TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: |
           npx prisma db push --skip-generate
           docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE cms_publish_test'
           DATABASE_URL="$CMS_TEST_DATABASE_URL" npx prisma migrate deploy
+          docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE seo_attribution_test'
+          DATABASE_URL="$SEO_TEST_DATABASE_URL" npx prisma migrate deploy
           npm test -- --runInBand
       - name: Wait for CMS distributions and migrated storage
         working-directory: frontend
@@ -229,6 +232,7 @@ jobs:
           node scripts/run-browser-check.mjs scripts/auth-ui.browser.cjs
           node scripts/run-browser-check.mjs scripts/homepage.browser.cjs
           node scripts/run-browser-check.mjs scripts/public-revision.browser.cjs
+          node scripts/run-browser-check.mjs scripts/seo-conversion.browser.cjs
           node scripts/run-browser-check.mjs scripts/music-production.browser.cjs
           node scripts/run-browser-check.mjs scripts/sports-lab.browser.cjs
           node scripts/run-browser-check.mjs scripts/music-studio.browser.cjs

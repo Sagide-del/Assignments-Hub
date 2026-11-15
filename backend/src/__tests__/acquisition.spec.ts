@@ -29,11 +29,11 @@ describe('first-party acquisition counts',()=>{
     expect(log[0].metadata).toEqual({path:dto.path});
   });
   test('paid learner total comes from confirmed ledger entries, deduplicated across providers',async()=>{
-    const prisma:any={auditLog:{groupBy:jest.fn().mockResolvedValue([{action:'acquisition.practice_start',_count:{_all:3}}])},independentTumaPayment:{findMany:jest.fn().mockResolvedValue([{studentId:1}])},independentJengaPayment:{findMany:jest.fn().mockResolvedValue([{studentId:1},{studentId:2}])}};
+    const prisma:any={user:{groupBy:jest.fn().mockResolvedValue([])},auditLog:{groupBy:jest.fn().mockResolvedValue([{action:'acquisition.practice_start',_count:{_all:3}}])},independentTumaPayment:{findMany:jest.fn().mockResolvedValue([{studentId:1,landing_source:null,amountKES:300}])},independentJengaPayment:{findMany:jest.fn().mockResolvedValue([{studentId:1,landing_source:null,amountKES:300},{studentId:2,landing_source:null,amountKES:300}])}};
     const result=await new AcquisitionService(prisma).summary();
     expect(result.stages[0].sessions).toBe(3);expect(result.confirmedPayingLearners).toBe(2);
     expect(prisma.independentTumaPayment.findMany.mock.calls[0][0].where.status).toBe('CONFIRMED');
-    expect(prisma.independentTumaPayment.findMany.mock.calls[0][0].select).toEqual({studentId:true});
+    expect(prisma.independentTumaPayment.findMany.mock.calls[0][0].select).toEqual({studentId:true,landing_source:true,amountKES:true});
   });
   test('collection is public but summary is platform-admin only',()=>{
     expect(Reflect.getMetadata(IS_PUBLIC_KEY,AcquisitionController.prototype.event)).toBe(true);
@@ -45,7 +45,7 @@ describe('first-party acquisition counts',()=>{
 test('HTTP collection validates payloads, enforces throttling and protects reports',async()=>{
  const rows:any[]=[];
  const tx={$executeRaw:jest.fn(),auditLog:{findFirst:async()=>rows[0],create:async({data}:any)=>{rows.push({id:1,...data});}}};
- const prisma={ $transaction:async(fn:any)=>fn(tx), auditLog:{count:async()=>rows.length,groupBy:async()=>[]}, independentTumaPayment:{findMany:async()=>[]}, independentJengaPayment:{findMany:async()=>[]} };
+ const prisma={ user:{count:async()=>0,groupBy:async()=>[]},payment:{count:async()=>0}, $transaction:async(fn:any)=>fn(tx), auditLog:{count:async()=>rows.length,groupBy:async()=>[]}, independentTumaPayment:{count:async()=>0,findMany:async()=>[]}, independentJengaPayment:{count:async()=>0,findMany:async()=>[]} };
  @Module({imports:[ThrottlerModule.forRoot([{ttl:60000,limit:100}])],controllers:[AcquisitionController],providers:[AcquisitionService,{provide:PrismaService,useValue:prisma}]})
  class Fixture {}
  const app=await NestFactory.create(Fixture,{logger:false});

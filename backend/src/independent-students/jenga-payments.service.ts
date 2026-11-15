@@ -1,3 +1,4 @@
+import {paymentLandingSource} from "../analytics/payment-attribution";
 import {
   BadRequestException,
   ConflictException,
@@ -169,7 +170,7 @@ export class JengaPaymentsService {
   }
 
   async start(actor: AuthenticatedUser, dto: StartJengaPaymentDto) {
-    await this.learner(actor);
+    const student = await this.learner(actor);
     if (!this.provider.isConfigured()) {
       throw new ServiceUnavailableException("Jenga M-Pesa payments are not configured yet.");
     }
@@ -218,9 +219,11 @@ export class JengaPaymentsService {
         },
       });
       if (active) return { payment: active, send: false };
+      const landingSource = dto.landing_source ? await paymentLandingSource(tx, actor.id, dto.landing_source) : student.landing_source ?? null;
       const created = await tx.independentJengaPayment.create({
         data: {
           studentId: actor.id,
+          landing_source: landingSource,
           reference: randomBytes(6).toString("hex").slice(0, 6).toUpperCase(),
           idempotencyKey,
           amountKES,

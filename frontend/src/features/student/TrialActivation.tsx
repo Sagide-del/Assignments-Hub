@@ -1,3 +1,4 @@
+import {getLandingSource} from "../../utils/landing-source";
 import { trackAcquisition } from '../../utils/acquisition';
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -112,6 +113,7 @@ export function TrialActivationPage() {
   const stk = useMutation({
     mutationFn: () =>
       independentStudentsApi.startJengaPayment({
+        landing_source: getLandingSource(),
         interval,
         phone,
         idempotencyKey: key.current,

@@ -18,12 +18,12 @@ test('generates six searchable branded blog articles', async () => {
     assert.ok(html.includes(post.title));
     assert.match(html, /Assignment Hub Team/);
     assert.match(html, /application\/ld\+json/);
-    assert.match(html, /Try free revision/);
+    assert.ok(html.includes(post.cta_config.button_text));
     const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
     const faq = schema['@graph'].find(item => item['@type'] === 'FAQPage');
     assert.equal(faq.mainEntity.length, 3);
     for (const question of faq.mainEntity) assert.ok(html.includes(question.name));
-    assert.match(html, /href="\/revision\/grade-7-mathematics-fractions\/"/);
+    assert.ok(html.includes(`href="${post.cta_config.button_link}"`));
     assert.match(html, /KES 300\/month/);
     assert.match(html, /Related parent guides/);
   }

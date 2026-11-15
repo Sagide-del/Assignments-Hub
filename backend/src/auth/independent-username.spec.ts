@@ -166,3 +166,9 @@ describe("Individual learner usernames", () => {
     ).rejects.toThrow("Invalid credentials");
   });
 });
+
+it('saves optional first-blog attribution on the learner without changing credentials',async()=>{
+ const {service,prisma}=setup();
+ await service.registerIndependentStudent({...registration,landing_source:'blog/csl-ideas-for-students'});
+ expect(prisma.user.create.mock.calls[0][0].data).toMatchObject({landing_source:'blog/csl-ideas-for-students',isIndependentTrial:true,role:Role.STUDENT});
+});

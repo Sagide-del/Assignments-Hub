@@ -18,7 +18,7 @@ export function ProtectedRoute({ allow, redirectTo = '/login' }: Props) {
   const location = useLocation();
 
   if (!isAuthenticated || !user) {
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to={redirectTo} replace state={{ from: location.pathname }} />;
   }
   if (!allow.includes(user.role)) {
     // A shared link or old browser tab can point at another role's workspace.

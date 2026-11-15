@@ -213,6 +213,7 @@ export class AuthService {
           passwordHash,
           admissionNumber,
           grade,
+          landing_source: dto.landing_source ?? null,
           parentPhone: dto.parentPhone?.trim() || undefined,
           role: Role.STUDENT,
           // A new learner can enter the restricted starter-assignment trial.

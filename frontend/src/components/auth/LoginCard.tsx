@@ -1,3 +1,4 @@
+import { productReturnPath } from "../../utils/product-return";
 import {
   useState,
   type ChangeEvent,
@@ -5,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { ArrowRight, Eye, EyeOff, HelpCircle, ShieldCheck } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { apiErrorMessage } from "../../api/axios";
 import {
   dashboardPathForRole,
@@ -41,7 +42,7 @@ export function LoginCard({
   fixedSchoolCode,
   embedded = false,
 }: Props) {
-  const navigate = useNavigate();
+  const navigate = useNavigate(), location = useLocation();
   const [showSecret, setShowSecret] = useState(false);
   const [form, setForm] = useState<FormState>({
     schoolCode: fixedSchoolCode ?? "",
@@ -76,7 +77,7 @@ export function LoginCard({
           : loginType === "independent"
             ? await loginIndependent(form.independentIdentifier, form.password)
             : await loginStaff(form.schoolCode, form.email, form.password);
-      navigate(dashboardPathForRole(user.role), { replace: true });
+      navigate(productReturnPath(location.state?.from, user.role) ?? dashboardPathForRole(user.role), { replace: true });
     } catch (caught) {
       setError(
         apiErrorMessage(

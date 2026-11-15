@@ -1,3 +1,4 @@
+import { getLandingSource } from "../utils/landing-source";
 import { trackAcquisition } from '../utils/acquisition';
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -94,6 +95,7 @@ export function IndependentRegistrationForm() {
   const register = useMutation({
     mutationFn: async () => {
       const result = await authApi.registerIndependent({
+        landing_source: getLandingSource(),
         name: form.name.trim(),
         username: form.username.trim().toLowerCase(),
         grade: form.grade,

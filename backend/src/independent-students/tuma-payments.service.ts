@@ -1,3 +1,4 @@
+import {paymentLandingSource} from "../analytics/payment-attribution";
 import {
   BadRequestException,
   ConflictException,
@@ -112,6 +113,7 @@ export class TumaPaymentsService {
             : "PENDING";
     const data = {
       user_id: payment.studentId,
+      landing_source: payment.landing_source ?? null,
       school_id: null,
       amount: payment.amountKES,
       phone: payment.phone,
@@ -268,9 +270,11 @@ export class TumaPaymentsService {
           );
         return { payment: active, send: false };
       }
+      const landingSource = dto.landing_source ? await paymentLandingSource(tx, actor.id, dto.landing_source) : currentStudent.landing_source ?? null;
       const payment = await tx.independentTumaPayment.create({
         data: {
           studentId: actor.id,
+          landing_source: landingSource,
           reference: `AH${randomBytes(5).toString("hex").toUpperCase()}`,
           idempotencyKey: key,
           phone,

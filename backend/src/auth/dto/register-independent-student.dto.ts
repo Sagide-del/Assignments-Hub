@@ -1,6 +1,8 @@
+import { BLOG_LANDING_SOURCES } from "../../analytics/landing-source";
 import { Transform } from "class-transformer";
 import {
   IsEmail,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -9,6 +11,10 @@ import {
 } from "class-validator";
 
 export class RegisterIndependentStudentDto {
+  @IsOptional()
+  @IsIn(BLOG_LANDING_SOURCES)
+  landing_source?: string;
+
   @IsString()
   @MinLength(2)
   @MaxLength(200)

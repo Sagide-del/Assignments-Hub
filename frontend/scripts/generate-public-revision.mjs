@@ -1,3 +1,4 @@
+import { editorialPractice } from '../content/seo-practice.mjs';
 import { readFile, writeFile, mkdir, rm, cp } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -113,16 +114,16 @@ function shell(title, description, path, body, schema) {
 }
 export function renderDirectory(pages, taxonomy = seed) {
   const grades = Array.from({ length: 12 }, (_, i) => i + 1);
-  const cards = pages.map(p => `<a class="subject available" href="${pathFor(p)}"><span>Grade ${p.grade} · ${e(p.subject)}</span><small>${p.topics.reduce((n,t)=>n+t.questions.length,0)} free questions <span aria-hidden="true">↗</span></small></a>`).join('');
+  const cards = pages.map(p => `<a class="subject available" href="${pathFor(p)}"><span>Grade ${p.grade} · ${e(p.subject)}</span><small><strong>Available now</strong> · ${p.topics.reduce((n,t)=>n+t.questions.length,0)} free questions <span aria-hidden="true">↗</span></small></a>`).join('');
   const planned = grades.map(grade => {
-    const subjects = [...new Set(taxonomy.filter(t=>t.grade===grade).map(t=>t.subject))].sort();
+    const subjects = [...new Set([...taxonomy.filter(t=>t.grade===grade).map(t=>t.subject),...pages.filter(p=>p.grade===grade).map(p=>p.subject),...(grade===7?["English","Mathematics"]:[])])].sort();
     return `<p><strong>Grade ${grade}:</strong> ${subjects.map(e).join(', ') || 'Subject coverage being prepared'}</p>`;
   }).join('');
   return shell(
     "Free CBC Revision by Grade & Subject | Assignment Hub Kenya",
     "Try free CBC revision questions in Kenya, with worked answers and no login. Choose from available grades and subjects. More practice is being prepared.",
     "/free-revision/",
-    `<section class="hero"><span class="eyebrow">Kenya · Free practice</span><h1>A clearer way to revise.</h1><p>Start with a ready-to-use practice set. Answer the questions, check the worked answers and try again.</p><span class="badge">No login · No payment · Worked answers</span></section><section aria-labelledby="available-heading"><h2 id="available-heading">Available practice</h2><div class="subject-grid">${cards || '<p>New practice is being prepared. Please check back soon.</p>'}</div></section><details class="panel"><summary><strong>More grades coming soon</strong></summary><p>Planned coverage for Grades 1–12. These subjects are not all available as free practice yet. Senior-school subjects depend on pathway and electives.</p>${planned}</details><section class="panel"><h2>Make your ten minutes count</h2><ol><li>Answer before opening the worked explanation.</li><li>Explain one corrected answer in your own words.</li><li>Come back tomorrow and try the difficult questions again.</li></ol><p><a href="/blog/grade-7-mathematics-revision-help/">Help your child with fractions</a> · <a href="/blog/kjsea-past-papers-and-mocks/">A parent’s guide to KJSEA revision</a> · <a href="/blog/cbc-grading-levels-explained/">Understand CBC report-card levels</a></p></section>`,
+    `<section class="hero"><span class="eyebrow">Kenya · Free practice</span><h1>A clearer way to revise.</h1><p>Start with a ready-to-use practice set. Answer the questions, check the worked answers and try again.</p><span class="badge">No login · No payment · Worked answers</span></section><section aria-labelledby="available-heading"><h2 id="available-heading">Available practice</h2><div class="subject-grid">${cards || '<p>New practice is being prepared. Please check back soon.</p>'}</div></section><details class="panel"><summary><strong>More grades coming soon</strong></summary><p><span class="badge coming-soon">Coming soon: Grade 8 and Grades 10–12 free samples</span></p><p>Planned coverage for Grades 1–12. These catalogue entries are not all available as free practice yet and do not constitute a verified complete syllabus. Senior-school subjects depend on pathway and electives.</p>${planned}</details><section class="panel"><h2>Subscription content</h2><p>Looking for senior-school revision and KCBE-style mock practice for Grades 10–12? Individual access is KES 300/month. Available modules depend on grade, selected subjects and published content; the public samples above are separate from subscription access.</p><a class="button" href="/register">Create an account · KES 300/month</a><p>Account creation comes first. Confirm activation separately; no automatic payment request is sent here.</p></section><section class="panel"><h2>Make your ten minutes count</h2><ol><li>Answer before opening the worked explanation.</li><li>Explain one corrected answer in your own words.</li><li>Come back tomorrow and try the difficult questions again.</li></ol><p><a href="/blog/grade-7-mathematics-revision-help/">Help your child with fractions</a> · <a href="/blog/kjsea-past-papers-and-mocks/">A parent’s guide to KJSEA revision</a> · <a href="/blog/cbc-grading-levels-explained/">Understand CBC report-card levels</a></p></section>`,
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
@@ -215,6 +216,7 @@ export async function generatePublic({ publicDir = root, feed } = {}) {
   const pages = groupPages([
     ...(remote?.topics || []),
     ...resources.map((r) => ({ ...r, grade: 7 })),
+    ...editorialPractice,
   ]);
   const taxonomy = remote?.taxonomy?.length ? remote.taxonomy : seed;
   const manifest = resolve(publicDir, "revision/spoke-manifest.json");
@@ -224,7 +226,12 @@ export async function generatePublic({ publicDir = root, feed } = {}) {
   } catch (err) {
     if (err.code !== "ENOENT") throw err;
   }
+  const approvedMath = (remote?.topics || []).filter(t=>t.grade===9 && t.subject==='Mathematics').flatMap(t=>validateTopic(t).questions);
+  const uniqueMath = [...new Map(approvedMath.map(q=>[q.prompt,q])).values()];
+  await mkdir(resolve(publicDir,'revision'),{recursive:true});
+  await writeFile(resolve(publicDir,'revision/grade9-blog-samples.json'),JSON.stringify({...editorialPractice.find(t=>t.grade===9),questions:uniqueMath.length>=5?uniqueMath.slice(0,5):editorialPractice.find(t=>t.grade===9).questions,source:uniqueMath.length>=5?'approved-public-question-bank':'original-editorial'},null,2));
   const paths = pages.map(pathFor);
+  const gradeHubs=[...new Set(pages.map(p=>p.grade))].map(grade=>`/revision/grade-${grade}/`);
   // Delete only directories created by this engine, never legacy or app routes.
   for (const path of old)
     if (
@@ -240,6 +247,12 @@ export async function generatePublic({ publicDir = root, feed } = {}) {
     await mkdir(dir, { recursive: true });
     await writeFile(resolve(dir, "index.html"), renderSubject(p, taxonomy));
   }
+  for(const grade of [...new Set(pages.map(p=>p.grade))]) {
+    const path=`/revision/grade-${grade}/`,dir=resolve(publicDir,"."+path);
+    await mkdir(dir,{recursive:true});
+    const body=`<section class="hero"><span class="eyebrow">Original supplementary practice</span><h1>Grade ${grade} revision and practice</h1><p>Choose an available subject, attempt original questions and check worked explanations. These samples are untimed, not official papers or a full mock exam.</p></section><section class="subject-grid">${pages.filter(p=>p.grade===grade).map(p=>`<a class="subject" href="${pathFor(p)}">${e(p.subject)} · ${p.topics.reduce((n,t)=>n+t.questions.length,0)} questions</a>`).join('')}</section><section class="panel"><h2>Ready for mock practice?</h2><p>Sign in for the grade-appropriate mock exams available to your account and enrolled subjects.</p><a class="button" href="/student/kjsea-mock-test">Sign in for available mock exams</a><p><a href="/free-revision/">Browse all free practice</a></p></section>`;
+    await writeFile(resolve(dir,'index.html'),shell(`Grade ${grade} Revision & Practice | Assignment Hub Kenya`,'Try original grade-appropriate questions and worked answers before signing in for available mocks.',path,body,{'@context':'https://schema.org','@type':'CollectionPage',name:`Grade ${grade} revision`,url:origin+path}));
+  }
   await mkdir(resolve(publicDir, "free-revision"), { recursive: true });
   await writeFile(
     resolve(publicDir, "free-revision/index.html"),
@@ -248,6 +261,7 @@ export async function generatePublic({ publicDir = root, feed } = {}) {
   await writeFile(manifest, JSON.stringify(paths, null, 2) + "\n");
   const routes = [
     "/free-revision/",
+    ...gradeHubs,
     "/revision/",
     ...resources.map((r) => `/revision/${r.slug}/`),
     ...paths,
@@ -267,7 +281,7 @@ export async function generatePublic({ publicDir = root, feed } = {}) {
         ? ""
         : entry,
   );
-  const entries = ["/free-revision/", ...paths]
+  const entries = ["/free-revision/", ...gradeHubs, ...paths]
     .map((path) => `  <url><loc>${origin}${path}</loc></url>`)
     .join("\n");
   await writeFile(

@@ -383,11 +383,11 @@ model School {
 }
 
 model User {
-  sportsLabProgress Sports_Lab_Progress[]
-  musicProductionProjects Music_Project[] @relation("MusicComposer")
-  musicProductionReviews Music_Project[] @relation("MusicReviewer")
-  musicProjects Music_Studio_Project[]
-  kjseaResult Student_KJSEA_Result?
+  sportsLabProgress       Sports_Lab_Progress[]
+  musicProductionProjects Music_Project[]        @relation("MusicComposer")
+  musicProductionReviews  Music_Project[]        @relation("MusicReviewer")
+  musicProjects           Music_Studio_Project[]
+  kjseaResult             Student_KJSEA_Result?
 
   grade10Choice Grade10CombinationChoice?
 
@@ -493,7 +493,7 @@ model User {
   independentPaystackPayments      IndependentPaystackPayment[] @relation("IndependentPaystackPaymentStudent")
   masteryProgress                  StudentMasteryProgress[]
   independentTumaPayments          IndependentTumaPayment[]
-  independentJengaPayments         IndependentJengaPayment[]   @relation("IndependentJengaPaymentStudent")
+  independentJengaPayments         IndependentJengaPayment[]    @relation("IndependentJengaPaymentStudent")
   updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
   requestedAiGenerationJobs        AiGenerationJob[]            @relation("AiGenerationRequestedBy")
   uploadedAiExtractedContents      AiExtractedContent[]         @relation("AiExtractedContentUploadedBy")
@@ -519,6 +519,8 @@ model User {
   sbaEvidence                      StudentSbaEvidence[]         @relation("SbaEvidenceStudent")
   reviewedSbaEvidence              StudentSbaEvidence[]         @relation("SbaEvidenceReviewer")
   presenceSessions                 UserPresenceSession[]
+  // First blog touch captured at registration; historical rows remain unattributed.
+  landing_source                   String?                      @db.VarChar(120)
 
   @@unique([id, schoolId])
   @@unique([schoolId, email])
@@ -2663,6 +2665,8 @@ model IndependentTumaPayment {
   paidAt            DateTime?            @map("paid_at")
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @updatedAt @map("updated_at")
+  // First blog touch captured at registration; historical rows remain unattributed.
+  landing_source    String?              @db.VarChar(120)
 
   @@index([studentId, status])
   @@map("independent_tuma_payments")
@@ -2672,23 +2676,25 @@ model IndependentTumaPayment {
 // preserves reconciliation for payments already initiated through Tuma while
 // giving every Jenga M-Pesa receipt a database-enforced idempotency boundary.
 model IndependentJengaPayment {
-  id                   Int                  @id @default(autoincrement())
-  studentId            Int                  @map("student_id")
-  student              User                 @relation("IndependentJengaPaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  reference            String               @unique @db.VarChar(6)
-  idempotencyKey       String               @unique @map("idempotency_key")
-  amountKES            Int                  @map("amount_kes")
-  phone                String
-  interval             SubscriptionInterval
-  status               PaymentStatus        @default(PENDING)
-  providerReference    String?              @unique @map("provider_reference")
-  receiptNumber        String?              @unique @map("receipt_number")
-  callbackPayload      Json?                @map("callback_payload")
-  failureReason        String?              @map("failure_reason")
-  expiresAt            DateTime             @map("expires_at")
-  paidAt               DateTime?            @map("paid_at")
-  createdAt            DateTime             @default(now()) @map("created_at")
-  updatedAt            DateTime             @updatedAt @map("updated_at")
+  id                Int                  @id @default(autoincrement())
+  studentId         Int                  @map("student_id")
+  student           User                 @relation("IndependentJengaPaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  reference         String               @unique @db.VarChar(6)
+  idempotencyKey    String               @unique @map("idempotency_key")
+  amountKES         Int                  @map("amount_kes")
+  phone             String
+  interval          SubscriptionInterval
+  status            PaymentStatus        @default(PENDING)
+  providerReference String?              @unique @map("provider_reference")
+  receiptNumber     String?              @unique @map("receipt_number")
+  callbackPayload   Json?                @map("callback_payload")
+  failureReason     String?              @map("failure_reason")
+  expiresAt         DateTime             @map("expires_at")
+  paidAt            DateTime?            @map("paid_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+  // First blog touch captured at registration; historical rows remain unattributed.
+  landing_source    String?              @db.VarChar(120)
 
   @@index([studentId, status])
   @@map("independent_jenga_payments")
@@ -2851,18 +2857,18 @@ enum StudentMasteryStatus {
 }
 
 model StudentMasteryProgress {
-  id              String               @id @default(uuid())
-  studentId       Int                  @map("student_id")
-  moduleId        String               @map("module_id")
-  batchNumber     Int                  @default(1) @map("batch_number")
-  attemptCount    Int                  @default(0) @map("attempt_count")
-  bestScore       Float                @default(0) @map("best_score")
-  masteryStatus   StudentMasteryStatus @default(LOCKED) @map("mastery_status")
-  lastAttemptAt   DateTime?            @map("last_attempt_at")
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
-  student         User                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  module          MasterModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  id            String               @id @default(uuid())
+  studentId     Int                  @map("student_id")
+  moduleId      String               @map("module_id")
+  batchNumber   Int                  @default(1) @map("batch_number")
+  attemptCount  Int                  @default(0) @map("attempt_count")
+  bestScore     Float                @default(0) @map("best_score")
+  masteryStatus StudentMasteryStatus @default(LOCKED) @map("mastery_status")
+  lastAttemptAt DateTime?            @map("last_attempt_at")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  student       User                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  module        MasterModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, moduleId, batchNumber])
   @@index([studentId, masteryStatus])
@@ -2903,8 +2909,8 @@ model MasterModule {
   tenant_id              String?
   generation_cost_tokens Int             @default(0)
 
-  distributions ContentDistribution[]
-  assignments   ModuleAssignment[]
+  distributions   ContentDistribution[]
+  assignments     ModuleAssignment[]
   masteryProgress StudentMasteryProgress[]
 }
 
@@ -2958,6 +2964,8 @@ model Payment {
   legacy_tuma_id       Int               @unique
   created_at           DateTime          @default(now())
   updated_at           DateTime          @updatedAt
+  // First blog touch captured at registration; historical rows remain unattributed.
+  landing_source       String?           @db.VarChar(120)
 
   @@index([user_id, status])
   @@index([status, created_at, reconciliation_after])
@@ -3183,81 +3191,86 @@ model Grade10CombinationChoice {
 }
 
 model Student_KJSEA_Result {
-  id String @id @default(uuid())
-  student_id Int @unique
-  school_id Int
+  id          String   @id @default(uuid())
+  student_id  Int      @unique
+  school_id   Int
   scores_json Json
-  source String @default("SELF_REPORTED")
-  updated_at DateTime @updatedAt
-  student User @relation(fields: [student_id, school_id], references: [id, schoolId], onDelete: Cascade)
+  source      String   @default("SELF_REPORTED")
+  updated_at  DateTime @updatedAt
+  student     User     @relation(fields: [student_id, school_id], references: [id, schoolId], onDelete: Cascade)
+
   @@unique([student_id, school_id])
   @@index([school_id])
   @@map("student_kjsea_results")
 }
 
 model Music_Studio_Project {
-  id String @id @default(uuid())
-  student_id Int
-  title String
-  bpm Int @default(120)
-  time_signature String @default("4/4")
-  tracks_json Json
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  student User @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid())
+  student_id     Int
+  title          String
+  bpm            Int      @default(120)
+  time_signature String   @default("4/4")
+  tracks_json    Json
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  student        User     @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
   @@index([student_id, updated_at])
 }
 
 model Music_Song {
- id String @id @default(uuid())
- slug String @unique
- title String
- artist String
- genre String
- key String
- bpm Int
- time_signature String
- chord_progression String[]
- notation_json Json
- lyrics_json Json?
- isukuti_pattern Json?
- audio_url String?
- content_kind String @default("ORIGINAL")
- source_note String
- reference_url String?
- projects Music_Project[]
+  id                String          @id @default(uuid())
+  slug              String          @unique
+  title             String
+  artist            String
+  genre             String
+  key               String
+  bpm               Int
+  time_signature    String
+  chord_progression String[]
+  notation_json     Json
+  lyrics_json       Json?
+  isukuti_pattern   Json?
+  audio_url         String?
+  content_kind      String          @default("ORIGINAL")
+  source_note       String
+  reference_url     String?
+  projects          Music_Project[]
 }
+
 model Music_Project {
- id String @id @default(uuid())
- student_id Int
- title String
- song_id String?
- bpm Int @default(90)
- time_signature String @default("6/8")
- tracks_json Json
- mp3_url String?
- status String @default("DRAFT")
- submitted_at DateTime?
- reviewed_by Int?
- reviewed_at DateTime?
- score Float?
- review_comment String?
- created_at DateTime @default(now())
- updated_at DateTime @updatedAt
- student User @relation("MusicComposer",fields:[student_id],references:[id],onDelete:Cascade)
- reviewer User? @relation("MusicReviewer",fields:[reviewed_by],references:[id],onDelete:SetNull)
- song Music_Song? @relation(fields:[song_id],references:[id],onDelete:SetNull)
- @@index([student_id, updated_at])
- @@index([status,submitted_at])
+  id             String      @id @default(uuid())
+  student_id     Int
+  title          String
+  song_id        String?
+  bpm            Int         @default(90)
+  time_signature String      @default("6/8")
+  tracks_json    Json
+  mp3_url        String?
+  status         String      @default("DRAFT")
+  submitted_at   DateTime?
+  reviewed_by    Int?
+  reviewed_at    DateTime?
+  score          Float?
+  review_comment String?
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+  student        User        @relation("MusicComposer", fields: [student_id], references: [id], onDelete: Cascade)
+  reviewer       User?       @relation("MusicReviewer", fields: [reviewed_by], references: [id], onDelete: SetNull)
+  song           Music_Song? @relation(fields: [song_id], references: [id], onDelete: SetNull)
+
+  @@index([student_id, updated_at])
+  @@index([status, submitted_at])
 }
 
 model Sports_Lab_Progress {
- id String @id @default(uuid())
- student_id Int
- simulation String
- score Int @default(0)
- completed_at DateTime?
- student User @relation(fields:[student_id],references:[id],onDelete:Cascade)
- @@unique([student_id,simulation])
- @@index([student_id,completed_at])
+  id           String    @id @default(uuid())
+  student_id   Int
+  simulation   String
+  score        Int       @default(0)
+  completed_at DateTime?
+  student      User      @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@unique([student_id, simulation])
+  @@index([student_id, completed_at])
 }

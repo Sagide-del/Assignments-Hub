@@ -1,6 +1,10 @@
-import { IsIn, IsString, Matches, MaxLength } from "class-validator";
+import {BLOG_LANDING_SOURCES} from "../../analytics/landing-source";
+import { IsIn, IsOptional, IsString, Matches, MaxLength } from "class-validator";
 
 export class StartJengaPaymentDto {
+  @IsOptional()
+  @IsIn(BLOG_LANDING_SOURCES)
+  landing_source?: string;
   @IsIn(["MONTHLY", "ANNUAL"])
   interval: "MONTHLY" | "ANNUAL";
 

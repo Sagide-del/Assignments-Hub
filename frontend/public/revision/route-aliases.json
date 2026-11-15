@@ -4,6 +4,14 @@
     "file": "free-revision/index.html"
   },
   {
+    "path": "/revision/grade-7/",
+    "file": "revision/grade-7/index.html"
+  },
+  {
+    "path": "/revision/grade-9/",
+    "file": "revision/grade-9/index.html"
+  },
+  {
     "path": "/revision/",
     "file": "revision/index.html"
   },
@@ -20,11 +28,19 @@
     "file": "revision/grade-7-integrated-science-laboratory-safety/index.html"
   },
   {
+    "path": "/revision/grade-7/english/",
+    "file": "revision/grade-7/english/index.html"
+  },
+  {
     "path": "/revision/grade-7/integrated-science/",
     "file": "revision/grade-7/integrated-science/index.html"
   },
   {
     "path": "/revision/grade-7/mathematics/",
     "file": "revision/grade-7/mathematics/index.html"
+  },
+  {
+    "path": "/revision/grade-9/mathematics/",
+    "file": "revision/grade-9/mathematics/index.html"
   }
 ]

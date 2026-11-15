@@ -41,6 +41,7 @@ export const independentStudentsApi = {
       .then((r) => r.data),
 
   startJengaPayment: (input: {
+    landing_source?: string;
     interval: "MONTHLY" | "ANNUAL";
     phone: string;
     idempotencyKey: string;

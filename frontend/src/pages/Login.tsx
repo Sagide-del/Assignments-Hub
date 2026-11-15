@@ -1,11 +1,12 @@
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { LoginCard } from "../components/auth/LoginCard";
 import { AuthFrame } from "../components/auth/AuthFrame";
 import type { LoginType } from "../components/auth/LoginTabs";
 export default function Login() {
   const { schoolCode } = useParams<{ schoolCode?: string }>(),
     [params] = useSearchParams(),
-    navigate = useNavigate();
+    navigate = useNavigate(),
+    location = useLocation();
   const fixedSchoolCode = schoolCode?.trim().toUpperCase();
   const account: LoginType = fixedSchoolCode
     ? "student"
@@ -20,7 +21,7 @@ export default function Login() {
         key={`${account}:${fixedSchoolCode ?? ""}`}
         embedded
         loginType={account}
-        setLoginType={(type) => navigate(`/login?account=${type}`)}
+        setLoginType={(type) => navigate(`/login?account=${type}`, { state: location.state })}
         fixedSchoolCode={fixedSchoolCode}
       />
     </AuthFrame>
