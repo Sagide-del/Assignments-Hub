@@ -59,7 +59,7 @@ mkdirSync(artifacts, { recursive: true });
     await staticPage
       .getByRole("heading", { name: /A clearer way to revise/ })
       .waitFor();
-    await staticPage.getByRole("link", { name: /Mathematics.*free questions/ }).click();
+    await staticPage.locator('a.subject.available[href="/revision/grade-7/mathematics/"]').click();
     await staticPage.waitForURL("**/revision/grade-7/mathematics/");
     assert((await staticPage.locator('fieldset').count()) >= 3);
     await staticPage.getByRole('heading', { name: 'Answers and explanations' }).waitFor();
