@@ -6,6 +6,7 @@ export const BLOG_LANDING_SOURCES = [
  'blog/kjsea-past-papers-and-mocks',
  'blog/senior-school-pathways-cbc',
  'blog/grade-7-mathematics-revision-help',
+ 'blog/career-compass-kenyan-students',
 ] as const;
 export function validLandingSource(value: unknown): string | null {
  return typeof value === 'string' && (BLOG_LANDING_SOURCES as readonly string[]).includes(value) ? value : null;

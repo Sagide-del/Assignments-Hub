@@ -5,11 +5,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { generateBlog, posts } from './generate-public-blog.mjs';
 
-test('generates six searchable branded blog articles', async () => {
+test('generates seven searchable branded blog articles', async () => {
   const root = await mkdtemp(join(tmpdir(), 'assignment-hub-blog-'));
   await writeFile(join(root, 'sitemap.xml'), '<?xml version="1.0"?><urlset></urlset>');
   await generateBlog(root);
-  assert.equal(posts.length, 6);
+  assert.equal(posts.length, 7);
   assert.equal(new Set(posts.map((post) => post.slug)).size, posts.length);
   const index = await readFile(join(root, 'blog', 'index.html'), 'utf8');
   assert.match(index, /Kenyan Parent/);
@@ -20,12 +20,11 @@ test('generates six searchable branded blog articles', async () => {
     assert.match(html, /application\/ld\+json/);
     assert.ok(html.includes(post.cta_config.button_text));
     const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
-    const faq = schema['@graph'].find(item => item['@type'] === 'FAQPage');
-    assert.equal(faq.mainEntity.length, 3);
-    for (const question of faq.mainEntity) assert.ok(html.includes(question.name));
+    assert.equal(schema['@type'],'Article');
+    assert(schema.citation.length>=1);
     assert.ok(html.includes(`href="${post.cta_config.button_link}"`));
     assert.match(html, /KES 300\/month/);
-    assert.match(html, /Related parent guides/);
+    assert.match(html, /career-pathway/);
   }
   const sitemap = await readFile(join(root, 'sitemap.xml'), 'utf8');
   assert.match(sitemap, /cbc-grading-levels-explained/);
