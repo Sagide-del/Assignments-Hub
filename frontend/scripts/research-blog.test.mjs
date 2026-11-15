@@ -28,3 +28,12 @@ test('index has seven numbered Lucide themes and the Career Compass participates
  const sources=await readFile(new URL('../../backend/src/analytics/landing-source.ts',import.meta.url),'utf8');assert(sources.includes(`blog/${career.slug}`));
  const sitemap=await readFile(join(root,'sitemap.xml'),'utf8');assert(sitemap.includes(`/blog/${career.slug}/`));assert(sitemap.includes('/guides/csl-project-planner/'));
 });
+test('every article has real responsive artwork and a matching social preview',async()=>{
+ for(const post of posts){
+  const html=article(post),art=post.artwork;
+  assert(art.alt.length>30);assert(html.includes(`src="${art.src}"`));assert(html.includes(`srcset="${art.srcset}"`));
+  assert(html.includes(`property="og:image" content="https://assignmenthub.co.ke${art.share}"`));
+  const schema=JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);assert.equal(schema.image,`https://assignmenthub.co.ke${art.share}`);
+  for(const file of [art.src,art.share,...art.srcset.split(', ').map(v=>v.split(' ')[0])]){const bytes=await readFile(new URL('../public'+file,import.meta.url));assert(bytes.length>1000);assert(bytes.length<400000,`Optimised image budget: ${file}`);}
+ }
+});

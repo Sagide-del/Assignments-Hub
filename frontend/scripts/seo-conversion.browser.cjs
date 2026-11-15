@@ -8,15 +8,16 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
  try{
   for(const width of [390,1280]){
    const context=await browser.newContext({viewport:{width,height:900},javaScriptEnabled:false});const page=await context.newPage();
-   await page.goto(base+'/blog/');assert.equal(await page.locator('.topic-icon [data-lucide]').count(),7);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:artifacts+'/research-index-'+width+'.png',fullPage:true});
+   await page.goto(base+'/blog/');assert.equal(await page.locator('.topic-icon [data-lucide]').count(),7);assert.equal(await page.locator('.editorial-cover img').count(),7);for(const cover of await page.locator('.editorial-cover img').all()){await cover.scrollIntoViewIfNeeded();await cover.waitFor({state:'visible'});await page.waitForFunction(img=>img.complete&&img.naturalWidth>0,await cover.elementHandle());}assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:artifacts+'/research-index-'+width+'.png',fullPage:true});
    for(const slug of ['csl-ideas-for-students','core-vs-essential-mathematics','kjsea-past-papers-and-mocks','cbc-grading-levels-explained','senior-school-pathways-cbc','grade-7-mathematics-revision-help','career-compass-kenyan-students']){
     assert.equal((await page.goto(base+'/blog/'+slug+'/')).status(),200);assert(await page.locator('h1').isVisible());
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Article overflow: ${slug} ${width}`);
+    assert.equal(await page.locator('.article-cover img').count(),1);const image=page.locator('.article-cover img');await image.scrollIntoViewIfNeeded();await page.waitForFunction(img=>img.complete&&img.naturalWidth>0,await image.elementHandle());await page.evaluate(()=>window.scrollTo(0,0));
     const takeaway=await page.locator('.key-takeaways').boundingBox(),answer=await page.locator('.article>.quick-answer').boundingBox(),cta=await page.locator('.topic-cta').boundingBox();
     assert.equal(await page.locator('.research-insight').count(),1);assert.equal(await page.locator('.career-pathway').count(),1);assert.equal(await page.locator('.topic-cta').count(),1);
     assert.equal(await page.locator('[data-lucide="Lightbulb"]').count(),1);
     const text=await page.locator('body').innerText();assert(text.trim().split(/\s+/).length<=400,`400-word cap: ${slug}`);
-    if(width===390){assert(takeaway.x>=16,'Mobile reading gutter');assert(takeaway.y+takeaway.height<=cta.y);assert(cta.y+cta.height<=answer.y);}
+    if(width===390){assert(takeaway.x>=16,'Mobile reading gutter');assert(takeaway.y+takeaway.height<=cta.y);const picture=await page.locator('.article-cover').boundingBox();assert(cta.y+cta.height<=picture.y);assert(cta.y+cta.height<=answer.y);}
     else{assert(cta.x>takeaway.x+takeaway.width);}
     if(slug.startsWith('csl'))assert(await page.getByRole('link',{name:'Ten-project CSL planner'}).isVisible());
     if(slug.startsWith('core'))assert.equal(await page.locator('.comparison-scroll table').count(),1);
