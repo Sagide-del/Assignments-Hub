@@ -56,6 +56,7 @@ export const researchGuides = [
   bullets:['Define a small community need and measurable goal.','Borrow materials; obtain consent before photographs.','Explain what changed and what you would improve. Never invent hours.'],
   research:{text:'Celio and colleagues’ meta-analysis associated service-learning participation with gains in civic engagement, social skills and academic outcomes. Build in time for structured reflection rather than only counting hours. The studies covered varied programmes, not Kenyan hiring outcomes.',sources:[sources.service]},
   career:'Planning, communication and budgeting matter in formal employment and informal enterprise. Use service to demonstrate those skills, not promise a job.',
+  projectExamples:['Water-saving audit','Tree care','Peer reading','Supervised clean-up','Container gardening','Local-history interview','Road-safety posters','Book sharing','Digital-skills coaching','Energy-saving campaign'],
   links:[{text:'Ten-project CSL planner',href:'/guides/csl-project-planner/'},{text:'Kenya employment context: KNBS',href:'https://www.knbs.or.ke/'}],
   cta:{title:'Keep your service evidence together.',description:'Record activities for teacher review. School requirements apply.',button_text:'Start CSL Journey',button_link:'/student/csl'},
  },

@@ -21,7 +21,7 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
     if(!career&&width===390){assert(takeaway.x>=16,'Mobile reading gutter');assert(takeaway.y+takeaway.height<=cta.y);const picture=await page.locator('.article-cover').boundingBox();assert(cta.y+cta.height<=picture.y);if(answerFirst)assert(answer.y+answer.height<=takeaway.y);else assert(cta.y+cta.height<=answer.y);}
     else if(!career){assert(cta.x>takeaway.x+takeaway.width);}
     if(answerFirst){assert((await page.title()).length<60);assert(await page.locator('meta[name=description]').getAttribute('content'));if(width===1280)assert(answer.y<takeaway.y);}
-    if(slug.startsWith('csl'))assert(await page.getByRole('link',{name:'Ten-project CSL planner'}).isVisible());
+    if(slug.startsWith('csl')){assert.equal(await page.locator('.csl-examples li').count(),10);}if(slug.startsWith('csl'))assert(await page.getByRole('link',{name:'Ten-project CSL planner'}).isVisible());
     if(slug.startsWith('core'))assert.equal(await page.locator('.comparison-scroll table').count(),1);
     if(slug.startsWith('kjsea'))assert(await page.getByRole('link',{name:'Start Grade 9 practice'}).isVisible());
     if(career){assert.equal(await page.getByRole('link',{name:'Try Career Compass',exact:true}).getAttribute('href'),'/student/career');assert.equal(await page.locator('.career-layer-card').count(),3);assert.equal(await page.getByRole('checkbox').count(),5);await page.getByRole('checkbox').first().check();assert(await page.getByRole('checkbox').first().isChecked());}

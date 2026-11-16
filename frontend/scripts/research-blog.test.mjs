@@ -59,6 +59,7 @@ test('search-targeted metadata fits limits, answers come first, and visible FAQs
   assert(content.indexOf('class="quick-answer"')<content.indexOf('class="key-takeaways"'));
   const schemas=[...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(match=>JSON.parse(match[1]));
   assert.equal(schemas[0].dateModified,'2026-11-16');
+  if(post.projectExamples)assert.equal((content.match(/<section class="csl-examples">[\s\S]*?<\/section>/)[0].match(/<li>/g)||[]).length,10);
   if(post.faqs){const faq=schemas.find(schema=>schema['@type']==='FAQPage');assert.equal(faq.mainEntity.length,2);for(const [i,item] of post.faqs.entries()){assert(content.includes(`<summary>${escape(item.question)}</summary>`));assert(content.includes(escape(item.answer)));assert.equal(faq.mainEntity[i].name,item.question);assert.equal(faq.mainEntity[i].acceptedAnswer.text,item.answer);}}
  }
  const root=await mkdtemp(join(tmpdir(),'query-seo-'));await writeFile(join(root,'sitemap.xml'),'<urlset></urlset>');await generateBlog(root);const sitemap=await readFile(join(root,'sitemap.xml'),'utf8');

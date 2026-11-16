@@ -5,6 +5,7 @@ Updated the Maths, CSL and Pathways guides using observed Search Console queries
 - Separate search titles from H1s: 58 characters for Maths, 59 for CSL, 54 for Pathways. No appended brand suffix pushes them over the limit.
 - Descriptions directly define the topic and describe relevant content (157/147/151 characters respectively).
 - The direct answer now comes first in the article, visually and in the initial HTML, before takeaways and promotional content.
+- CSL lists all ten project ideas directly on the article, with the detailed cost/reflection planner still linked.
 - Maths and CSL each have two native expandable FAQs. A separate FAQPage JSON-LD block matches their visible questions and answers; the original Article schema remains intact. This does not promise Google FAQ rich results.
 - The three edited articles and blog index have accurate 16 November last-modified dates. Unedited articles retain 15 November metadata.
 
