@@ -7,7 +7,7 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
  const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.AUTH_CHROMIUM_EXECUTABLE?{executablePath:process.env.AUTH_CHROMIUM_EXECUTABLE}:{})});
  try{
   for(const width of [390,1280]){
-   const context=await browser.newContext({viewport:{width,height:900},javaScriptEnabled:false});const page=await context.newPage();
+   const context=await browser.newContext({viewport:{width,height:900},javaScriptEnabled:false,reducedMotion:'reduce'});const page=await context.newPage();
    await page.goto(base+'/blog/');assert.equal(await page.locator('.topic-icon [data-lucide]').count(),7);assert.equal(await page.locator('.editorial-cover img').count(),7);for(const cover of await page.locator('.editorial-cover img').all()){await cover.scrollIntoViewIfNeeded();await cover.waitFor({state:'visible'});await page.waitForFunction(img=>img.complete&&img.naturalWidth>0,await cover.elementHandle());}assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:artifacts+'/research-index-'+width+'.png',fullPage:true});
    for(const slug of ['csl-ideas-for-students','core-vs-essential-mathematics','kjsea-past-papers-and-mocks','cbc-grading-levels-explained','senior-school-pathways-cbc','grade-7-mathematics-revision-help','career-compass-kenyan-students']){
     assert.equal((await page.goto(base+'/blog/'+slug+'/')).status(),200);assert(await page.locator('h1').isVisible());
@@ -25,7 +25,7 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
     if(slug.startsWith('core'))assert.equal(await page.locator('.comparison-scroll table').count(),1);
     if(slug.startsWith('kjsea'))assert(await page.getByRole('link',{name:'Start Grade 9 practice'}).isVisible());
     if(career){assert.equal(await page.getByRole('link',{name:'Try Career Compass',exact:true}).getAttribute('href'),'/student/career');assert.equal(await page.locator('.career-layer-card').count(),3);assert.equal(await page.getByRole('checkbox').count(),5);await page.getByRole('checkbox').first().check();assert(await page.getByRole('checkbox').first().isChecked());}
-    if(slug.startsWith('csl')||slug.startsWith('core')){assert.equal(await page.locator('.guide-faq details').count(),2);for(const faq of await page.locator('.guide-faq details').all()){await faq.locator('summary').click();assert(await faq.locator('p').isVisible());}}
+    if(slug.startsWith('csl')||slug.startsWith('core')){assert.equal(await page.locator('.guide-faq details').count(),2);for(const faq of await page.locator('.guide-faq details').all()){await faq.locator('summary').scrollIntoViewIfNeeded();await faq.locator('summary').click();assert(await faq.locator('p').isVisible());}}
     if(slug.startsWith('career')||slug.startsWith('csl')||slug.startsWith('core')||slug.startsWith('senior'))await page.screenshot({path:artifacts+'/research-'+slug+'-'+width+'.png',fullPage:true});
    }
    await page.goto(base+'/guides/csl-project-planner/');assert.equal(await page.locator('.csl-project').count(),10);
@@ -36,7 +36,7 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
    }
    await page.screenshot({path:artifacts+'/seo-preview-'+width+'.png',fullPage:true});await context.close();
   }
-  const context=await browser.newContext();await context.route('**/api/**',r=>r.fulfill({status:200,json:{}}));const page=await context.newPage();
+  const context=await browser.newContext({reducedMotion:'reduce'});await context.route('**/api/**',r=>r.fulfill({status:200,json:{}}));const page=await context.newPage();
   await page.goto(base+'/blog/csl-ideas-for-students/');await page.waitForFunction(()=>document.cookie.includes('ah_landing_source='));
   assert.equal(decodeURIComponent((await context.cookies()).find(c=>c.name==='ah_landing_source').value),'blog/csl-ideas-for-students');
   await page.goto(base+'/blog/core-vs-essential-mathematics/');assert.equal(decodeURIComponent((await context.cookies()).find(c=>c.name==='ah_landing_source').value),'blog/csl-ideas-for-students');
