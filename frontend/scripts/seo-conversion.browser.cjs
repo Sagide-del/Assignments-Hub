@@ -17,13 +17,16 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
     assert.equal(await page.locator('.research-insight').count(),1);assert.equal(await page.locator('.career-pathway').count(),1);assert.equal(await page.locator('.topic-cta').count(),1);
     assert.equal(await page.locator('[data-lucide="Lightbulb"]').count(),1);
     const career=slug==='career-compass-kenyan-students';const text=await page.locator(career?'[data-editorial-article]':'body').innerText();const words=text.trim().split(/\s+/).length;assert(career?words>=600&&words<=800:words<=400,`Word range: ${slug}: ${words}`);
-    if(!career&&width===390){assert(takeaway.x>=16,'Mobile reading gutter');assert(takeaway.y+takeaway.height<=cta.y);const picture=await page.locator('.article-cover').boundingBox();assert(cta.y+cta.height<=picture.y);assert(cta.y+cta.height<=answer.y);}
+    const answerFirst=await page.locator('.answer-first').count()>0;
+    if(!career&&width===390){assert(takeaway.x>=16,'Mobile reading gutter');assert(takeaway.y+takeaway.height<=cta.y);const picture=await page.locator('.article-cover').boundingBox();assert(cta.y+cta.height<=picture.y);if(answerFirst)assert(answer.y+answer.height<=takeaway.y);else assert(cta.y+cta.height<=answer.y);}
     else if(!career){assert(cta.x>takeaway.x+takeaway.width);}
+    if(answerFirst){assert((await page.title()).length<60);assert(await page.locator('meta[name=description]').getAttribute('content'));if(width===1280)assert(answer.y<takeaway.y);}
     if(slug.startsWith('csl'))assert(await page.getByRole('link',{name:'Ten-project CSL planner'}).isVisible());
     if(slug.startsWith('core'))assert.equal(await page.locator('.comparison-scroll table').count(),1);
     if(slug.startsWith('kjsea'))assert(await page.getByRole('link',{name:'Start Grade 9 practice'}).isVisible());
     if(career){assert.equal(await page.getByRole('link',{name:'Try Career Compass',exact:true}).getAttribute('href'),'/student/career');assert.equal(await page.locator('.career-layer-card').count(),3);assert.equal(await page.getByRole('checkbox').count(),5);await page.getByRole('checkbox').first().check();assert(await page.getByRole('checkbox').first().isChecked());}
-    if(slug.startsWith('career')||slug.startsWith('csl'))await page.screenshot({path:artifacts+'/research-'+slug+'-'+width+'.png',fullPage:true});
+    if(slug.startsWith('csl')||slug.startsWith('core')){assert.equal(await page.locator('.guide-faq details').count(),2);for(const faq of await page.locator('.guide-faq details').all()){await faq.locator('summary').click();assert(await faq.locator('p').isVisible());}}
+    if(slug.startsWith('career')||slug.startsWith('csl')||slug.startsWith('core')||slug.startsWith('senior'))await page.screenshot({path:artifacts+'/research-'+slug+'-'+width+'.png',fullPage:true});
    }
    await page.goto(base+'/guides/csl-project-planner/');assert.equal(await page.locator('.csl-project').count(),10);
    for(const kind of ['sports','music']){

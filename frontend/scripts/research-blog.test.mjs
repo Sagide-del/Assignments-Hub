@@ -49,3 +49,19 @@ test('Career Compass links real catalogue examples, accessible checkboxes and a 
  for(const code of ['ST2056','SS1040']){const combination=catalogue.find(c=>c.code===code);assert(combination);assert(html.includes(code));for(const subject of combination.subjects)assert(html.includes(subject));}
  const router=await readFile(new URL('../src/app/router/index.tsx',import.meta.url),'utf8');assert(router.includes("path: '/student/career', element: <MyPathwayPage />"));
 });
+test('search-targeted metadata fits limits, answers come first, and visible FAQs match their schema',async()=>{
+ const targeted=posts.filter(post=>post.metaTitle);assert.equal(targeted.length,3);
+ const escape=value=>value.replaceAll('&','&amp;').replaceAll("'",'&#39;');
+ for(const post of targeted){
+  const html=article(post);assert(post.metaTitle.length<60,post.metaTitle);assert(post.description.length<=160);
+  assert(html.includes(`<title>${escape(post.metaTitle)}</title>`));assert(html.includes(`name="description" content="${escape(post.description)}"`));
+  const content=html.match(/data-editorial-article>([\s\S]*?)<\/article>/)[1];assert(content.startsWith('<section class="quick-answer">'));
+  assert(content.indexOf('class="quick-answer"')<content.indexOf('class="key-takeaways"'));
+  const schemas=[...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(match=>JSON.parse(match[1]));
+  assert.equal(schemas[0].dateModified,'2026-11-16');
+  if(post.faqs){const faq=schemas.find(schema=>schema['@type']==='FAQPage');assert.equal(faq.mainEntity.length,2);for(const [i,item] of post.faqs.entries()){assert(content.includes(`<summary>${escape(item.question)}</summary>`));assert(content.includes(escape(item.answer)));assert.equal(faq.mainEntity[i].name,item.question);assert.equal(faq.mainEntity[i].acceptedAnswer.text,item.answer);}}
+ }
+ const root=await mkdtemp(join(tmpdir(),'query-seo-'));await writeFile(join(root,'sitemap.xml'),'<urlset></urlset>');await generateBlog(root);const sitemap=await readFile(join(root,'sitemap.xml'),'utf8');
+ for(const post of targeted)assert(sitemap.includes(`/blog/${post.slug}/</loc><lastmod>2026-11-16</lastmod>`));
+ const pathways=targeted.find(post=>post.icon==='Route');assert(pathways.answer.includes('2019'));for(const term of ['Pure Sciences','Applied Sciences','Technical and Engineering','Career and Technology Studies'])assert(pathways.answer.includes(term));
+});
