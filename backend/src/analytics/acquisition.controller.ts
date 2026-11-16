@@ -10,7 +10,7 @@ import { AcquisitionService } from './acquisition.service';
 export class AcquisitionController {
   constructor(private readonly acquisition: AcquisitionService) {}
   @Get('capabilities') @Public()
-  async capabilities() { await this.acquisition.ready(); return { ready: true, version: 3, attribution: true }; }
+  async capabilities() { await this.acquisition.ready(); return { ready: true, version: 4, attribution: true }; }
   @Post('events') @Public() @HttpCode(202)
   @Throttle({ default: { limit: 40, ttl: 60000 } })
   async event(@Body() dto: AcquisitionEventDto) { await this.acquisition.record(dto); return { accepted: true }; }

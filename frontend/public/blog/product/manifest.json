@@ -1,0 +1,20 @@
+{
+  "weekly-study-timetable-demo.webp": {
+    "provenance": "Browser test fixture: Demo Academy, synthetic learner data",
+    "width": 1440,
+    "height": 1491,
+    "sha256": "36a6d75de67a76c852588135b98e0c36ff210b567ce55b295bd4e6e99c96b95e"
+  },
+  "sba-dashboard-demo.webp": {
+    "provenance": "Browser test fixture: synthetic Demo Academy SBA records",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "619f401e556d87ff1ef4b4002ff6f85f7d66d03c05576b5fc8bb87a6a65516e2"
+  },
+  "3d-respiratory-lab-workspace.webp": {
+    "provenance": "Existing product preview: respiratory workspace",
+    "width": 1440,
+    "height": 1767,
+    "sha256": "f3221d397ee3c975e49011c47b0d41613de9964696041cb04261a0826caba810"
+  }
+}

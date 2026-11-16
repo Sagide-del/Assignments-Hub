@@ -302,6 +302,10 @@ export const router = createBrowserRouter([
           {path:'/student/kjsea-mock-test/:id',element:<KjseaMockPlayerPage/>},
           {path:'/student/assignments/practice/:id',element:<KjseaMockPlayerPage/>},
           {
+            path: '/student/coach',
+            element: <LearningCoachPage />,
+          },
+          {
             path: '/student/learning-coach',
             element: <LearningCoachPage />,
           },

@@ -4,10 +4,15 @@
     "share": "career-alignment-share.jpg",
     "shareHash": "60bad62725e9853162f103eb065ede819e9f8bfaeda42eada0ce0a28622180bf"
   },
+  "career-path-selection-flow.svg": {
+    "source": "330d804ab385d0be4a444c828047ece8ad951b11c568b14722604e0b4f410365",
+    "share": "career-path-selection-flow-share.jpg",
+    "shareHash": "620d9cb39cb91ddba1dcfaf7c9f379671e7385e8415bbaa33eb8a45bd03615a3"
+  },
   "cbc-grading.svg": {
-    "source": "3e046e3b48b3b203fe290ca08f6ec448a754f2f773a6dfec89bb880294786dee",
+    "source": "74fe24b29e7aebdfe7d4d94b058355418bb377dec0658065b0006eed5523caac",
     "share": "cbc-grading-share.jpg",
-    "shareHash": "46ca670cda71decf8e8ae1616e52926c2b3da7a8a40e0bf87d866da21ed10735"
+    "shareHash": "a2198c2c2790bdf107d12058d0636e84b32ee08ea701248f3af86f400f16cb6d"
   },
   "csl-cycle.svg": {
     "source": "288e855b48ec1e3f921208879e6587a97fe717054dc32cfc9996115553dad881",
@@ -19,6 +24,11 @@
     "share": "fraction-bars-share.jpg",
     "shareHash": "4c7a05adb4cb6f2f92ceb0e4c45cfbfaa3af17e72bf85cc203316f432fee9228"
   },
+  "individualized-study-timetable.svg": {
+    "source": "f55cefa565102e4baf472c55a37bc7ed3f5e005ab0954e05c220d4dd4c783bec",
+    "share": "individualized-study-timetable-share.jpg",
+    "shareHash": "aedcf6aa1ae96298e5e00a742be2891d0e05432f650b291d99ee6cc8b74fbba6"
+  },
   "math-comparison.svg": {
     "source": "10d030f6d6403910628ee0aa9939d341c7084fe32f04545a894e492e57d0739b",
     "share": "math-comparison-share.jpg",
@@ -29,9 +39,19 @@
     "share": "revision-cycle-share.jpg",
     "shareHash": "73df05c846f670e8a85cdbb565a927e07c704f407ef86bdf964c709323751d63"
   },
+  "short-topic-test-cycle.svg": {
+    "source": "35a89c36865d734a1d15324c947c764dbc94694e565fcb1c10ea44a5cd55f2a9",
+    "share": "short-topic-test-cycle-share.jpg",
+    "shareHash": "a2d89a84cfae24e0d893aa49d076ca83fede3e8c3f9caa123b7ecb2741e796ea"
+  },
   "stem-pathways.svg": {
     "source": "b864cca43d5e2d6557cec71797635f34d72c22a18f33048a9d6057c93a7243b5",
     "share": "stem-pathways-share.jpg",
     "shareHash": "b5224defafc4278d136170bacdac80bc387a35a46169e2b089758e4ea22f178f"
+  },
+  "virtual-labs-overview.svg": {
+    "source": "fc5016b90ed24ea780721169b0d380b71f8631c7606dc88ab4d48ffddba1fb09",
+    "share": "virtual-labs-overview-share.jpg",
+    "shareHash": "3cfb09f5f99af4015799c6e91f81f12c6c6777c98aa2e8988aa040096638a7ba"
   }
 }

@@ -17,6 +17,6 @@ const hash=data=>createHash('sha256').update(data).digest('hex');
    manifest[file]={source:hash(svg),share,shareHash:hash(await readFile(resolve(root,share)))};
   }
   await writeFile(resolve(root,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
-  console.log('Rendered seven matching JPEG sharing diagrams and provenance hashes.');
+  console.log('Rendered matching JPEG sharing diagrams and provenance hashes.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

@@ -1,3 +1,4 @@
+import popularGuides from '../../content/popular-guides.json';
 import "./home-mobile.css";
 import { useEffect } from "react";
 import { showHomepageFaq } from "../utils/homepage-schema";
@@ -662,6 +663,7 @@ export default function Home() {
       </main>
 
       <footer className="bg-[#0a1117] text-slate-300">
+        <nav aria-label="Popular Guides" className="mx-auto max-w-6xl px-6 py-6 text-sm"><h2 className="font-semibold text-white">Popular Guides</h2><ul className="mt-3 flex flex-wrap gap-x-6 gap-y-3">{popularGuides.map(guide=><li key={guide.href}><a href={guide.href} className="hover:text-white">{guide.label}</a></li>)}</ul></nav>
         <div className="border-t border-white/10 px-4 py-5 text-center text-xs text-slate-500">
           © 2026 Andolih EdTech Studios. All rights reserved.
         </div>

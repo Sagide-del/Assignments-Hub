@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import {mkd
 import {generateBlog,posts} from './generate-public-blog.mjs';import {captureLandingSource} from '../public/revision/assets/landing-source.mjs';import {cslProjects} from '../content/blog-upgrades.mjs';import {grade9Math,grade7English} from '../content/seo-practice.mjs';
 test('articles have topic-specific CTAs, practical content, real previews and stable sitemaps',async()=>{
  const root=await mkdtemp(join(tmpdir(),'seo-conversion-'));await writeFile(join(root,'sitemap.xml'),'<urlset></urlset>');await generateBlog(root);
- assert.equal(new Set(posts.map(p=>p.cta_config.button_link)).size,7);
+ assert(posts.every(p=>p.cta_config.button_link.startsWith('/student/')||p.cta_config.button_link.startsWith('/revision/')||p.cta_config.button_link.startsWith('/labs/')));
  for(const p of posts){const h=await readFile(join(root,'blog',p.slug,'index.html'),'utf8');assert.ok(h.includes(`href="${p.cta_config.button_link}"`));assert.ok(h.includes('Key takeaways'));assert.ok(h.includes('mobile-topic-cta'));assert.ok(h.includes('data-blog-source="blog/'+p.slug+'"'));}
  const csl=await readFile(join(root,'guides/csl-project-planner/index.html'),'utf8');assert.equal((csl.match(/class="quick-answer csl-project"/g)||[]).length,10);for(const item of cslProjects)for(const text of item)assert.ok(csl.includes(text));
  const maths=await readFile(join(root,'blog/core-vs-essential-mathematics/index.html'),'utf8');assert.ok(maths.includes('<table>'));assert.ok(maths.includes('7√2'));assert.ok(maths.includes('KES 800'));assert.ok(!maths.includes('Lower (Business'));

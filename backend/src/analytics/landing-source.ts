@@ -7,6 +7,10 @@ export const BLOG_LANDING_SOURCES = [
  'blog/senior-school-pathways-cbc',
  'blog/grade-7-mathematics-revision-help',
  'blog/career-compass-kenyan-students',
+ 'blog/career-path-selection-guide',
+ 'blog/individualized-study-timetables',
+ 'blog/short-topic-based-tests',
+ 'blog/role-of-virtual-labs',
 ] as const;
 export function validLandingSource(value: unknown): string | null {
  return typeof value === 'string' && (BLOG_LANDING_SOURCES as readonly string[]).includes(value) ? value : null;
