@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build --config vite.config.ts && node scripts/prerender-home.mjs",
     "preview": "vite preview --config vite.config.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "prebuild": "node scripts/generate-revision.mjs && node scripts/generate-public-revision.mjs && node scripts/generate-home-seo.mjs && node scripts/generate-public-blog.mjs",
+    "prebuild": "node scripts/generate-revision.mjs && node scripts/generate-public-revision.mjs && node scripts/generate-home-seo.mjs && node scripts/generate-blog-diagrams.mjs && node scripts/generate-public-blog.mjs",
     "test:cheatsheet": "node --test scripts/cheatsheet.test.mjs",
     "test:student-scope": "node --test scripts/student-scope.test.mjs",
     "test:revision": "node --test scripts/revision.test.mjs scripts/home-seo.test.mjs scripts/public-revision.test.mjs scripts/public-blog.test.mjs scripts/acquisition.test.mjs scripts/seo-conversion.test.mjs scripts/research-blog.test.mjs",

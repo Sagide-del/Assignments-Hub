@@ -6,26 +6,26 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.AUTH_CHROMIUM_EXECUTABLE?{executablePath:process.env.AUTH_CHROMIUM_EXECUTABLE}:{})});
  try{
-  for(const width of [390,1280]){
+  for(const width of [320,390,1280]){
    const context=await browser.newContext({viewport:{width,height:900},javaScriptEnabled:false,reducedMotion:'reduce'});const page=await context.newPage();
    await page.goto(base+'/blog/');assert.equal(await page.locator('.topic-icon [data-lucide]').count(),7);assert.equal(await page.locator('.editorial-cover img').count(),7);for(const cover of await page.locator('.editorial-cover img').all()){await cover.scrollIntoViewIfNeeded();await cover.waitFor({state:'visible'});await page.waitForFunction(img=>img.complete&&img.naturalWidth>0,await cover.elementHandle());}assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:artifacts+'/research-index-'+width+'.png',fullPage:true});
    for(const slug of ['csl-ideas-for-students','core-vs-essential-mathematics','kjsea-past-papers-and-mocks','cbc-grading-levels-explained','senior-school-pathways-cbc','grade-7-mathematics-revision-help','career-compass-kenyan-students']){
     assert.equal((await page.goto(base+'/blog/'+slug+'/')).status(),200);assert(await page.locator('h1').isVisible());
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Article overflow: ${slug} ${width}`);
     assert.equal(await page.locator('.article-cover img').count(),1);const image=page.locator('.article-cover img');await image.scrollIntoViewIfNeeded();await page.waitForFunction(img=>img.complete&&img.naturalWidth>0,await image.elementHandle());await page.evaluate(()=>window.scrollTo(0,0));
-    const takeaway=await page.locator('.key-takeaways').boundingBox(),answer=await page.locator('.article>.quick-answer').boundingBox(),cta=await page.locator('.topic-cta').boundingBox();
-    assert.equal(await page.locator('.research-insight').count(),1);assert.equal(await page.locator('.career-pathway').count(),1);assert.equal(await page.locator('.topic-cta').count(),1);
+    assert.equal(await page.locator('.research-insight').count(),1);assert.equal(await page.locator('.career-pathway').count(),1);assert.equal(await page.locator('.topic-cta').count(),1);assert(await page.locator('.topic-cta .button').isVisible(),'Topic CTA must remain visible');
     assert.equal(await page.locator('[data-lucide="Lightbulb"]').count(),1);
-    const career=slug==='career-compass-kenyan-students';const text=await page.locator(career?'[data-editorial-article]':'body').innerText();const words=text.trim().split(/\s+/).length;assert(career?words>=600&&words<=800:words<=400,`Word range: ${slug}: ${words}`);
-    const answerFirst=await page.locator('.answer-first').count()>0;
-    if(!career&&width===390){assert(takeaway.x>=16,'Mobile reading gutter');assert(takeaway.y+takeaway.height<=cta.y);const picture=await page.locator('.article-cover').boundingBox();assert(cta.y+cta.height<=picture.y);if(answerFirst)assert(answer.y+answer.height<=takeaway.y);else assert(cta.y+cta.height<=answer.y);}
-    else if(!career){assert(cta.x>takeaway.x+takeaway.width);}
-    if(answerFirst){assert((await page.title()).length<60);assert(await page.locator('meta[name=description]').getAttribute('content'));if(width===1280)assert(answer.y<takeaway.y);}
-    if(slug.startsWith('csl')){assert.equal(await page.locator('.csl-examples li').count(),10);}if(slug.startsWith('csl'))assert(await page.getByRole('link',{name:'Ten-project CSL planner'}).isVisible());
+    const words=Number(await page.locator('[data-editorial-article]').getAttribute('data-word-count'));assert(words>=800&&words<=1200,`${slug}: ${words}`);
+    assert.equal(await page.locator('.key-takeaways li').count(),3);assert.equal(await page.locator('.related-guide-card').count(),4);
+    assert(await page.locator('.brand-introduction').isVisible());assert.equal(await page.locator('.brand-introduction a').getAttribute('href'),'/about/');
+    assert((await page.locator('[data-article-copy] a[href^="/blog/"]').count())>=2,'Contextual internal links');
+    const headings=await page.locator('[data-editorial-article] h2,[data-editorial-article] h3').evaluateAll(nodes=>nodes.map(n=>n.id));const anchors=await page.locator('.article-toc a').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('href').slice(1)));assert.deepEqual(anchors,headings);assert.equal(new Set(headings).size,headings.length);
+    await page.locator('.article-toc summary').click();assert(await page.locator('.article-toc a').first().isVisible());await page.locator('.article-toc a').first().click();assert(new URL(page.url()).hash.length>1);
+    const faqCount=await page.locator('.guide-faq details').count();assert(faqCount>=3&&faqCount<=5);for(const faq of await page.locator('.guide-faq details').all()){await faq.locator('summary').scrollIntoViewIfNeeded();await faq.locator('summary').click();assert(await faq.locator('p').isVisible());}
+    if(slug.startsWith('csl')){assert.equal(await page.locator('.csl-examples li').count(),10);assert(await page.getByRole('link',{name:'Ten-project CSL planner',exact:true}).isVisible());}
     if(slug.startsWith('core'))assert.equal(await page.locator('.comparison-scroll table').count(),1);
-    if(slug.startsWith('kjsea'))assert(await page.getByRole('link',{name:'Start Grade 9 practice'}).isVisible());
-    if(career){assert.equal(await page.getByRole('link',{name:'Try Career Compass',exact:true}).getAttribute('href'),'/student/career');assert.equal(await page.locator('.career-layer-card').count(),3);assert.equal(await page.getByRole('checkbox').count(),5);await page.getByRole('checkbox').first().check();assert(await page.getByRole('checkbox').first().isChecked());}
-    if(slug.startsWith('csl')||slug.startsWith('core')){assert.equal(await page.locator('.guide-faq details').count(),2);for(const faq of await page.locator('.guide-faq details').all()){await faq.locator('summary').scrollIntoViewIfNeeded();await faq.locator('summary').click();assert(await faq.locator('p').isVisible());}}
+    if(slug.startsWith('kjsea'))assert(await page.getByRole('link',{name:'Start Grade 9 practice',exact:true}).isVisible());
+    if(slug.startsWith('career')){assert.equal(await page.getByRole('link',{name:'Try Career Compass',exact:true}).getAttribute('href'),'/student/career');assert.equal(await page.locator('.career-layer-card').count(),3);assert.equal(await page.getByRole('checkbox').count(),5);await page.getByRole('checkbox').first().check();assert(await page.getByRole('checkbox').first().isChecked());}
     if(slug.startsWith('career')||slug.startsWith('csl')||slug.startsWith('core')||slug.startsWith('senior'))await page.screenshot({path:artifacts+'/research-'+slug+'-'+width+'.png',fullPage:true});
    }
    await page.goto(base+'/guides/csl-project-planner/');assert.equal(await page.locator('.csl-project').count(),10);
@@ -45,6 +45,6 @@ const artifacts=process.env.AUTH_UI_ARTIFACT_DIR||'/tmp/seo-conversion-browser';
   for(const field of await page.locator('fieldset').all())await field.locator(`input[value="${await field.getAttribute('data-answer')}"]`).check();
   await page.getByRole('button',{name:'Check my answers',exact:true}).click();await page.getByRole('status').filter({hasText:'You scored 5 out of 5'}).waitFor();
   await page.goto(base+'/revision/grade-9/');assert(await page.getByRole('link',{name:/Mathematics/}).first().isVisible());
-  await context.close();console.log('PASS: public article layouts, topic CTAs, research citations, short and long article word ranges, early mobile CTAs, seven Lucide themes, ten CSL projects, maths comparison, linked KJSEA samples, real lab previews, first-touch source and English practice.');
+  await context.close();console.log('PASS: public article layouts, topic CTAs, research citations, 800–1,200-word guides, generated TOCs, related grids, topic CTAs, seven Lucide themes, ten CSL projects, maths comparison, linked KJSEA samples, real lab previews, first-touch source and English practice.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

@@ -1,16 +1,11 @@
-// Original generated editorial artwork: illustrative scenes, not documented pupils or events.
-const artwork = (name, alt) => ({
- src:`/blog/artwork/${name}-960.webp`,
- srcset:[480,960,1440].map(width=>`/blog/artwork/${name}-${width}.webp ${width}w`).join(', '),
- share:`/blog/artwork/${name}-share.jpg`,
- alt, width:1536, height:1024,
-});
-export const blogArtwork = {
- 'cbc-grading-levels-explained':artwork('grading-feedback','Editorial illustration of a parent and learner reviewing progress together.'),
- 'senior-school-pathways-cbc':artwork('career-pathways','Illustrated Kenyan learners exploring branching science, creative and technical pathways.'),
- 'kjsea-past-papers-and-mocks':artwork('exam-revision','Illustrative study scene of a Kenyan learner practising with a notebook and study timer.'),
- 'csl-ideas-for-students':artwork('community-service','Illustrative community-service scene of Kenyan learners planting a tree with adult supervision.'),
- 'core-vs-essential-mathematics':artwork('mathematics','Hand-drawn maths collage with fractions, geometry tools, algebra and an illustrated notebook.'),
- 'grade-7-mathematics-revision-help':artwork('mathematics','Maths doodles showing fraction circles, a compass, protractor and worked mathematical symbols.'),
- 'career-compass-kenyan-students':artwork('career-pathways','Illustrated young people exploring several possible education and career paths.'),
+// Original, hand-authored explanatory diagrams. Source: generate-blog-diagrams.mjs.
+const diagram=(name,alt)=>({src:`/blog/diagrams/${name}.svg`,share:`/blog/diagrams/${name}-share.jpg`,alt,width:1536,height:1024,type:'diagram'});
+export const blogArtwork={
+ 'cbc-grading-levels-explained':diagram('cbc-grading','Four CBC performance descriptions connected to reading evidence, locating a gap, practice and review.'),
+ 'senior-school-pathways-cbc':diagram('stem-pathways','Four STEM areas identified as the KICD 2019 framework, with a reminder to check current MoE school combinations.'),
+ 'kjsea-past-papers-and-mocks':diagram('revision-cycle','An illustrative study cycle: learn on day one, recall on day two, mix practice on day four and retry on day seven.'),
+ 'csl-ideas-for-students':diagram('csl-cycle','Five CSL steps: identify a need, obtain approval, act safely, collect evidence and reflect honestly.'),
+ 'core-vs-essential-mathematics':diagram('math-comparison','Core and Essential Mathematics reasoning examples: simplifying surds and calculating simple interest.'),
+ 'grade-7-mathematics-revision-help':diagram('fraction-bars','Accurately proportioned bars showing one half equals two quarters equals four eighths, and a common-denominator sum.'),
+ 'career-compass-kenyan-students':diagram('career-alignment','Three career-planning perspectives: student interests, parent hopes and budget, and Kenyan education and work opportunities.'),
 };

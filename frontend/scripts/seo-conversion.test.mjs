@@ -6,7 +6,7 @@ test('articles have topic-specific CTAs, practical content, real previews and st
  for(const p of posts){const h=await readFile(join(root,'blog',p.slug,'index.html'),'utf8');assert.ok(h.includes(`href="${p.cta_config.button_link}"`));assert.ok(h.includes('Key takeaways'));assert.ok(h.includes('mobile-topic-cta'));assert.ok(h.includes('data-blog-source="blog/'+p.slug+'"'));}
  const csl=await readFile(join(root,'guides/csl-project-planner/index.html'),'utf8');assert.equal((csl.match(/class="quick-answer csl-project"/g)||[]).length,10);for(const item of cslProjects)for(const text of item)assert.ok(csl.includes(text));
  const maths=await readFile(join(root,'blog/core-vs-essential-mathematics/index.html'),'utf8');assert.ok(maths.includes('<table>'));assert.ok(maths.includes('7√2'));assert.ok(maths.includes('KES 800'));assert.ok(!maths.includes('Lower (Business'));
- const kjsea=await readFile(join(root,'blog/kjsea-past-papers-and-mocks/index.html'),'utf8');assert.ok(kjsea.includes('/revision/grade-9/'));assert.ok(kjsea.includes('not an official paper'));
+ const kjsea=await readFile(join(root,'blog/kjsea-past-papers-and-mocks/index.html'),'utf8');assert.ok(kjsea.includes('/revision/grade-9/'));assert.ok(kjsea.includes('not an official KNEC paper'));
  for(const kind of ['sports','music']){const h=await readFile(join(root,'labs',kind,'preview/index.html'),'utf8');assert.ok(h.includes('static screenshot'));assert.ok(h.includes('Sign in to interact'));assert.ok(h.includes('/product-previews/'));}
  const first=await readFile(join(root,'sitemap.xml'),'utf8');await generateBlog(root);assert.equal(await readFile(join(root,'sitemap.xml'),'utf8'),first);
 });
