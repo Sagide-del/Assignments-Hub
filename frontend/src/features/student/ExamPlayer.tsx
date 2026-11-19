@@ -29,7 +29,7 @@ import { useAssignmentDraft } from "./exam-workspace/useAssignmentDraft";
 import { assignmentsApi } from "../../api/assignments.api";
 import { submissionsApi } from "../../api/submissions.api";
 import { uploadsApi } from "../../api/uploads.api";
-import { apiErrorMessage } from "../../api/axios";
+import { api, apiErrorMessage } from "../../api/axios";
 import { RichContent } from "../../components/ui/RichContent";
 import { AnswerInputWithSymbols } from "./answer-input/AnswerInputWithSymbols";
 import type { Question } from "../../types";
