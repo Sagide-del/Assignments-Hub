@@ -111,7 +111,7 @@ export const deepGuides={
 'csl-ideas-for-students':{
  takeaways:['Choose a genuine community need and obtain school approval before acting.','Keep consent, supervision, honest evidence and reflection in the plan.','Use the ten ideas as starting points, not as a reason to invent hours.'],
  sections:[
- section('What Community Service Learning means',[
+ section('What is CSL? Community Service Learning explained',[
  'Community Service Learning connects classroom learning with a project that addresses a community need and includes reflection on the experience. A strong project allows the learner to explain the need, their contribution, what changed and what they would improve, rather than simply presenting a photograph of an activity.',
  'Its importance lies in both the benefit to the community and the learning involved in planning, listening, cooperation and responsibility. An attractive poster or a large number of claimed hours is weak evidence if the learner cannot describe who needed the activity and how their own work helped.',
  ]),
@@ -119,7 +119,7 @@ export const deepGuides={
  'Begin by identifying a small need with the intended beneficiaries, then discuss a safe response with the school or responsible adult. Obtain approval before arranging visits, collecting information or buying materials, so the activity fits the school’s guidance and the people it is meant to support.',
  'Carry out the approved work with supervision, record truthful evidence and hours, and write a reflection while the details are still fresh. Confirm current requirements with the school: Assignment Hub’s recording tools support the process but do not establish a national hours rule or replace a teacher’s approval.',
  ],{steps:['Identify a need and listen to the people affected.','Get school approval and agree on supervision.','Carry out the safe, planned activity.','Record evidence and submit hours honestly.','Reflect on the result and the next improvement.']}),
- section('Choose from ten realistic project ideas',[
+ section('Ten CSL project ideas for Kenyan students',[
  'Start small enough to complete and review: a carefully maintained tree or a repeatable reading session can create better evidence of learning than a large one-day campaign. Choose an activity for which the learner can obtain permission, contribute directly and observe a useful outcome without taking unnecessary risks.',
  'The following ideas are prompts for discussion, not automatic school approval. The [[ten-project CSL planner|/guides/csl-project-planner/]] adds materials, indicative budgets, supervision, evidence and fictional worked reflections that learners should adapt only to work they genuinely completed.',
  ],{examples:['Water-saving audit','Tree care','Peer reading','Supervised clean-up','Container gardening','Local-history interview','Road-safety posters','Book sharing','Digital-skills coaching','Energy-saving campaign']}),
@@ -147,7 +147,7 @@ export const deepGuides={
  resources:[{text:'KICD curriculum information',href:'https://kicd.ac.ke/'},{text:'Current MoE pathway combinations',href:'https://selection-placement.kemis.go.ke/pathways'}],
  takeaways:['Compare actual curriculum depth, subject combinations and intended course requirements.','Difficulty is a reason to investigate foundations, not a label for a learner.','Try worked examples and confirm institutional requirements before narrowing options.'],
  sections:[
- section('What Core Mathematics and Essential Mathematics mean',[
+ section('Core vs Essential Mathematics: the difference',[
  'Core Mathematics supports mathematical depth for STEM study, while Essential Mathematics emphasises applied quantitative skills for other pathway needs. Use those descriptions as an orientation, then consult the current curriculum design and the school’s approved combination rather than assuming that the names define every topic or future option.',
  'Neither route alone establishes university eligibility, and neither should be used as a judgement of a learner’s worth. A family needs to compare the proposed subjects, the learner’s current foundations and the published requirements of possible later courses before making a choice.',
  ],{table:{caption:'Compare the questions that matter',headers:['Feature','Core Mathematics','Essential Mathematics'],rows:[['Pathway context','Commonly linked to STEM study','Linked to other pathway needs'],['What to check','Required mathematical depth and applications','Required quantitative skills and applications'],['Future course','Check institutional subject and grade rules','Check the same published admission rules']]}}),
