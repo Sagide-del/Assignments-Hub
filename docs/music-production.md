@@ -18,6 +18,8 @@ Music students open the new arrangement workspace at /student/labs/music. Existi
 
 The activities practise pulse, ostinato/call-response, scales, four-bar melodic shape, timbre, balance, arrangement and reflection, with additional prompts for Grades 11–12. This is curriculum-oriented skill practice, not a claim of KICD certification or a complete verified curriculum design. Activity completion markers are learner self-reports; teacher assessment remains explicit.
 
+The production workspace presents these five activities as one **Music Journey** rather than five disconnected tabs. Each stage names one learner objective and the evidence it produces, so a learner can move from pulse to melody, sound choice, arrangement and final reflection without carrying unnecessary controls from the next stage. The audio-provenance panel links directly to the bundled sample manifest and CC0 licence. It also states clearly that recorded orchestral samples are learning sounds, not field recordings or substitutes for Kenyan cultural practitioners.
+
 VexFlow renders real notes, rests, clefs, key and time signatures for SATB, Organ, Acoustic Guitar, Acoustic Bass and two Drumset staves. The current bar is highlighted during playback. The note editor allows C Major, A Minor and Pentatonic scales. Pattern lengths are 16 sixteenths in 4/4, 12 in 6/8, and 24 in 12/8. Note lengths and patterns are validated, and changing meter resizes/quantizes them without overlaps. Instrument practice provides synthesized Piano, Marimba, Kalimba, Nyatiti, Sitar and Erhu teaching voices; these are not samples of authentic instruments.
 
 ## Audio and export

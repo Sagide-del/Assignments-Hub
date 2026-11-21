@@ -1,5 +1,10 @@
 import { StudioNav } from "../../../../features/student/music-production/StudioNav";
 import { StudioLibrary } from "../../../../features/student/music-production/StudioLibrary";
+import {
+  AudioProvenance,
+  MUSIC_ACTIVITY_IDS,
+  MusicJourney,
+} from "../../../../features/student/music-production/MusicJourney";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
@@ -58,13 +63,7 @@ interface SavedMix extends ProductionDraft {
   score: number | null;
   review_comment: string | null;
 }
-const ACTIVITIES = [
-  ["rhythm", "Rhythm"],
-  ["melody", "Melody"],
-  ["instrument", "Instruments"],
-  ["composition", "Arrange"],
-  ["production", "Produce"],
-] as const;
+const ACTIVITIES = MUSIC_ACTIVITY_IDS;
 const origin: Record<Instrument, string> = {
   Piano: "A keyboard instrument developed in Europe and played worldwide.",
   Marimba:
@@ -350,7 +349,7 @@ export default function MusicProductionStudio() {
       if (mounted.current) setBusy("");
     }
   }
-  if (!ACTIVITIES.some(([a]) => a === activity))
+  if (!ACTIVITIES.includes(activity as (typeof ACTIVITIES)[number]))
     return (
       <div>
         <h1 className="text-xl font-semibold">Activity not found</h1>
@@ -375,25 +374,8 @@ export default function MusicProductionStudio() {
   };
   return (
     <div className="mx-auto max-w-7xl space-y-4 text-[#101820]">
-      <StudioNav subtitle="Build a rhythm. Find a melody. Arrange your own sound." />
-      <nav
-        aria-label="Music activities"
-        className="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1"
-      >
-        {ACTIVITIES.map(([slug, label], i) => (
-          <Link
-            key={slug}
-            to={`/student/labs/music/${slug}`}
-            aria-current={activity === slug ? "page" : undefined}
-            className={`flex min-h-10 shrink-0 items-center gap-2 rounded-md px-3 text-xs ${activity === slug ? "bg-white font-semibold shadow-sm" : "text-slate-500"}`}
-          >
-            <span className="text-[10px]">
-              {complete.includes(slug) ? <Check size={12} /> : i + 1}
-            </span>
-            {label}
-          </Link>
-        ))}
-      </nav>
+      <StudioNav subtitle="A focused place to practise, create and submit your own music." />
+      <MusicJourney active={activity as (typeof ACTIVITIES)[number]} completed={complete} />
       <section className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -572,6 +554,7 @@ export default function MusicProductionStudio() {
           {complete.includes(activity) ? "Step complete" : "Mark step complete"}
         </button>
       </section>
+      <AudioProvenance />
       {activity === "composition" && (
         <button className={button} onClick={() => setLibraryOpen(true)}>
           <FolderOpen size={15} />
