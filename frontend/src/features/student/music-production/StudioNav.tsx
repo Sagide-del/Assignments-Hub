@@ -5,6 +5,7 @@ import {
   FolderOpen,
   Music2,
   ArrowUpRight,
+  Piano,
   Guitar,
   Drum,
 } from "lucide-react";
@@ -75,7 +76,7 @@ export function StudioNav({
       {!pathname.endsWith("/guitar") && !pathname.endsWith("/drums") && (
         <nav
           aria-label="Studio workspace"
-          className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm"
+          className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm"
         >
           {[
             {
@@ -85,11 +86,18 @@ export function StudioNav({
               active: play,
             },
             {
+              to: "/student/labs/music/piano",
+              label: "Piano roll",
+              Icon: Piano,
+              active: pathname.endsWith("/piano"),
+            },
+            {
               to: "/student/labs/music/composition",
               label: "Compose",
               Icon: SlidersHorizontal,
               active:
                 !play &&
+                !pathname.endsWith("/piano") &&
                 !pathname.endsWith("/projects") &&
                 !pathname.endsWith("/loops"),
             },

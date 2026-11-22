@@ -670,6 +670,7 @@ export default function MusicProductionStudio() {
         <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="mr-auto text-sm font-semibold">Four-bar melody</h2>
+            <Link to="/student/labs/music/piano" className="rounded-lg bg-[#edf3db] px-3 py-2 text-xs font-semibold text-[#17352e]">Song piano roll</Link>
             <select
               aria-label="Melody scale"
               value={draft.tracks_json.scale}

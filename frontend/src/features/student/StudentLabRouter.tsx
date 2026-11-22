@@ -12,6 +12,9 @@ const MusicProjects = lazy(
 const InstrumentWorkspace = lazy(
   () => import("../../pages/student/labs/music/InstrumentWorkspace"),
 );
+const SongPianoRoll = lazy(
+  () => import("../../pages/student/labs/music/PianoRoll"),
+);
 const MusicStudio = lazy(() => import("../../pages/student/labs/music"));
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useLocation } from "react-router-dom";
@@ -87,7 +90,9 @@ export default function StudentLabRouter() {
   if (lab.category === "ARTS_MUSIC")
     return (
       <Suspense fallback={<p role="status">Loading Music Studio…</p>}>
-        {location.pathname === lab.route + "/guitar" ? (
+        {location.pathname === lab.route + "/piano" ? (
+          <SongPianoRoll />
+        ) : location.pathname === lab.route + "/guitar" ? (
           <InstrumentWorkspace kind="guitar" />
         ) : location.pathname === lab.route + "/drums" ? (
           <InstrumentWorkspace kind="drums" />

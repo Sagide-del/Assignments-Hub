@@ -235,6 +235,7 @@ jobs:
           node scripts/run-browser-check.mjs scripts/seo-conversion.browser.cjs
           node scripts/run-browser-check.mjs scripts/music-production.browser.cjs
           node scripts/run-browser-check.mjs scripts/instrument-workspaces.browser.cjs
+          node scripts/run-browser-check.mjs scripts/piano-songs.browser.cjs
           node scripts/run-browser-check.mjs scripts/sports-lab.browser.cjs
           node scripts/run-browser-check.mjs scripts/music-studio.browser.cjs
           node scripts/run-browser-check.mjs scripts/lab-router.browser.cjs
