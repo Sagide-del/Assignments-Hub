@@ -9,3 +9,5 @@ Music Studio now has three primary modules: Music (the existing learning, play-a
 Drafts are stored by user, school and module on the current device, not uploaded to the existing project database or teacher assessment workflow. The interface states this limitation. No additional backend, payment, assessment or RBAC changes are required.
 
 Verification: music unit suite; plucked-note pitch and decay; audible, bounded audio; drum voice differences; WAV headers and browser decode; playback cleanup; undo; persisted drafts; responsive browser checks at 320, 390 and 1440 pixels. Existing music production browser regression remains green. New browser checks are included in deployment CI.
+
+Integration with the latest main branch preserves its guided Music Journey. The journey navigation keeps the accessible Music activities labels, and the pre-existing duplicate `api` import in ExamPlayer was removed to unblock TypeScript compilation. The full frontend test sequence and production build pass on the combined version.

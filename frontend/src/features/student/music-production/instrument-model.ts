@@ -51,7 +51,7 @@ export const guitarPresets = {
     chords: ["Am", "F", "C", "G"],
     phrase: [69, 72, 71, 67, 64, 65, 64, 60],
   },
-  "Gentle waltz feel": {
+  "Gentle arpeggio": {
     bpm: 92,
     chords: ["C", "Em", "F", "G"],
     phrase: [60, 64, 67, 64, 62, 67, 71, 67],
