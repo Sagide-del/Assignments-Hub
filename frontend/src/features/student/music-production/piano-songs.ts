@@ -45,6 +45,16 @@ export const pianoSongs = [
     ],
   },
   {
+    id: "how_long_will_i_love_you",
+    title: "How Long Will I Love You — opening excerpt",
+    artist: "Ellie Goulding / Mike Scott",
+    key: "C Major",
+    bpm: 60,
+    time_signature: "4/4",
+    genre: "Pop ballad",
+    tracks: [],
+  },
+  {
     id: "one_love",
     title: "One Love",
     artist: "",

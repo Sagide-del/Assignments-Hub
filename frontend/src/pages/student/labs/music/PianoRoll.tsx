@@ -1,3 +1,4 @@
+import TimedScorePreview from "./TimedScorePreview";
 import { useEffect, useRef, useState } from "react";
 import { Play, Square, Download, Piano } from "lucide-react";
 import { StudioNav } from "../../../../features/student/music-production/StudioNav";
@@ -181,17 +182,21 @@ export default function PianoRoll() {
             {pianoSongs.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.title}
-                {s.tracks.length ? "" : " — add your notes"}
+                {s.tracks.length || s.id === "how_long_will_i_love_you"
+                  ? ""
+                  : " — add your notes"}
               </option>
             ))}
           </select>
         </label>
         <p className="mt-3 text-sm text-white/70">
-          {song === "my_heart_will_go_on"
-            ? "Your supplied note pattern · C Major · 4/4. This is a study sketch, not a verified score or an artist recording."
-            : sketch
-              ? "Your imported note pattern · one beat per note in 4/4."
-              : "No playable arrangement is bundled for this title. Add a note pattern you have permission to use below."}
+          {song === "how_long_will_i_love_you" && !sketch
+            ? "Two-bar opening excerpt from your uploaded score · 60 BPM · simplified pad accompaniment."
+            : song === "my_heart_will_go_on"
+              ? "Your supplied note pattern · C Major · 4/4. This is a study sketch, not a verified score or an artist recording."
+              : sketch
+                ? "Your imported note pattern · one beat per note in 4/4."
+                : "No playable arrangement is bundled for this title. Add a note pattern you have permission to use below."}
         </p>
       </section>
       {message && (
@@ -202,7 +207,9 @@ export default function PianoRoll() {
           {message}
         </p>
       )}
-      {sketch ? (
+      {song === "how_long_will_i_love_you" && !sketch ? (
+        <TimedScorePreview />
+      ) : sketch ? (
         <>
           <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
             <button

@@ -76,3 +76,60 @@ export async function renderPianoSketch(
 }
 export const pianoWav = (buffer: AudioBuffer) =>
   wavBytes(buffer.getChannelData(0), buffer.sampleRate);
+
+/** A timed excerpt supports rests and simultaneous notes without flattening rhythm. */
+export async function renderTimedPianoExcerpt(score: {
+  bpm: number;
+  beats: number;
+  melody: { beat: number; duration: number; notes: string[] }[];
+  pad: { beat: number; duration: number; notes: string[] }[];
+}): Promise<AudioBuffer> {
+  const seconds = 60 / score.bpm,
+    ctx = new OfflineAudioContext(
+      1,
+      Math.ceil((score.beats * seconds + 1) * 44100),
+      44100,
+    ),
+    samples = await pianoSamples(ctx),
+    master = ctx.createGain();
+  master.gain.value = 0.55;
+  master.connect(ctx.destination);
+  for (const [kind, events] of [
+    ["piano", score.melody],
+    ["pad", score.pad],
+  ] as const)
+    for (const event of events)
+      for (const note of event.notes) {
+        const midi = noteMidi(note),
+          start = event.beat * seconds,
+          end = start + event.duration * seconds,
+          g = ctx.createGain();
+        g.connect(master);
+        if (kind === "piano") {
+          const sample = samples.reduce((a, b) =>
+              Math.abs(a.midi - midi) < Math.abs(b.midi - midi) ? a : b,
+            ),
+            s = ctx.createBufferSource();
+          s.buffer = sample.buffer;
+          s.playbackRate.value = 2 ** ((midi - sample.midi) / 12);
+          g.gain.setValueAtTime(0.7, start);
+          g.gain.setValueAtTime(0.7, Math.max(start, end - 0.04));
+          g.gain.linearRampToValueAtTime(0, end);
+          s.connect(g);
+          s.start(start);
+          s.stop(end);
+        } else {
+          g.gain.setValueAtTime(0, start);
+          g.gain.linearRampToValueAtTime(0.085, start + 0.04);
+          g.gain.setValueAtTime(0.085, Math.max(start + 0.04, end - 0.1));
+          g.gain.linearRampToValueAtTime(0, end);
+          const o = ctx.createOscillator();
+          o.type = "triangle";
+          o.frequency.value = 440 * 2 ** ((midi - 69) / 12);
+          o.connect(g);
+          o.start(start);
+          o.stop(end);
+        }
+      }
+  return ctx.startRendering();
+}
