@@ -5,6 +5,8 @@ import {
   FolderOpen,
   Music2,
   ArrowUpRight,
+  Guitar,
+  Drum,
 } from "lucide-react";
 export function StudioNav({
   title = "Music Studio",
@@ -37,44 +39,79 @@ export function StudioNav({
           <ArrowUpRight size={13} />
         </Link>
       </header>
-      <nav
-        aria-label="Studio workspace"
-        className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm"
-      >
+      <nav aria-label="Music modules" className="grid grid-cols-3 gap-2">
         {[
           {
             to: "/student/labs/music",
-            label: "Play along",
-            Icon: Headphones,
-            active: play,
-          },
-          {
-            to: "/student/labs/music/composition",
-            label: "Compose",
-            Icon: SlidersHorizontal,
+            label: "Music",
+            Icon: Music2,
             active:
-              !play &&
-              !pathname.endsWith("/projects") &&
-              !pathname.endsWith("/loops"),
+              !pathname.endsWith("/guitar") && !pathname.endsWith("/drums"),
           },
           {
-            to: "/student/labs/music/projects",
-            label: "My projects",
-            Icon: FolderOpen,
-            active: pathname.endsWith("/projects"),
+            to: "/student/labs/music/guitar",
+            label: "Guitar",
+            Icon: Guitar,
+            active: pathname.endsWith("/guitar"),
+          },
+          {
+            to: "/student/labs/music/drums",
+            label: "Drums",
+            Icon: Drum,
+            active: pathname.endsWith("/drums"),
           },
         ].map(({ to, label, Icon, active }) => (
           <Link
             key={to}
             to={to}
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-3 text-xs font-medium transition ${active ? "bg-[#101820] text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}
+            className={`flex min-h-14 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-semibold transition ${active ? "border-[#17352e] bg-[#17352e] text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
           >
-            <Icon size={16} />
+            <Icon size={19} />
             {label}
           </Link>
         ))}
       </nav>
+      {!pathname.endsWith("/guitar") && !pathname.endsWith("/drums") && (
+        <nav
+          aria-label="Studio workspace"
+          className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm"
+        >
+          {[
+            {
+              to: "/student/labs/music",
+              label: "Play along",
+              Icon: Headphones,
+              active: play,
+            },
+            {
+              to: "/student/labs/music/composition",
+              label: "Compose",
+              Icon: SlidersHorizontal,
+              active:
+                !play &&
+                !pathname.endsWith("/projects") &&
+                !pathname.endsWith("/loops"),
+            },
+            {
+              to: "/student/labs/music/projects",
+              label: "My projects",
+              Icon: FolderOpen,
+              active: pathname.endsWith("/projects"),
+            },
+          ].map(({ to, label, Icon, active }) => (
+            <Link
+              key={to}
+              to={to}
+              aria-current={active ? "page" : undefined}
+              className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-3 text-xs font-medium transition ${active ? "bg-[#101820] text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}
+            >
+              <Icon size={16} />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }
