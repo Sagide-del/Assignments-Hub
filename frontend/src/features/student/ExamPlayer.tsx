@@ -1,4 +1,3 @@
-import { api } from "../../api/axios";
 import { NextModuleBatch } from './NextModuleBatch';
 import { DiagramRenderer } from "../../components/ExamDiagrams/DiagramRenderer";
 import { MathText } from "../../components/ExamDiagrams/MathText";
