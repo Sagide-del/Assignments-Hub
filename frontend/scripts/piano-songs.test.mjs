@@ -8,3 +8,11 @@ test('import rejects malformed, excessive and out-of-range data; returns indepen
 const previewCode=ts.transpileModule(readFileSync(new URL('../src/features/student/music-production/how-long-preview.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
 const {howLongPreview:preview}=await import('data:text/javascript;base64,'+Buffer.from(previewCode).toString('base64'));
 test('uploaded-score opening retains its tempo, opening rest, dotted rhythm and two-bar boundary',()=>{assert.equal(preview.bpm,60);assert.equal(preview.beats,8);assert.deepEqual(preview.melody.map(e=>e.notes[0]),['E4','D4','C4','F4','G4','E4']);assert.deepEqual(preview.melody.map(e=>[e.beat,e.duration]),[[1.25,.75],[2,1.5],[3.5,.5],[4,1],[5,1],[6,.5]]);assert.equal(preview.pad.length,4);for(const event of [...preview.melody,...preview.pad]){assert(event.beat>=0&&event.duration>0&&event.beat+event.duration<=8);for(const note of event.notes)assert(Number.isFinite(noteMidi(note)));}assert(preview.source.includes('pad simplified'));assert(pianoSongs.some(s=>s.id===preview.id));});
+
+test('user 75 BPM name-only JSON imports unchanged including D6',()=>{
+ const input=JSON.parse(readFileSync(new URL('../content/piano-import-example.json',import.meta.url),'utf8')),parsed=parsePianoSketch(input);assert.equal(parsed.bpm,75);assert.equal(parsed.tracks[0].instrument,'piano');assert.equal(parsed.tracks[1].instrument,'synth_pad');for(let i=0;i<2;i++)assert.deepEqual(parsed.tracks[i].pattern,input.tracks[i].pattern);assert.equal(noteMidi('D6'),86);
+});
+test('full piano range and normalized notation work without guessing invalid instruments',()=>{
+ assert.equal(noteMidi('A0'),21);assert.equal(noteMidi('C8'),108);assert.equal(noteMidi(' f♯5 '),78);for(const bad of ['C0','D8','C9'])assert.throws(()=>noteMidi(bad));
+ const d={bpm:75,tracks:[{name:'piano',pattern:[' d6 ']},{name:'synth_pad',pattern:['B♭3']}]};assert.deepEqual(parsePianoSketch(d).tracks.map(t=>t.pattern),[['D6'],['Bb3']]);assert.throws(()=>parsePianoSketch({...d,tracks:[{...d.tracks[0],instrument:'other'},d.tracks[1]]}),/Track 1/);assert.throws(()=>parsePianoSketch({...d,tracks:[d.tracks[0],{...d.tracks[1],pattern:['C9']}]}),/Track 2, note 1/);
+});

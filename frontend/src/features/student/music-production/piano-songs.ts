@@ -93,57 +93,72 @@ export interface PianoSketch {
     pattern: string[];
   }[];
 }
+function normalizedNote(value: string): string {
+  return value
+    .trim()
+    .replace(/♯/g, "#")
+    .replace(/♭/g, "b")
+    .replace(/^[a-g]/, (letter) => letter.toUpperCase());
+}
 export function noteMidi(note: string): number {
-  const match = /^([A-G])(#|b)?([1-6])$/.exec(note);
+  const match = /^([A-G])(#|b)?([0-8])$/.exec(normalizedNote(note));
   if (!match) throw Error("Use notes such as C4, F#3 or Bb3.");
-  return (
+  const midi =
     (Number(match[3]) + 1) * 12 +
     ({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 } as Record<string, number>)[
       match[1]
     ] +
-    (match[2] === "#" ? 1 : match[2] === "b" ? -1 : 0)
-  );
+    (match[2] === "#" ? 1 : match[2] === "b" ? -1 : 0);
+  if (midi < 21 || midi > 108)
+    throw Error("Keep notes within the piano range A0–C8.");
+  return midi;
 }
 export function parsePianoSketch(value: unknown): PianoSketch {
-  const d = value as PianoSketch;
-  if (
-    value &&
-    typeof value === "object" &&
-    "time_signature" in value &&
-    value.time_signature !== "4/4"
-  )
+  if (!value || typeof value !== "object")
+    throw Error("Provide a JSON object with bpm and two tracks.");
+  const d = value as Record<string, unknown>;
+  if (d.time_signature !== undefined && d.time_signature !== "4/4")
     throw Error("Song sketches currently use 4/4 time.");
   if (
-    !d ||
+    typeof d.bpm !== "number" ||
     !Number.isInteger(d.bpm) ||
     d.bpm < 60 ||
-    d.bpm > 160 ||
-    !Array.isArray(d.tracks) ||
-    d.tracks.length !== 2
+    d.bpm > 160
   )
-    throw Error(
-      "Provide two tracks (piano and synth_pad), and a tempo from 60–160 BPM.",
-    );
-  const tracks = d.tracks.map((t, i) => {
-    if (
-      !t ||
-      t.instrument !== (i === 0 ? "piano" : "synth_pad") ||
-      !Array.isArray(t.pattern) ||
-      !t.pattern.length ||
-      t.pattern.length > 16
-    )
+    throw Error("Tempo must be a whole number from 60–160 BPM.");
+  if (!Array.isArray(d.tracks) || d.tracks.length !== 2)
+    throw Error("Provide two tracks: piano first, synth_pad second.");
+  const tracks = d.tracks.map((raw: unknown, i: number) => {
+    if (!raw || typeof raw !== "object")
+      throw Error(`Track ${i + 1} must be an object.`);
+    const t = raw as Record<string, unknown>,
+      expected = i === 0 ? ("piano" as const) : ("synth_pad" as const);
+    // Explicit instrument wins; an invalid explicit value is never silently replaced.
+    const kind = t.instrument === undefined ? t.name : t.instrument;
+    if (typeof kind !== "string" || kind.trim().toLowerCase() !== expected)
       throw Error(
-        "Each track needs 1–16 notes; piano first, synth_pad second.",
+        `Track ${i + 1}: use instrument: "${expected}" or name: "${expected}".`,
       );
-    for (const n of t.pattern) {
-      if (typeof n !== "string") throw Error("Each note must be text.");
-      const midi = noteMidi(n);
-      if (midi < 36 || midi > 84) throw Error("Keep notes between C2 and C6.");
-    }
+    if (!Array.isArray(t.pattern) || !t.pattern.length || t.pattern.length > 16)
+      throw Error(`Track ${i + 1}: provide 1–16 note names in pattern.`);
+    const pattern = t.pattern.map((note: unknown, j: number) => {
+      if (typeof note !== "string")
+        throw Error(
+          `Track ${i + 1}, note ${j + 1}: use a pitch name such as C4.`,
+        );
+      try {
+        noteMidi(note);
+      } catch (e) {
+        throw Error(
+          `Track ${i + 1}, note ${j + 1}: ${e instanceof Error ? e.message : "Invalid pitch."}`,
+        );
+      }
+      return normalizedNote(note);
+    });
     return {
       name: i === 0 ? "Melody (Piano)" : "Chords (Pad)",
-      instrument: t.instrument,
-      pattern: [...t.pattern],
+      instrument: expected,
+      pattern,
     };
   });
   return { bpm: d.bpm, tracks };

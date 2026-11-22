@@ -380,8 +380,9 @@ export default function PianoRoll() {
           Import your two-track note pattern
         </summary>
         <p className="mt-3 text-xs text-slate-500">
-          JSON with bpm and tracks: piano first, synth_pad second. Each pattern
-          can contain 1–16 pitch names (C2–C6), one beat each.
+          JSON with bpm and two tracks: piano first, synth_pad second. Identify
+          each track with instrument or name. Each pattern accepts 1–16 pitch
+          names (A0–C8), one beat each.
         </p>
         <textarea
           aria-label="Arrangement JSON"
