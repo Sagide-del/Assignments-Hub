@@ -2,7 +2,7 @@ import manifest from "../../../../public/assets/music/recorded/samples.json";
 import { noteMidi, type PianoSketch } from "./piano-songs";
 import { wavBytes } from "./instrument-audio";
 let prepared: Promise<{ midi: number; buffer: AudioBuffer }[]> | undefined;
-async function pianoSamples(ctx: BaseAudioContext) {
+export async function pianoSamples(ctx: BaseAudioContext) {
   if (!prepared)
     prepared = Promise.all(
       manifest.samples

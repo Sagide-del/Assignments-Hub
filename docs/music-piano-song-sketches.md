@@ -24,3 +24,7 @@ The read-only excerpt view shows pitched blocks with proportional duration and a
 Track identity accepts either `instrument` or the equivalent `name` (`piano`, `synth_pad`). Explicit instrument values take precedence and invalid values are rejected rather than guessed. Parsing normalizes identifiers, note whitespace, lowercase pitch letters and Unicode accidentals. Pitch validation now covers the full A0–C8 piano range, including the user's D6 example. Errors include track/note positions. Old saved sketches retain canonical instrument fields and remain compatible.
 
 The exact 75 BPM, two-track, sixteen-note name-only example is stored in `frontend/content/piano-import-example.json` as a regression fixture. Tests verify unchanged pitches/order, rendered D6, both voice identities, audible 13.8-second WAV including release, and reload persistence. Production build and 22 music tests pass.
+
+## Professional editor
+
+The one-note-per-beat screen has been superseded by the timed, polyphonic version-2 piano roll. See `professional-piano-roll.md` for editing controls, storage migration and export details. Legacy pattern JSON remains supported; it is no longer the editor's internal representation. The supplied opening score excerpt is now an editable timed project rather than a separate read-only view.

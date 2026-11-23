@@ -12,14 +12,16 @@ import {
 export function StudioNav({
   title = "Music Studio",
   subtitle = "Listen closely. Make it yours.",
+  compact = false,
 }: {
   title?: string;
   subtitle?: string;
+  compact?: boolean;
 }) {
   const { pathname } = useLocation();
   const play = pathname.endsWith("/music") || pathname.endsWith("/play-along");
   return (
-    <div className="space-y-4">
+    <div className={compact ? "space-y-2 compact-studio-nav" : "space-y-4"}>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#101820] text-[#dce8b7]">
