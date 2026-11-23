@@ -31,7 +31,7 @@ export const DRUMS = [
   "Clap",
   "Shaker",
 ] as const;
-export const PITCHES = Array.from({ length: 25 }, (_, i) => 76 - i);
+export const PITCHES = Array.from({ length: 45 }, (_, i) => 84 - i);
 export const pitch = (midi: number) =>
   ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"][midi % 12] +
   (Math.floor(midi / 12) - 1);
@@ -165,7 +165,8 @@ export function validDraft(value: unknown): value is InstrumentDraft {
     d.bpm <= 160 &&
     ["Nylon", "Steel"].includes(d.voice) &&
     Array.isArray(d.chords) &&
-    d.chords.length === 4 &&
+    d.chords.length >= 1 &&
+    d.chords.length <= 16 &&
     d.chords.every(
       (c) =>
         typeof c === "string" &&
@@ -179,14 +180,14 @@ export function validDraft(value: unknown): value is InstrumentDraft {
         typeof n === "object" &&
         Number.isInteger(n.step) &&
         n.step >= 0 &&
-        n.step < 64 &&
+        n.step < d.chords.length * 16 &&
         Number.isInteger(n.midi) &&
         n.midi >= 40 &&
         n.midi <= 84 &&
         Number.isInteger(n.length) &&
         n.length >= 1 &&
         n.length <= 8 &&
-        n.step + n.length <= 64,
+        n.step + n.length <= d.chords.length * 16,
     ) &&
     Array.isArray(d.drums) &&
     d.drums.length === 8 &&
@@ -216,7 +217,41 @@ export function toggleNote(
               n.step + n.length <= step ||
               n.step >= step + length,
           ),
-          { step, midi, length: Math.min(length, 64 - step) },
+          { step, midi, length: Math.min(length, d.chords.length * 16 - step) },
         ],
   };
+}
+
+export function parseGuitarImport(value: unknown): InstrumentDraft {
+  if (validDraft(value)) return value;
+  const v = value as {
+    bpm: number;
+    voice?: GuitarVoice;
+    bars: { chord: string; notes: string[] }[];
+  };
+  if (!v || !Array.isArray(v.bars) || v.bars.length < 1 || v.bars.length > 16)
+    throw Error("Use 1–16 bars, each with a chord and eight notes.");
+  const d = starter();
+  d.bpm = v.bpm;
+  d.voice = v.voice ?? "Nylon";
+  d.chords = v.bars.map((b) => b.chord);
+  d.melody = v.bars.flatMap((b, bar) => {
+    if (!Array.isArray(b.notes) || b.notes.length !== 8)
+      throw Error("Each bar needs eight eighth-notes. Use R for a rest.");
+    return b.notes.flatMap((note, i) => {
+      if (note === "R") return [];
+      const m = /^([A-G])(#|b)?([2-6])$/.exec(note);
+      if (!m) throw Error("Invalid note: " + note);
+      const midi =
+        (Number(m[3]) + 1) * 12 +
+        ({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] ?? 0) +
+        (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0);
+      return [{ step: bar * 16 + i * 2, midi, length: 2 }];
+    });
+  });
+  if (!validDraft(d))
+    throw Error(
+      "Check tempo (60–160), chords (C, Am, F, G, Em, Dm), and notes (E2–C6).",
+    );
+  return d;
 }

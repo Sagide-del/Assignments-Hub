@@ -96,9 +96,10 @@ export function renderInstrument(
   d: InstrumentDraft,
   kind: ModuleKind,
   rate = SAMPLE_RATE,
+  transpose = 0,
 ): Float32Array {
   const step = 60 / d.bpm / 4,
-    seconds = 64 * step,
+    seconds = d.chords.length * 16 * step,
     out = new Float32Array(Math.ceil(rate * seconds));
   const add = (sound: Float32Array, start: number, gain: number) => {
     const offset = Math.round(start * rate);
@@ -108,7 +109,12 @@ export function renderInstrument(
   if (kind === "guitar") {
     for (const n of d.melody)
       add(
-        pluck(n.midi, Math.min(2, n.length * step + 0.25), d.voice, rate),
+        pluck(
+          n.midi + transpose,
+          Math.min(2, n.length * step + 0.25),
+          d.voice,
+          rate,
+        ),
         n.step * step,
         0.64,
       );
@@ -116,7 +122,7 @@ export function renderInstrument(
       CHORDS[name].forEach((midi, i) => {
         for (const beat of [0, 8])
           add(
-            pluck(midi, Math.min(2, 8 * step), d.voice, rate),
+            pluck(midi + transpose, Math.min(2, 8 * step), d.voice, rate),
             (bar * 16 + beat) * step + i * 0.018,
             0.22,
           );
@@ -125,7 +131,7 @@ export function renderInstrument(
   } else
     d.drums.forEach((row, instrument) => {
       const sound = drum(instrument, rate);
-      for (let bar = 0; bar < 4; bar++)
+      for (let bar = 0; bar < d.chords.length; bar++)
         row.forEach((hit, i) => {
           if (hit) add(sound, (bar * 16 + i) * step, 0.7);
         });

@@ -34,13 +34,21 @@ export function StudioNav({
             <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
           </div>
         </div>
-        <Link
-          to="/student/labs/music/loops"
-          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900"
-        >
-          Loop studio
-          <ArrowUpRight size={13} />
-        </Link>
+        <div className="flex gap-4">
+          <Link
+            to="/student/labs/music/loops"
+            className="text-xs text-slate-500"
+          >
+            Loop studio
+          </Link>
+          <Link
+            to="/student/labs/music/beat-maker"
+            className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900"
+          >
+            Beat Maker
+            <ArrowUpRight size={13} />
+          </Link>
+        </div>
       </header>
       <nav aria-label="Music modules" className="grid grid-cols-3 gap-2">
         {[
@@ -82,6 +90,12 @@ export function StudioNav({
         >
           {[
             {
+              to: "/student/labs/music/beat-maker",
+              label: "Beat Maker",
+              Icon: SlidersHorizontal,
+              active: pathname.endsWith("/beat-maker"),
+            },
+            {
               to: "/student/labs/music",
               label: "Play along",
               Icon: Headphones,
@@ -101,7 +115,8 @@ export function StudioNav({
                 !play &&
                 !pathname.endsWith("/piano") &&
                 !pathname.endsWith("/projects") &&
-                !pathname.endsWith("/loops"),
+                !pathname.endsWith("/loops") &&
+                !pathname.endsWith("/beat-maker"),
             },
             {
               to: "/student/labs/music/projects",

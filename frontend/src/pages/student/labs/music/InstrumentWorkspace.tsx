@@ -12,6 +12,7 @@ import {
 import { StudioNav } from "../../../../features/student/music-production/StudioNav";
 import { useAuthStore } from "../../../../store/auth.store";
 import {
+  parseGuitarImport,
   CHORDS,
   DRUMS,
   PITCHES,
@@ -165,7 +166,8 @@ function Workspace({
       const tick = () => {
         if (!alive.current || ticket !== generation.current) return;
         setPosition(
-          Math.floor((ctx.currentTime - started) / (60 / draft.bpm / 4)) % 64,
+          Math.floor((ctx.currentTime - started) / (60 / draft.bpm / 4)) %
+            (draft.chords.length * 16),
         );
         frame.current = requestAnimationFrame(tick);
       };
@@ -188,13 +190,14 @@ function Workspace({
       link.download = `assignment-hub-${kind}-${draft.bpm}bpm.wav`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 30000);
-      setMessage("Your four-bar WAV is ready.");
+      setMessage("Your guitar/drum WAV is ready.");
     } catch {
       setMessage("Audio export failed. Please try again.");
     }
   }
   function preset(name: string) {
     if (kind === "guitar") {
+      setBar(0);
       const p = guitarPresets[name as keyof typeof guitarPresets];
       edit({
         ...draft,
@@ -326,6 +329,49 @@ function Workspace({
           </button>
         </div>
       </section>
+      {guitar && (
+        <section className="rounded-2xl border bg-white p-4 space-y-3">
+          <div className="flex flex-wrap gap-3 items-center">
+            <h2 className="font-semibold">Import a guitar melody</h2>
+            <a
+              className="text-sm underline"
+              href="/downloads/coastal-lanterns-guitar.json"
+              download
+            >
+              Download Coastal Lanterns · 16 bars
+            </a>
+          </div>
+          <textarea
+            aria-label="Guitar JSON"
+            id="guitar-json"
+            className="w-full h-24 rounded-xl border p-3 font-mono text-xs"
+            placeholder="Paste guitar JSON here"
+          />
+          <button
+            className={button}
+            onClick={() => {
+              try {
+                const next = parseGuitarImport(
+                  JSON.parse(
+                    (
+                      document.getElementById(
+                        "guitar-json",
+                      ) as HTMLTextAreaElement
+                    ).value,
+                  ),
+                );
+                edit(next);
+                setBar(0);
+                setMessage(`Imported ${next.chords.length} bars.`);
+              } catch (e) {
+                setMessage(e instanceof Error ? e.message : "Invalid JSON");
+              }
+            }}
+          >
+            Import guitar JSON
+          </button>
+        </section>
+      )}
       {message && (
         <p
           role="status"
@@ -448,8 +494,8 @@ function Workspace({
                 Guitar piano roll
               </h2>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex gap-1" aria-label="Melody bars">
-                  {[0, 1, 2, 3].map((b) => (
+                <div className="flex flex-wrap gap-1" aria-label="Melody bars">
+                  {draft.chords.map((_, b) => (
                     <button
                       key={b}
                       aria-pressed={bar === b}
