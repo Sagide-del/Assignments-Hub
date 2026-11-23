@@ -1,3 +1,4 @@
+import { SendToMaster } from "../../../../features/student/music-production/SendToMaster";
 import { RollNumberInput } from "../../../../features/student/music-production/RollNumberInput";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -343,6 +344,11 @@ export default function PianoRoll() {
   return (
     <div className="mx-auto max-w-[1500px] space-y-3 pb-5">
       <StudioNav title="Piano Roll" subtitle="Write. Shape. Play." compact />
+      <SendToMaster
+        kind="piano"
+        payload={project}
+        beforeSend={() => stop(true)}
+      />
       <div
         ref={workbench}
         onKeyDown={(e) => {

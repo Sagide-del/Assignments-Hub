@@ -1,3 +1,4 @@
+import { SendToMaster } from "../../../../features/student/music-production/SendToMaster";
 import { useEffect, useRef, useState } from "react";
 import {
   Play,
@@ -237,6 +238,7 @@ function Workspace({
             : "Build the groove, one beat at a time."
         }
       />
+      <SendToMaster kind={kind} payload={draft} beforeSend={stop} />
       <section className="overflow-hidden rounded-2xl bg-[#17352e] p-5 text-white sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div>

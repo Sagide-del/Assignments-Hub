@@ -45,7 +45,7 @@ export function StudioNav({
             to="/student/labs/music/beat-maker"
             className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900"
           >
-            Beat Maker
+            Master Beat
             <ArrowUpRight size={13} />
           </Link>
         </div>
@@ -91,7 +91,7 @@ export function StudioNav({
           {[
             {
               to: "/student/labs/music/beat-maker",
-              label: "Beat Maker",
+              label: "Master Beat",
               Icon: SlidersHorizontal,
               active: pathname.endsWith("/beat-maker"),
             },
