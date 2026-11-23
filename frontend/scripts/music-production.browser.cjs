@@ -352,7 +352,7 @@ mkdirSync(artifacts, { recursive: true });
       })
       .waitFor();
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto(base + "/student/labs/music");
+    await page.goto(base + "/student/labs/music/play-along");
     await page
       .getByRole("heading", { name: "Shape the band", exact: true })
       .waitFor();
@@ -409,8 +409,7 @@ mkdirSync(artifacts, { recursive: true });
       -0.7,
     );
     await page
-      .getByRole("navigation", { name: "Studio workspace" })
-      .getByRole("link", { name: "My projects", exact: true })
+      .getByRole("link", { name: "Projects", exact: true })
       .click();
     await page
       .getByRole("link")

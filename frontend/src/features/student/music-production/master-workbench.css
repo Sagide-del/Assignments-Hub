@@ -1,0 +1,692 @@
+.workbench {
+  --forest: #17352e;
+  --line: #dce3df;
+  color: #17352e;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 16px;
+  font-size: 12px;
+}
+.workbench button,
+.workbench select,
+.workbench summary,
+.workbench input[type="number"] {
+  font: inherit;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  padding: 5px 9px;
+}
+.workbench button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.workbench button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.workbench button[aria-pressed="true"] {
+  background: #dfe9d3;
+  border-color: #7f985f;
+}
+.workbench input[type="range"] {
+  width: 100%;
+  accent-color: #426643;
+}
+.workbench input[type="number"] {
+  width: 54px;
+}
+.wb-transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 9px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.wb-transport label {
+  font-size: 10px;
+  color: #687970;
+}
+.wb-transport label select {
+  display: block;
+  margin-top: 3px;
+  color: #17352e;
+}
+.workbench .wb-play {
+  height: 43px;
+  background: #17352e;
+  color: white;
+  border-color: #17352e;
+  padding: 0 16px;
+}
+.wb-clock {
+  align-self: center;
+  font: 11px monospace;
+  color: #6d7c75;
+}
+.workbench .wb-export {
+  margin-left: auto;
+  background: #17352e;
+  color: white;
+  height: 42px;
+}
+.wb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 9px 0;
+}
+.wb-save {
+  margin-left: auto;
+  font-size: 10px;
+  color: #79877f;
+}
+.wb-file {
+  position: relative;
+}
+.wb-file summary {
+  cursor: pointer;
+  list-style: none;
+}
+.wb-file > div {
+  position: absolute;
+  z-index: 35;
+  right: 0;
+  top: 40px;
+  display: grid;
+  gap: 8px;
+  width: 220px;
+  padding: 10px;
+  background: white;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 15px #17352e15;
+}
+.wb-file label {
+  display: grid;
+  font-size: 11px;
+  gap: 4px;
+}
+.wb-file input {
+  width: 190px;
+}
+.wb-notice {
+  font-size: 11px;
+  padding: 8px;
+  margin: 6px 0;
+  background: #fff6e2;
+  border-left: 2px solid #c3a04d;
+}
+.wb-panels {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.workbench .wb-panels button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 20px;
+}
+.workbench .wb-panels button[aria-pressed="true"] {
+  border-bottom: 2px solid #17352e;
+  background: #edf1e9;
+}
+.wb-body {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr);
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+.wb-library {
+  padding: 9px;
+  background: #f0f3ef;
+  border-right: 1px solid var(--line);
+  max-height: calc(100vh - 270px);
+  min-height: 440px;
+  overflow: auto;
+}
+.wb-library input {
+  width: 100%;
+  font-size: 11px;
+  padding: 9px 6px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 5px;
+}
+.wb-library h2 {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #77877b;
+  margin: 17px 0 5px;
+}
+.workbench .wb-library button {
+  display: block;
+  text-align: left;
+  border: 0;
+  border-radius: 4px;
+  width: 100%;
+  background: transparent;
+  padding: 8px 5px;
+}
+.wb-library button strong,
+.wb-library button span {
+  display: block;
+  font-size: 11px;
+}
+.wb-library button span {
+  font-size: 9px;
+  color: #77877b;
+  margin-top: 3px;
+}
+.workbench .wb-library button.active {
+  background: #dce6d5;
+}
+.wb-library > a {
+  display: block;
+  font-size: 10px;
+  text-decoration: underline;
+  margin-top: 18px;
+}
+.wb-main {
+  min-width: 0;
+  background: white;
+}
+.wb-main section > header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.wb-main h2 {
+  font-size: 12px;
+  font-weight: 650;
+}
+.wb-main header > span {
+  font-size: 10px;
+  color: #78877f;
+}
+.wb-main header > button {
+  margin-left: auto;
+  min-height: 28px;
+  font-size: 10px;
+}
+.wb-timeline {
+  overflow-x: auto;
+  background: #10211d;
+}
+.wb-ruler {
+  display: flex;
+  height: 28px;
+  color: #a9b7b0;
+  font: 9px monospace;
+}
+.wb-ruler span {
+  flex-shrink: 0;
+  border-left: 1px solid #ffffff12;
+  padding: 8px 5px;
+}
+.wb-lane {
+  display: flex;
+  border-top: 1px solid #ffffff14;
+}
+.wb-track {
+  width: 74px;
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 15;
+  background: #183129;
+  color: #d8e0da;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  padding: 7px;
+}
+.wb-clips {
+  position: relative;
+  height: 62px;
+  background-image: linear-gradient(to right, #ffffff0f 1px, transparent 1px);
+}
+.workbench .wb-clips > button {
+  position: absolute;
+  top: 5px;
+  height: 52px;
+  display: block;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid transparent;
+  padding: 4px 5px;
+  border-radius: 4px;
+  min-height: 0;
+}
+.workbench .wb-clips > button[aria-pressed="true"] {
+  outline: 2px solid white;
+  outline-offset: -2px;
+}
+.wb-clips button > span {
+  font-size: 9px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.wb-clips i {
+  display: flex;
+  gap: 3px;
+  height: 20px;
+  align-items: center;
+  opacity: 0.4;
+}
+.wb-clips b {
+  display: inline-block;
+  width: 4px;
+  background: #17352e;
+  border-radius: 1px;
+}
+.wb-playhead {
+  position: absolute;
+  inset-block: 0;
+  width: 2px;
+  background: #d5eb97;
+  pointer-events: none;
+  z-index: 10;
+}
+.wb-clip-tools {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.wb-clip-tools label {
+  font-size: 9px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.wb-clip-tools select,
+.wb-clip-tools input,
+.wb-clip-tools button {
+  min-height: 32px;
+  font-size: 10px;
+}
+.wb-hint {
+  font-size: 10px;
+  color: #78877f;
+  padding: 7px 10px;
+  line-height: 1.6;
+}
+.wb-channel {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.7fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.wb-channel-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.wb-channel-name strong {
+  font-size: 11px;
+}
+.wb-channel-name > a {
+  margin-left: auto;
+  font-size: 9px;
+  text-decoration: underline;
+}
+.wb-channel-name small {
+  width: 100%;
+  font-size: 9px;
+  line-height: 1.4;
+  color: #7a897e;
+}
+.wb-channel label {
+  font-size: 9px;
+  color: #6d7e73;
+}
+.wb-ms {
+  display: flex;
+  gap: 3px;
+}
+.workbench .wb-ms button {
+  min-height: 31px;
+  width: 30px;
+  padding: 0;
+}
+.wb-load {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.wb-load select {
+  max-width: 100%;
+  width: 100%;
+  min-height: 28px;
+  font-size: 9px;
+  padding: 2px;
+}
+.workbench .wb-load button {
+  font-size: 9px;
+  padding: 3px;
+  min-height: 29px;
+}
+.wb-master {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  background: #f2f5ef;
+  font-size: 10px;
+}
+.wb-master label {
+  font-size: 9px;
+}
+.wb-master input {
+  display: block;
+  max-width: 120px;
+}
+.wb-meter {
+  width: 110px;
+  height: 7px;
+  background: #d3dfcc;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.wb-meter i {
+  display: block;
+  height: 100%;
+  background: #557d43;
+}
+.wb-master > span {
+  font: 9px monospace;
+  color: #78877f;
+}
+.wb-master select {
+  min-height: 27px;
+  margin-left: 5px;
+  font-size: 9px;
+}
+.wb-learn {
+  display: none;
+  padding-bottom: 12px;
+}
+.wb-learn > p,
+.wb-learn > h3,
+.wb-learn > button,
+.wb-learn > a,
+.wb-reflection {
+  margin: 10px;
+  line-height: 1.7;
+  font-size: 12px;
+}
+.wb-learn h3 {
+  font-weight: 650;
+  margin-top: 18px;
+}
+.wb-learn > a {
+  display: block;
+  text-decoration: underline;
+}
+.wb-rhythm {
+  overflow-x: auto;
+  padding: 5px 10px;
+}
+.wb-rhythm > div > div {
+  display: flex;
+  gap: 3px;
+  margin: 3px 0;
+  align-items: center;
+}
+.wb-rhythm span {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 9px;
+}
+.workbench .wb-rhythm button {
+  padding: 0;
+  min-height: 27px;
+  flex: 1;
+  border-radius: 3px;
+  font-size: 8px;
+  background: #eef2ec;
+}
+.workbench .wb-rhythm button[aria-pressed="true"] {
+  background: #426643;
+  color: white;
+}
+.wb-rhythm button.downbeat {
+  border-left: 2px solid #8ca17b;
+}
+.wb-reflection {
+  display: block;
+}
+.wb-reflection textarea {
+  display: block;
+  width: 100%;
+  height: 70px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 11px;
+}
+.wb-answer {
+  background: #edf2e5;
+  padding: 10px;
+}
+.wb-footer {
+  font-size: 9px;
+  color: #87948c;
+  line-height: 1.6;
+  padding-top: 8px;
+}
+.wb-learn.is-active {
+  display: block;
+}
+.wb-body:has(.wb-learn.is-active) .wb-arrange,
+.wb-body:has(.wb-learn.is-active) .wb-mixer {
+  display: none;
+}
+@media (max-width: 767px) {
+  .wb-transport {
+    gap: 7px;
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    background: #f8faf8;
+  }
+  .wb-transport label {
+    font-size: 9px;
+  }
+  .workbench .wb-transport select {
+    padding: 4px;
+    max-width: 79px;
+  }
+  .wb-clock {
+    display: none;
+  }
+  .workbench .wb-export {
+    font-size: 10px;
+    padding: 5px 9px;
+    height: 36px;
+    margin-left: 0;
+  }
+  .workbench .wb-play {
+    height: 37px;
+    padding: 0 12px;
+  }
+  .wb-actions {
+    gap: 4px;
+  }
+  .wb-actions select {
+    max-width: 125px;
+    font-size: 10px;
+  }
+  .wb-actions button,
+  .wb-actions summary {
+    font-size: 10px;
+    min-height: 34px;
+    padding: 4px 7px;
+  }
+  .wb-save {
+    font-size: 8px;
+  }
+  .wb-body {
+    display: block;
+  }
+  .wb-library {
+    display: none;
+    max-height: 330px;
+    min-height: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .library-open .wb-library {
+    display: block;
+  }
+  .wb-arrange,
+  .wb-mixer,
+  .wb-learn {
+    display: none;
+  }
+  .wb-arrange.is-active,
+  .wb-mixer.is-active,
+  .wb-learn.is-active {
+    display: block;
+  }
+  .wb-main header > span {
+    max-width: 60%;
+    font-size: 9px;
+  }
+  .wb-channel {
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    padding: 10px;
+  }
+  .wb-channel-name {
+    grid-column: 1/-1;
+  }
+  .wb-channel-name small {
+    font-size: 9px;
+    width: auto;
+  }
+  .wb-load {
+    grid-column: 1/-1;
+    display: flex;
+  }
+  .wb-load select {
+    width: 55%;
+  }
+  .workbench .wb-load button {
+    flex: 1;
+    min-height: 34px;
+  }
+  .wb-master {
+    gap: 8px;
+  }
+  .wb-clip-tools {
+    gap: 5px;
+  }
+  .wb-clip-tools input {
+    width: 45px;
+  }
+  .wb-track {
+    width: 74px;
+  }
+  .wb-panels {
+    position: sticky;
+    top: 90px;
+    z-index: 24;
+    background: #f8faf8;
+  }
+  .wb-learn > p {
+    font-size: 11px;
+  }
+}
+@media (max-width: 767px) {
+  .workbench .wb-play,
+  .workbench .wb-export,
+  .workbench .wb-panels button {
+    min-height: 44px;
+  }
+  .workbench input[type="range"] {
+    min-height: 32px;
+  }
+  .workbench .wb-ms button {
+    min-height: 40px;
+    width: 36px;
+  }
+  .wb-panels {
+    top: 103px;
+  }
+}
+@media (max-width: 767px) {
+  .wb-channel label,
+  .wb-channel-name small,
+  .wb-master label,
+  .wb-main header > span {
+    font-size: 11px;
+  }
+  .workbench .wb-load button,
+  .wb-load select {
+    font-size: 11px;
+  }
+  .wb-clip-tools label {
+    font-size: 10px;
+  }
+  .wb-save {
+    font-size: 10px;
+  }
+  .wb-hint,
+  .wb-footer {
+    font-size: 10px;
+  }
+}
+.wb-channel label,
+.wb-channel input,
+.wb-load {
+  min-width: 0;
+}
+.wb-channel {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(
+      0,
+      0.7fr
+    ) auto minmax(0, 1fr);
+}
+@media (max-width: 1100px) {
+  .wb-channel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .wb-channel-name {
+    grid-column: 1/-1;
+  }
+  .wb-load {
+    grid-column: 1/-1;
+    display: flex;
+  }
+  .wb-load select {
+    width: 55%;
+  }
+  .wb-load button {
+    flex: 1;
+  }
+  .wb-channel-name small {
+    width: auto;
+  }
+  .wb-master {
+    gap: 7px;
+  }
+}

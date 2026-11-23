@@ -56,6 +56,21 @@ export const guitarPresets = {
     chords: ["C", "Em", "F", "G"],
     phrase: [60, 64, 67, 64, 62, 67, 71, 67],
   },
+  "Rumba-inspired interlock": {
+    bpm: 116,
+    chords: ["C", "F", "G", "C"],
+    phrase: [72, 76, 79, 76, 74, 71, 67, 71],
+  },
+  "Mugithi-inspired picking": {
+    bpm: 122,
+    chords: ["C", "G", "C", "F"],
+    phrase: [48, 64, 55, 67, 48, 72, 55, 67],
+  },
+  "Benga-inspired lead": {
+    bpm: 128,
+    chords: ["C", "F", "C", "G"],
+    phrase: [76, 79, 72, 79, 77, 81, 76, 74],
+  },
 };
 export const drumPresets: Record<string, { bpm: number; hits: number[][] }> = {
   "One drop": {
@@ -137,6 +152,47 @@ export const drumPresets: Record<string, { bpm: number; hits: number[][] }> = {
     ],
   },
 };
+Object.assign(drumPresets, {
+  "Rumba-inspired clave": {
+    bpm: 116,
+    hits: [
+      [0, 8],
+      [4, 12],
+      [0, 2, 4, 6, 8, 10, 12, 14],
+      [7, 15],
+      [2, 10],
+      [5, 13],
+      [0, 3, 6, 10, 12],
+      [1, 3, 5, 7, 9, 11, 13, 15],
+    ],
+  },
+  "Mugithi-inspired pulse": {
+    bpm: 122,
+    hits: [
+      [0, 4, 8, 12],
+      [4, 12],
+      [2, 6, 10, 14],
+      [],
+      [],
+      [15],
+      [12],
+      [0, 2, 4, 6, 8, 10, 12, 14],
+    ],
+  },
+  "Benga-inspired drive": {
+    bpm: 128,
+    hits: [
+      [0, 7, 8, 14],
+      [4, 12],
+      [0, 2, 4, 6, 8, 10, 12, 14],
+      [6, 14],
+      [11],
+      [],
+      [4, 12],
+      [1, 3, 5, 7, 9, 11, 13, 15],
+    ],
+  },
+});
 export function starter(): InstrumentDraft {
   return {
     version: 1,

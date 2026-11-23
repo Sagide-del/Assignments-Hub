@@ -9,6 +9,9 @@ const PlayAlong = lazy(
 const MusicProjects = lazy(
   () => import("../../pages/student/labs/music/Projects"),
 );
+const MusicLibrary = lazy(
+  () => import("../../pages/student/labs/music/Library"),
+);
 const BeatMaker = lazy(
   () => import("../../pages/student/labs/music/BeatMaker"),
 );
@@ -93,7 +96,15 @@ export default function StudentLabRouter() {
   if (lab.category === "ARTS_MUSIC")
     return (
       <Suspense fallback={<p role="status">Loading Music Studio…</p>}>
-        {location.pathname === lab.route + "/beat-maker" ? (
+        {location.pathname === lab.route + "/library" ? (
+          <MusicLibrary />
+        ) : [lab.route, lab.route + "/beat-maker"].includes(
+            location.pathname,
+          ) &&
+          !(
+            location.pathname === lab.route &&
+            new URLSearchParams(location.search).has("project")
+          ) ? (
           <BeatMaker />
         ) : location.pathname === lab.route + "/piano" ? (
           <SongPianoRoll />

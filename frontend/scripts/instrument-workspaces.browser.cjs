@@ -9,7 +9,7 @@ const base=process.env.AUTH_UI_BASE_URL||'http://127.0.0.1:4252',art=process.env
  await route.fulfill({json:data});});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base+'/student/labs/music/guitar');await page.getByRole('heading',{name:'Guitar Studio',exact:true}).waitFor();
- assert.equal(await page.locator('nav[aria-label="Music modules"] a').count(),3);
+ assert.equal(await page.locator('nav[aria-label="Music modules"] a').count(),4);
  await page.getByRole('button',{name:'Pluck E4 string',exact:true}).click();
  await page.getByRole('button',{name:'Coastal breeze',exact:true}).click();assert.equal(await page.getByLabel('Tempo',{exact:true}).inputValue(),'102');
  await page.getByLabel('Bar 1 chord',{exact:true}).selectOption('Dm');

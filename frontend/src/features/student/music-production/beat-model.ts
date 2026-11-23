@@ -1,17 +1,11 @@
 import {
+  CHORDS,
   starter,
-  drumPresets,
-  guitarPresets,
   validDraft,
   type InstrumentDraft,
 } from "./instrument-model";
-export const styles = [
-  "Dancehall",
-  "Reggae",
-  "Kenyan folk-inspired",
-  "Gospel",
-  "Pop",
-] as const;
+import { GENRE_STUDIES } from "./genre-studies";
+export const styles = GENRE_STUDIES.map((s) => s.name);
 export interface BeatMix {
   version: 1;
   title: string;
@@ -23,24 +17,28 @@ export interface BeatMix {
   piano: { step: number; midi: number; length: number; velocity: number }[];
 }
 export function createBeat(style: string = "Dancehall"): BeatMix {
-  const names = [
-    "Dancehall pulse",
-    "One drop",
-    "Folk-inspired conversation",
-    "Half-time space",
-    "Pop pocket",
-  ];
-  const index = Math.max(0, styles.indexOf(style as (typeof styles)[number]));
-  const d = starter(),
-    drums = drumPresets[names[index]],
-    guitar = Object.values(guitarPresets)[index % 4];
-  d.bpm = drums.bpm;
-  d.chords = [...guitar.chords];
-  d.drums = drums.hits.map((h) =>
+  const study = GENRE_STUDIES.find((s) => s.name === style) ?? GENRE_STUDIES[0];
+  const d = starter();
+  d.bpm = study.bpm;
+  d.chords = [...study.chords];
+  d.drums = study.hits.map((h) =>
     Array.from({ length: 16 }, (_, i) => h.includes(i)),
   );
-  d.melody = Array.from({ length: 4 }, (_, b) =>
-    guitar.phrase.map((midi, i) => ({ step: b * 16 + i * 2, midi, length: 2 })),
+  d.melody = Array.from({ length: 4 }, (_, bar) =>
+    study.steps.map((step, i) => {
+      const tones = CHORDS[d.chords[bar]],
+        original = study.phrase[i % study.phrase.length];
+      const candidates = Array.from({ length: 45 }, (_, n) => n + 40).filter(
+        (n) => tones.some((t) => t % 12 === n % 12),
+      );
+      const midi =
+        study.name === "Mugithi-inspired picking" && i % 2 === 0
+          ? tones[0] + (i % 4 === 0 ? 0 : 7)
+          : candidates.reduce((a, b) =>
+              Math.abs(b - original) < Math.abs(a - original) ? b : a,
+            );
+      return { step: bar * 16 + step, midi, length: Math.min(2, 16 - step) };
+    }),
   ).flat();
   return {
     version: 1,
@@ -50,12 +48,12 @@ export function createBeat(style: string = "Dancehall"): BeatMix {
     levels: [0.8, 0.7, 0.55],
     muted: [false, false, false],
     solo: null,
-    piano: Array.from({ length: 4 }, (_, b) =>
-      [0, 6, 10, 14].map((s, i) => ({
-        step: b * 16 + s,
-        midi: guitar.phrase[(i + b) % 8] + 12,
-        length: 2,
-        velocity: 85,
+    piano: Array.from({ length: 4 }, (_, bar) =>
+      study.pianoSteps.map((step, i) => ({
+        step: bar * 16 + step,
+        midi: CHORDS[d.chords[bar]][i % 3] + 12,
+        length: Math.min(3, 16 - step),
+        velocity: 78 + (i % 2) * 10,
       })),
     ).flat(),
   };

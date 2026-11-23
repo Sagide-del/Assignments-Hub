@@ -3,7 +3,8 @@ const compile=p=>ts.transpileModule(readFileSync(new URL(p,import.meta.url),'utf
 const url=code=>`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`;
 const modelUrl=url(compile('../src/features/student/music-production/instrument-model.ts')),model=await import(modelUrl);
 const audioUrl=url(compile('../src/features/student/music-production/instrument-audio.ts').replace('"./instrument-model"',JSON.stringify(modelUrl)));
-const beatUrl=url(compile('../src/features/student/music-production/beat-model.ts').replace(/['"]\.\/instrument-model['"]/,JSON.stringify(modelUrl))),beat=await import(beatUrl);
+const genreUrl=url(compile('../src/features/student/music-production/genre-studies.ts'));
+const beatUrl=url(compile('../src/features/student/music-production/beat-model.ts').replace(/['"]\.\/genre-studies['"]/,JSON.stringify(genreUrl)).replace(/['"]\.\/instrument-model['"]/,JSON.stringify(modelUrl))),beat=await import(beatUrl);
 const audio=await import(url(compile('../src/features/student/music-production/beat-audio.ts').replace(/['"]\.\/instrument-audio['"]/,JSON.stringify(audioUrl)).replace(/['"]\.\/beat-model['"]/,JSON.stringify(beatUrl))));
 const energy=s=>s.reduce((n,v)=>n+v*v,0)/s.length;
 test('sixteen-bar guitar import preserves every bar, rest, chord and note',()=>{const v=JSON.parse(readFileSync(new URL('../public/downloads/coastal-lanterns-guitar.json',import.meta.url)));const d=model.parseGuitarImport(v);assert(model.validDraft(d));assert.equal(d.chords.length,16);assert.equal(d.melody.length,125);assert.equal(d.melody.at(-1).step,252);assert(d.melody.some(n=>n.midi===79));assert.throws(()=>model.parseGuitarImport({...v,bars:[{chord:'C',notes:['oops']}]}));assert.throws(()=>model.parseGuitarImport({...v,bpm:300}));});

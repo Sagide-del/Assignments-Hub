@@ -47,8 +47,8 @@ export default function Projects() {
           <div className="flex flex-wrap gap-1">
             {[
               ["all", "All"],
-              ["play", "Play along"],
-              ["compose", "Compositions"],
+              ["play", "Saved performances"],
+              ["compose", "Assessed projects"],
               ["loops", "Loops"],
             ].map(([id, label]) => (
               <button
@@ -84,7 +84,7 @@ export default function Projects() {
                 to={
                   p.kind === "loops"
                     ? "/student/labs/music/loops"
-                    : `/student/labs/music${p.kind === "play" ? "" : "/composition"}?project=${encodeURIComponent(p.id)}`
+                    : `/student/labs/music${p.kind === "play" ? "/play-along" : "/composition"}?project=${encodeURIComponent(p.id)}`
                 }
                 className="group rounded-xl border border-slate-200 p-4 transition hover:border-[#a7b587] hover:bg-[#f9fbf5]"
               >
