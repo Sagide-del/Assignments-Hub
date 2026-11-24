@@ -10,7 +10,6 @@ import {
   RefreshCw,
   ShieldCheck,
   Smartphone,
-  Check,
   ArrowLeft,
 } from "lucide-react";
 import { apiErrorMessage } from "../../api/axios";
@@ -155,41 +154,51 @@ export function TrialActivationPage() {
     stk.mutate();
   };
   return (
-    <div className="mx-auto max-w-4xl space-y-6 pb-6">
-      <header>
-        <button
-          type="button"
-          onClick={() => navigate("/student")}
-          className="mb-5 inline-flex min-h-10 items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-900"
-        >
-          <ArrowLeft size={14} />
-          Back to workspace
-        </button>
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-[#657d12]">
-          Your subscription
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#101820]">
-          Continue your learning
+    <div className="mx-auto w-full max-w-xl pb-8 pt-2 sm:pt-5">
+      <button
+        type="button"
+        onClick={() => navigate("/student")}
+        className="mb-6 inline-flex min-h-10 items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-900"
+      >
+        <ArrowLeft size={14} />
+        Workspace
+      </button>
+      <header className="mb-5 flex items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+          Subscription
         </h1>
-        <p className="mt-3 leading-7 text-slate-600">
-          One subscription. Your full Assignment Hub workspace.
-        </p>
+        <span className="flex items-center gap-1.5 text-xs text-slate-500">
+          <ShieldCheck size={14} />
+          Secure payment
+        </span>
       </header>
-      <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center gap-3 border-b border-slate-100 p-5 sm:px-7">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
-              <Smartphone className="text-emerald-700" size={20} />
-            </span>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_4px_24px_rgba(16,24,32,0.025)]">
+        <div className="border-b border-slate-100 bg-[#f4f7f1] px-5 py-6 sm:px-7">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-semibold">Pay with M-Pesa</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Processed by IntaSend · payment completed on your phone
+              <p className="text-xs font-medium text-slate-500">
+                {confirmed ? "Amount paid" : "Amount due"}
+              </p>
+              <p className="mt-2 flex items-baseline gap-2 text-[#183a2c]">
+                <span className="text-sm font-medium">KES</span>
+                <span className="text-4xl font-semibold tracking-tight">
+                  {amount?.toLocaleString() ?? "…"}
+                </span>
               </p>
             </div>
+            <span className="rounded-md border border-[#dbe5d3] bg-white/70 px-2.5 py-1 text-xs font-medium text-[#536b40]">
+              Individual
+            </span>
           </div>
-          <div className="space-y-5 p-5 sm:p-7">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e1e8db] pt-4">
+            <span className="text-xs font-medium text-slate-600">
+              Access period
+            </span>
+            <div
+              role="group"
+              aria-label="Subscription period"
+              className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5"
+            >
               {(["MONTHLY", "ANNUAL"] as const).map((option) => (
                 <button
                   key={option}
@@ -200,210 +209,179 @@ export function TrialActivationPage() {
                     setInterval(option);
                     key.current = crypto.randomUUID();
                   }}
-                  className={`relative min-h-24 rounded-xl border p-4 text-left transition disabled:opacity-60 ${interval === option ? "border-[#637d31] bg-[#f5f8ef] ring-1 ring-[#637d31]/10" : "border-slate-200"}`}
+                  className={`min-h-9 rounded-md px-3 text-xs font-semibold transition disabled:opacity-60 ${interval === option ? "bg-[#203e30] text-white shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                 >
-                  <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {option === "ANNUAL" ? "Annual" : "Monthly"}
-                  </span>
-                  <span className="mt-1 block text-xl font-semibold tracking-tight">
-                    KES{" "}
-                    {(option === "ANNUAL"
-                      ? paymentInfo?.annualAmountKES
-                      : paymentInfo?.monthlyAmountKES
-                    )?.toLocaleString() ?? "…"}
-                  </span>
-                  <span className="mt-1 block text-xs text-slate-500">
-                    {option === "ANNUAL"
-                      ? "12 months of access"
-                      : "1 month of access"}
-                  </span>
-                  {interval === option && (
-                    <Check
-                      size={15}
-                      className="absolute right-3 top-3 text-[#536d2c]"
-                      aria-hidden="true"
-                    />
-                  )}
+                  {option === "ANNUAL" ? "12 months" : "1 month"}
                 </button>
               ))}
             </div>
-            <label className="block text-sm font-medium">
-              Payer’s M-Pesa number
-              <input
-                aria-label="Payer M-Pesa number"
-                inputMode="tel"
-                autoComplete="tel"
-                type="tel"
-                maxLength={30}
-                disabled={locked || stk.isPending || confirmed}
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  key.current = crypto.randomUUID();
-                }}
-                placeholder="0712 345 678"
-                className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 disabled:bg-slate-50"
-              />
-              <span className="mt-2 block text-xs font-normal text-slate-500">
-                You can use a parent’s number. Enter the M-Pesa PIN only in the
-                prompt on that phone.
-              </span>
-            </label>
-            {capabilities.data?.configured === false && (
-              <p
-                role="status"
-                className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800"
-              >
-                M-Pesa payments are not available yet. Please contact Assignment
-                Hub support.
-              </p>
-            )}
-            {(error || payment.error || capabilities.error) && (
-              <p
-                role="alert"
-                className="rounded-xl bg-red-50 p-4 text-sm text-red-700"
-              >
-                {error ??
-                  apiErrorMessage(
-                    payment.error ?? capabilities.error,
-                    "Payment status could not be checked. Retry the status check before paying again.",
-                  )}
-              </p>
-            )}
-            {p && (
-              <div
-                role="status"
-                className={`space-y-3 rounded-xl border p-4 ${confirmed ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
-              >
-                <div className="flex items-center gap-2 font-semibold">
-                  {confirmed ? (
-                    <CheckCircle2 size={19} className="text-emerald-700" />
-                  ) : waiting ? (
-                    <LoaderCircle
-                      size={19}
-                      className="animate-spin text-blue-600"
-                    />
-                  ) : (
-                    <Smartphone size={19} />
-                  )}{" "}
-                  {confirmed
-                    ? "Payment confirmed"
-                    : waiting
-                      ? "Waiting for M-Pesa confirmation"
-                      : uncertain
-                        ? "Check your M-Pesa payment"
-                        : p.status === "CANCELLED"
-                          ? "Payment cancelled"
-                          : "Payment not completed"}
-                </div>
-                <p className="text-sm leading-6">
-                  {waiting
-                    ? `Check ${p.phone} for the KES ${p.amountKES.toLocaleString()} prompt. Enter the PIN on that phone and wait here for confirmation.`
-                    : confirmed
-                      ? "Your payment has been received. Do not pay again."
-                      : (p.failureReason ?? "You can try again.")}
-                </p>
-                <p className="break-all text-xs text-slate-500">
-                  {p.interval === "ANNUAL" ? "Annual" : "Monthly"} · KES{" "}
-                  {p.amountKES.toLocaleString()} · Reference: {p.reference}
-                </p>
-                <button
-                  className="inline-flex min-h-10 items-center gap-2 text-xs font-semibold underline"
-                  disabled={payment.isFetching}
-                  onClick={() => void payment.refetch()}
-                >
-                  <RefreshCw size={14} />
-                  Check payment status
-                </button>
-                {confirmed && (
-                  <button
-                    className="ml-4 min-h-10 text-xs font-semibold underline"
-                    disabled={refreshing}
-                    onClick={() => void refreshAccess()}
-                  >
-                    {refreshing ? "Opening workspace…" : "Refresh access"}
-                  </button>
-                )}
-              </div>
-            )}
-            {accessMessage && (
-              <p role="status" className="text-sm leading-6 text-emerald-800">
-                {accessMessage}{" "}
-                <a className="underline" href="/login">
-                  Sign in
-                </a>
-              </p>
-            )}
-            {!confirmed && (
-              <button
-                type="button"
-                onClick={pay}
-                disabled={
-                  stk.isPending ||
-                  locked ||
-                  !phone.trim() ||
-                  !amount ||
-                  !capabilities.data?.configured ||
-                  !!payment.error ||
-                  payment.isLoading
-                }
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-5 text-sm font-bold text-white disabled:opacity-40"
-              >
-                {stk.isPending ? (
-                  <>
-                    <LoaderCircle size={17} className="animate-spin" />
-                    Sending prompt…
-                  </>
-                ) : locked ? (
-                  "Payment confirmation pending"
-                ) : uncertain ? (
-                  "I checked M-Pesa — send a new prompt"
-                ) : p?.status === "FAILED" || p?.status === "CANCELLED" ? (
-                  "Try M-Pesa again"
-                ) : (
-                  `Send M-Pesa prompt · KES ${amount?.toLocaleString() ?? "…"}`
-                )}
-              </button>
-            )}
-            <p className="flex items-start gap-2 text-xs leading-6 text-slate-500">
-              <ShieldCheck size={17} className="mt-1 shrink-0" />
-              Each payment purchases one subscription period. This does not
-              enable automatic M-Pesa deductions.
-            </p>
           </div>
-        </section>
-        <aside className="space-y-5 px-1 py-2 md:pt-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Included in your plan
-            </p>
-            <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">
-              A workspace built for progress
+        </div>
+        <div className="space-y-5 p-5 sm:p-7">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Smartphone size={18} className="text-emerald-700" />
+              Pay with M-Pesa
             </h2>
+            <span className="text-[11px] text-slate-400">
+              Processed by IntaSend
+            </span>
           </div>
-          <ul className="space-y-3 text-sm text-slate-600">
-            {[
-              "Topic practice & instant feedback",
-              "Personalised study planning",
-              "Revision library & mock practice",
-              "Labs for your curriculum",
-            ].map((feature) => (
-              <li key={feature} className="flex items-start gap-2">
-                <Check size={16} className="mt-0.5 shrink-0 text-[#637d31]" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-          <div className="border-t border-slate-200 pt-4 text-xs leading-6 text-slate-500">
-            Pay securely on your phone. Access opens after confirmation.
-          </div>
-        </aside>
+          <label className="block text-sm font-medium">
+            Payer’s M-Pesa number
+            <input
+              aria-label="Payer M-Pesa number"
+              inputMode="tel"
+              autoComplete="tel"
+              type="tel"
+              maxLength={30}
+              disabled={locked || stk.isPending || confirmed}
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                key.current = crypto.randomUUID();
+              }}
+              placeholder="0712 345 678"
+              className="mt-2 min-h-12 w-full rounded-lg border border-slate-200 px-3 text-base outline-none focus:border-[#6b864c] focus:ring-2 focus:ring-[#6b864c]/10 disabled:bg-slate-50"
+            />
+            <span className="mt-2 block text-xs font-normal text-slate-500">
+              Your number or a parent’s. Enter the PIN only on the phone.
+            </span>
+          </label>
+          {capabilities.data?.configured === false && (
+            <p
+              role="status"
+              className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800"
+            >
+              M-Pesa payments are not available yet. Please contact Assignment
+              Hub support.
+            </p>
+          )}
+          {(error || payment.error || capabilities.error) && (
+            <p
+              role="alert"
+              className="rounded-xl bg-red-50 p-4 text-sm text-red-700"
+            >
+              {error ??
+                apiErrorMessage(
+                  payment.error ?? capabilities.error,
+                  "Payment status could not be checked. Retry the status check before paying again.",
+                )}
+            </p>
+          )}
+          {p && (
+            <div
+              role="status"
+              className={`space-y-3 rounded-xl border p-4 ${confirmed ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
+            >
+              <div className="flex items-center gap-2 font-semibold">
+                {confirmed ? (
+                  <CheckCircle2 size={19} className="text-emerald-700" />
+                ) : waiting ? (
+                  <LoaderCircle
+                    size={19}
+                    className="animate-spin text-blue-600"
+                  />
+                ) : (
+                  <Smartphone size={19} />
+                )}{" "}
+                {confirmed
+                  ? "Payment confirmed"
+                  : waiting
+                    ? "Waiting for M-Pesa confirmation"
+                    : uncertain
+                      ? "Check your M-Pesa payment"
+                      : p.status === "CANCELLED"
+                        ? "Payment cancelled"
+                        : "Payment not completed"}
+              </div>
+              <p className="text-sm leading-6">
+                {waiting
+                  ? `Check ${p.phone} for the KES ${p.amountKES.toLocaleString()} prompt. Enter the PIN on that phone and wait here for confirmation.`
+                  : confirmed
+                    ? "Your payment has been received. Do not pay again."
+                    : (p.failureReason ?? "You can try again.")}
+              </p>
+              <p className="break-all text-xs text-slate-500">
+                {p.interval === "ANNUAL" ? "Annual" : "Monthly"} · KES{" "}
+                {p.amountKES.toLocaleString()} · Reference: {p.reference}
+              </p>
+              <button
+                className="inline-flex min-h-10 items-center gap-2 text-xs font-semibold underline"
+                disabled={payment.isFetching}
+                onClick={() => void payment.refetch()}
+              >
+                <RefreshCw size={14} />
+                Check payment status
+              </button>
+              {confirmed && (
+                <button
+                  className="ml-4 min-h-10 text-xs font-semibold underline"
+                  disabled={refreshing}
+                  onClick={() => void refreshAccess()}
+                >
+                  {refreshing ? "Opening workspace…" : "Refresh access"}
+                </button>
+              )}
+            </div>
+          )}
+          {accessMessage && (
+            <p role="status" className="text-sm leading-6 text-emerald-800">
+              {accessMessage}{" "}
+              <a className="underline" href="/login">
+                Sign in
+              </a>
+            </p>
+          )}
+          {!confirmed && (
+            <button
+              type="button"
+              onClick={pay}
+              disabled={
+                stk.isPending ||
+                locked ||
+                !phone.trim() ||
+                !amount ||
+                !capabilities.data?.configured ||
+                !!payment.error ||
+                payment.isLoading
+              }
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#203e30] px-4 text-sm font-semibold text-white transition hover:bg-[#2c513e] disabled:opacity-40"
+            >
+              {stk.isPending ? (
+                <>
+                  <LoaderCircle size={17} className="animate-spin" />
+                  Sending prompt…
+                </>
+              ) : locked ? (
+                "Payment confirmation pending"
+              ) : uncertain ? (
+                "I checked M-Pesa — send a new prompt"
+              ) : p?.status === "FAILED" || p?.status === "CANCELLED" ? (
+                "Try M-Pesa again"
+              ) : (
+                `Send M-Pesa prompt · KES ${amount?.toLocaleString() ?? "…"}`
+              )}
+            </button>
+          )}
+          <p className="flex items-start gap-2 text-xs leading-6 text-slate-500">
+            <ShieldCheck size={17} className="mt-0.5 shrink-0" />
+            One-time payment. No automatic deductions.
+          </p>
+        </div>
+      </section>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+        <span>Access activates after confirmation.</span>
+        <a
+          href={`https://wa.me/254748519923?text=${encodeURIComponent(p ? `Payment support. Reference: ${p.reference}` : "I need help with my subscription payment.")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-10 items-center gap-1.5 font-medium hover:text-[#203e30]"
+        >
+          <MessageCircle size={14} />
+          Payment support
+        </a>
       </div>
-      <p className="flex items-start gap-2 text-xs leading-5 text-slate-500">
-        <MessageCircle size={16} />
-        If you were charged but access is pending, contact support with your
-        M-Pesa receipt and payment reference.
-      </p>
     </div>
   );
 }
