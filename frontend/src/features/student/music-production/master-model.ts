@@ -1,3 +1,4 @@
+import { validVocals, type VocalSettings } from "./vocal-model";
 import { createBeat, validBeat, type BeatMix } from "./beat-model";
 import { validDraft, type InstrumentDraft } from "./instrument-model";
 import { type RollProject, parseRollProject } from "./piano-roll-model";
@@ -20,6 +21,7 @@ export interface MasterProject {
   sources: string[];
   sourceBars: number[];
   pianoSource?: RollProject;
+  vocals?: VocalSettings;
 }
 const id = () =>
   globalThis.crypto?.randomUUID?.() ??
@@ -78,6 +80,8 @@ export function parseMaster(value: unknown): MasterProject {
     !p.sources.every((s) => typeof s === "string" && s.length <= 160)
   )
     throw Error("Invalid Master Beat project.");
+  if (p.vocals !== undefined && !validVocals(p.vocals))
+    throw Error("Invalid vocal track settings.");
   if (p.pianoSource) {
     const source = parseRollProject(p.pianoSource);
     if (source.bars !== p.sourceBars[2])

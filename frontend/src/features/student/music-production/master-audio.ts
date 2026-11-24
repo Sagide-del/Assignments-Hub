@@ -1,3 +1,10 @@
+import {
+  newVocals,
+  vocalAudible,
+  placeVocal,
+  vocalWindow,
+} from "./vocal-model";
+import { voiceBus, updateVoice, type VoiceBus } from "./vocal-audio";
 import { renderBeat } from "./beat-audio";
 import { activeTrack } from "./beat-model";
 import type { MasterProject } from "./master-model";
@@ -52,6 +59,7 @@ export interface MasterGraph {
   pans: StereoPannerNode[];
   master: GainNode;
   meter: AnalyserNode;
+  voice: VoiceBus;
   disconnect: () => void;
 }
 export function connectMaster(ctx: BaseAudioContext): MasterGraph {
@@ -80,12 +88,15 @@ export function connectMaster(ctx: BaseAudioContext): MasterGraph {
     g.connect(pans[i]);
     pans[i].connect(master);
   });
+  const voice = voiceBus(ctx, master);
   return {
+    voice,
     gains,
     pans,
     master,
     meter,
     disconnect: () => {
+      voice.disconnect();
       gains.forEach((g) => g.disconnect());
       pans.forEach((g) => g.disconnect());
       master.disconnect();
@@ -107,12 +118,33 @@ export function updateMaster(
     else param.setTargetAtTime(value, time, 0.015);
   };
   graph.gains.forEach((g, i) =>
-    set(g.gain, activeTrack(p.mix, i) ? p.mix.levels[i] : 0),
+    set(
+      g.gain,
+      !(p.vocals?.solo && p.vocals.selectedId) && activeTrack(p.mix, i)
+        ? p.mix.levels[i]
+        : 0,
+    ),
   );
   graph.pans.forEach((g, i) => set(g.pan, p.pan[i]));
   set(graph.master.gain, p.master);
+  updateVoice(
+    graph.voice,
+    p.vocals ?? newVocals(),
+    vocalAudible(p.vocals, p.mix.solo),
+    time,
+    immediate,
+  );
 }
-export async function exportMaster(p: MasterProject) {
+export async function exportMaster(p: MasterProject, vocal?: AudioBuffer) {
+  const selected = p.vocals?.takes.find((t) => t.id === p.vocals?.selectedId);
+  if (
+    vocalAudible(p.vocals, p.mix.solo) &&
+    selected &&
+    vocalWindow(selected, (p.bars * 240) / p.mix.draft.bpm).duration <= 0
+  )
+    throw Error(
+      "The vocal take is outside the song. Adjust its start or trim before exporting.",
+    );
   const stems = await renderProductionStems(p),
     ctx = new OfflineAudioContext(2, stems[0].length, MASTER_RATE),
     graph = connectMaster(ctx);
@@ -125,6 +157,26 @@ export async function exportMaster(p: MasterProject) {
     source.connect(graph.gains[i]);
     source.start(0);
   }
+  if (vocal && p.vocals?.selectedId) {
+    const take = p.vocals.takes.find((t) => t.id === p.vocals!.selectedId)!;
+    const samples = placeVocal(
+        vocal.getChannelData(0),
+        vocal.sampleRate,
+        take,
+        (p.bars * 240) / p.mix.draft.bpm,
+        MASTER_RATE,
+      ),
+      b = ctx.createBuffer(1, samples.length, MASTER_RATE),
+      s = ctx.createBufferSource();
+    b.getChannelData(0).set(samples);
+    s.buffer = b;
+    s.connect(graph.voice.gain);
+    s.start(0);
+  }
+  if (vocalAudible(p.vocals, p.mix.solo) && !vocal)
+    throw Error(
+      "Selected vocal audio is missing. Reattach it before exporting.",
+    );
   const buffer = await ctx.startRendering();
   graph.disconnect();
   return stereoWav(buffer);

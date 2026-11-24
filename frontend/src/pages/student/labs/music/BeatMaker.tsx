@@ -1,3 +1,13 @@
+import {
+  VocalsPanel,
+  type RecordingClock,
+} from "../../../../features/student/music-production/VocalsPanel";
+import {
+  vocalAudible,
+  placeVocal,
+  vocalWindow,
+} from "../../../../features/student/music-production/vocal-model";
+import { readVocalBuffer } from "../../../../features/student/music-production/vocal-audio";
 import "../../../../features/student/music-production/master-workbench.css";
 import { GENRE_STUDIES } from "../../../../features/student/music-production/genre-studies";
 import {
@@ -13,6 +23,7 @@ import {
   Drum,
   Guitar,
   Piano,
+  Mic,
   Plus,
   Copy,
   Trash2,
@@ -101,10 +112,16 @@ function Master({ scope }: { scope: string }) {
     loopRef = useRef(loop),
     latest = useRef(project),
     handoff = useRef(false),
+    recordStop = useRef<() => void>(),
+    recordingActive = useRef(false),
     cache = useRef<{ signature: string; stems: Float32Array[] }>();
   latest.current = project;
   loopRef.current = loop;
-  function stop() {
+  function stop(keepRecording = false) {
+    if (!keepRecording) {
+      recordingActive.current = false;
+      recordStop.current?.();
+    }
     generation.current++;
     cancelAnimationFrame(frame.current);
     sources.current.forEach((s) => {
@@ -123,6 +140,7 @@ function Master({ scope }: { scope: string }) {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      recordStop.current?.();
       generation.current++;
       cancelAnimationFrame(frame.current);
       sources.current.forEach((s) => {
@@ -167,12 +185,23 @@ function Master({ scope }: { scope: string }) {
   }, [scope]);
   function edit(next: MasterProject, live = false) {
     try {
+      if (
+        next.mix.solo !== latest.current.mix.solo &&
+        next.mix.solo !== null &&
+        next.vocals
+      )
+        next = { ...next, vocals: { ...next.vocals, solo: false } };
       const valid = parseMaster(next);
+      setMessage("");
       if (!live) stop();
       setHistory((old) => [...old.slice(-19), latest.current]);
       setProject(valid);
       if (live && ctx.current && graph.current)
-        updateMaster(graph.current, valid, ctx.current.currentTime);
+        updateMaster(
+          graph.current,
+          recordingActive.current ? { ...valid, vocals: undefined } : valid,
+          ctx.current.currentTime,
+        );
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Invalid change");
     }
@@ -185,8 +214,12 @@ function Master({ scope }: { scope: string }) {
       setMessage(e instanceof Error ? e.message : "Cannot place clip");
     }
   }
-  async function play() {
-    stop();
+  async function play(record?: {
+    bar: number;
+    countIn: boolean;
+  }): Promise<RecordingClock | undefined> {
+    stop(!!record);
+    recordingActive.current = !!record;
     setBusy(true);
     const ticket = generation.current;
     try {
@@ -207,20 +240,72 @@ function Master({ scope }: { scope: string }) {
       if (cache.current?.signature !== signature)
         cache.current = { signature, stems: await renderProductionStems(p) };
       if (!mounted.current || ticket !== generation.current) return;
+      const voice =
+        !record && vocalAudible(p.vocals, p.mix.solo) && p.vocals?.selectedId
+          ? await readVocalBuffer(scope, p.vocals.selectedId, ctx.current)
+          : undefined;
+      if (!mounted.current || ticket !== generation.current) return;
       const g = connectMaster(ctx.current);
       graph.current = g;
-      updateMaster(g, latest.current, ctx.current.currentTime, true);
-      const start = ctx.current.currentTime + 0.04;
+      updateMaster(
+        g,
+        record ? { ...latest.current, vocals: undefined } : latest.current,
+        ctx.current.currentTime,
+        true,
+      );
+      const offset = record
+        ? ((Math.min(p.bars, Math.max(1, record.bar)) - 1) * 240) /
+          p.mix.draft.bpm
+        : 0;
+      const start =
+        ctx.current.currentTime +
+        0.1 +
+        (record?.countIn ? (4 * 60) / p.mix.draft.bpm : 0);
+      if (record?.countIn)
+        for (let beat = 0; beat < 4; beat++) {
+          const osc = ctx.current.createOscillator(),
+            gain = ctx.current.createGain(),
+            at = start - ((4 - beat) * 60) / p.mix.draft.bpm;
+          osc.frequency.value = beat === 0 ? 880 : 660;
+          gain.gain.setValueAtTime(0.08, at);
+          gain.gain.exponentialRampToValueAtTime(0.001, at + 0.06);
+          osc.connect(gain);
+          gain.connect(g.master);
+          osc.start(at);
+          osc.stop(at + 0.07);
+          osc.onended = () => {
+            osc.disconnect();
+            gain.disconnect();
+          };
+        }
       cache.current.stems.forEach((samples, i) => {
         const s = ctx.current!.createBufferSource(),
           b = ctx.current!.createBuffer(1, samples.length, MASTER_RATE);
         b.getChannelData(0).set(samples);
         s.buffer = b;
-        s.loop = loopRef.current;
+        s.loop = !record && loopRef.current;
         s.connect(g.gains[i]);
         sources.current.push(s);
-        s.start(start);
+        s.start(start, offset);
       });
+      if (voice && p.vocals?.selectedId) {
+        const take = p.vocals.takes.find((t) => t.id === p.vocals!.selectedId)!,
+          samples = placeVocal(
+            voice.getChannelData(0),
+            voice.sampleRate,
+            take,
+            (p.bars * 240) / p.mix.draft.bpm,
+            MASTER_RATE,
+          ),
+          b = ctx.current.createBuffer(1, samples.length, MASTER_RATE),
+          source = ctx.current.createBufferSource();
+        b.getChannelData(0).set(samples);
+        source.buffer = b;
+        source.loop = loopRef.current;
+        source.connect(g.voice.gain);
+        sources.current.push(source);
+        source.start(start);
+      }
       sources.current[0].onended = () => {
         if (mounted.current && ticket === generation.current) stop();
       };
@@ -233,7 +318,11 @@ function Master({ scope }: { scope: string }) {
         const time = ctx.current!.currentTime;
         if (time - last > 0.055) {
           setBar(
-            Math.max(0, ((time - start) % duration) / (240 / p.mix.draft.bpm)),
+            Math.max(
+              0,
+              (offset + (Math.max(0, time - start) % duration)) /
+                (240 / p.mix.draft.bpm),
+            ),
           );
           g.meter.getFloatTimeDomainData(values);
           setPeak(values.reduce((n, v) => Math.max(n, Math.abs(v)), 0));
@@ -242,8 +331,17 @@ function Master({ scope }: { scope: string }) {
         frame.current = requestAnimationFrame(tick);
       };
       tick();
-    } catch {
-      setMessage("Audio could not start. Try again.");
+      return {
+        ctx: ctx.current,
+        start,
+        offset,
+        duration: duration - offset,
+        bpm: p.mix.draft.bpm,
+      };
+    } catch (e) {
+      setMessage(
+        e instanceof Error ? e.message : "Audio could not start. Try again.",
+      );
     } finally {
       if (mounted.current) setBusy(false);
     }
@@ -260,17 +358,28 @@ function Master({ scope }: { scope: string }) {
     setBusy(true);
     setMessage("Rendering your complete stereo arrangement…");
     try {
-      const data = await exportMaster(latest.current);
+      const p = latest.current;
+      ctx.current ??= new AudioContext();
+      const voice =
+        vocalAudible(p.vocals, p.mix.solo) && p.vocals?.selectedId
+          ? await readVocalBuffer(scope, p.vocals.selectedId, ctx.current)
+          : undefined;
+      const data = await exportMaster(p, voice);
       if (!mounted.current) return;
       download(
         new Blob([data], { type: "audio/wav" }),
-        "assignment-hub-master-beat.wav",
+        vocalAudible(p.vocals, p.mix.solo)
+          ? "assignment-hub-song.wav"
+          : "assignment-hub-master-beat.wav",
       );
       setMessage(
         "Stereo Master Beat exported with your arrangement, mixer settings and output limiter.",
       );
-    } catch {
-      if (mounted.current) setMessage("Export failed. Please try again.");
+    } catch (e) {
+      if (mounted.current)
+        setMessage(
+          e instanceof Error ? e.message : "Export failed. Please try again.",
+        );
     } finally {
       if (mounted.current) setBusy(false);
     }
@@ -314,6 +423,12 @@ function Master({ scope }: { scope: string }) {
     }
     setReveal(false);
   }, [scope, study.name]);
+  const vocalTake = project.vocals?.takes.find(
+    (t) => t.id === project.vocals?.selectedId,
+  );
+  const vocalSpan = vocalTake
+    ? vocalWindow(vocalTake, (project.bars * 240) / project.mix.draft.bpm)
+    : undefined;
   return (
     <div className="master-beat workbench">
       <StudioNav title="Music Studio" compact />
@@ -400,12 +515,16 @@ function Master({ scope }: { scope: string }) {
           · 4/4
         </span>
         <button
-          disabled={busy}
+          disabled={busy || recordingActive.current}
           className="wb-export"
           onClick={() => void exportAudio()}
         >
           <Download size={15} />
-          <span>Export Master Beat</span>
+          <span>
+            {vocalAudible(project.vocals, project.mix.solo)
+              ? "Export song"
+              : "Export Master Beat"}
+          </span>
         </button>
       </section>
       {message && (
@@ -434,7 +553,7 @@ function Master({ scope }: { scope: string }) {
         </select>
         <button
           onClick={() => {
-            edit(newMaster(style));
+            edit({ ...newMaster(style), vocals: project.vocals });
             setSelected("");
             setReveal(false);
             setReflection("");
@@ -461,14 +580,18 @@ function Master({ scope }: { scope: string }) {
           <summary>Project</summary>
           <div>
             <button
-              onClick={() =>
+              onClick={() => {
                 download(
                   new Blob([JSON.stringify(project, null, 2)], {
                     type: "application/json",
                   }),
                   "assignment-hub-master-beat.json",
-                )
-              }
+                );
+                if (project.vocals?.takes.length)
+                  setMessage(
+                    "Project JSON excludes voice audio. In Vocals, download each take separately for backup.",
+                  );
+              }}
             >
               Back up project
             </button>
@@ -505,6 +628,7 @@ function Master({ scope }: { scope: string }) {
           ["arrange", "Arrange"],
           ["mixer", "Mixer"],
           ["learn", "Learn"],
+          ["vocals", "Vocals"],
         ].map(([id, name]) => (
           <button
             key={id}
@@ -534,7 +658,7 @@ function Master({ scope }: { scope: string }) {
               className={study.name === s.name ? "active" : ""}
               onClick={() => {
                 setStyle(s.name);
-                edit(newMaster(s.name));
+                edit({ ...newMaster(s.name), vocals: project.vocals });
                 setReveal(false);
                 setReflection("");
                 setShowLibrary(false);
@@ -677,6 +801,76 @@ function Master({ scope }: { scope: string }) {
                     </div>
                   </div>
                 ))}
+                {vocalTake && vocalSpan && vocalSpan.duration > 0 && (
+                  <div className="wb-lane">
+                    <div className="wb-track">
+                      <Mic size={14} />
+                      Vocals
+                    </div>
+                    <div
+                      className="wb-clips"
+                      style={{
+                        width: project.bars * 42,
+                        backgroundSize: "42px 100%",
+                      }}
+                    >
+                      <button
+                        aria-label={`Vocal clip ${vocalTake.name}`}
+                        onClick={() => setView("vocals")}
+                        style={{
+                          left:
+                            (vocalSpan.start / (240 / project.mix.draft.bpm)) *
+                            42,
+                          width: Math.max(
+                            3,
+                            (vocalSpan.duration /
+                              (240 / project.mix.draft.bpm)) *
+                              42,
+                          ),
+                          background: "#c4add7",
+                        }}
+                      >
+                        <span>{vocalTake.name}</span>
+                        <svg
+                          viewBox="0 0 640 30"
+                          preserveAspectRatio="none"
+                          style={{ width: "100%", height: 24 }}
+                          aria-hidden="true"
+                        >
+                          {Array.from({ length: 64 }, (_, i) => {
+                            const at = Math.min(
+                                63,
+                                Math.floor(
+                                  ((vocalSpan.offset +
+                                    (i / 64) * vocalSpan.duration) /
+                                    vocalTake.duration) *
+                                    64,
+                                ),
+                              ),
+                              n = vocalTake.waveform[at];
+                            return (
+                              <line
+                                key={i}
+                                x1={i * 10 + 5}
+                                x2={i * 10 + 5}
+                                y1={15 - n * 14}
+                                y2={15 + n * 14}
+                                stroke="#43334c"
+                                strokeWidth="5"
+                              />
+                            );
+                          })}
+                        </svg>
+                      </button>
+                      {playing && (
+                        <div
+                          className="wb-playhead"
+                          style={{ left: bar * 42 }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="wb-clip-tools">
@@ -1095,6 +1289,40 @@ function Master({ scope }: { scope: string }) {
               Real listening references, playable melodies & score sources →
             </Link>
           </section>
+          <div
+            className={`wb-voice-panel ${view === "vocals" ? "is-active" : ""}`}
+          >
+            <VocalsPanel
+              scope={scope}
+              project={project}
+              onChange={(vocals, live) =>
+                edit(
+                  {
+                    ...latest.current,
+                    vocals,
+                    mix: {
+                      ...latest.current.mix,
+                      solo: vocals.solo ? null : latest.current.mix.solo,
+                    },
+                  },
+                  live,
+                )
+              }
+              startBacking={async (bar, countIn) => {
+                const clock = await play({ bar, countIn });
+                if (!clock) throw Error("Backing playback could not start.");
+                return clock;
+              }}
+              unlockAudio={async () => {
+                ctx.current ??= new AudioContext();
+                await ctx.current.resume();
+              }}
+              stopBacking={stop}
+              registerStop={(fn) => {
+                recordStop.current = fn;
+              }}
+            />
+          </div>
         </div>
       </div>
       <footer className="wb-footer">

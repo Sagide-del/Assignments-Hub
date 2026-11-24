@@ -660,10 +660,9 @@
   min-width: 0;
 }
 .wb-channel {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(
-      0,
-      0.7fr
-    ) auto minmax(0, 1fr);
+  grid-template-columns:
+    minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.7fr)
+    auto minmax(0, 1fr);
 }
 @media (max-width: 1100px) {
   .wb-channel {
@@ -688,5 +687,109 @@
   }
   .wb-master {
     gap: 7px;
+  }
+}
+.wb-voice-panel {
+  display: none;
+}
+.wb-voice-panel.is-active {
+  display: block;
+}
+.wb-body:has(.wb-voice-panel.is-active) .wb-arrange,
+.wb-body:has(.wb-voice-panel.is-active) .wb-mixer {
+  display: none;
+}
+.wb-vocals > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.wb-vocals h2 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wb-vocals header > span {
+  font-size: 10px;
+  color: #78877f;
+}
+.wb-vocal-actions,
+.wb-vocal-settings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.wb-vocal-actions label,
+.wb-vocal-settings label {
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wb-vocal-settings input[type="number"] {
+  width: 82px;
+}
+.wb-vocal-settings input[type="range"] {
+  width: 110px;
+}
+.wb-vocal-settings input:not([type="range"]) {
+  max-width: 160px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.wb-vocal-wave {
+  height: 70px;
+  width: 100%;
+  color: #58793d;
+  background: #edf3e7;
+}
+.wb-audio-upload {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px;
+  font-size: 11px;
+}
+.wb-audio-upload input {
+  max-width: 200px;
+  font-size: 10px;
+}
+.wb-vocals > label {
+  margin: 10px;
+}
+.wb-vocal-actions select,
+.wb-vocal-settings select {
+  max-width: 220px;
+}
+.wb-vocals .wb-hint {
+  line-height: 1.7;
+}
+@media (max-width: 767px) {
+  .wb-panels button {
+    padding: 0 14px !important;
+  }
+  .wb-vocal-settings,
+  .wb-vocal-actions {
+    gap: 7px;
+  }
+  .wb-vocal-settings label {
+    font-size: 11px;
+  }
+  .wb-vocals button,
+  .wb-vocals select {
+    min-height: 40px;
+  }
+  .wb-vocals header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .wb-vocal-actions input[type="file"] {
+    max-width: 180px;
   }
 }
