@@ -12,7 +12,7 @@ try {
   const capabilities = await request('/teacher/capabilities');
   if (!capabilities.ok || (await capabilities.json()).teacherScopeVersion !== 1) throw Error('Teacher scope capability or schema is not ready.');
   checks.push('schema-backed teacher scope capability');
-  const login = await request('/auth/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schoolCode: 'DEMO-001', email: 'otieno@demo.co.ke', password }) });
+  const login = await request('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schoolCode: 'DEMO-001', identifier: 'otieno@demo.co.ke', password }) });
   if (!login.ok) throw Error(`Demo teacher login failed (HTTP ${login.status}).`);
   const auth = await login.json();
   if (!auth.accessToken || auth.user?.role !== 'TEACHER') throw Error('Expected a teacher session.');
