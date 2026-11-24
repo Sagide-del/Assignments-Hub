@@ -112,6 +112,7 @@ let browser;
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(base + "/login");
+  assert.equal(await page.getByRole("link", { name: /Create Account|Get an account/ }).count(), 0);
   await page.getByRole("tab", { name: "Staff", exact: true }).click();
   await page
     .getByRole("heading", { name: "Staff log in", exact: true })
@@ -122,7 +123,8 @@ let browser;
       .getAttribute("aria-selected"),
     "true",
   );
-  await page.getByRole("link", { name: "Get an account", exact: true }).click();
+  assert.equal(await page.getByRole("link", { name: /Create Account|Get an account/ }).count(), 0);
+  await page.goto(base + "/register?account=staff");
   await page
     .getByText("Your school provides this account", { exact: true })
     .waitFor();

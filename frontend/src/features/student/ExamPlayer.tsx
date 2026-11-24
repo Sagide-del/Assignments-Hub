@@ -478,24 +478,24 @@ function ExamWorkspace() {
             <ArrowLeft size={15} />
             Assignments
           </button>
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
+          <section className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-white">
+            <header className="flex items-center justify-between gap-3 border-b border-emerald-100 bg-[#edf5e5] px-5 py-4 sm:px-7">
               <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
                 <Focus size={17} className="text-[#657d32]" />
-                Practice checkpoint
+                Practice result
               </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+              <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-[#506b32]">
                 {masteryCompletion.attempts_remaining} attempt
                 {masteryCompletion.attempts_remaining === 1 ? "" : "s"}{" "}
                 remaining
               </span>
             </header>
             <div className="grid gap-6 px-5 py-6 sm:grid-cols-[160px_1fr] sm:gap-8 sm:p-7">
-              <div className="border-b border-slate-100 pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-7">
+              <div className="rounded-2xl bg-[#eff0fc] p-5 sm:self-start">
                 <p className="text-xs font-medium text-slate-500">Your score</p>
-                <p className="mt-2 text-5xl font-semibold tracking-tighter text-[#14251f]">
+                <p className="mt-2 text-5xl font-semibold tracking-tighter text-[#6353b4]">
                   {masteryCompletion.score}
-                  <span className="ml-1 text-xl font-normal text-slate-400">
+                  <span className="ml-1 text-xl font-normal text-[#9589c8]">
                     %
                   </span>
                 </p>
@@ -505,10 +505,10 @@ function ExamWorkspace() {
                   aria-valuenow={masteryCompletion.score}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100"
+                  className="mt-4 h-2 overflow-hidden rounded-full bg-white"
                 >
                   <div
-                    className="h-full rounded-full bg-[#7b963f]"
+                    className="h-full rounded-full bg-[#8a79ce]"
                     style={{
                       width: `${Math.max(0, Math.min(100, masteryCompletion.score))}%`,
                     }}
@@ -520,17 +520,16 @@ function ExamWorkspace() {
               </div>
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                  A little more practice
+                  Keep going
                 </h1>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Revisit the worked examples, then give this topic another try.
-                  Focus on understanding one step at a time.
+                  Review the examples, then try again.
                 </p>
                 <button
                   type="button"
                   onClick={() => retryMastery.mutate()}
                   disabled={retryMastery.isPending}
-                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#182c25] px-5 text-sm font-semibold text-white hover:bg-[#254335] disabled:opacity-50"
+                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#b7e45f] px-5 text-sm font-semibold text-[#1c392b] hover:bg-[#a8d650] disabled:opacity-50"
                 >
                   {retryMastery.isPending ? "Preparing retry..." : "Try again"}
                   <ArrowRight className="h-4 w-4" />
@@ -543,8 +542,7 @@ function ExamWorkspace() {
               </div>
             </div>
             <footer className="border-t border-slate-100 bg-slate-50/70 px-5 py-4 text-xs leading-5 text-slate-500 sm:px-7">
-              Questions and options reshuffle on retry. Answer review unlocks at
-              80% mastery or after your practice attempts are complete.
+              Answer review opens at 80% or after 3 attempts.
             </footer>
           </section>
         </div>
