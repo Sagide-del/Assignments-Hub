@@ -494,6 +494,7 @@ model User {
   masteryProgress                  StudentMasteryProgress[]
   independentTumaPayments          IndependentTumaPayment[]
   independentJengaPayments         IndependentJengaPayment[]    @relation("IndependentJengaPaymentStudent")
+  independentIntasendPayments      IndependentIntasendPayment[] @relation("IndependentIntasendPaymentStudent")
   updatedAiFeatureConfigs          AiFeatureConfig[]            @relation("AiFeatureConfigUpdatedBy")
   requestedAiGenerationJobs        AiGenerationJob[]            @relation("AiGenerationRequestedBy")
   uploadedAiExtractedContents      AiExtractedContent[]         @relation("AiExtractedContentUploadedBy")
@@ -3273,4 +3274,28 @@ model Sports_Lab_Progress {
 
   @@unique([student_id, simulation])
   @@index([student_id, completed_at])
+}
+
+model IndependentIntasendPayment {
+  id                Int                  @id @default(autoincrement())
+  studentId         Int                  @map("student_id")
+  student           User                 @relation("IndependentIntasendPaymentStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  reference         String               @unique @db.VarChar(36)
+  idempotencyKey    String               @unique @map("idempotency_key")
+  amountKES         Int                  @map("amount_kes")
+  phone             String
+  interval          SubscriptionInterval
+  status            PaymentStatus        @default(PENDING)
+  providerReference String?              @unique @map("provider_reference")
+  failureReason     String?              @map("failure_reason")
+  verifiedPayload   Json?                @map("verified_payload")
+  expiresAt         DateTime             @map("expires_at")
+  paidAt            DateTime?            @map("paid_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+  landing_source    String?              @db.VarChar(120)
+
+  @@index([studentId, status])
+  @@index([status, updatedAt])
+  @@map("independent_intasend_payments")
 }

@@ -1,5 +1,5 @@
-import {getLandingSource} from "../../utils/landing-source";
-import { trackAcquisition } from '../../utils/acquisition';
+import { getLandingSource } from "../../utils/landing-source";
+import { trackAcquisition } from "../../utils/acquisition";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import {
 import { apiErrorMessage } from "../../api/axios";
 import {
   independentStudentsApi,
-  type JengaPayment,
+  type IntasendPayment,
 } from "../../api/independent-students.api";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
@@ -45,13 +45,13 @@ export function TrialActivationPage() {
     queryFn: independentStudentsApi.getPublicPaymentInfo,
   });
   const capabilities = useQuery({
-    queryKey: ["individual-stk-capabilities"],
-    queryFn: independentStudentsApi.getJengaCapabilities,
+    queryKey: ["individual-intasend-capabilities"],
+    queryFn: independentStudentsApi.getIntasendCapabilities,
   });
-  const queryKey = ["individual-stk-payment", userId];
+  const queryKey = ["individual-intasend-payment", userId];
   const payment = useQuery({
     queryKey,
-    queryFn: independentStudentsApi.getJengaPayment,
+    queryFn: independentStudentsApi.getIntasendPayment,
     refetchInterval: (q) =>
       q.state.data &&
       ["PENDING", "PROCESSING", "AWAITING_VERIFICATION"].includes(
@@ -112,13 +112,13 @@ export function TrialActivationPage() {
   }, [p?.status, p?.reference]);
   const stk = useMutation({
     mutationFn: () =>
-      independentStudentsApi.startJengaPayment({
+      independentStudentsApi.startIntasendPayment({
         landing_source: getLandingSource(),
         interval,
         phone,
         idempotencyKey: key.current,
       }),
-    onSuccess: (data: JengaPayment) => {
+    onSuccess: (data: IntasendPayment) => {
       client.setQueryData(queryKey, data);
       setError(null);
       if (["FAILED", "CANCELLED"].includes(data.status))
@@ -172,7 +172,7 @@ export function TrialActivationPage() {
           <div>
             <h2 className="font-semibold">M-Pesa STK Push</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Secured by Equity Jenga · payment completed on your phone
+              Processed by IntaSend · payment completed on your phone
             </p>
           </div>
         </div>

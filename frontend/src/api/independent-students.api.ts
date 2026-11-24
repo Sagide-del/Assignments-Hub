@@ -40,6 +40,28 @@ export const independentStudentsApi = {
       >("/independent-students/public/payment-claims", dto)
       .then((r) => r.data),
 
+  startIntasendPayment: (input: {
+    landing_source?: string;
+    interval: "MONTHLY" | "ANNUAL";
+    phone: string;
+    idempotencyKey: string;
+  }) =>
+    api
+      .post<IntasendPayment>("/independent-students/intasend/stk-push", input)
+      .then((r) => r.data),
+  getIntasendPayment: () =>
+    api
+      .get<IntasendPayment | null>("/independent-students/intasend/payment")
+      .then((r) => r.data),
+  getIntasendCapabilities: () =>
+    api
+      .get<{
+        provider: "IntaSend";
+        mode: "live" | "sandbox";
+        configured: boolean;
+      }>("/independent-students/intasend/capabilities")
+      .then((r) => r.data),
+
   startJengaPayment: (input: {
     landing_source?: string;
     interval: "MONTHLY" | "ANNUAL";
@@ -174,3 +196,5 @@ export interface JengaPayment {
   failureReason: string | null;
   paidAt: string | null;
 }
+
+export type IntasendPayment = JengaPayment;

@@ -425,8 +425,8 @@ export class PaymentService {
     payload: unknown,
   ) {
     await this.prisma.$transaction([
-      this.prisma.invoice.update({
-        where: { id: invoiceId },
+      this.prisma.invoice.updateMany({
+        where: { id: invoiceId, status: { not: InvoiceStatus.PAID } },
         data: {
           status: InvoiceStatus.VOID,
           metadata: this.toJsonValue({
@@ -434,8 +434,11 @@ export class PaymentService {
           }),
         },
       }),
-      this.prisma.paymentTransaction.update({
-        where: { id: paymentTransactionId },
+      this.prisma.paymentTransaction.updateMany({
+        where: {
+          id: paymentTransactionId,
+          status: { not: PaymentStatus.CONFIRMED },
+        },
         data: {
           status: PaymentStatus.FAILED,
           metadata: this.toJsonValue({
@@ -483,8 +486,11 @@ export class PaymentService {
           this.configService.get("PAYMENT_REDIRECT_URL") || undefined,
       });
 
-      await this.prisma.paymentTransaction.update({
-        where: { id: paymentTransaction.id },
+      await this.prisma.paymentTransaction.updateMany({
+        where: {
+          id: paymentTransaction.id,
+          status: { not: PaymentStatus.CONFIRMED },
+        },
         data: {
           status: PaymentStatus.PROCESSING,
           providerReference: checkout.providerReference,
@@ -601,7 +607,11 @@ export class PaymentService {
   }
 
   verifyWebhookChallenge(payload: any): boolean {
-    return !!this.webhookSecret && payload?.challenge === this.webhookSecret;
+    if (!this.webhookSecret || typeof payload?.challenge !== "string")
+      return false;
+    const a = Buffer.from(this.webhookSecret),
+      b = Buffer.from(payload.challenge);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
   }
 
   async handleWebhook(payload: any) {
@@ -640,8 +650,55 @@ export class PaymentService {
       PaymentMethod.INTASEND,
     );
 
-    switch (state) {
+    if (
+      !schoolId ||
+      !paymentTransactionId ||
+      !internalInvoiceId ||
+      typeof invoiceId !== "string"
+    )
+      return { status: "error", message: "Missing local payment identifiers" };
+    const order = await this.prisma.paymentTransaction.findUnique({
+      where: { id: paymentTransactionId },
+      include: { invoice: true },
+    });
+    if (
+      !order ||
+      order.method !== PaymentMethod.INTASEND ||
+      order.schoolId !== schoolId ||
+      order.invoiceId !== internalInvoiceId ||
+      order.amountKES !== expectedAmount ||
+      order.currency !== "KES" ||
+      !order.invoice ||
+      order.invoice.schoolId !== schoolId ||
+      order.invoice.amountKES !== expectedAmount ||
+      order.invoice.planSnapshot !== plan ||
+      order.invoice.interval !== interval
+    )
+      return {
+        status: "error",
+        message: "Payment does not match a locally quoted order",
+      };
+    const verified: any = await this.intaSendProvider.verifyPayment(invoiceId),
+      verifiedInvoice = verified?.invoice;
+    if (
+      !verifiedInvoice ||
+      verifiedInvoice.invoice_id !== invoiceId ||
+      verifiedInvoice.api_ref !== apiRef ||
+      verifiedInvoice.currency !== "KES" ||
+      Number(verifiedInvoice.value) !== order.amountKES
+    )
+      return {
+        status: "error",
+        message: "Provider verification did not match the order",
+      };
+    switch (verifiedInvoice.state) {
       case "COMPLETE": {
+        if (this.configService.get("INTASEND_TEST_MODE") !== "false")
+          return {
+            status: "error",
+            message:
+              "Sandbox payments cannot activate paid school subscriptions",
+          };
         this.logger.log(`Payment complete (invoice ${invoiceId})`);
         if (!schoolId || !plan || !expectedAmount) {
           this.logger.error(
@@ -654,7 +711,7 @@ export class PaymentService {
           };
         }
 
-        const paidAmount = Number(value);
+        const paidAmount = Number(verifiedInvoice.value);
         if (!Number.isFinite(paidAmount) || paidAmount < expectedAmount) {
           this.logger.error(
             `Webhook for invoice ${invoiceId} paid ${value} but checkout was for KES ${expectedAmount} (tier "${plan}") â€” refusing to activate. schoolId=${schoolId}`,
@@ -757,6 +814,13 @@ export class PaymentService {
     const expiresAt = currentPeriodEnd;
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "schools" WHERE "id"=${schoolId} FOR UPDATE`;
+      if (data.paymentTransactionId) {
+        const locked = await tx.paymentTransaction.findUnique({
+          where: { id: data.paymentTransactionId },
+        });
+        if (locked?.subscriptionId) return;
+      }
       const subscription = await tx.subscription.create({
         data: {
           schoolId,
@@ -832,8 +896,8 @@ export class PaymentService {
 
     if (invoiceId) {
       operations.push(
-        this.prisma.invoice.update({
-          where: { id: invoiceId },
+        this.prisma.invoice.updateMany({
+          where: { id: invoiceId, status: { not: InvoiceStatus.PAID } },
           data: {
             status: invoiceStatus,
             metadata: this.toJsonValue({
@@ -846,8 +910,11 @@ export class PaymentService {
 
     if (paymentTransactionId) {
       operations.push(
-        this.prisma.paymentTransaction.update({
-          where: { id: paymentTransactionId },
+        this.prisma.paymentTransaction.updateMany({
+          where: {
+            id: paymentTransactionId,
+            status: { not: PaymentStatus.CONFIRMED },
+          },
           data: {
             status: paymentStatus,
             providerReference,

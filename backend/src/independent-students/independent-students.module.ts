@@ -1,3 +1,10 @@
+import { PaymentModule } from "../payment/payment.module";
+import {
+  IntasendPaymentsController,
+  IntasendWebhookController,
+} from "./intasend-payments.controller";
+import { IntasendPaymentsService } from "./intasend-payments.service";
+import { IntasendStkProvider } from "./intasend-stk.provider";
 import { ScheduleModule } from "@nestjs/schedule";
 import { TumaReconciliationService } from "./tuma-reconciliation.service";
 import { TumaCallbackQueue } from "./tuma-callback-queue";
@@ -20,9 +27,11 @@ import { UsersModule } from "../users/users.module";
 import { SmsModule } from "../sms/sms.module";
 
 @Module({
-  imports: [UsersModule, SmsModule, ScheduleModule.forRoot()],
+  imports: [UsersModule, SmsModule, PaymentModule, ScheduleModule.forRoot()],
   controllers: [
     IndependentStudentsController,
+    IntasendPaymentsController,
+    IntasendWebhookController,
     TumaPaymentsController,
     MpesaCallbackController,
     JengaPaymentsController,
@@ -30,6 +39,8 @@ import { SmsModule } from "../sms/sms.module";
   ],
   providers: [
     IndependentStudentsService,
+    IntasendPaymentsService,
+    IntasendStkProvider,
     TumaPaymentProvider,
     TumaPaymentsService,
     TumaCallbackQueue,
