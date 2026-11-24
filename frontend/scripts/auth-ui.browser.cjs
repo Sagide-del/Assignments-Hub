@@ -122,7 +122,7 @@ let browser;
       .getAttribute("aria-selected"),
     "true",
   );
-  await page.getByRole("link", { name: "Create Account", exact: true }).click();
+  await page.getByRole("link", { name: "Get an account", exact: true }).click();
   await page
     .getByText("Your school provides this account", { exact: true })
     .waitFor();

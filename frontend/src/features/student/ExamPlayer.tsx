@@ -1,4 +1,4 @@
-import { NextModuleBatch } from './NextModuleBatch';
+import { NextModuleBatch } from "./NextModuleBatch";
 import { DiagramRenderer } from "../../components/ExamDiagrams/DiagramRenderer";
 import { MathText } from "../../components/ExamDiagrams/MathText";
 import { CmsTheory } from "./CmsTheory";
@@ -218,8 +218,12 @@ function ExamWorkspace() {
         .then((response) => response.data),
     onSuccess: (result) => {
       setMasteryCompletion(result);
-      void queryClient.invalidateQueries({ queryKey: ["cms-learning", userId] });
-      void queryClient.invalidateQueries({ queryKey: ["assignment-catalogue"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["cms-learning", userId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["assignment-catalogue"],
+      });
     },
   });
   const retryMastery = useMutation({
@@ -465,33 +469,83 @@ function ExamWorkspace() {
       !masteryCompletion.answers_unlocked;
     if (masteryLocked) {
       return (
-        <div className="mx-auto max-w-2xl space-y-5 py-6 sm:py-10">
-          <section className="rounded-3xl bg-[#101c25] p-6 text-white shadow-xl sm:p-9">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#b7ec0b]">
-              Mastery checkpoint
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold">Keep building the skill</h1>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
-              You scored {masteryCompletion.score}%. EE mastery begins at 80%, so the answer review stays closed while you practise again.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold">{masteryCompletion.attempts_remaining} attempt{masteryCompletion.attempts_remaining === 1 ? "" : "s"} remaining</span>
-              <span className="text-sm text-slate-300">Questions and options will be shuffled on your next attempt.</span>
+        <div className="mx-auto max-w-3xl py-5 sm:py-8">
+          <button
+            type="button"
+            onClick={() => navigate(assignmentListPath)}
+            className="mb-6 inline-flex min-h-10 items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-900"
+          >
+            <ArrowLeft size={15} />
+            Assignments
+          </button>
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
+              <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <Focus size={17} className="text-[#657d32]" />
+                Practice checkpoint
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                {masteryCompletion.attempts_remaining} attempt
+                {masteryCompletion.attempts_remaining === 1 ? "" : "s"}{" "}
+                remaining
+              </span>
+            </header>
+            <div className="grid gap-6 px-5 py-6 sm:grid-cols-[160px_1fr] sm:gap-8 sm:p-7">
+              <div className="border-b border-slate-100 pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-7">
+                <p className="text-xs font-medium text-slate-500">Your score</p>
+                <p className="mt-2 text-5xl font-semibold tracking-tighter text-[#14251f]">
+                  {masteryCompletion.score}
+                  <span className="ml-1 text-xl font-normal text-slate-400">
+                    %
+                  </span>
+                </p>
+                <div
+                  role="progressbar"
+                  aria-label="Mastery progress"
+                  aria-valuenow={masteryCompletion.score}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100"
+                >
+                  <div
+                    className="h-full rounded-full bg-[#7b963f]"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, masteryCompletion.score))}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Mastery target: 80%
+                </p>
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+                  A little more practice
+                </h1>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  Revisit the worked examples, then give this topic another try.
+                  Focus on understanding one step at a time.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => retryMastery.mutate()}
+                  disabled={retryMastery.isPending}
+                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#182c25] px-5 text-sm font-semibold text-white hover:bg-[#254335] disabled:opacity-50"
+                >
+                  {retryMastery.isPending ? "Preparing retry..." : "Try again"}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                {retryMastery.isError ? (
+                  <p role="alert" className="mt-3 text-sm text-red-700">
+                    Could not prepare your next attempt. Please try again.
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </section>
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 className="font-semibold text-slate-900">Your next best step</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Take a short break, revisit the worked examples, then retry this focused practice set. The aim is understanding, not rushing.</p>
-            <button
-              type="button"
-              onClick={() => retryMastery.mutate()}
-              disabled={retryMastery.isPending}
-              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#b7ec0b] px-5 text-sm font-bold text-[#101c25] disabled:opacity-50"
-            >
-              {retryMastery.isPending ? "Preparing retry..." : "Try again"}
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            {retryMastery.isError ? <p className="mt-3 text-sm text-red-700">Could not prepare your next attempt. Please try again.</p> : null}
+            <footer className="border-t border-slate-100 bg-slate-50/70 px-5 py-4 text-xs leading-5 text-slate-500 sm:px-7">
+              Questions and options reshuffle on retry. Answer review unlocks at
+              80% mastery or after your practice attempts are complete.
+            </footer>
           </section>
         </div>
       );
@@ -536,10 +590,18 @@ function ExamWorkspace() {
 
     return (
       <div className={workspaceClassName}>
-        {assignment.rawJson?.cms_module_id ? <NextModuleBatch key={assignment.id} subject={assignment.subject} topic={assignment.title}/> : <NextTopicSet
-          subject={assignment.subject}
-          topic={assignmentTopic(assignment)}
-        />}
+        {assignment.rawJson?.cms_module_id ? (
+          <NextModuleBatch
+            key={assignment.id}
+            subject={assignment.subject}
+            topic={assignment.title}
+          />
+        ) : (
+          <NextTopicSet
+            subject={assignment.subject}
+            topic={assignmentTopic(assignment)}
+          />
+        )}
         {resultsReleased && loadingReleasedResults ? (
           <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
             Loading released results...
@@ -824,7 +886,10 @@ function ExamWorkspace() {
           </aside>
         )}
         <div className="min-w-0 space-y-4">
-          <CmsTheory content={assignment.rawJson?.cms_content} title={assignment.title} />
+          <CmsTheory
+            content={assignment.rawJson?.cms_content}
+            title={assignment.title}
+          />
           {assignment.description && (
             <details className="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <summary className="cursor-pointer text-xs font-medium text-slate-600">
