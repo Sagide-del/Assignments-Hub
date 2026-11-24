@@ -112,32 +112,9 @@ let browser;
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(base + "/login");
-  assert.equal(await page.getByRole("link", { name: /Create Account|Get an account/ }).count(), 0);
-  await page.getByRole("tab", { name: "Staff", exact: true }).click();
-  await page
-    .getByRole("heading", { name: "Staff log in", exact: true })
-    .waitFor();
-  assert.equal(
-    await page
-      .getByRole("tab", { name: "Staff", exact: true })
-      .getAttribute("aria-selected"),
-    "true",
-  );
-  assert.equal(await page.getByRole("link", { name: /Create Account|Get an account/ }).count(), 0);
-  await page.goto(base + "/register?account=staff");
-  await page
-    .getByText("Your school provides this account", { exact: true })
-    .waitFor();
-  assert.equal(
-    await page
-      .getByRole("button", {
-        name: "Create account & pay KES 300",
-        exact: true,
-      })
-      .count(),
-    0,
-  );
-  await page.getByRole("tab", { name: "Independent", exact: true }).click();
+  await page.getByRole("heading", { name: "Sign in", exact: true }).waitFor();
+  assert.equal(await page.getByRole("tab").count(), 0);
+  await page.getByRole("link", { name: "Create an independent learner account", exact: true }).click();
   await page.getByLabel("Full name", { exact: true }).waitFor();
   assert.equal(await page.getByLabel("Pathway", { exact: true }).count(), 0);
   await page.getByLabel("Full name", { exact: true }).fill("Victor Halisi");
@@ -219,31 +196,18 @@ let browser;
   const login = await browser.newContext();
   const lp = await login.newPage();
   await login.route("**/api/v1/**", (r) => r.fulfill({ json: [] }));
-  await lp.goto(base + "/login/staff");
-  await lp
-    .getByRole("heading", { name: "Staff log in", exact: true })
-    .waitFor();
-  await lp.goto(base + "/school/DEMO-001/login");
-  await lp
-    .getByRole("heading", { name: "School learner log in", exact: true })
-    .waitFor();
-  assert.equal(
-    await lp.getByRole("textbox", { name: /School code/ }).count(),
-    0,
-  );
-  await lp.getByRole("tab", { name: "School", exact: true }).click();
-  assert(lp.url().includes("/school/DEMO-001/login"));
-  await lp.getByRole("tab", { name: "Independent", exact: true }).click();
-  await lp
-    .getByRole("heading", { name: "Independent learner log in", exact: true })
-    .waitFor();
-  await lp
-    .getByRole("textbox", { name: "Username or email", exact: true })
-    .waitFor();
+  for (const path of ["/register?account=staff", "/register?account=student", "/login/staff", "/login?account=independent", "/school/DEMO-001/login"]) {
+    await lp.goto(base + path);
+    await lp.getByRole("heading", { name: "Sign in", exact: true }).waitFor();
+    assert.equal(await lp.getByRole("tab").count(), 0);
+    await lp.getByLabel("Email, username or admission number", { exact: true }).waitFor();
+  }
+  assert.equal(await lp.getByRole("textbox", { name: /School code/ }).inputValue(), "DEMO-001");
+  assert(await lp.getByRole("textbox", { name: /School code/ }).getAttribute("readonly") !== null);
   assert.deepEqual(errors, []);
   await browser.close();
   console.log(
-    "PASS: three account tabs, login/create toggle, school/staff invitation boundaries, senior electives, responsive layouts, durable account retry, phone handoff, and zero automatic STK requests.",
+    "PASS: one sign-in entry, independent-only registration, school deep links, senior electives, responsive layouts, durable account retry, phone handoff, and zero automatic STK requests.",
   );
 })().catch(async (e) => {
   console.error(e);

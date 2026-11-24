@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
+import { UnifiedLoginDto } from './dto/unified-login.dto';
 import { StaffLoginDto } from './dto/staff-login.dto';
 import { StudentLoginDto } from './dto/student-login.dto';
 import { IndependentLoginDto } from './dto/independent-login.dto';
@@ -18,7 +19,14 @@ export class AuthController {
   @Public()
   @Get("independent/capabilities")
   independentCapabilities() {
-    return { usernameRegistrationVersion: 1 };
+    return { usernameRegistrationVersion: 1, unifiedLoginVersion: 1 };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('login')
+  login(@Body() dto: UnifiedLoginDto, @Req() req: Request) {
+    return this.authService.loginUnified(dto, req.ip);
   }
 
   // Tighter limit than the global default to slow down credential stuffing.

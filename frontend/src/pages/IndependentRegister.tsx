@@ -1,9 +1,9 @@
 import { getLandingSource } from "../utils/landing-source";
-import { trackAcquisition } from '../utils/acquisition';
+import { trackAcquisition } from "../utils/acquisition";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, School, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import {
   SubjectSelectionFields,
   type SubjectChoice,
@@ -15,51 +15,19 @@ import { loginIndependent } from "../services/authService";
 import type { IndependentRegistrationResult } from "../types";
 export default function IndependentRegister() {
   const [params] = useSearchParams();
-  const account =
-    params.get("account") === "staff"
-      ? "staff"
-      : params.get("account") === "student"
-        ? "student"
-        : "independent";
+  if (["student", "staff"].includes(params.get("account") ?? ""))
+    return <Navigate to="/login" replace />;
   return (
-    <AuthFrame account={account} mode="register">
-      {account === "independent" ? (
-        <IndependentRegistrationForm />
-      ) : (
-        <div className="space-y-4 rounded-xl bg-slate-50 p-5">
-          <div className="flex items-center gap-2 font-semibold">
-            {account === "staff" ? (
-              <ShieldCheck size={20} />
-            ) : (
-              <School size={20} />
-            )}
-            Your school provides this account
-          </div>
-          <p className="text-sm leading-6 text-slate-600">
-            {account === "staff"
-              ? "Ask your School Admin for a staff account. School administrators are onboarded by Assignment Hub."
-              : "Ask your school for its school code, your admission number and learner PIN."}
-          </p>
-          <Link
-            to={`/login?account=${account}`}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#101820] px-4 text-sm font-semibold text-white"
-          >
-            Log in with school details
-            <ArrowRight size={16} />
-          </Link>
-          <Link
-            to="/register?account=independent"
-            className="block text-sm font-semibold text-[#536d00] underline underline-offset-4"
-          >
-            Create an independent learner account instead
-          </Link>
-        </div>
-      )}
+    <AuthFrame account="independent" mode="register">
+      <IndependentRegistrationForm />
     </AuthFrame>
   );
 }
+
 export function IndependentRegistrationForm() {
-  useEffect(() => { trackAcquisition("registration_open"); }, []);
+  useEffect(() => {
+    trackAcquisition("registration_open");
+  }, []);
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",

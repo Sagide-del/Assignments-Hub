@@ -8,9 +8,9 @@ for (let attempt = 1; attempt <= 24; attempt++) {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    if (data.usernameRegistrationVersion !== 1)
-      throw new Error("Username registration not ready");
-    console.log("PASS: username registration API ready");
+    if (data.usernameRegistrationVersion !== 1 || data.unifiedLoginVersion !== 1)
+      throw new Error("Unified sign-in API not ready");
+    console.log("PASS: unified sign-in and username registration API ready");
     process.exit(0);
   } catch (error) {
     console.log(`Username API readiness ${attempt}/24: ${error.message}`);

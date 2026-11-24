@@ -122,7 +122,7 @@ mkdirSync(artifacts, { recursive: true });
     );
     await page.goto(base + "/login?account=staff");
     await page
-      .getByRole("heading", { name: "Staff log in", exact: true })
+      .getByRole("heading", { name: "Sign in", exact: true })
       .waitFor();
     assert.equal(
       await page.locator('#root [id="workflow-heading"]').count(),

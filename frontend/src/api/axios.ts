@@ -52,7 +52,9 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
 
-    if (error.response?.status === 401 && original && !original._retried) {
+    // A rejected sign-in belongs to the form, not the session-refresh flow.
+    const signInRequest = /^\/auth\/(?:login|(?:student|staff|independent)\/login)$/.test(original?.url ?? '');
+    if (error.response?.status === 401 && original && !original._retried && !signInRequest) {
       original._retried = true;
       const newToken = await refreshAccessToken();
       if (newToken) {

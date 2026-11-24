@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StaffLoginDto } from './dto/staff-login.dto';
 import { StudentLoginDto } from './dto/student-login.dto';
+import { UnifiedLoginDto } from './dto/unified-login.dto';
 import { IndependentLoginDto } from './dto/independent-login.dto';
 import { RegisterIndependentStudentDto } from './dto/register-independent-student.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
@@ -31,6 +32,80 @@ export class AuthService {
     private readonly auditService: AuditService,
     private readonly configService: ConfigService,
   ) {}
+
+  async loginUnified(dto: UnifiedLoginDto, ipAddress?: string) {
+    const identifier = dto.identifier.trim();
+    const code = dto.schoolCode?.trim().toUpperCase();
+    const invalid = () =>
+      new UnauthorizedException(
+        "Check your login details. School accounts may also need a school code.",
+      );
+    if (!identifier) throw invalid();
+    // Resolve one account, never guess between tenants or accept a client role.
+    const candidates = await this.prisma.user.findMany({
+      where: {
+        ...(code ? { school: { code } } : {}),
+        OR: [
+          { email: { equals: identifier, mode: "insensitive" } },
+          { admissionNumber: identifier },
+          { admissionNumber: identifier.toUpperCase() },
+        ],
+      },
+      select: {
+        role: true,
+        email: true,
+        admissionNumber: true,
+        passwordHash: true,
+        school: { select: { code: true } },
+      },
+      take: 2,
+    });
+    if (candidates.length !== 1) throw invalid();
+    try {
+      const user = candidates[0];
+      if (user.role !== Role.STUDENT) {
+        if (!user.email || !dto.password) throw invalid();
+        return await this.loginStaff(
+          {
+            schoolCode: user.school.code,
+            email: user.email,
+            password: dto.password,
+          },
+          ipAddress,
+        );
+      }
+      if (user.school.code === INDEPENDENT_SCHOOL_CODE && user.passwordHash) {
+        if (!dto.password) throw invalid();
+        return await this.loginIndependentStudent(
+          {
+            identifier: user.admissionNumber || user.email!,
+            password: dto.password,
+          },
+          ipAddress,
+        );
+      }
+      if (
+        !user.admissionNumber ||
+        (dto.password && !/^\d{4,8}$/.test(dto.password))
+      )
+        throw invalid();
+      return await this.loginStudent(
+        {
+          schoolCode: user.school.code,
+          admissionNumber: user.admissionNumber,
+          ...(dto.password ? { pin: dto.password } : {}),
+        },
+        ipAddress,
+      );
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException &&
+        error.message === "Invalid credentials"
+      )
+        throw invalid();
+      throw error;
+    }
+  }
 
   async loginStaff(dto: StaffLoginDto, ipAddress?: string) {
     const school = await this.prisma.school.findUnique({ where: { code: dto.schoolCode } });

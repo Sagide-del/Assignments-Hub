@@ -3,6 +3,9 @@ import type { TokenPair, AuthenticatedUser, IndependentRegistrationResult } from
 
 // Matches backend/src/auth/auth.controller.ts exactly.
 export const authApi = {
+  login: (identifier: string, password: string, schoolCode?: string) =>
+    api.post<TokenPair>('/auth/login', { identifier, password, ...(schoolCode ? { schoolCode } : {}) }).then(r => r.data),
+
   loginStaff: (schoolCode: string, email: string, password: string) =>
     api.post<TokenPair>('/auth/staff/login', { schoolCode, email, password }).then((r) => r.data),
 
