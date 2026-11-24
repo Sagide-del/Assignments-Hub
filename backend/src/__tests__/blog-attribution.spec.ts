@@ -20,9 +20,9 @@ describe('blog acquisition attribution',()=>{
   expect(report.find(r=>r.landing_source===null)).toMatchObject({payingLearners:1,confirmedKES:300});
  });
  it('queries only server-confirmed payments, rather than trusting a browser conversion event',async()=>{
-  const p:any={auditLog:{groupBy:jest.fn().mockResolvedValue([])},user:{groupBy:jest.fn().mockResolvedValue([])},independentTumaPayment:{findMany:jest.fn().mockResolvedValue([])},independentJengaPayment:{findMany:jest.fn().mockResolvedValue([])}};
+  const p:any={auditLog:{groupBy:jest.fn().mockResolvedValue([])},user:{groupBy:jest.fn().mockResolvedValue([])},independentTumaPayment:{findMany:jest.fn().mockResolvedValue([])},independentJengaPayment:{findMany:jest.fn().mockResolvedValue([])},independentIntasendPayment:{findMany:jest.fn().mockResolvedValue([])}};
   const r=await new AcquisitionService(p).summary();
-  for(const model of [p.independentTumaPayment,p.independentJengaPayment])expect(model.findMany.mock.calls[0][0].where.status).toBe('CONFIRMED');
+  for(const model of [p.independentTumaPayment,p.independentJengaPayment,p.independentIntasendPayment])expect(model.findMany.mock.calls[0][0].where.status).toBe('CONFIRMED');
   expect(r.blogAttribution).toHaveLength(BLOG_LANDING_SOURCES.length+1);expect(r.confirmedPayingLearners).toBe(0);
  });
 });
