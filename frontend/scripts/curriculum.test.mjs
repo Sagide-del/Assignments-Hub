@@ -68,7 +68,7 @@ test('every authored skill lesson has its actual objective, concrete evidence an
       assert.ok(!design.teacherAuthored);
     }
   }
-  assert.equal(count, 40);
+  assert.equal(count, 52);
 });
 test('custom course outcomes are preserved and legacy non-text metadata is ignored', () => {
   const design = skillDesign({
