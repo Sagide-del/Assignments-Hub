@@ -1,36 +1,59 @@
-import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Check, CheckCheck } from 'lucide-react';
-import { useAuthStore } from '../../../store/auth.store';
-import { skillsApi } from '../../../api/skills.api';
-import { EmptyState } from '../../../components/ui/Saas';
-import type { SkillCourse } from '../../../types';
-import { courseLessons, hasWorkspaceAccess, workspaceModeForCourse } from './workspace-mode';
-import { LessonWorkspace } from './LessonWorkspace';
+import { SkillWorkbookButton } from "./SkillWorkbookButton";
+import { focusedProgram } from "./content";
+import { apiErrorMessage } from "../../../api/axios";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, BookOpen, Check, CheckCheck } from "lucide-react";
+import { useAuthStore } from "../../../store/auth.store";
+import { skillsApi } from "../../../api/skills.api";
+import { EmptyState } from "../../../components/ui/Saas";
+import type { SkillCourse } from "../../../types";
+import {
+  courseLessons,
+  hasWorkspaceAccess,
+  workspaceModeForCourse,
+} from "./workspace-mode";
+import { LessonWorkspace } from "./LessonWorkspace";
 
 export function SkillWorkspacePage() {
   const courseId = Number(useParams<{ id: string }>().id);
   const [params] = useSearchParams();
-  const initialLessonKey = params.get('lesson');
+  const initialLessonKey = params.get("lesson");
   const userId = useAuthStore((state) => state.user?.id);
   const queryClient = useQueryClient();
   const courseQuery = useQuery({
-    queryKey: ['skill-course', courseId, userId],
+    queryKey: ["skill-course", courseId, userId],
     queryFn: () => skillsApi.getCourse(courseId),
     enabled: Number.isInteger(courseId) && courseId > 0,
   });
   const course = courseQuery.data;
   const canAccess = Boolean(course && hasWorkspaceAccess(course));
+  const needsStart = Boolean(
+    course?.costKES === 0 &&
+    !["ACTIVE", "COMPLETED"].includes(course.enrollment?.status ?? ""),
+  );
+  const start = useMutation({
+    mutationFn: () => skillsApi.requestEnrollment(courseId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["skill-course", courseId] }),
+        queryClient.invalidateQueries({ queryKey: ["focused-skill-path"] }),
+        queryClient.invalidateQueries({ queryKey: ["skill-enrollments"] }),
+      ]);
+    },
+  });
   const progressQuery = useQuery({
-    queryKey: ['skill-course-progress', courseId, userId],
+    queryKey: ["skill-course-progress", courseId, userId],
     queryFn: () => skillsApi.getCourseProgress(courseId),
-    enabled: canAccess,
+    enabled: canAccess && !needsStart,
   });
   useEffect(() => {
-    if (progressQuery.isSuccess) void queryClient.invalidateQueries({ queryKey: ['skill-enrollments'] });
+    if (progressQuery.isSuccess)
+      void queryClient.invalidateQueries({ queryKey: ["skill-enrollments"] });
   }, [progressQuery.isSuccess, progressQuery.dataUpdatedAt, queryClient]);
-  if (courseQuery.isLoading) return <EmptyState title="Loading learning workspace..." />;
+  if (courseQuery.isLoading)
+    return <EmptyState title="Loading learning workspace..." />;
   if (courseQuery.isError || !course)
     return (
       <EmptyState
@@ -38,14 +61,44 @@ export function SkillWorkspacePage() {
         action={<Link to="/student/learn-skills">Back to skills</Link>}
       />
     );
+  if (needsStart)
+    return (
+      <section className="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6">
+        <Link to="/student/learn-skills" className="text-xs text-slate-500">
+          Back to your skills
+        </Link>
+        <h1 className="mt-5 text-xl font-semibold">{course.title}</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          Start this skill to use one of your two active learning slots. Your
+          progress stays saved if you pause.
+        </p>
+        <button
+          disabled={start.isPending}
+          onClick={() => start.mutate()}
+          className="mt-5 min-h-11 rounded-lg bg-[#203e30] px-5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {start.isPending ? "Starting…" : "Start this skill"}
+        </button>
+        {start.error && (
+          <p role="alert" className="mt-3 text-sm text-amber-800">
+            {apiErrorMessage(start.error, "Could not start this skill.")}
+          </p>
+        )}
+      </section>
+    );
   if (!canAccess)
     return (
       <EmptyState
         title="An active enrollment is required for this course."
-        action={<Link to={`/student/learn-skills/${course.id}`}>View course access</Link>}
+        action={
+          <Link to={`/student/learn-skills/${course.id}`}>
+            View course access
+          </Link>
+        }
       />
     );
-  if (progressQuery.isPending) return <EmptyState title="Loading saved progress..." />;
+  if (progressQuery.isPending)
+    return <EmptyState title="Loading saved progress..." />;
   if (progressQuery.isError)
     return (
       <EmptyState
@@ -71,7 +124,7 @@ export function SkillWorkspacePage() {
   );
   return (
     <Workspace
-      key={`${userId}-${course.id}-${initialLessonKey ?? 'resume'}`}
+      key={`${userId}-${course.id}-${initialLessonKey ?? "resume"}`}
       userId={userId!}
       course={course}
       completedKeys={completedKeys}
@@ -91,16 +144,26 @@ function Workspace({
   initialLessonKey: string | null;
 }) {
   const lessons = courseLessons(course);
-  const firstIncomplete = lessons.findIndex((lesson) => !completedKeys.has(lesson.key));
-  const requestedIndex = lessons.findIndex((lesson) => lesson.key === initialLessonKey);
+  const firstIncomplete = lessons.findIndex(
+    (lesson) => !completedKeys.has(lesson.key),
+  );
+  const requestedIndex = lessons.findIndex(
+    (lesson) => lesson.key === initialLessonKey,
+  );
   const [activeIndex, setActiveIndex] = useState(
-    requestedIndex >= 0 ? requestedIndex : firstIncomplete >= 0 ? firstIncomplete : 0,
+    requestedIndex >= 0
+      ? requestedIndex
+      : firstIncomplete >= 0
+        ? firstIncomplete
+        : 0,
   );
   const activeLesson = lessons[activeIndex];
   const percent = Math.round((completedKeys.size / lessons.length) * 100);
   function advance(savedKey: string) {
     setActiveIndex((current) =>
-      lessons[current].key === savedKey ? Math.min(current + 1, lessons.length - 1) : current,
+      lessons[current].key === savedKey
+        ? Math.min(current + 1, lessons.length - 1)
+        : current,
     );
   }
   return (
@@ -117,14 +180,18 @@ function Workspace({
           <h1 className="mt-1 break-words text-xl font-semibold text-[#101820] sm:text-2xl">
             {course.title}
           </h1>
-
         </div>
-        <Link
-          to={`/student/learn-skills/${course.id}`}
-          className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600"
-        >
-          Course details
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          {focusedProgram(course.title) && (
+            <SkillWorkbookButton courseId={course.id} />
+          )}
+          <Link
+            to={`/student/learn-skills/${course.id}`}
+            className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600"
+          >
+            Course details
+          </Link>
+        </div>
       </header>
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <BookOpen className="h-4 w-4 text-[#607D00]" aria-hidden="true" />
@@ -136,7 +203,10 @@ function Workspace({
           aria-valuenow={completedKeys.size}
           className="h-2 min-w-[80px] flex-1 overflow-hidden rounded-full bg-slate-100"
         >
-          <div className="h-full rounded-full bg-slate-700" style={{ width: `${percent}%` }} />
+          <div
+            className="h-full rounded-full bg-slate-700"
+            style={{ width: `${percent}%` }}
+          />
         </div>
         <span className="text-xs font-semibold text-slate-600">
           {completedKeys.size}/{lessons.length} complete
@@ -148,12 +218,15 @@ function Workspace({
           className="flex items-center gap-2 rounded-xl border border-lime-200 bg-lime-50 p-4 text-sm text-[#466000]"
         >
           <CheckCheck className="h-5 w-5 shrink-0" aria-hidden="true" />
-          You have completed this learning path. Revisit a lesson to keep practising; completion is not a
-          professional qualification.
+          You have completed this learning path. Revisit a lesson to keep
+          practising; completion is not a professional qualification.
         </p>
       ) : null}
       <div className="2xl:hidden">
-        <label htmlFor="lesson-select" className="mb-1.5 block text-xs font-semibold text-slate-600">
+        <label
+          htmlFor="lesson-select"
+          className="mb-1.5 block text-xs font-semibold text-slate-600"
+        >
           Choose a lesson
         </label>
         <select
@@ -164,7 +237,7 @@ function Workspace({
         >
           {lessons.map((lesson, index) => (
             <option key={lesson.key} value={index}>
-              {completedKeys.has(lesson.key) ? '✓ ' : ''}
+              {completedKeys.has(lesson.key) ? "✓ " : ""}
               {index + 1}. {lesson.title}
             </option>
           ))}
@@ -180,12 +253,12 @@ function Workspace({
               <button
                 key={lesson.key}
                 type="button"
-                aria-current={index === activeIndex ? 'step' : undefined}
+                aria-current={index === activeIndex ? "step" : undefined}
                 onClick={() => setActiveIndex(index)}
-                className={`flex min-h-14 w-full items-start gap-3 rounded-xl px-3 py-3 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#607D00] ${index === activeIndex ? 'bg-[#101820] text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                className={`flex min-h-14 w-full items-start gap-3 rounded-xl px-3 py-3 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#607D00] ${index === activeIndex ? "bg-[#101820] text-white" : "text-slate-600 hover:bg-slate-50"}`}
               >
                 <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${index === activeIndex ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${index === activeIndex ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}
                 >
                   {completedKeys.has(lesson.key) ? (
                     <Check className="h-4 w-4" aria-hidden="true" />
@@ -207,8 +280,14 @@ function Workspace({
           index={activeIndex}
           total={lessons.length}
           completed={completedKeys.has(activeLesson.key)}
-          onPrevious={() => setActiveIndex((current) => Math.max(0, current - 1))}
-          onNext={() => setActiveIndex((current) => Math.min(lessons.length - 1, current + 1))}
+          onPrevious={() =>
+            setActiveIndex((current) => Math.max(0, current - 1))
+          }
+          onNext={() =>
+            setActiveIndex((current) =>
+              Math.min(lessons.length - 1, current + 1),
+            )
+          }
           onComplete={advance}
         />
       </div>

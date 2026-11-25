@@ -16,6 +16,7 @@ on:
       - 'backend/src/csl/**'
       - 'backend/src/study-hub/**'
       - 'backend/src/student/**'
+      - 'backend/src/skills/**'
       - 'backend/src/users/**'
       - 'backend/src/__tests__/assignments.spec.ts'
       - 'backend/src/math-engine/**'
@@ -142,6 +143,7 @@ jobs:
           RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           CMS_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/cms_publish_test
           SEO_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/seo_attribution_test
+          SKILLS_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/focused_skills_test
           INTASEND_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/intasend_test
           MATH_ENGINE_TEST_PYTHON: ${{ github.workspace }}/backend/.math-venv/bin/python
           TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
@@ -153,6 +155,8 @@ jobs:
           DATABASE_URL="$SEO_TEST_DATABASE_URL" npx prisma migrate deploy
           docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE intasend_test'
           DATABASE_URL="$INTASEND_TEST_DATABASE_URL" npx prisma migrate deploy
+          docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE focused_skills_test'
+          DATABASE_URL="$SKILLS_TEST_DATABASE_URL" npx prisma migrate deploy
           npm test -- --runInBand
       - name: Wait for CMS distributions and migrated storage
         working-directory: frontend
@@ -202,6 +206,9 @@ jobs:
       - name: Wait for username registration API
         working-directory: frontend
         run: node scripts/check-auth-api.mjs
+      - name: Wait for focused skills API and curated course migration
+        working-directory: frontend
+        run: node scripts/check-focused-skills-api.mjs
       - name: Wait for central content library
         working-directory: frontend
         run: node scripts/check-content-api.mjs
@@ -246,6 +253,7 @@ jobs:
           node scripts/run-browser-check.mjs scripts/beat-maker.browser.cjs
           node scripts/run-browser-check.mjs scripts/vocals.browser.cjs
           node scripts/run-browser-check.mjs scripts/intasend-checkout.browser.cjs
+          node scripts/run-browser-check.mjs scripts/focused-skills.browser.cjs
           node scripts/run-browser-check.mjs scripts/sports-lab.browser.cjs
           node scripts/run-browser-check.mjs scripts/music-studio.browser.cjs
           node scripts/run-browser-check.mjs scripts/lab-router.browser.cjs

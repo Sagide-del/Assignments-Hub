@@ -1,4 +1,15 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  FocusedLearningService,
+  assertSkillCapacity,
+  skillProgram,
+} from "./focused-learning.service";
+import { SkillEvidenceDto } from "./dto/skill-evidence.dto";
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import {
   PaymentStatus,
   Prisma,
@@ -6,25 +17,25 @@ import {
   SkillContentStatus,
   SkillEnrollmentStatus,
   SmsType,
-} from '@prisma/client';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { PrismaService } from '../prisma/prisma.service';
-import { SmsService } from '../sms/sms.service';
-import { AiProviderRouterService } from '../ai/ai-provider-router.service';
-import { CreateSkillCategoryDto } from './dto/create-skill-category.dto';
-import { CreateSkillCourseDto } from './dto/create-skill-course.dto';
-import { CreateSkillProviderDto } from './dto/create-skill-provider.dto';
+} from "@prisma/client";
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { PrismaService } from "../prisma/prisma.service";
+import { SmsService } from "../sms/sms.service";
+import { AiProviderRouterService } from "../ai/ai-provider-router.service";
+import { CreateSkillCategoryDto } from "./dto/create-skill-category.dto";
+import { CreateSkillCourseDto } from "./dto/create-skill-course.dto";
+import { CreateSkillProviderDto } from "./dto/create-skill-provider.dto";
 import {
   CreateSkillPaymentDto,
   UpdateSkillEnrollmentDto,
   UpdateSkillPaymentDto,
-} from './dto/skill-enrollment.dto';
+} from "./dto/skill-enrollment.dto";
 import {
   UpdateSkillCategoryDto,
   UpdateSkillCourseDto,
   UpdateSkillProviderDto,
-} from './dto/update-skill.dto';
-import { GenerateSkillDraftDto } from './dto/generate-skill-draft.dto';
+} from "./dto/update-skill.dto";
+import { GenerateSkillDraftDto } from "./dto/generate-skill-draft.dto";
 
 const COURSE_INCLUDE = {
   category: true,
@@ -42,39 +53,104 @@ export class SkillsService {
 
   findCategories(actor: AuthenticatedUser) {
     return this.prisma.skillCategory.findMany({
-      where: actor.role === Role.PLATFORM_ADMIN ? undefined : { status: SkillContentStatus.PUBLISHED },
-      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
+      where:
+        actor.role === Role.PLATFORM_ADMIN
+          ? undefined
+          : { status: SkillContentStatus.PUBLISHED },
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       include: { _count: { select: { courses: true } } },
     });
   }
 
   async generateDraft(dto: GenerateSkillDraftDto, actor: AuthenticatedUser) {
     const topic = dto.topic.trim();
-    const context = `${dto.gradeBand}${dto.pathway ? `; ${dto.pathway.replace(/_/g, ' ')} pathway` : ''}`;
+    const context = `${dto.gradeBand}${dto.pathway ? `; ${dto.pathway.replace(/_/g, " ")} pathway` : ""}`;
     const response = await this.ai.generateAssignment(
       `You are an expert Kenyan youth skills curriculum designer. Draft a safe, project-based course about "${topic}" for ${context}. It must be practical, age-appropriate, inclusive, low-bandwidth aware and must not promise a certificate or job. Return strict JSON only with: {"title":"","shortDescription":"","fullDescription":"","durationWeeks":number,"level":"BEGINNER|INTERMEDIATE|ADVANCED","learningOutcomes":[""],"courseStructure":["" ]}. Include a real project, evidence/reflection and responsible use where relevant. For Machine Learning, teach data awareness, pattern recognition, bias, privacy and a no-code activity before tools.`,
       { userId: actor.id },
     );
     let data: any;
-    try { data = typeof response.content === 'string' ? JSON.parse(response.content) : response.content; } catch { throw new ConflictException('AI returned an invalid course draft. Please try again.'); }
-    if (!data || typeof data.title !== 'string' || typeof data.shortDescription !== 'string' || typeof data.fullDescription !== 'string' || !Array.isArray(data.learningOutcomes) || !Array.isArray(data.courseStructure)) {
-      throw new ConflictException('AI returned an incomplete course draft. Please try again.');
+    try {
+      data =
+        typeof response.content === "string"
+          ? JSON.parse(response.content)
+          : response.content;
+    } catch {
+      throw new ConflictException(
+        "AI returned an invalid course draft. Please try again.",
+      );
+    }
+    if (
+      !data ||
+      typeof data.title !== "string" ||
+      typeof data.shortDescription !== "string" ||
+      typeof data.fullDescription !== "string" ||
+      !Array.isArray(data.learningOutcomes) ||
+      !Array.isArray(data.courseStructure)
+    ) {
+      throw new ConflictException(
+        "AI returned an incomplete course draft. Please try again.",
+      );
     }
     const [category, provider] = await this.prisma.$transaction([
-      this.prisma.skillCategory.upsert({ where: { name: 'Digital Learning' }, update: {}, create: { name: 'Digital Learning', description: 'Digital literacy, coding, data and responsible AI projects.', icon: 'CodeXml', displayOrder: 10, status: SkillContentStatus.DRAFT } }),
-      this.prisma.skillProvider.upsert({ where: { name: 'Assignment Hub Learning' }, update: {}, create: { name: 'Assignment Hub Learning', description: 'Platform-authored draft content for editorial review.', verified: true, status: SkillContentStatus.DRAFT } }),
+      this.prisma.skillCategory.upsert({
+        where: { name: "Digital Learning" },
+        update: {},
+        create: {
+          name: "Digital Learning",
+          description:
+            "Digital literacy, coding, data and responsible AI projects.",
+          icon: "CodeXml",
+          displayOrder: 10,
+          status: SkillContentStatus.DRAFT,
+        },
+      }),
+      this.prisma.skillProvider.upsert({
+        where: { name: "Assignment Hub Learning" },
+        update: {},
+        create: {
+          name: "Assignment Hub Learning",
+          description: "Platform-authored draft content for editorial review.",
+          verified: true,
+          status: SkillContentStatus.DRAFT,
+        },
+      }),
     ]);
     return this.prisma.skillCourse.create({
       data: {
-        categoryId: category.id, providerId: provider.id, title: data.title.slice(0, 180), shortDescription: data.shortDescription.slice(0, 280), fullDescription: `${data.fullDescription.slice(0, 4300)}\n\nAudience: ${context}.`, durationWeeks: Math.min(16, Math.max(1, Number(data.durationWeeks) || 4)), level: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'].includes(data.level) ? data.level : 'BEGINNER', costKES: 0, certificateAvailable: false, learningOutcomes: data.learningOutcomes.filter((item: unknown) => typeof item === 'string').slice(0, 12), courseStructure: data.courseStructure.filter((item: unknown) => typeof item === 'string').slice(0, 16), status: SkillContentStatus.DRAFT,
-      }, include: COURSE_INCLUDE,
+        categoryId: category.id,
+        providerId: provider.id,
+        title: data.title.slice(0, 180),
+        shortDescription: data.shortDescription.slice(0, 280),
+        fullDescription: `${data.fullDescription.slice(0, 4300)}\n\nAudience: ${context}.`,
+        durationWeeks: Math.min(
+          16,
+          Math.max(1, Number(data.durationWeeks) || 4),
+        ),
+        level: ["BEGINNER", "INTERMEDIATE", "ADVANCED"].includes(data.level)
+          ? data.level
+          : "BEGINNER",
+        costKES: 0,
+        certificateAvailable: false,
+        learningOutcomes: data.learningOutcomes
+          .filter((item: unknown) => typeof item === "string")
+          .slice(0, 12),
+        courseStructure: data.courseStructure
+          .filter((item: unknown) => typeof item === "string")
+          .slice(0, 16),
+        status: SkillContentStatus.DRAFT,
+      },
+      include: COURSE_INCLUDE,
     });
   }
 
   findProviders(actor: AuthenticatedUser) {
     return this.prisma.skillProvider.findMany({
-      where: actor.role === Role.PLATFORM_ADMIN ? undefined : { status: SkillContentStatus.PUBLISHED },
-      orderBy: { name: 'asc' },
+      where:
+        actor.role === Role.PLATFORM_ADMIN
+          ? undefined
+          : { status: SkillContentStatus.PUBLISHED },
+      orderBy: { name: "asc" },
       include: { _count: { select: { courses: true } } },
     });
   }
@@ -93,20 +169,23 @@ export class SkillsService {
           : {}),
       },
       include: COURSE_INCLUDE,
-      orderBy: [{ category: { displayOrder: 'asc' } }, { title: 'asc' }],
+      orderBy: [{ category: { displayOrder: "asc" } }, { title: "asc" }],
     });
   }
 
   async findCourse(id: number, actor: AuthenticatedUser) {
-    const course = await this.prisma.skillCourse.findUnique({ where: { id }, include: COURSE_INCLUDE });
-    if (!course) throw new NotFoundException('Skill course not found');
+    const course = await this.prisma.skillCourse.findUnique({
+      where: { id },
+      include: COURSE_INCLUDE,
+    });
+    if (!course) throw new NotFoundException("Skill course not found");
     if (
       actor.role !== Role.PLATFORM_ADMIN &&
       (course.status !== SkillContentStatus.PUBLISHED ||
         course.category.status !== SkillContentStatus.PUBLISHED ||
         course.provider.status !== SkillContentStatus.PUBLISHED)
     ) {
-      throw new NotFoundException('Skill course not found');
+      throw new NotFoundException("Skill course not found");
     }
 
     if (actor.role === Role.STUDENT) {
@@ -120,10 +199,19 @@ export class SkillsService {
   }
 
   async getStudentCourseProgress(courseId: number, actor: AuthenticatedUser) {
-    const enrollment = await this.learningEnrollment(courseId, actor);
+    // Reading progress never enrolls a learner or consumes a skill slot.
+    await this.findCourse(courseId, actor);
+    const enrollment = await this.prisma.skillEnrollment.findUnique({
+      where: { studentId_courseId: { studentId: actor.id, courseId } },
+    });
+    if (!enrollment) return [];
+    if (!["ACTIVE", "COMPLETED"].includes(enrollment.status))
+      throw new ForbiddenException(
+        "Start or resume this skill before opening lessons.",
+      );
     return this.prisma.skillLessonProgress.findMany({
       where: { enrollmentId: enrollment.id },
-      orderBy: { startedAt: 'asc' },
+      orderBy: { startedAt: "asc" },
     });
   }
 
@@ -131,25 +219,106 @@ export class SkillsService {
     courseId: number,
     lessonKey: string,
     actor: AuthenticatedUser,
+    evidence?: SkillEvidenceDto,
   ) {
     const normalizedKey = lessonKey.trim();
     if (!/^[a-z0-9][a-z0-9_-]{0,79}$/i.test(normalizedKey)) {
-      throw new ConflictException('Invalid lesson key');
+      throw new ConflictException("Invalid lesson key");
     }
+    const course = await this.findCourse(courseId, actor);
+    const program = skillProgram(course.title);
+    if (!program)
+      throw new ConflictException(
+        "This course needs a curated lesson pack before progress can be assessed.",
+      );
+    const lesson = program?.lessons.find((l) => l.key === normalizedKey);
+    if (program && !lesson) throw new ConflictException("Unknown lesson.");
+    if (
+      lesson &&
+      (!evidence ||
+        evidence.answer !== lesson.check.answer ||
+        evidence.artifact.trim().length < 80 ||
+        evidence.reflection.trim().length < 60)
+    )
+      throw new ConflictException(
+        "Pass the knowledge check and submit your practice evidence and transfer reflection.",
+      );
     const enrollment = await this.learningEnrollment(courseId, actor);
-    return this.prisma.skillLessonProgress.upsert({
-      where: {
-        enrollmentId_lessonKey: {
+    return this.prisma.$transaction(async (tx) => {
+      await assertSkillCapacity(tx, actor.id, courseId);
+      const current = await tx.skillEnrollment.findUnique({
+        where: { id: enrollment.id },
+      });
+      if (!current || !["ACTIVE", "COMPLETED"].includes(current.status))
+        throw new ForbiddenException("Start or resume this skill first.");
+      const previous = await tx.skillLessonProgress.findUnique({
+        where: {
+          enrollmentId_lessonKey: {
+            enrollmentId: enrollment.id,
+            lessonKey: normalizedKey,
+          },
+        },
+      });
+      if (previous?.completedAt) return previous;
+      if (program && lesson) {
+        const index = program.lessons.findIndex((l) => l.key === normalizedKey);
+        const done = await tx.skillLessonProgress.findMany({
+          where: { enrollmentId: enrollment.id, completedAt: { not: null } },
+          select: { lessonKey: true },
+        });
+        if (
+          program.lessons
+            .slice(0, index)
+            .some((l) => !done.some((d) => d.lessonKey === l.key))
+        )
+          throw new ConflictException("Finish the earlier lessons first.");
+      }
+      const saved = await tx.skillLessonProgress.upsert({
+        where: {
+          enrollmentId_lessonKey: {
+            enrollmentId: enrollment.id,
+            lessonKey: normalizedKey,
+          },
+        },
+        create: {
           enrollmentId: enrollment.id,
           lessonKey: normalizedKey,
+          completedAt: new Date(),
+          evidence: evidence
+            ? {
+                ...evidence,
+                assessment:
+                  "Knowledge check + self-reported practice; not teacher certification",
+              }
+            : undefined,
+          reviewAfter: new Date(Date.now() + 86400000),
         },
-      },
-      create: {
-        enrollmentId: enrollment.id,
-        lessonKey: normalizedKey,
-        completedAt: new Date(),
-      },
-      update: { completedAt: new Date() },
+        update: {
+          completedAt: new Date(),
+          evidence: evidence
+            ? {
+                ...evidence,
+                assessment:
+                  "Knowledge check + self-reported practice; not teacher certification",
+              }
+            : undefined,
+          reviewAfter: new Date(Date.now() + 86400000),
+        },
+      });
+      if (program) {
+        const done = await tx.skillLessonProgress.findMany({
+          where: { enrollmentId: enrollment.id, completedAt: { not: null } },
+          select: { lessonKey: true },
+        });
+        if (
+          program.lessons.every((l) => done.some((d) => d.lessonKey === l.key))
+        )
+          await tx.skillEnrollment.update({
+            where: { id: enrollment.id },
+            data: { status: "COMPLETED", completedAt: new Date() },
+          });
+      }
+      return saved;
     });
   }
 
@@ -171,14 +340,24 @@ export class SkillsService {
 
   async createCourse(dto: CreateSkillCourseDto) {
     await this.assertCategoryAndProvider(dto.categoryId, dto.providerId);
-    return this.prisma.skillCourse.create({ data: this.courseData(dto), include: COURSE_INCLUDE });
+    return this.prisma.skillCourse.create({
+      data: this.courseData(dto),
+      include: COURSE_INCLUDE,
+    });
   }
 
   async updateCourse(id: number, dto: UpdateSkillCourseDto) {
     const current = await this.prisma.skillCourse.findUnique({ where: { id } });
-    if (!current) throw new NotFoundException('Skill course not found');
-    await this.assertCategoryAndProvider(dto.categoryId ?? current.categoryId, dto.providerId ?? current.providerId);
-    return this.prisma.skillCourse.update({ where: { id }, data: this.courseData(dto), include: COURSE_INCLUDE });
+    if (!current) throw new NotFoundException("Skill course not found");
+    await this.assertCategoryAndProvider(
+      dto.categoryId ?? current.categoryId,
+      dto.providerId ?? current.providerId,
+    );
+    return this.prisma.skillCourse.update({
+      where: { id },
+      data: this.courseData(dto),
+      include: COURSE_INCLUDE,
+    });
   }
 
   async removeCourse(id: number) {
@@ -186,9 +365,12 @@ export class SkillsService {
       where: { id },
       include: { _count: { select: { enrollments: true, payments: true } } },
     });
-    if (!course) throw new NotFoundException('Skill course not found');
+    if (!course) throw new NotFoundException("Skill course not found");
     if (course._count.enrollments > 0 || course._count.payments > 0) {
-      return this.prisma.skillCourse.update({ where: { id }, data: { status: SkillContentStatus.ARCHIVED } });
+      return this.prisma.skillCourse.update({
+        where: { id },
+        data: { status: SkillContentStatus.ARCHIVED },
+      });
     }
     return this.prisma.skillCourse.delete({ where: { id } });
   }
@@ -202,28 +384,66 @@ export class SkillsService {
         provider: { status: SkillContentStatus.PUBLISHED },
       },
     });
-    if (!course) throw new NotFoundException('Skill course not found');
+    if (!course) throw new NotFoundException("Skill course not found");
 
-    const existing = await this.prisma.skillEnrollment.findUnique({
-      where: { studentId_courseId: { studentId: actor.id, courseId } },
+    let notify = false;
+    const enrollment = await this.prisma.$transaction(async (tx) => {
+      await assertSkillCapacity(tx, actor.id, courseId);
+      await new FocusedLearningService(tx as any).assertRelevant(
+        courseId,
+        actor,
+      );
+      const existing = await tx.skillEnrollment.findUnique({
+        where: { studentId_courseId: { studentId: actor.id, courseId } },
+      });
+      if (
+        existing &&
+        ["ACTIVE", "COMPLETED", "REQUESTED", "AWAITING_PAYMENT"].includes(
+          existing.status,
+        )
+      )
+        return existing;
+      const free =
+        course.costKES === 0 ||
+        existing?.paymentStatus === PaymentStatus.CONFIRMED;
+      notify = !free;
+      return tx.skillEnrollment.upsert({
+        where: { studentId_courseId: { studentId: actor.id, courseId } },
+        create: {
+          studentId: actor.id,
+          courseId,
+          status: free ? "ACTIVE" : "REQUESTED",
+          paymentStatus: free ? "CONFIRMED" : "PENDING",
+          approvedAt: free ? new Date() : null,
+        },
+        update: {
+          status: free ? "ACTIVE" : "REQUESTED",
+          pausedAt: null,
+          pauseReason: null,
+          ...(free
+            ? { paymentStatus: "CONFIRMED", approvedAt: new Date() }
+            : {}),
+        },
+        include: { course: { include: { category: true, provider: true } } },
+      });
     });
-    if (existing) throw new ConflictException('Enrollment already requested for this course');
-
-    const enrollment = await this.prisma.skillEnrollment.create({
-      data: { studentId: actor.id, courseId },
-      include: { course: { include: { category: true, provider: true } } },
-    });
+    if (course.costKES === 0 || !notify) return enrollment;
 
     const student = await this.prisma.user.findUnique({
       where: { id: actor.id },
-      select: { name: true, parentPhone: true, studentProfile: { select: { parentPhone: true } } },
+      select: {
+        name: true,
+        parentPhone: true,
+        studentProfile: { select: { parentPhone: true } },
+      },
     });
-    const parentPhone = student?.studentProfile?.parentPhone ?? student?.parentPhone;
+    const parentPhone =
+      student?.studentProfile?.parentPhone ?? student?.parentPhone;
     if (parentPhone) {
       await this.smsService.sendAndLog({
         schoolId: actor.schoolId,
         type: SmsType.BROADCAST,
-        message: `Assignment Hub: ${student?.name ?? 'Your student'} requested enrollment in "${course.title}". Fee: KES ${course.costKES.toLocaleString()}. Please contact the school to review payment options.`,
+        message: `Assignment Hub: ${student?.name ?? "Your student"} requested enrollment in "${course.title}". Fee: KES ${course.costKES.toLocaleString()}. Please contact the school to review payment options.`,
         recipients: [{ phone: parentPhone, studentId: actor.id }],
         sentById: actor.id,
       });
@@ -241,95 +461,121 @@ export class SkillsService {
         provider: { status: SkillContentStatus.PUBLISHED },
       },
     });
-    if (!course) throw new NotFoundException('Skill course not found');
+    if (!course) throw new NotFoundException("Skill course not found");
 
     const enrollment = await this.prisma.skillEnrollment.findUnique({
       where: { studentId_courseId: { studentId: actor.id, courseId } },
     });
     if (
-      enrollment?.status === SkillEnrollmentStatus.ACTIVE
-      || enrollment?.status === SkillEnrollmentStatus.COMPLETED
+      enrollment?.status === SkillEnrollmentStatus.ACTIVE ||
+      enrollment?.status === SkillEnrollmentStatus.COMPLETED
     ) {
       return enrollment;
     }
     if (course.costKES > 0) {
-      throw new ForbiddenException('An active enrollment is required');
+      throw new ForbiddenException("An active enrollment is required");
     }
 
-    return this.prisma.skillEnrollment.upsert({
-      where: { studentId_courseId: { studentId: actor.id, courseId } },
-      create: {
-        studentId: actor.id,
-        courseId,
-        status: SkillEnrollmentStatus.ACTIVE,
-        paymentStatus: PaymentStatus.CONFIRMED,
-        approvedAt: new Date(),
-      },
-      update: {
-        status: SkillEnrollmentStatus.ACTIVE,
-        paymentStatus: PaymentStatus.CONFIRMED,
-        approvedAt: new Date(),
-      },
-    });
+    throw new ForbiddenException(
+      "Start this skill explicitly from your learning path.",
+    );
   }
 
   findStudentEnrollments(actor: AuthenticatedUser) {
     return this.prisma.skillEnrollment.findMany({
       where: { studentId: actor.id },
       include: { course: { include: { category: true, provider: true } } },
-      orderBy: { requestedAt: 'desc' },
+      orderBy: { requestedAt: "desc" },
     });
   }
 
   findAllEnrollments() {
     return this.prisma.skillEnrollment.findMany({
       include: {
-        student: { select: { id: true, name: true, school: { select: { id: true, name: true, code: true } } } },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            school: { select: { id: true, name: true, code: true } },
+          },
+        },
         course: { include: { category: true, provider: true } },
       },
-      orderBy: { requestedAt: 'desc' },
+      orderBy: { requestedAt: "desc" },
     });
   }
 
-  updateEnrollment(id: number, dto: UpdateSkillEnrollmentDto) {
-    return this.prisma.skillEnrollment.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        paymentStatus: dto.paymentStatus,
-        approvedAt:
-          dto.status === SkillEnrollmentStatus.ACTIVE || dto.status === SkillEnrollmentStatus.AWAITING_PAYMENT
-            ? new Date()
-            : undefined,
-        completedAt: dto.status === SkillEnrollmentStatus.COMPLETED ? new Date() : undefined,
-      },
-      include: { course: true, student: { select: { id: true, name: true, schoolId: true } } },
+  async updateEnrollment(id: number, dto: UpdateSkillEnrollmentDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const enrollment = await tx.skillEnrollment.findUniqueOrThrow({
+        where: { id },
+      });
+      if (
+        dto.status &&
+        ["ACTIVE", "REQUESTED", "AWAITING_PAYMENT"].includes(dto.status)
+      )
+        await assertSkillCapacity(
+          tx,
+          enrollment.studentId,
+          enrollment.courseId,
+        );
+      return tx.skillEnrollment.update({
+        where: { id },
+        data: {
+          status: dto.status,
+          paymentStatus: dto.paymentStatus,
+          approvedAt: dto.status === "ACTIVE" ? new Date() : undefined,
+          completedAt: dto.status === "COMPLETED" ? new Date() : undefined,
+        },
+        include: {
+          course: true,
+          student: { select: { id: true, name: true, schoolId: true } },
+        },
+      });
     });
   }
 
   findPayments() {
     return this.prisma.skillPayment.findMany({
       include: {
-        student: { select: { id: true, name: true, school: { select: { id: true, name: true, code: true } } } },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            school: { select: { id: true, name: true, code: true } },
+          },
+        },
         course: { select: { id: true, title: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
   async createPayment(dto: CreateSkillPaymentDto) {
     const [student, course, enrollment] = await Promise.all([
-      this.prisma.user.findFirst({ where: { id: dto.studentId, role: Role.STUDENT } }),
+      this.prisma.user.findFirst({
+        where: { id: dto.studentId, role: Role.STUDENT },
+      }),
       this.prisma.skillCourse.findUnique({ where: { id: dto.courseId } }),
       this.prisma.skillEnrollment.findUnique({
-        where: { studentId_courseId: { studentId: dto.studentId, courseId: dto.courseId } },
+        where: {
+          studentId_courseId: {
+            studentId: dto.studentId,
+            courseId: dto.courseId,
+          },
+        },
       }),
     ]);
-    if (!student) throw new NotFoundException('Student not found');
-    if (!course) throw new NotFoundException('Skill course not found');
-    if (!enrollment) throw new ConflictException('An enrollment request is required before payment');
+    if (!student) throw new NotFoundException("Student not found");
+    if (!course) throw new NotFoundException("Skill course not found");
+    if (!enrollment)
+      throw new ConflictException(
+        "An enrollment request is required before payment",
+      );
 
     return this.prisma.$transaction(async (transaction) => {
+      if (dto.status === PaymentStatus.CONFIRMED)
+        await assertSkillCapacity(transaction, dto.studentId, dto.courseId);
       const payment = await transaction.skillPayment.create({
         data: {
           studentId: dto.studentId,
@@ -343,7 +589,11 @@ export class SkillsService {
       if (dto.status === PaymentStatus.CONFIRMED) {
         await transaction.skillEnrollment.update({
           where: { id: enrollment.id },
-          data: { paymentStatus: PaymentStatus.CONFIRMED, status: SkillEnrollmentStatus.ACTIVE, approvedAt: new Date() },
+          data: {
+            paymentStatus: PaymentStatus.CONFIRMED,
+            status: SkillEnrollmentStatus.ACTIVE,
+            approvedAt: new Date(),
+          },
         });
       }
       return payment;
@@ -351,12 +601,28 @@ export class SkillsService {
   }
 
   async updatePayment(id: number, dto: UpdateSkillPaymentDto) {
-    const payment = await this.prisma.skillPayment.findUnique({ where: { id } });
-    if (!payment) throw new NotFoundException('Skill payment not found');
+    const payment = await this.prisma.skillPayment.findUnique({
+      where: { id },
+    });
+    if (!payment) throw new NotFoundException("Skill payment not found");
     return this.prisma.$transaction(async (transaction) => {
-      const updated = await transaction.skillPayment.update({ where: { id }, data: dto });
+      if (dto.status === PaymentStatus.CONFIRMED)
+        await assertSkillCapacity(
+          transaction,
+          payment.studentId,
+          payment.courseId,
+        );
+      const updated = await transaction.skillPayment.update({
+        where: { id },
+        data: dto,
+      });
       await transaction.skillEnrollment.update({
-        where: { studentId_courseId: { studentId: payment.studentId, courseId: payment.courseId } },
+        where: {
+          studentId_courseId: {
+            studentId: payment.studentId,
+            courseId: payment.courseId,
+          },
+        },
         data: {
           paymentStatus: dto.status,
           ...(dto.status === PaymentStatus.CONFIRMED
@@ -369,16 +635,32 @@ export class SkillsService {
   }
 
   async getAdminSummary() {
-    const [totalCourses, draftCourses, publishedCourses, categories, providers, pendingEnrollments, confirmedRevenue] =
-      await Promise.all([
-        this.prisma.skillCourse.count(),
-        this.prisma.skillCourse.count({ where: { status: SkillContentStatus.DRAFT } }),
-        this.prisma.skillCourse.count({ where: { status: SkillContentStatus.PUBLISHED } }),
-        this.prisma.skillCategory.count(),
-        this.prisma.skillProvider.count(),
-        this.prisma.skillEnrollment.count({ where: { status: SkillEnrollmentStatus.REQUESTED } }),
-        this.prisma.skillPayment.aggregate({ where: { status: PaymentStatus.CONFIRMED }, _sum: { amountKES: true } }),
-      ]);
+    const [
+      totalCourses,
+      draftCourses,
+      publishedCourses,
+      categories,
+      providers,
+      pendingEnrollments,
+      confirmedRevenue,
+    ] = await Promise.all([
+      this.prisma.skillCourse.count(),
+      this.prisma.skillCourse.count({
+        where: { status: SkillContentStatus.DRAFT },
+      }),
+      this.prisma.skillCourse.count({
+        where: { status: SkillContentStatus.PUBLISHED },
+      }),
+      this.prisma.skillCategory.count(),
+      this.prisma.skillProvider.count(),
+      this.prisma.skillEnrollment.count({
+        where: { status: SkillEnrollmentStatus.REQUESTED },
+      }),
+      this.prisma.skillPayment.aggregate({
+        where: { status: PaymentStatus.CONFIRMED },
+        _sum: { amountKES: true },
+      }),
+    ]);
     return {
       totalCourses,
       draftCourses,
@@ -390,29 +672,48 @@ export class SkillsService {
     };
   }
 
-  private async assertCategoryAndProvider(categoryId: number, providerId: number) {
+  private async assertCategoryAndProvider(
+    categoryId: number,
+    providerId: number,
+  ) {
     const [category, provider] = await Promise.all([
       this.prisma.skillCategory.findUnique({ where: { id: categoryId } }),
       this.prisma.skillProvider.findUnique({ where: { id: providerId } }),
     ]);
-    if (!category) throw new NotFoundException('Skill category not found');
-    if (!provider) throw new NotFoundException('Skill provider not found');
+    if (!category) throw new NotFoundException("Skill category not found");
+    if (!provider) throw new NotFoundException("Skill provider not found");
   }
 
-  private courseData(dto: CreateSkillCourseDto | UpdateSkillCourseDto): Prisma.SkillCourseUncheckedCreateInput {
+  private courseData(
+    dto: CreateSkillCourseDto | UpdateSkillCourseDto,
+  ): Prisma.SkillCourseUncheckedCreateInput {
     return {
       ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId } : {}),
       ...(dto.providerId !== undefined ? { providerId: dto.providerId } : {}),
       ...(dto.title !== undefined ? { title: dto.title } : {}),
-      ...(dto.shortDescription !== undefined ? { shortDescription: dto.shortDescription } : {}),
-      ...(dto.fullDescription !== undefined ? { fullDescription: dto.fullDescription } : {}),
-      ...(dto.durationWeeks !== undefined ? { durationWeeks: dto.durationWeeks } : {}),
+      ...(dto.shortDescription !== undefined
+        ? { shortDescription: dto.shortDescription }
+        : {}),
+      ...(dto.fullDescription !== undefined
+        ? { fullDescription: dto.fullDescription }
+        : {}),
+      ...(dto.durationWeeks !== undefined
+        ? { durationWeeks: dto.durationWeeks }
+        : {}),
       ...(dto.level !== undefined ? { level: dto.level } : {}),
       ...(dto.costKES !== undefined ? { costKES: dto.costKES } : {}),
-      ...(dto.certificateAvailable !== undefined ? { certificateAvailable: dto.certificateAvailable } : {}),
-      ...(dto.thumbnailUrl !== undefined ? { thumbnailUrl: dto.thumbnailUrl } : {}),
-      ...(dto.learningOutcomes !== undefined ? { learningOutcomes: dto.learningOutcomes } : {}),
-      ...(dto.courseStructure !== undefined ? { courseStructure: dto.courseStructure } : {}),
+      ...(dto.certificateAvailable !== undefined
+        ? { certificateAvailable: dto.certificateAvailable }
+        : {}),
+      ...(dto.thumbnailUrl !== undefined
+        ? { thumbnailUrl: dto.thumbnailUrl }
+        : {}),
+      ...(dto.learningOutcomes !== undefined
+        ? { learningOutcomes: dto.learningOutcomes }
+        : {}),
+      ...(dto.courseStructure !== undefined
+        ? { courseStructure: dto.courseStructure }
+        : {}),
       ...(dto.status !== undefined ? { status: dto.status } : {}),
     } as Prisma.SkillCourseUncheckedCreateInput;
   }

@@ -58,6 +58,7 @@ export function subjectKey(v: unknown) {
   return (
     (
       {
+        music: "musicanddance",
         math: "mathematics",
         mathematic: "mathematics",
         cre: "christianreligiouseducation",

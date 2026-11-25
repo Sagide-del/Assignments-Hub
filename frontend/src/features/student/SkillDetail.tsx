@@ -1,3 +1,5 @@
+import {SkillWorkbookButton} from './skill-workspace/SkillWorkbookButton';
+import {focusedProgram} from './skill-workspace/content';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, BookOpenCheck, Images, MessageCircle, ShieldPlus } from 'lucide-react';
@@ -60,6 +62,7 @@ export function SkillDetailPage() {
     <div className="mx-auto max-w-6xl space-y-5 pb-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader title={course.title} meta={`${course.category.name} · ${label(course.level)}`} />
+        {focusedProgram(course.title)&&<SkillWorkbookButton courseId={course.id}/>}
         <Link
           to="/student/learn-skills"
           className="inline-flex min-h-11 items-center text-sm font-semibold text-slate-500"

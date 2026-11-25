@@ -1,147 +1,262 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '../common/enums/role.enum';
-import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { CreateSkillCategoryDto } from './dto/create-skill-category.dto';
-import { CreateSkillCourseDto } from './dto/create-skill-course.dto';
-import { CreateSkillProviderDto } from './dto/create-skill-provider.dto';
-import { CreateSkillEnrollmentDto, CreateSkillPaymentDto, UpdateSkillEnrollmentDto, UpdateSkillPaymentDto } from './dto/skill-enrollment.dto';
-import { UpdateSkillCategoryDto, UpdateSkillCourseDto, UpdateSkillProviderDto } from './dto/update-skill.dto';
-import { SkillsService } from './skills.service';
-import { GenerateSkillDraftDto } from './dto/generate-skill-draft.dto';
+import { Public } from "../common/decorators/public.decorator";
+import { FocusedLearningService } from "./focused-learning.service";
+import { SkillWorkbookService } from "./skill-workbook.service";
+import { SkillEvidenceDto, SkillFocusDto } from "./dto/skill-evidence.dto";
+import { Response } from "express";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Res,
+} from "@nestjs/common";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { Roles } from "../common/decorators/roles.decorator";
+import { Role } from "../common/enums/role.enum";
+import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
+import { CreateSkillCategoryDto } from "./dto/create-skill-category.dto";
+import { CreateSkillCourseDto } from "./dto/create-skill-course.dto";
+import { CreateSkillProviderDto } from "./dto/create-skill-provider.dto";
+import {
+  CreateSkillEnrollmentDto,
+  CreateSkillPaymentDto,
+  UpdateSkillEnrollmentDto,
+  UpdateSkillPaymentDto,
+} from "./dto/skill-enrollment.dto";
+import {
+  UpdateSkillCategoryDto,
+  UpdateSkillCourseDto,
+  UpdateSkillProviderDto,
+} from "./dto/update-skill.dto";
+import { SkillsService } from "./skills.service";
+import { GenerateSkillDraftDto } from "./dto/generate-skill-draft.dto";
 
-@Controller('skills')
+@Controller("skills")
 export class SkillsController {
-  constructor(private readonly skillsService: SkillsService) {}
+  constructor(
+    private readonly skillsService: SkillsService,
+    private readonly focused: FocusedLearningService,
+    private readonly workbooks: SkillWorkbookService,
+  ) {}
 
-  @Get('categories')
+  @Public() @Get("capabilities") capabilities() {
+    return this.focused.capabilities();
+  }
+
+  @Get("learning-path")
+  @Roles(Role.STUDENT)
+  learningPath(@CurrentUser() actor: AuthenticatedUser) {
+    return this.focused.path(actor);
+  }
+
+  @Patch("learning-path")
+  @Roles(Role.STUDENT)
+  chooseFocus(
+    @Body() dto: SkillFocusDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.focused.choose(actor, dto.focus);
+  }
+
+  @Post("courses/:id/pause")
+  @Roles(Role.STUDENT)
+  pause(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.focused.pause(id, actor);
+  }
+
+  @Get("courses/:id/workbook")
+  @Roles(Role.STUDENT)
+  @Header("Cache-Control", "private, no-store")
+  async workbook(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Res() response: Response,
+  ) {
+    const course = await this.skillsService.findCourse(id, actor);
+    const pdf = await this.workbooks.render(course.title);
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="Assignment-Hub-Skill-${id}.pdf"`,
+    );
+    response.send(pdf);
+  }
+
+  @Get("categories")
   categories(@CurrentUser() actor: AuthenticatedUser) {
     return this.skillsService.findCategories(actor);
   }
 
-  @Post('categories')
+  @Post("categories")
   @Roles(Role.PLATFORM_ADMIN)
   createCategory(@Body() dto: CreateSkillCategoryDto) {
     return this.skillsService.createCategory(dto);
   }
 
-  @Patch('categories/:id')
+  @Patch("categories/:id")
   @Roles(Role.PLATFORM_ADMIN)
-  updateCategory(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSkillCategoryDto) {
+  updateCategory(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateSkillCategoryDto,
+  ) {
     return this.skillsService.updateCategory(id, dto);
   }
 
-  @Get('providers')
+  @Get("providers")
   providers(@CurrentUser() actor: AuthenticatedUser) {
     return this.skillsService.findProviders(actor);
   }
 
-  @Post('providers')
+  @Post("providers")
   @Roles(Role.PLATFORM_ADMIN)
   createProvider(@Body() dto: CreateSkillProviderDto) {
     return this.skillsService.createProvider(dto);
   }
 
-  @Patch('providers/:id')
+  @Patch("providers/:id")
   @Roles(Role.PLATFORM_ADMIN)
-  updateProvider(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSkillProviderDto) {
+  updateProvider(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateSkillProviderDto,
+  ) {
     return this.skillsService.updateProvider(id, dto);
   }
 
-  @Get('courses')
-  courses(@CurrentUser() actor: AuthenticatedUser, @Query('categoryId') categoryId?: string) {
-    return this.skillsService.findCourses(actor, categoryId ? Number(categoryId) : undefined);
+  @Get("courses")
+  courses(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Query("categoryId") categoryId?: string,
+  ) {
+    return this.skillsService.findCourses(
+      actor,
+      categoryId ? Number(categoryId) : undefined,
+    );
   }
 
-  @Get('courses/:id')
-  course(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
+  @Get("courses/:id")
+  course(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
     return this.skillsService.findCourse(id, actor);
   }
 
-  @Get('courses/:id/progress')
+  @Get("courses/:id/progress")
   @Roles(Role.STUDENT)
-  courseProgress(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
+  courseProgress(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
     return this.skillsService.getStudentCourseProgress(id, actor);
   }
 
-  @Post('courses/:id/lessons/:lessonKey/complete')
+  @Post("courses/:id/lessons/:lessonKey/complete")
   @Roles(Role.STUDENT)
   completeLesson(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('lessonKey') lessonKey: string,
+    @Param("id", ParseIntPipe) id: number,
+    @Param("lessonKey") lessonKey: string,
     @CurrentUser() actor: AuthenticatedUser,
+    @Body() evidence: SkillEvidenceDto,
   ) {
-    return this.skillsService.completeStudentLesson(id, lessonKey, actor);
+    return this.skillsService.completeStudentLesson(
+      id,
+      lessonKey,
+      actor,
+      evidence,
+    );
   }
 
-  @Post('courses')
+  @Post("courses")
   @Roles(Role.PLATFORM_ADMIN)
   createCourse(@Body() dto: CreateSkillCourseDto) {
     return this.skillsService.createCourse(dto);
   }
 
-  @Post('admin/generate-draft')
+  @Post("admin/generate-draft")
   @Roles(Role.PLATFORM_ADMIN)
-  generateDraft(@Body() dto: GenerateSkillDraftDto, @CurrentUser() actor: AuthenticatedUser) {
+  generateDraft(
+    @Body() dto: GenerateSkillDraftDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
     return this.skillsService.generateDraft(dto, actor);
   }
 
-  @Patch('courses/:id')
+  @Patch("courses/:id")
   @Roles(Role.PLATFORM_ADMIN)
-  updateCourse(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSkillCourseDto) {
+  updateCourse(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateSkillCourseDto,
+  ) {
     return this.skillsService.updateCourse(id, dto);
   }
 
-  @Delete('courses/:id')
+  @Delete("courses/:id")
   @Roles(Role.PLATFORM_ADMIN)
-  removeCourse(@Param('id', ParseIntPipe) id: number) {
+  removeCourse(@Param("id", ParseIntPipe) id: number) {
     return this.skillsService.removeCourse(id);
   }
 
-  @Post('enrollments')
+  @Post("enrollments")
   @Roles(Role.STUDENT)
-  enroll(@Body() dto: CreateSkillEnrollmentDto, @CurrentUser() actor: AuthenticatedUser) {
+  enroll(
+    @Body() dto: CreateSkillEnrollmentDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
     return this.skillsService.requestEnrollment(dto.courseId, actor);
   }
 
-  @Get('enrollments/student')
+  @Get("enrollments/student")
   @Roles(Role.STUDENT)
   studentEnrollments(@CurrentUser() actor: AuthenticatedUser) {
     return this.skillsService.findStudentEnrollments(actor);
   }
 
-  @Get('enrollments')
+  @Get("enrollments")
   @Roles(Role.PLATFORM_ADMIN)
   enrollments() {
     return this.skillsService.findAllEnrollments();
   }
 
-  @Patch('enrollments/:id')
+  @Patch("enrollments/:id")
   @Roles(Role.PLATFORM_ADMIN)
-  updateEnrollment(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSkillEnrollmentDto) {
+  updateEnrollment(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateSkillEnrollmentDto,
+  ) {
     return this.skillsService.updateEnrollment(id, dto);
   }
 
-  @Get('payments')
+  @Get("payments")
   @Roles(Role.PLATFORM_ADMIN)
   payments() {
     return this.skillsService.findPayments();
   }
 
-  @Post('payments')
+  @Post("payments")
   @Roles(Role.PLATFORM_ADMIN)
   createPayment(@Body() dto: CreateSkillPaymentDto) {
     return this.skillsService.createPayment(dto);
   }
 
-  @Patch('payments/:id')
+  @Patch("payments/:id")
   @Roles(Role.PLATFORM_ADMIN)
-  updatePayment(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSkillPaymentDto) {
+  updatePayment(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateSkillPaymentDto,
+  ) {
     return this.skillsService.updatePayment(id, dto);
   }
 
-  @Get('admin/summary')
+  @Get("admin/summary")
   @Roles(Role.PLATFORM_ADMIN)
   adminSummary() {
     return this.skillsService.getAdminSummary();

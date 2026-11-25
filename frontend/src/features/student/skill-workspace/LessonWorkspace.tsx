@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from "react-router-dom";
+import { focusedProgram } from "./content";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,13 +21,13 @@ import {
   ShieldPlus,
   Square,
   Terminal,
-} from 'lucide-react';
-import { FirstAidGuide, FirstAidScenarios } from './FirstAidGuide';
-import { LessonMedia } from './LessonMedia';
-import { skillsApi } from '../../../api/skills.api';
-import { apiErrorMessage } from '../../../api/axios';
-import type { SkillCourse } from '../../../types';
-import type { SkillLesson, WorkspaceMode } from './workspace-mode';
+} from "lucide-react";
+import { FirstAidGuide, FirstAidScenarios } from "./FirstAidGuide";
+import { LessonMedia } from "./LessonMedia";
+import { skillsApi } from "../../../api/skills.api";
+import { apiErrorMessage } from "../../../api/axios";
+import type { SkillCourse } from "../../../types";
+import type { SkillLesson, WorkspaceMode } from "./workspace-mode";
 import {
   applyRobotCommands,
   checkPractice,
@@ -33,22 +35,23 @@ import {
   draftKey,
   explainPythonError,
   type RobotState,
-} from './workspace-tools';
+} from "./workspace-tools";
 
 const BUTTON =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[#607D00] focus-visible:ring-offset-2';
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[#607D00] focus-visible:ring-offset-2";
 interface Draft {
   code: string;
   input: string;
   notes: string;
 }
 interface WorkerResponse {
-  type: 'RESULT' | 'ERROR' | 'STARTED';
+  type: "RESULT" | "ERROR" | "STARTED";
   requestId: number;
   output?: string;
   message?: string;
 }
-type RunState = 'idle' | 'loading' | 'running' | 'pass' | 'mismatch' | 'error' | 'stopped';
+type RunState =
+  "idle" | "loading" | "running" | "pass" | "mismatch" | "error" | "stopped";
 export function LessonWorkspace({
   course,
   lesson,
@@ -76,33 +79,71 @@ export function LessonWorkspace({
   const coding = Boolean(learning?.starterCode !== undefined);
   const storageKey = draftKey(userId, course.id, lesson.key);
   const [draft, setDraft] = useState<Draft>(() => {
-    const fallback = { code: learning?.starterCode ?? '', input: learning?.input ?? '', notes: '' };
+    const fallback = {
+      code: learning?.starterCode ?? "",
+      input: learning?.input ?? "",
+      notes: "",
+    };
     try {
-      const parsed = JSON.parse(localStorage.getItem(storageKey) ?? 'null') as Partial<Draft> | null;
+      const parsed = JSON.parse(
+        localStorage.getItem(storageKey) ?? "null",
+      ) as Partial<Draft> | null;
       return parsed
         ? {
-            code: typeof parsed.code === 'string' ? parsed.code : fallback.code,
-            input: typeof parsed.input === 'string' ? parsed.input : fallback.input,
-            notes: typeof parsed.notes === 'string' ? parsed.notes : '',
+            code: typeof parsed.code === "string" ? parsed.code : fallback.code,
+            input:
+              typeof parsed.input === "string" ? parsed.input : fallback.input,
+            notes: typeof parsed.notes === "string" ? parsed.notes : "",
           }
         : fallback;
     } catch {
       return fallback;
     }
   });
+  const program = focusedProgram(course.title);
+  const transfer = program?.lessons.find((l) => l.key === lesson.key);
+  const evidenceKey = storageKey + ":transfer";
+  const [evidence, setEvidence] = useState<{
+    artifact: string;
+    reflection: string;
+  }>(() => {
+    try {
+      const value = JSON.parse(localStorage.getItem(evidenceKey) ?? "null");
+      return {
+        artifact: typeof value?.artifact === "string" ? value.artifact : "",
+        reflection:
+          typeof value?.reflection === "string" ? value.reflection : "",
+      };
+    } catch {
+      return { artifact: "", reflection: "" };
+    }
+  });
+  const [evidenceSaved,setEvidenceSaved]=useState(true);
+  useEffect(() => {
+    try {
+      localStorage.setItem(evidenceKey, JSON.stringify(evidence));
+      setEvidenceSaved(true);
+    } catch { setEvidenceSaved(false); }
+  }, [evidence, evidenceKey]);
+  const evidenceReady =
+    !transfer ||
+    (evidence.artifact.trim().length >= 80 &&
+      evidence.reflection.trim().length >= 60);
   const [draftSaved, setDraftSaved] = useState(true);
   const [undo, setUndo] = useState<Draft | null>(null);
-  const [panel, setPanel] = useState<'lesson' | 'practice'>('lesson');
-  const [runState, setRunState] = useState<RunState>('idle');
-  const [output, setOutput] = useState('');
-  const [error, setError] = useState('');
+  const [panel, setPanel] = useState<"lesson" | "practice">("lesson");
+  const [runState, setRunState] = useState<RunState>("idle");
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState("");
   const [answer, setAnswer] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
   const [activities, setActivities] = useState<boolean[]>(
     () => learning?.activity.steps.map(() => false) ?? [],
   );
   const [speaking, setSpeaking] = useState(false);
-  const [scenarioResults, setScenarioResults] = useState<Record<string, boolean>>({});
+  const [scenarioResults, setScenarioResults] = useState<
+    Record<string, boolean>
+  >({});
   const workerRef = useRef<Worker | null>(null);
   const timerRef = useRef<number | null>(null);
   const requestRef = useRef(0);
@@ -111,19 +152,35 @@ export function LessonWorkspace({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [robot, setRobot] = useState<RobotState>({ x: 2, y: 2, direction: 1 });
   const queryClient = useQueryClient();
-  const busy = runState === 'running' || runState === 'loading';
-  const correct = Boolean(learning && checked && answer === learning.check.answer);
+  const busy = runState === "running" || runState === "loading";
+  const correct = Boolean(
+    learning && checked && answer === learning.check.answer,
+  );
   const scenariosReady =
-    !learning?.firstAid || learning.firstAid.scenarios.every((scenario) => scenarioResults[scenario.id]);
+    !learning?.firstAid ||
+    learning.firstAid.scenarios.every(
+      (scenario) => scenarioResults[scenario.id],
+    );
   const ready = Boolean(
-    learning && correct && scenariosReady && (coding ? runState === 'pass' : activities.every(Boolean)),
+    learning &&
+    correct &&
+    scenariosReady &&
+    evidenceReady &&
+    (coding ? runState === "pass" : activities.every(Boolean)),
   );
   const completion = useMutation({
-    mutationFn: () => skillsApi.completeLesson(course.id, lesson.key),
+    mutationFn: () =>
+      skillsApi.completeLesson(course.id, lesson.key, {
+        answer: answer ?? 0,
+        ...evidence,
+      }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['skill-course-progress', course.id] }),
-        queryClient.invalidateQueries({ queryKey: ['skill-enrollments'] }),
+        queryClient.invalidateQueries({
+          queryKey: ["skill-course-progress", course.id],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["skill-enrollments"] }),
+        queryClient.invalidateQueries({ queryKey: ["focused-skill-path"] }),
       ]);
       onComplete(lesson.key);
     },
@@ -147,8 +204,8 @@ export function LessonWorkspace({
   );
   function updateCode(code: string) {
     setDraft((current) => ({ ...current, code }));
-    setRunState('idle');
-    setError('');
+    setRunState("idle");
+    setError("");
   }
   function clearTimer() {
     if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -159,69 +216,89 @@ export function LessonWorkspace({
     requestRef.current++;
     workerRef.current?.terminate();
     workerRef.current = null;
-    setRunState('stopped');
-    setOutput('Run stopped. You can edit your program and try again.');
-    setError('');
+    setRunState("stopped");
+    setOutput("Run stopped. You can edit your program and try again.");
+    setError("");
   }
   function replaceCode(code: string) {
     if (busy) stop();
     setUndo(draft);
     updateCode(code);
-    setPanel('practice');
+    setPanel("practice");
   }
   function run() {
     if (busy || !coding) return;
-    setRunState('loading');
-    setOutput('');
-    setError('');
+    setRunState("loading");
+    setOutput("");
+    setError("");
     const requestId = ++requestRef.current;
     try {
       const worker =
-        workerRef.current ?? new Worker(new URL('./python.worker.ts', import.meta.url), { type: 'module' });
+        workerRef.current ??
+        new Worker(new URL("./python.worker.ts", import.meta.url), {
+          type: "module",
+        });
       workerRef.current = worker;
       const fail = (message: string) => {
         clearTimer();
         worker.terminate();
         workerRef.current = null;
-        setRunState('error');
+        setRunState("error");
         setError(message);
       };
       worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
         if (event.data.requestId !== requestRef.current) return;
-        if (event.data.type === 'STARTED') {
+        if (event.data.type === "STARTED") {
           clearTimer();
-          setRunState('running');
+          setRunState("running");
           timerRef.current = window.setTimeout(
             () =>
-              fail('This program ran for too long. Check for a loop that never finishes, then try again.'),
+              fail(
+                "This program ran for too long. Check for a loop that never finishes, then try again.",
+              ),
             10_000,
           );
           return;
         }
         clearTimer();
-        const result = event.data.output ?? '';
+        const result = event.data.output ?? "";
         setOutput(cleanOutput(result));
-        if (event.data.type === 'ERROR') {
-          setRunState('error');
-          setError(event.data.message ?? 'The program could not run.');
+        if (event.data.type === "ERROR") {
+          setRunState("error");
+          setError(event.data.message ?? "The program could not run.");
           return;
         }
-        if (mode === 'ROBOTICS') setRobot(applyRobotCommands(result));
+        if (mode === "ROBOTICS") setRobot(applyRobotCommands(result));
         setRunState(
-          checkPractice(result, learning?.expectedOutput, learning?.targetRobot) ? 'pass' : 'mismatch',
+          checkPractice(result, learning?.expectedOutput, learning?.targetRobot)
+            ? "pass"
+            : "mismatch",
         );
       };
       worker.onerror = () =>
-        fail('The Python workspace could not start. Check your connection and try again.');
+        fail(
+          "The Python workspace could not start. Check your connection and try again.",
+        );
       timerRef.current = window.setTimeout(
-        () => fail('Python could not finish loading. Check your internet connection and try again.'),
+        () =>
+          fail(
+            "Python could not finish loading. Check your internet connection and try again.",
+          ),
         90_000,
       );
-      worker.postMessage({ type: 'RUN', requestId, mode, code: draft.code, input: draft.input });
+      worker.postMessage({
+        type: "RUN",
+        requestId,
+        mode,
+        code: draft.code,
+        input: draft.input,
+      });
     } catch {
       clearTimer();
-      setRunState('error');
-      setError('Your browser could not start the code worker. Try an up-to-date browser.');
+      setRunState("error");
+      setError(
+        "Your browser could not start the code worker. Try an up-to-date browser.",
+      );
     }
   }
   function listen() {
@@ -240,7 +317,7 @@ export function LessonWorkspace({
       void audio.play().catch(() => setSpeaking(false));
       return;
     }
-    if (!('speechSynthesis' in window)) return;
+    if (!("speechSynthesis" in window)) return;
     const text = [
       lesson.title,
       learning?.objective ?? lesson.description,
@@ -249,15 +326,19 @@ export function LessonWorkspace({
         ? [
             learning.firstAid.summary,
             ...learning.firstAid.recognise,
-            ...learning.firstAid.actions.map((step) => `${step.title}. ${step.text}. Why: ${step.why}`),
+            ...learning.firstAid.actions.map(
+              (step) => `${step.title}. ${step.text}. Why: ${step.why}`,
+            ),
             ...learning.firstAid.avoid,
             ...learning.firstAid.urgent,
             learning.firstAid.remember,
           ]
-        : (learning?.sections.map((section) => `${section.title}. ${section.text}`) ?? [])),
-    ].join('. ');
+        : (learning?.sections.map(
+            (section) => `${section.title}. ${section.text}`,
+          ) ?? [])),
+    ].join(". ");
     const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-KE';
+    speech.lang = "en-KE";
     speech.rate = 0.92;
     speech.onend = () => setSpeaking(false);
     speech.onerror = () => setSpeaking(false);
@@ -265,9 +346,11 @@ export function LessonWorkspace({
     window.speechSynthesis.speak(speech);
   }
   function download() {
-    const blob = new Blob([draft.code], { type: 'text/x-python;charset=utf-8' });
+    const blob = new Blob([draft.code], {
+      type: "text/x-python;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `${lesson.key}.py`;
     a.click();
@@ -287,9 +370,13 @@ export function LessonWorkspace({
                 About {learning.minutes} min
               </span>
             ) : null}
-            <button type="button" onClick={listen} className={`${BUTTON} border border-slate-200`}>
+            <button
+              type="button"
+              onClick={listen}
+              className={`${BUTTON} border border-slate-200`}
+            >
               <Headphones className="h-4 w-4" aria-hidden="true" />
-              {speaking ? 'Stop reading' : 'Listen'}
+              {speaking ? "Stop reading" : "Listen"}
             </button>
           </div>
         </div>
@@ -303,17 +390,23 @@ export function LessonWorkspace({
 
       {!learning ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h3 className="font-semibold text-amber-900">Lesson content is being prepared</h3>
+          <h3 className="font-semibold text-amber-900">
+            Lesson content is being prepared
+          </h3>
           <p className="mt-2 text-sm leading-7 text-amber-900">
-            This outline does not yet include a full lesson and practice check. Ask your instructor for the
-            learning material. It cannot be marked complete from this outline alone.
+            This outline does not yet include a full lesson and practice check.
+            Ask your instructor for the learning material. It cannot be marked
+            complete from this outline alone.
           </p>
         </section>
       ) : (
         <>
           {learning.safety ? (
             <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-              <ShieldPlus className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+              <ShieldPlus
+                className="mt-0.5 h-5 w-5 shrink-0"
+                aria-hidden="true"
+              />
               <p>{learning.safety}</p>
             </div>
           ) : null}
@@ -322,47 +415,60 @@ export function LessonWorkspace({
             role="group"
             aria-label="Lesson panels"
           >
-            {(['lesson', 'practice'] as const).map((value) => (
+            {(["lesson", "practice"] as const).map((value) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setPanel(value)}
                 aria-pressed={panel === value}
-                className={`${BUTTON} ${panel === value ? 'bg-[#101820] text-white' : 'text-slate-600'}`}
+                className={`${BUTTON} ${panel === value ? "bg-[#101820] text-white" : "text-slate-600"}`}
               >
-                {value === 'lesson' ? (
+                {value === "lesson" ? (
                   <BookOpen className="h-4 w-4" aria-hidden="true" />
                 ) : (
                   <CodeXml className="h-4 w-4" aria-hidden="true" />
                 )}
-                {value === 'lesson' ? 'Learn' : 'Practise & check'}
+                {value === "lesson" ? "Learn" : "Practise & check"}
               </button>
             ))}
           </div>
           <div className="grid min-w-0 items-start gap-4 xl:grid-cols-2">
             <section
               aria-label="Lesson explanation"
-              className={`min-w-0 space-y-4 ${panel === 'lesson' ? 'block' : 'hidden xl:block'}`}
+              className={`min-w-0 space-y-4 ${panel === "lesson" ? "block" : "hidden xl:block"}`}
             >
               {learning.image ? (
-                <LessonMedia image={learning.image} images={learning.images} title={lesson.title} />
+                <LessonMedia
+                  image={learning.image}
+                  images={learning.images}
+                  title={lesson.title}
+                />
               ) : null}
               {learning.firstAid ? (
                 <FirstAidGuide guide={learning.firstAid} />
               ) : (
                 learning.sections.map((section, sectionIndex) => (
-                  <section key={section.title} className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <section
+                    key={section.title}
+                    className="rounded-2xl border border-slate-200 bg-white p-5"
+                  >
                     <div className="flex items-start gap-3">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lime-50 text-xs font-semibold text-[#526B00]">
                         {sectionIndex + 1}
                       </span>
-                      <h3 className="font-semibold leading-7 text-[#101820]">{section.title}</h3>
+                      <h3 className="font-semibold leading-7 text-[#101820]">
+                        {section.title}
+                      </h3>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-slate-700">{section.text}</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-700">
+                      {section.text}
+                    </p>
                     {section.example ? (
                       <div className="mt-4 overflow-hidden rounded-xl bg-[#101820]">
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
-                          <span className="text-xs font-semibold text-slate-300">Worked example</span>
+                          <span className="text-xs font-semibold text-slate-300">
+                            Worked example
+                          </span>
                           {coding ? (
                             <button
                               type="button"
@@ -383,7 +489,9 @@ export function LessonWorkspace({
               )}
               {learning.sources ? (
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <h3 className="font-semibold text-[#101820]">Further reading</h3>
+                  <h3 className="font-semibold text-[#101820]">
+                    Further reading
+                  </h3>
                   <ul className="mt-2 space-y-2">
                     {learning.sources.map((source) => (
                       <li key={source.url}>
@@ -394,7 +502,10 @@ export function LessonWorkspace({
                           className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#466000] underline"
                         >
                           {source.title}
-                          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                          <ExternalLink
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
                         </a>
                       </li>
                     ))}
@@ -403,7 +514,7 @@ export function LessonWorkspace({
               ) : null}
               <button
                 type="button"
-                onClick={() => setPanel('practice')}
+                onClick={() => setPanel("practice")}
                 className={`${BUTTON} w-full bg-[#101820] text-white xl:hidden`}
               >
                 Try the activity
@@ -412,11 +523,14 @@ export function LessonWorkspace({
             </section>
             <section
               aria-label="Practice workspace"
-              className={`min-w-0 space-y-4 ${panel === 'practice' ? 'block' : 'hidden xl:block'}`}
+              className={`min-w-0 space-y-4 ${panel === "practice" ? "block" : "hidden xl:block"}`}
             >
               <section className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h3 className="flex items-center gap-2 font-semibold text-[#101820]">
-                  <Lightbulb className="h-5 w-5 text-[#607D00]" aria-hidden="true" />
+                  <Lightbulb
+                    className="h-5 w-5 text-[#607D00]"
+                    aria-hidden="true"
+                  />
                   {learning.activity.title}
                 </h3>
                 {coding ? (
@@ -437,7 +551,9 @@ export function LessonWorkspace({
                           checked={activities[stepIndex]}
                           onChange={(event) =>
                             setActivities((current) =>
-                              current.map((value, i) => (i === stepIndex ? event.target.checked : value)),
+                              current.map((value, i) =>
+                                i === stepIndex ? event.target.checked : value,
+                              ),
                             )
                           }
                           className="mt-1 h-5 w-5 shrink-0 accent-[#607D00]"
@@ -452,7 +568,9 @@ export function LessonWorkspace({
                     <summary className="min-h-9 cursor-pointer text-sm font-semibold text-[#466000]">
                       Need a hint?
                     </summary>
-                    <p className="mt-2 text-sm leading-7 text-slate-700">{learning.hint}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-700">
+                      {learning.hint}
+                    </p>
                   </details>
                 ) : null}
               </section>
@@ -466,8 +584,15 @@ export function LessonWorkspace({
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {busy ? (
-                          <button type="button" onClick={stop} className={`${BUTTON} bg-red-50 text-red-800`}>
-                            <Square className="h-3.5 w-3.5" aria-hidden="true" />
+                          <button
+                            type="button"
+                            onClick={stop}
+                            className={`${BUTTON} bg-red-50 text-red-800`}
+                          >
+                            <Square
+                              className="h-3.5 w-3.5"
+                              aria-hidden="true"
+                            />
                             Stop
                           </button>
                         ) : (
@@ -487,11 +612,11 @@ export function LessonWorkspace({
                             setUndo(draft);
                             setDraft((current) => ({
                               ...current,
-                              code: learning.starterCode ?? '',
-                              input: learning.input ?? '',
+                              code: learning.starterCode ?? "",
+                              input: learning.input ?? "",
                             }));
-                            setRunState('idle');
-                            setError('');
+                            setRunState("idle");
+                            setError("");
                           }}
                           className={`${BUTTON} border border-slate-200 disabled:opacity-50`}
                         >
@@ -507,9 +632,9 @@ export function LessonWorkspace({
                         className="h-[330px] shrink-0 overflow-hidden border-r border-white/10 px-3 py-4 text-right font-mono text-sm leading-7 text-slate-500"
                       >
                         {draft.code
-                          .split('\n')
+                          .split("\n")
                           .map((_, i) => i + 1)
-                          .join('\n')}
+                          .join("\n")}
                       </pre>
                       <textarea
                         ref={editorRef}
@@ -517,20 +642,31 @@ export function LessonWorkspace({
                         onChange={(event) => updateCode(event.target.value)}
                         onScroll={(event) => {
                           if (numbersRef.current)
-                            numbersRef.current.scrollTop = event.currentTarget.scrollTop;
+                            numbersRef.current.scrollTop =
+                              event.currentTarget.scrollTop;
                         }}
                         onKeyDown={(event) => {
-                          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                          if (
+                            event.key === "Enter" &&
+                            (event.ctrlKey || event.metaKey)
+                          ) {
                             event.preventDefault();
                             run();
                           }
-                          if (event.key === 'Tab' && !event.shiftKey) {
+                          if (event.key === "Tab" && !event.shiftKey) {
                             event.preventDefault();
                             const start = event.currentTarget.selectionStart;
                             const end = event.currentTarget.selectionEnd;
-                            updateCode(draft.code.slice(0, start) + '    ' + draft.code.slice(end));
+                            updateCode(
+                              draft.code.slice(0, start) +
+                                "    " +
+                                draft.code.slice(end),
+                            );
                             requestAnimationFrame(() =>
-                              editorRef.current?.setSelectionRange(start + 4, start + 4),
+                              editorRef.current?.setSelectionRange(
+                                start + 4,
+                                start + 4,
+                              ),
                             );
                           }
                         }}
@@ -545,18 +681,28 @@ export function LessonWorkspace({
                     </div>
                     <div className="space-y-3 border-t border-slate-200 p-3">
                       <p className="text-xs leading-6 text-slate-500">
-                        Tab indents · Shift+Tab leaves the editor · Ctrl/⌘ + Enter runs · Each run uses fresh
-                        variables. The first run downloads Python and needs internet.
+                        Tab indents · Shift+Tab leaves the editor · Ctrl/⌘ +
+                        Enter runs · Each run uses fresh variables. The first
+                        run downloads Python and needs internet.
                       </p>
-                      <label className="block text-xs font-semibold text-slate-600" htmlFor="program-input">
-                        Program input <span className="font-normal">(one line per input() call)</span>
+                      <label
+                        className="block text-xs font-semibold text-slate-600"
+                        htmlFor="program-input"
+                      >
+                        Program input{" "}
+                        <span className="font-normal">
+                          (one line per input() call)
+                        </span>
                       </label>
                       <textarea
                         id="program-input"
                         value={draft.input}
                         onChange={(event) => {
-                          setDraft((current) => ({ ...current, input: event.target.value }));
-                          setRunState('idle');
+                          setDraft((current) => ({
+                            ...current,
+                            input: event.target.value,
+                          }));
+                          setRunState("idle");
                         }}
                         disabled={busy}
                         rows={2}
@@ -565,19 +711,22 @@ export function LessonWorkspace({
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p
                           role="status"
-                          className={`inline-flex items-center gap-1.5 text-xs ${draftSaved ? 'text-slate-500' : 'text-amber-800'}`}
+                          className={`inline-flex items-center gap-1.5 text-xs ${draftSaved ? "text-slate-500" : "text-amber-800"}`}
                         >
                           <Save className="h-3.5 w-3.5" aria-hidden="true" />
                           {draftSaved
-                            ? 'Draft saved on this device'
-                            : 'Draft could not be saved. Download your code.'}
+                            ? "Draft saved on this device"
+                            : "Draft could not be saved. Download your code."}
                         </p>
                         <button
                           type="button"
                           onClick={download}
                           className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs font-semibold text-slate-600"
                         >
-                          <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                          <Download
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
                           Download .py
                         </button>
                       </div>
@@ -588,7 +737,7 @@ export function LessonWorkspace({
                           onClick={() => {
                             setDraft(undo);
                             setUndo(null);
-                            setRunState('idle');
+                            setRunState("idle");
                           }}
                           className="min-h-11 rounded-lg text-sm font-semibold text-[#466000] underline"
                         >
@@ -602,25 +751,25 @@ export function LessonWorkspace({
                       <Terminal className="h-4 w-4" aria-hidden="true" />
                       Output & task check
                     </h3>
-                    {mode === 'ROBOTICS' ? <RobotGrid state={robot} /> : null}
+                    {mode === "ROBOTICS" ? <RobotGrid state={robot} /> : null}
                     <div className="space-y-3 p-4">
                       <p
                         role="status"
-                        className={`text-sm font-semibold ${runState === 'pass' ? 'text-[#466000]' : runState === 'error' || runState === 'mismatch' ? 'text-amber-800' : 'text-slate-600'}`}
+                        className={`text-sm font-semibold ${runState === "pass" ? "text-[#466000]" : runState === "error" || runState === "mismatch" ? "text-amber-800" : "text-slate-600"}`}
                       >
-                        {runState === 'loading'
-                          ? 'Loading Python… The first run may take a moment.'
-                          : runState === 'running'
-                            ? 'Running your program…'
-                            : runState === 'pass'
-                              ? 'Practice check passed.'
-                              : runState === 'mismatch'
-                                ? 'Program ran. Compare the output with the task.'
-                                : runState === 'error'
-                                  ? 'Let’s fix this together.'
-                                  : runState === 'stopped'
-                                    ? 'Program stopped.'
-                                    : 'Your output will appear here after you run the code.'}
+                        {runState === "loading"
+                          ? "Loading Python… The first run may take a moment."
+                          : runState === "running"
+                            ? "Running your program…"
+                            : runState === "pass"
+                              ? "Practice check passed."
+                              : runState === "mismatch"
+                                ? "Program ran. Compare the output with the task."
+                                : runState === "error"
+                                  ? "Let’s fix this together."
+                                  : runState === "stopped"
+                                    ? "Program stopped."
+                                    : "Your output will appear here after you run the code."}
                       </p>
                       {output ? (
                         <pre
@@ -629,12 +778,16 @@ export function LessonWorkspace({
                         >
                           {output}
                         </pre>
-                      ) : runState === 'pass' ? (
-                        <p className="text-xs text-slate-500">The program finished without printing text.</p>
+                      ) : runState === "pass" ? (
+                        <p className="text-xs text-slate-500">
+                          The program finished without printing text.
+                        </p>
                       ) : null}
                       {error ? (
                         <>
-                          <p className="text-sm leading-7 text-amber-900">{explainPythonError(error)}</p>
+                          <p className="text-sm leading-7 text-amber-900">
+                            {explainPythonError(error)}
+                          </p>
                           <details>
                             <summary className="min-h-11 cursor-pointer text-xs font-semibold text-slate-600">
                               Show Python’s error message
@@ -651,12 +804,18 @@ export function LessonWorkspace({
                             Expected output for this task
                           </p>
                           <pre className="mt-2 overflow-auto rounded-lg border border-slate-200 p-3 text-sm leading-6">
-                            {learning.expectedOutput || '(no printed output)'}
+                            {learning.expectedOutput || "(no printed output)"}
                           </pre>
                           {learning.targetRobot ? (
                             <p className="mt-2 text-xs text-slate-500">
-                              Robot target: column {learning.targetRobot.x}, row {learning.targetRobot.y};
-                              facing {['up', 'right', 'down', 'left'][learning.targetRobot.direction]}.
+                              Robot target: column {learning.targetRobot.x}, row{" "}
+                              {learning.targetRobot.y}; facing{" "}
+                              {
+                                ["up", "right", "down", "left"][
+                                  learning.targetRobot.direction
+                                ]
+                              }
+                              .
                             </p>
                           ) : null}
                         </div>
@@ -670,8 +829,9 @@ export function LessonWorkspace({
                             {learning.solution}
                           </pre>
                           <p className="mt-2 text-xs leading-6 text-slate-500">
-                            Understand the steps, then try a variation. Matching the task output is a practice
-                            check, not a full assessment.
+                            Understand the steps, then try a variation. Matching
+                            the task output is a practice check, not a full
+                            assessment.
                           </p>
                         </details>
                       ) : null}
@@ -680,37 +840,118 @@ export function LessonWorkspace({
                 </>
               ) : (
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <label htmlFor="lesson-notes" className="text-sm font-semibold text-[#101820]">
+                  <label
+                    htmlFor="lesson-notes"
+                    className="text-sm font-semibold text-[#101820]"
+                  >
                     Your plan or reflection
                   </label>
                   <p className="mt-2 text-xs leading-6 text-slate-500">
-                    Describe what you would do and why. Notes stay on this device; they are not submitted to a
-                    teacher. Do not include personal or medical information.
+                    Describe what you would do and why. Notes stay on this
+                    device; they are not submitted to a teacher. Do not include
+                    personal or medical information.
                   </p>
                   <textarea
                     id="lesson-notes"
                     value={draft.notes}
-                    onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        notes: event.target.value,
+                      }))
+                    }
                     rows={5}
                     placeholder="My steps, observations or design…"
                     className="mt-3 w-full rounded-xl border border-slate-300 p-3 text-sm leading-7"
                   />
                   {!draftSaved ? (
                     <p role="status" className="mt-2 text-xs text-amber-800">
-                      Notes could not be saved on this device. Copy them before leaving.
+                      Notes could not be saved on this device. Copy them before
+                      leaving.
                     </p>
                   ) : null}
+                </section>
+              )}
+              {transfer && (
+                <section className="rounded-2xl border border-[#dce6cf] bg-[#f5f8ef] p-5">
+                  <h3 className="font-semibold text-[#203e30]">
+                    Show what you can do
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {transfer.transfer}
+                  </p>
+                  {program?.studioRoute && (
+                    <Link
+                      to={program.studioRoute}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#496d35]"
+                    >
+                      Open Music Studio
+                      <ExternalLink size={14} />
+                    </Link>
+                  )}
+                  <label className="mt-4 block text-sm font-medium text-slate-700">
+                    Practice evidence
+                    <textarea
+                      value={evidence.artifact}
+                      onChange={(e) =>
+                        setEvidence((current) => ({
+                          ...current,
+                          artifact: e.target.value,
+                        }))
+                      }
+                      maxLength={4000}
+                      rows={4}
+                      placeholder="Describe what you made or tested, the settings or steps you used, and the result."
+                      className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm leading-6"
+                    />
+                  </label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    At least 80 characters. Keep your project or export as
+                    supporting evidence.
+                  </p>
+                  <label className="mt-4 block text-sm font-medium text-slate-700">
+                    Transfer reflection
+                    <textarea
+                      value={evidence.reflection}
+                      onChange={(e) =>
+                        setEvidence((current) => ({
+                          ...current,
+                          reflection: e.target.value,
+                        }))
+                      }
+                      maxLength={2000}
+                      rows={3}
+                      placeholder="What changed in the new situation? Explain one decision, its effect and what you would improve."
+                      className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm leading-6"
+                    />
+                  </label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    At least 60 characters. These two responses are saved with
+                    your lesson progress. They are self-reported practice, not a
+                    teacher grade.
+                  </p>
+                  {!evidenceSaved&&<p role="status" className="mt-2 text-xs text-amber-800">This draft could not be saved on your device. Copy your responses before leaving, or save completion when ready.</p>}
                 </section>
               )}
               {learning.firstAid ? (
                 <FirstAidScenarios
                   scenarios={learning.firstAid.scenarios}
-                  onResult={(id, passed) => setScenarioResults((current) => ({ ...current, [id]: passed }))}
+                  onResult={(id, passed) =>
+                    setScenarioResults((current) => ({
+                      ...current,
+                      [id]: passed,
+                    }))
+                  }
                 />
               ) : null}
               <section className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h3 className="flex items-center gap-2 font-semibold text-[#101820]">
-                  <CircleHelp className="h-5 w-5 text-[#607D00]" aria-hidden="true" />
+                  <CircleHelp
+                    className="h-5 w-5 text-[#607D00]"
+                    aria-hidden="true"
+                  />
                   Quick understanding check
                 </h3>
                 <fieldset className="mt-4">
@@ -721,7 +962,7 @@ export function LessonWorkspace({
                     {learning.check.options.map((option, optionIndex) => (
                       <label
                         key={option}
-                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm leading-7 ${answer === optionIndex ? 'border-lime-400 bg-lime-50' : 'border-slate-200'}`}
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm leading-7 ${answer === optionIndex ? "border-lime-400 bg-lime-50" : "border-slate-200"}`}
                       >
                         <input
                           type="radio"
@@ -750,10 +991,12 @@ export function LessonWorkspace({
                 {checked ? (
                   <div
                     role="status"
-                    className={`mt-4 rounded-xl p-4 text-sm leading-7 ${correct ? 'bg-lime-50 text-[#466000]' : 'bg-amber-50 text-amber-900'}`}
+                    className={`mt-4 rounded-xl p-4 text-sm leading-7 ${correct ? "bg-lime-50 text-[#466000]" : "bg-amber-50 text-amber-900"}`}
                   >
                     <p className="font-semibold">
-                      {correct ? 'Correct.' : 'Not quite. Read the explanation and try again.'}
+                      {correct
+                        ? "Correct."
+                        : "Not quite. Read the explanation and try again."}
                     </p>
                     <p>{learning.check.explanation}</p>
                   </div>
@@ -767,19 +1010,24 @@ export function LessonWorkspace({
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <p className="flex items-center gap-2 text-sm leading-6 text-slate-600">
             {completed ? (
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-[#607D00]" aria-hidden="true" />
+              <CheckCircle2
+                className="h-5 w-5 shrink-0 text-[#607D00]"
+                aria-hidden="true"
+              />
             ) : null}
             {completed
-              ? 'Lesson completion saved.'
+              ? "Lesson completion saved."
               : !learning
-                ? 'Full lesson content is required before completion.'
+                ? "Full lesson content is required before completion."
                 : ready
-                  ? 'Practice and understanding checks complete. Save your progress.'
-                  : coding
-                    ? 'Pass the practice task and quick check before saving completion.'
-                    : learning.firstAid
-                      ? 'Complete the activity, both scenarios and the quick check before saving completion.'
-                      : 'Complete the activity checklist and quick check before saving completion.'}
+                  ? "Practice and understanding checks complete. Save your progress."
+                  : transfer && !evidenceReady
+                    ? "Add your practice evidence and transfer reflection before saving."
+                    : coding
+                      ? "Pass the practice task and quick check before saving completion."
+                      : learning.firstAid
+                        ? "Complete the activity, both scenarios and the quick check before saving completion."
+                        : "Complete the activity checklist and quick check before saving completion."}
           </p>
           <button
             type="button"
@@ -788,14 +1036,18 @@ export function LessonWorkspace({
             className={`${BUTTON} shrink-0 bg-[#101820] text-white disabled:bg-slate-100 disabled:text-slate-400`}
           >
             <Check className="h-4 w-4" aria-hidden="true" />
-            {completed ? 'Completed' : completion.isPending ? 'Saving…' : 'Save completion'}
+            {completed
+              ? "Completed"
+              : completion.isPending
+                ? "Saving…"
+                : "Save completion"}
           </button>
         </div>
         {completion.isError ? (
           <p role="alert" className="mt-3 text-sm leading-7 text-red-700">
             {apiErrorMessage(
               completion.error,
-              'Your progress could not be saved. Your draft is still on this device. Try saving again.',
+              "Your progress could not be saved. Your draft is still on this device. Try saving again.",
             )}
           </p>
         ) : null}
@@ -827,18 +1079,24 @@ function RobotGrid({ state }: { state: RobotState }) {
   return (
     <div className="border-b border-slate-200 bg-slate-50 p-4">
       <p className="mb-3 text-xs font-semibold text-slate-600">
-        Simulation · column {state.x}, row {state.y} · facing{' '}
-        {['up', 'right', 'down', 'left'][state.direction]}
+        Simulation · column {state.x}, row {state.y} · facing{" "}
+        {["up", "right", "down", "left"][state.direction]}
       </p>
       <div
         aria-label="Robot simulation"
         className="mx-auto grid aspect-square max-w-56 grid-cols-5 overflow-hidden rounded-xl border border-slate-300 bg-white"
       >
         {Array.from({ length: 25 }, (_, i) => (
-          <div key={i} className="flex items-center justify-center border-b border-r border-slate-100">
+          <div
+            key={i}
+            className="flex items-center justify-center border-b border-r border-slate-100"
+          >
             {state.x === i % 5 && state.y === Math.floor(i / 5) ? (
-              <span className="text-2xl font-bold text-[#526B00]" aria-label="Robot">
-                {['↑', '→', '↓', '←'][state.direction]}
+              <span
+                className="text-2xl font-bold text-[#526B00]"
+                aria-label="Robot"
+              >
+                {["↑", "→", "↓", "←"][state.direction]}
               </span>
             ) : null}
           </div>

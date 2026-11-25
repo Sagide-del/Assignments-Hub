@@ -424,6 +424,7 @@ model User {
   // confirms extracted report-card scores or completes a coach diagnostic.
   weakSubjects      String[] @default([]) @map("weak_subjects")
   strongSubjects    String[] @default([]) @map("strong_subjects")
+  skillInterest     String?  @map("skill_interest")
   primarySkillFocus String?  @map("primary_skill_focus")
   // Parent/guardian phone number in international format (e.g.
   // "+254712345678"), used by SmsService to notify the parent when this
@@ -648,6 +649,8 @@ model SkillEnrollment {
   requestedAt    DateTime              @default(now()) @map("requested_at")
   approvedAt     DateTime?             @map("approved_at")
   completedAt    DateTime?             @map("completed_at")
+  pausedAt       DateTime?             @map("paused_at")
+  pauseReason    String?               @map("pause_reason")
   lessonProgress SkillLessonProgress[]
 
   @@unique([studentId, courseId])
@@ -660,6 +663,8 @@ model SkillLessonProgress {
   id           Int             @id @default(autoincrement())
   enrollmentId Int             @map("enrollment_id")
   enrollment   SkillEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  evidence     Json?
+  reviewAfter  DateTime?       @map("review_after")
   lessonKey    String          @map("lesson_key")
   startedAt    DateTime        @default(now()) @map("started_at")
   completedAt  DateTime?       @map("completed_at")

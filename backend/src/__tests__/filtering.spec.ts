@@ -1,3 +1,5 @@
+import { FocusedLearningService } from '../skills/focused-learning.service';
+import { SkillWorkbookService } from '../skills/skill-workbook.service';
 import { PublicRevisionService } from "../cms/public-revision.service";
 import { PracticeController } from "../question-bank/practice.controller";
 import { PracticeService } from "../question-bank/practice.service";
@@ -574,6 +576,8 @@ integration(
           TeacherScopeGuard,
           LabsService,
           SkillsService,
+          FocusedLearningService,
+          SkillWorkbookService,
           CmsService,
           PublicRevisionService,
           {

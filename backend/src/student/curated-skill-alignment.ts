@@ -5,8 +5,11 @@ export function curatedSkillAlignment(
   grade: number,
 ): any | null {
   if (grade < 7 || grade > 12) return null;
+  if (grade < 10 && ["Music Production Foundations", "Songwriting & Arrangement"].includes(title)) return null;
   const junior = grade <= 9;
   const entries: Record<string, any> = {
+    "Music Production Foundations": { subject: junior ? "Creative Arts" : "Music and Dance" },
+    "Songwriting & Arrangement": { subject: junior ? "Creative Arts" : "Music and Dance" },
     "First Aid Foundations": {
       subject: junior ? "Integrated Science" : "Physical Education",
     },

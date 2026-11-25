@@ -1,0 +1,1882 @@
+[
+  {
+    "title": "Python Programming Foundations",
+    "focus": "DIGITAL",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Combine variables, arithmetic and output in a small finished program.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "python-v1-hello",
+        "title": "Your first Python program",
+        "objective": "Use print() to display a message, and recognise a line of Python code.",
+        "example": "print(\"Hello, learner!\")\n# Output: Hello, learner!",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "What does print(\"Hi\") display?",
+          "options": [
+            "\"Hi\" including quotation marks",
+            "Hi",
+            "Nothing until the file is installed"
+          ],
+          "answer": 1,
+          "explanation": "print() displays Hi. Quotation marks describe a string in code; they are not part of its printed value."
+        }
+      },
+      {
+        "key": "python-v1-variables",
+        "title": "Remember information with variables",
+        "objective": "Store a value under a name and use that name later.",
+        "example": "learner = \"Amina\"\nprint(learner)\n# Output: Amina",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "Which line stores a number rather than text?",
+          "options": [
+            "age = \"12\"",
+            "\"age\" = 12",
+            "age = 12"
+          ],
+          "answer": 2,
+          "explanation": "age = 12 stores an integer. \"12\" is a string, and you cannot assign a value to a quoted word."
+        }
+      },
+      {
+        "key": "python-v1-numbers",
+        "title": "Calculate with numbers",
+        "objective": "Use arithmetic and parentheses to solve a small everyday problem.",
+        "example": "books = 3\nprice = 40\nprint(books * price)\n# Output: 120",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "What does print(2 + 3 * 4) display?",
+          "options": [
+            "20",
+            "14",
+            "24"
+          ],
+          "answer": 1,
+          "explanation": "Multiplication happens first: 3 \u00d7 4 = 12, then 2 + 12 = 14."
+        }
+      },
+      {
+        "key": "python-v1-input",
+        "title": "Ask the user a question",
+        "objective": "Read a text response with input() and use it in a greeting.",
+        "example": "name = input()\nprint(\"Hello, \" + name)\n# Input: Amina\n# Output: Hello, Amina",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "What type of value does input() return?",
+          "options": [
+            "A string",
+            "Always an integer",
+            "A Python file"
+          ],
+          "answer": 0,
+          "explanation": "input() returns text. Convert it explicitly when a calculation needs a number."
+        }
+      },
+      {
+        "key": "python-v1-decisions",
+        "title": "Make decisions with if and else",
+        "objective": "Run different instructions depending on a condition.",
+        "example": "temperature = 28\nif temperature >= 25:\n    print(\"Warm\")\nelse:\n    print(\"Cool\")",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "Which symbol checks whether two values are equal?",
+          "options": [
+            "=",
+            "==",
+            "=>"
+          ],
+          "answer": 1,
+          "explanation": "== compares two values. = assigns a value to a variable."
+        }
+      },
+      {
+        "key": "python-v1-loops",
+        "title": "Repeat a task with a loop",
+        "objective": "Use a for loop and range() to repeat instructions predictably.",
+        "example": "for number in range(1, 4):\n    print(number)\n# Output:\n# 1\n# 2\n# 3",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "How many times does for n in range(3) repeat?",
+          "options": [
+            "2 times",
+            "3 times",
+            "4 times"
+          ],
+          "answer": 1,
+          "explanation": "The values are 0, 1 and 2: three iterations."
+        }
+      },
+      {
+        "key": "python-v1-functions",
+        "title": "Create a reusable function",
+        "objective": "Define a function, return a result and call it with an argument.",
+        "example": "def double(number):\n    return number * 2\n\nprint(double(4))\n# Output: 8",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "Which instruction sends a value back to a function caller?",
+          "options": [
+            "print",
+            "return",
+            "input"
+          ],
+          "answer": 1,
+          "explanation": "return provides the function result. print only displays a value."
+        }
+      },
+      {
+        "key": "python-v1-project",
+        "title": "Build a simple shopping calculator",
+        "objective": "Combine variables, arithmetic and output in a small finished program.",
+        "example": "total = quantity * price\nchange = paid - total",
+        "practice": [
+          "Read and run the worked example mentally: predict what it will print.",
+          "Edit the starter code to produce the expected output. Run your program and compare the result.",
+          "Answer the quick check, then save this lesson as completed."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "Which test would help you check the calculator beyond the example?",
+          "options": [
+            "Only changing a comment",
+            "Trying another quantity and checking the expected total",
+            "Hiding the output"
+          ],
+          "answer": 1,
+          "explanation": "A different quantity tests whether the calculation responds correctly to changed data."
+        }
+      }
+    ],
+    "order": 0
+  },
+  {
+    "title": "First Aid Foundations",
+    "focus": "CARE",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Bring together scene safety, observation and a clear request for help.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "firstaid-v2-scene",
+        "title": "Make the scene safe and get help",
+        "objective": "Recognise when it is safe to approach and explain how to summon help.",
+        "example": "Look for traffic, fire, electricity, chemicals or other hazards. Do not enter an unsafe area or touch someone still in contact with electricity. Your safety comes first.",
+        "practice": [
+          "With a partner, use a pretend classroom situation to identify two hazards. Do not create a real hazard.",
+          "Write a short emergency-call message with a location and what you can observe. Do not make a practice call to an emergency number.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Describe a new school scenario, how you would recognise danger, who you would call and why. Do not practise procedures on another person; this is introductory education, not certification.",
+        "check": {
+          "question": "A learner collapses beside a live electrical cable. What comes first?",
+          "options": [
+            "Touch them to check responsiveness",
+            "Keep away from the electrical danger and get urgent adult help",
+            "Move the cable with your hand"
+          ],
+          "answer": 1,
+          "explanation": "Do not become another casualty. Keep clear and get urgent help to make the electrical danger safe."
+        }
+      },
+      {
+        "key": "firstaid-v2-fainting",
+        "title": "Help someone who feels faint",
+        "objective": "Distinguish feeling faint from an unresponsive emergency and choose safe first steps.",
+        "example": "A person may feel dizzy, weak, sweaty or sick, look pale or say their vision is fading. These signs have different possible causes; do not try to diagnose the cause.",
+        "practice": [
+          "Use a drawing or mannequin to explain how you would help a responsive person lie down safely. Do not induce fainting or lift a classmate\u2019s legs.",
+          "Say what you would tell an adult if the person did not respond or was not breathing normally.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Describe a new school scenario, how you would recognise danger, who you would call and why. Do not practise procedures on another person; this is introductory education, not certification.",
+        "check": {
+          "question": "Someone feels faint but is still responding. What is the best first action?",
+          "options": [
+            "Make them stand and walk quickly",
+            "Help them lie down safely and get an adult",
+            "Give them food while they are losing consciousness"
+          ],
+          "answer": 1,
+          "explanation": "Help them lie down safely and get adult help. If they become unresponsive, assess breathing and escalate immediately."
+        }
+      },
+      {
+        "key": "firstaid-v2-bleeding",
+        "title": "Respond to a small cut",
+        "objective": "Explain basic hygiene and recognise bleeding that needs urgent help.",
+        "example": "Get an adult. Wash hands and use disposable gloves if available. Avoid direct contact with blood. Do not put yourself at risk to obtain a photograph or inspect a wound.",
+        "practice": [
+          "Using a drawing, identify where a clean dressing would go on a small superficial cut.",
+          "Explain why embedded objects and heavy bleeding need urgent adult help. Do not practise on an actual wound.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Describe a new school scenario, how you would recognise danger, who you would call and why. Do not practise procedures on another person; this is introductory education, not certification.",
+        "check": {
+          "question": "What should you do with an object embedded in a wound?",
+          "options": [
+            "Pull it out quickly",
+            "Leave it in place and get urgent help",
+            "Cover it with soil"
+          ],
+          "answer": 1,
+          "explanation": "Removing an embedded object can worsen bleeding. Leave it in place and seek urgent professional help."
+        }
+      },
+      {
+        "key": "firstaid-v2-burns",
+        "title": "Cool a burn and get help",
+        "objective": "Explain immediate cooling and avoid common harmful treatments.",
+        "example": "Only if it is safe, move away from the heat source. Get an adult immediately. Electrical and chemical burns require urgent specialist advice; do not enter an unsafe scene.",
+        "practice": [
+          "Point to the safe cooling option in the illustration and state how long cooling should continue.",
+          "Explain to a partner why ice and household pastes are not appropriate. Do not use hot water or create a real burn for practice.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Describe a new school scenario, how you would recognise danger, who you would call and why. Do not practise procedures on another person; this is introductory education, not certification.",
+        "check": {
+          "question": "Which action is appropriate immediately after a thermal burn?",
+          "options": [
+            "Apply ice directly",
+            "Apply toothpaste",
+            "Cool under running water for 20 minutes"
+          ],
+          "answer": 2,
+          "explanation": "Use cool or lukewarm running water for 20 minutes. Ice and household pastes can worsen injury or interfere with treatment."
+        }
+      },
+      {
+        "key": "firstaid-v2-choking",
+        "title": "Recognise choking and seek urgent help",
+        "objective": "Recognise the difference between an effective cough and a severe airway emergency.",
+        "example": "Someone with a partial blockage may still speak, breathe and cough effectively. Encourage them to cough and get an adult. Stay with them and watch for deterioration.",
+        "practice": [
+          "Use written scenarios to distinguish an effective cough from inability to speak or breathe.",
+          "Describe how you would summon a trained adult. Do not rehearse thrusts, back blows or mouth sweeps on another person.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Describe a new school scenario, how you would recognise danger, who you would call and why. Do not practise procedures on another person; this is introductory education, not certification.",
+        "check": {
+          "question": "A person cannot speak or breathe and has an ineffective cough. What does this mean?",
+          "options": [
+            "A severe choking emergency requiring immediate help",
+            "They should drink water",
+            "They should be left alone to rest"
+          ],
+          "answer": 0,
+          "explanation": "These signs suggest a severe airway obstruction. Get immediate trained help and emergency services; follow dispatcher instructions."
+        }
+      },
+      {
+        "key": "firstaid-v2-response",
+        "title": "Explain your emergency response",
+        "objective": "Bring together scene safety, observation and a clear request for help.",
+        "example": "Check that the scene is safe, call a responsible adult, observe responsiveness and normal breathing, and get emergency help when required. Do not delay urgent assistance to finish an activity or take notes.",
+        "practice": [
+          "Write a response plan for a person who collapses in a safe classroom: who you alert, what you observe and what you tell responders.",
+          "Ask a teacher to review the plan. Discuss the difference between this introductory course and certified practical first-aid training.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Describe a new school scenario, how you would recognise danger, who you would call and why. Do not practise procedures on another person; this is introductory education, not certification.",
+        "check": {
+          "question": "Which message is most useful to an emergency dispatcher?",
+          "options": [
+            "Something is wrong, goodbye",
+            "A person collapsed in Room 2 at our school, is not responding, and I will follow your instructions",
+            "I know the diagnosis without checking"
+          ],
+          "answer": 1,
+          "explanation": "A clear location and direct observations help the dispatcher choose appropriate next steps. Stay on the line."
+        }
+      }
+    ],
+    "order": 0
+  },
+  {
+    "title": "Machine Learning Foundations",
+    "focus": "DIGITAL",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Identify missing representation, privacy risks and limits in a model claim.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "ml-v1-data",
+        "title": "Meet a small dataset",
+        "objective": "Describe a dataset and calculate an average using Python.",
+        "example": "import numpy as np\nvalues = np.array([10, 20, 30])\nprint(float(values.mean()))\n# Output: 20.0",
+        "practice": [
+          "Predict the example\u2019s result before you run it.",
+          "Change the starter code to meet the task and compare the output with the expected result.",
+          "Try another value after passing the check and explain the change."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "What does a row usually represent in a simple dataset?",
+          "options": [
+            "One observation",
+            "The entire model",
+            "An automatic explanation of cause"
+          ],
+          "answer": 0,
+          "explanation": "A row commonly describes one observation. Always check the dataset\u2019s documentation."
+        }
+      },
+      {
+        "key": "ml-v1-split",
+        "title": "Keep training and testing separate",
+        "objective": "Explain why a model should be checked on examples it has not learned from.",
+        "example": "values = [2, 4, 6, 8, 10]\ntrain = values[:3]\ntest = values[3:]\nprint(len(train), len(test))\n# Output: 3 2",
+        "practice": [
+          "Predict the example\u2019s result before you run it.",
+          "Change the starter code to meet the task and compare the output with the expected result.",
+          "Try another value after passing the check and explain the change."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "Why hold back test data?",
+          "options": [
+            "To evaluate on unseen examples",
+            "To make training scores look higher",
+            "To remove all difficult examples"
+          ],
+          "answer": 0,
+          "explanation": "Unseen test examples give a more useful check of generalisation than training results alone."
+        }
+      },
+      {
+        "key": "ml-v1-evaluate",
+        "title": "Measure a prediction result",
+        "objective": "Compare simple predicted labels against known answers.",
+        "example": "actual = [1, 0, 1, 0]\npredicted = [1, 0, 0, 0]\ncorrect = sum(a == p for a, p in zip(actual, predicted))\nprint(correct)\n# Output: 3",
+        "practice": [
+          "Predict the example\u2019s result before you run it.",
+          "Change the starter code to meet the task and compare the output with the expected result.",
+          "Try another value after passing the check and explain the change."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "Three correct predictions out of four gives what accuracy?",
+          "options": [
+            "25%",
+            "75%",
+            "100%"
+          ],
+          "answer": 1,
+          "explanation": "3 \u00f7 4 \u00d7 100 = 75%. This alone does not tell you which mistakes occurred."
+        }
+      },
+      {
+        "key": "ml-v1-responsible",
+        "title": "Decide whether the evidence is enough",
+        "objective": "Identify missing representation, privacy risks and limits in a model claim.",
+        "example": "A dataset from one school or season may not represent another setting. Check how observations were selected and whether important groups or conditions are missing.",
+        "practice": [
+          "Write a model note for a pretend plant-watering predictor trained only during a wet month.",
+          "Name one missing condition, one evaluation you would add and one decision that should remain with a person.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "A model tested at only one school should be described as\u2026",
+          "options": [
+            "Proven suitable for every school",
+            "A limited result needing broader evaluation",
+            "Guaranteed unbiased"
+          ],
+          "answer": 1,
+          "explanation": "Evidence from one setting has limits. Broader evaluation is needed before broader claims."
+        }
+      }
+    ],
+    "order": 2
+  },
+  {
+    "title": "Robotics with Sensors and Arduino",
+    "focus": "TECHNICAL",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Distinguish a sensor, controller and actuator without wiring hardware.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "robot-v1-move",
+        "title": "Move a simulated robot",
+        "objective": "Use a command to move a robot on a small grid.",
+        "example": "forward(1)\nprint(\"Moved one square\")",
+        "practice": [
+          "Predict the example\u2019s result before you run it.",
+          "Change the starter code to meet the task and compare the output with the expected result.",
+          "Try another value after passing the check and explain the change."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Where does forward(2) end when starting at (2, 2) facing right?",
+          "options": [
+            "(4, 2)",
+            "(2, 4)",
+            "(0, 2)"
+          ],
+          "answer": 0,
+          "explanation": "Facing right increases the column: 2 + 2 = 4. The row stays 2."
+        }
+      },
+      {
+        "key": "robot-v1-turn",
+        "title": "Turn before moving",
+        "objective": "Explain why turning changes direction but not location.",
+        "example": "turn_right()\nforward(1)\nprint(\"Turned and moved\")",
+        "practice": [
+          "Predict the example\u2019s result before you run it.",
+          "Change the starter code to meet the task and compare the output with the expected result.",
+          "Try another value after passing the check and explain the change."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "What changes when turn_right() runs by itself?",
+          "options": [
+            "Only the position",
+            "Only the direction",
+            "Both position and battery level"
+          ],
+          "answer": 1,
+          "explanation": "The simulated robot rotates without changing its square."
+        }
+      },
+      {
+        "key": "robot-v1-route",
+        "title": "Plan a two-part route",
+        "objective": "Break a route into movement and turning instructions.",
+        "example": "forward(2)\nturn_right()\nforward(1)\nprint(\"Route complete\")",
+        "practice": [
+          "Predict the example\u2019s result before you run it.",
+          "Change the starter code to meet the task and compare the output with the expected result.",
+          "Try another value after passing the check and explain the change."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Why trace intermediate positions?",
+          "options": [
+            "To see where an instruction first changes the route incorrectly",
+            "To avoid testing",
+            "To prove a physical robot is safe"
+          ],
+          "answer": 0,
+          "explanation": "Tracing helps locate the first incorrect instruction instead of guessing at the final result."
+        }
+      },
+      {
+        "key": "robot-v1-sensors",
+        "title": "Connect the simulation to real robotics ideas",
+        "objective": "Distinguish a sensor, controller and actuator without wiring hardware.",
+        "example": "A sensor measures a condition such as light or distance. A controller processes the reading. An actuator, such as a motor, produces an action.",
+        "practice": [
+          "Draw a distance sensor \u2192 controller \u2192 motor diagram for a robot that stops before an obstacle.",
+          "Describe one sensor failure and a safe response. Do not wire or power hardware for this activity.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Which component measures distance?",
+          "options": [
+            "The sensor",
+            "The motor",
+            "The wheel"
+          ],
+          "answer": 0,
+          "explanation": "A distance sensor measures the condition; a motor produces motion."
+        }
+      }
+    ],
+    "order": 1
+  },
+  {
+    "title": "Research Skills for Student Projects",
+    "focus": "RESEARCH",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Use evidence to support a cautious conclusion and acknowledge sources.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "research-v1-question",
+        "title": "Ask a question you can investigate",
+        "objective": "Turn a broad interest into a specific, answerable research question.",
+        "example": "\u201cPlants\u201d is a topic. \u201cHow does the amount of light affect bean seedling height over two weeks?\u201d identifies what changes, what is measured and a period.",
+        "practice": [
+          "Write a question about a safe everyday observation and identify the measured outcome.",
+          "List two conditions you would keep similar and ask a teacher to review your plan.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Apply the method to a new question in your school. Separate observation from inference, give one limitation and explain how you would improve the evidence.",
+        "check": {
+          "question": "Which question is most testable?",
+          "options": [
+            "Are plants interesting?",
+            "How does daily light duration affect seedling height over two weeks?",
+            "Which idea is always best?"
+          ],
+          "answer": 1,
+          "explanation": "The question identifies a factor, a measurable outcome and a timeframe."
+        }
+      },
+      {
+        "key": "research-v1-evidence",
+        "title": "Keep an evidence notebook",
+        "objective": "Record observations consistently and distinguish data from interpretation.",
+        "example": "Use columns for date, item identifier, measurement and unit. Record the method and equipment so another learner can understand how the data was collected.",
+        "practice": [
+          "Create a table for three invented seedling measurements, with dates and centimetres. Clearly mark it as practice data.",
+          "Write one observation and one possible interpretation in separate sentences.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Apply the method to a new question in your school. Separate observation from inference, give one limitation and explain how you would improve the evidence.",
+        "check": {
+          "question": "Which entry is most useful?",
+          "options": [
+            "It grew a lot",
+            "Seedling A: 8.2 cm, measured from soil to tip on 26 October",
+            "The prediction must be right"
+          ],
+          "answer": 1,
+          "explanation": "The entry identifies the item, unit, method and date."
+        }
+      },
+      {
+        "key": "research-v1-conclusion",
+        "title": "Explain a result and its limits",
+        "objective": "Use evidence to support a cautious conclusion and acknowledge sources.",
+        "example": "Summarise the measurements that answer the original question. Use a labelled table or graph with units. Do not select only the measurements that support your preferred result.",
+        "practice": [
+          "Write a four-sentence report: question, evidence, conclusion and limitation.",
+          "Add a source entry for a real reference you used, rather than inventing a citation.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Apply the method to a new question in your school. Separate observation from inference, give one limitation and explain how you would improve the evidence.",
+        "check": {
+          "question": "A cautious conclusion should include\u2026",
+          "options": [
+            "Only supporting measurements",
+            "Evidence and important limitations",
+            "A claim that the result applies everywhere"
+          ],
+          "answer": 1,
+          "explanation": "A useful conclusion states what the evidence supports and where uncertainty remains."
+        }
+      }
+    ],
+    "order": 0
+  },
+  {
+    "title": "Cyber Safety and Networking",
+    "focus": "DIGITAL",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Describe how a device reaches a service through a network.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "cyber-v1-accounts",
+        "title": "Protect an account",
+        "objective": "Explain unique passwords, passphrases and multi-factor authentication.",
+        "example": "A long, unique password or passphrase reduces the risk from password reuse. A trusted password manager can help. Do not enter a real password into a lesson or share it with classmates.",
+        "practice": [
+          "Write a fictional checklist for securing a practice account. Do not include real credentials.",
+          "Explain how reusing a password can affect several accounts.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "Which practice best limits damage from one leaked password?",
+          "options": [
+            "Using it on every website",
+            "Using a different strong password for each account",
+            "Sending it to a class group"
+          ],
+          "answer": 1,
+          "explanation": "Unique passwords prevent one leaked credential from directly unlocking every other account."
+        }
+      },
+      {
+        "key": "cyber-v1-messages",
+        "title": "Recognise a suspicious message",
+        "objective": "Pause, verify and report messages that ask for money or account access.",
+        "example": "A message may imitate a school or company and create urgency. Requests for passwords, verification codes or unexpected payments deserve extra care, even if the branding looks familiar.",
+        "practice": [
+          "Draft a fictional urgent-payment message and mark two warning signs. Do not send it.",
+          "Write the independent route you would use to verify it.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "A message asks for your one-time login code. What should you do?",
+          "options": [
+            "Send it immediately",
+            "Share it with the sender after checking the logo",
+            "Keep it private and verify through an official route"
+          ],
+          "answer": 2,
+          "explanation": "A verification code can give access to an account. Branding is not proof of identity."
+        }
+      },
+      {
+        "key": "cyber-v1-networks",
+        "title": "Trace a safe web request",
+        "objective": "Describe how a device reaches a service through a network.",
+        "example": "Your device sends data through a local network and other systems to reach a service. A router forwards traffic between networks; a server provides a service.",
+        "practice": [
+          "Draw learner device \u2192 router \u2192 internet \u2192 learning server and label each part.",
+          "Explain why checking a domain name still matters when a page uses HTTPS.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Use a different input or dataset. Predict the result before testing, record what happened and explain one change you made.",
+        "check": {
+          "question": "What does HTTPS alone guarantee about a website?",
+          "options": [
+            "That everything on it is true",
+            "That the connection is encrypted to the connected site",
+            "That it belongs to your school"
+          ],
+          "answer": 1,
+          "explanation": "HTTPS protects the connection; it is not a general guarantee of the site\u2019s honesty or ownership."
+        }
+      }
+    ],
+    "order": 1
+  },
+  {
+    "title": "CAD and Digital Fabrication",
+    "focus": "TECHNICAL",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Plan a safe prototype test and recognise manufacturing limits.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "cad-v1-brief",
+        "title": "Turn an idea into a measured brief",
+        "objective": "Describe a simple object using purpose, dimensions and constraints.",
+        "example": "A design brief explains who needs the object and what it should do. For a pencil tray, consider pencil length, available desk space and whether sharp edges could cause harm.",
+        "practice": [
+          "Draw a pencil tray with labelled length, width and height in millimetres.",
+          "Write one fit requirement and one appearance preference.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Which dimension is unambiguous?",
+          "options": [
+            "Length 150",
+            "Length 150 mm",
+            "Length fairly long"
+          ],
+          "answer": 1,
+          "explanation": "A numerical value with a unit communicates a reproducible dimension."
+        }
+      },
+      {
+        "key": "cad-v1-geometry",
+        "title": "Understand a sketch and an extrusion",
+        "objective": "Explain how a flat profile can become a three-dimensional form.",
+        "example": "A CAD sketch uses points, lines and curves in a plane. Dimensions and constraints describe the intended size and relationships, rather than relying on how a drawing looks.",
+        "practice": [
+          "Draw a 60 mm by 40 mm rectangle, then a perspective sketch showing a 10 mm extrusion.",
+          "Label which measurements belong to the profile and which describes extrusion depth.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Extruding a closed rectangle adds\u2026",
+          "options": [
+            "Depth to make a three-dimensional form",
+            "A verified fabrication certificate",
+            "Automatic material safety"
+          ],
+          "answer": 0,
+          "explanation": "An extrusion extends a two-dimensional profile through a specified distance."
+        }
+      },
+      {
+        "key": "cad-v1-prototype",
+        "title": "Review a prototype before fabrication",
+        "objective": "Plan a safe prototype test and recognise manufacturing limits.",
+        "example": "A paper or cardboard model can reveal fit problems before material is cut or printed. Compare its dimensions and function with the brief.",
+        "practice": [
+          "Make a paper mock-up, or draw a test plan if materials are unavailable.",
+          "Record one fit problem and one design change. Do not operate fabrication machinery.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Why test a prototype against the brief?",
+          "options": [
+            "To check whether it meets the stated requirements",
+            "To avoid recording defects",
+            "To prove every material is safe"
+          ],
+          "answer": 0,
+          "explanation": "A test should compare the result with requirements and identify needed changes."
+        }
+      }
+    ],
+    "order": 0
+  },
+  {
+    "title": "Video Production and Editing",
+    "focus": "VISUAL",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Plan edits, accessible captions and an appropriate export.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "video-v1-story",
+        "title": "Plan a short story before recording",
+        "objective": "Use a simple storyboard to communicate one clear idea.",
+        "example": "A short educational video works best when it explains one idea. Decide who is watching and what they should understand or be able to do afterwards.",
+        "practice": [
+          "Draw a three-frame storyboard explaining how to organise a study desk.",
+          "Write a sentence describing each shot and its sound.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Create a second storyboard for a different audience. Explain how you changed the sequence, framing or message and why. Use your own or permission-cleared media.",
+        "check": {
+          "question": "What is the main purpose of a storyboard?",
+          "options": [
+            "To plan the shots and message before filming",
+            "To replace consent",
+            "To guarantee good audio"
+          ],
+          "answer": 0,
+          "explanation": "A storyboard helps organise visual storytelling before recording begins."
+        }
+      },
+      {
+        "key": "video-v1-record",
+        "title": "Capture clear picture and sound",
+        "objective": "Identify simple ways to make a recording understandable.",
+        "example": "Use steady framing and suitable light. Avoid placing the main light behind the subject unless that is intentional. Check the screen before recording.",
+        "practice": [
+          "Record a short clip of a non-personal object if you have permission and a suitable device; otherwise write a shot plan.",
+          "Identify one lighting improvement and one sound improvement.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Create a second storyboard for a different audience. Explain how you changed the sequence, framing or message and why. Use your own or permission-cleared media.",
+        "check": {
+          "question": "What should you do before a long recording?",
+          "options": [
+            "Record a short test and check picture and sound",
+            "Ignore background noise",
+            "Film only private information"
+          ],
+          "answer": 0,
+          "explanation": "A test recording can reveal problems early without wasting a full session."
+        }
+      },
+      {
+        "key": "video-v1-edit",
+        "title": "Build a clear sequence and review it",
+        "objective": "Plan edits, accessible captions and an appropriate export.",
+        "example": "Keep clips that support the message and remove unnecessary repetition. The order should help a viewer follow what happens and why.",
+        "practice": [
+          "Write an edit list for your three planned shots, including one caption per shot.",
+          "Create a pre-sharing checklist covering privacy, permission, sound and readability.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Create a second storyboard for a different audience. Explain how you changed the sequence, framing or message and why. Use your own or permission-cleared media.",
+        "check": {
+          "question": "Which addition helps a viewer who cannot hear the audio?",
+          "options": [
+            "Accurate captions",
+            "Smaller text",
+            "Unlabelled colour changes"
+          ],
+          "answer": 0,
+          "explanation": "Captions communicate spoken content and relevant sound information as text."
+        }
+      }
+    ],
+    "order": 0
+  },
+  {
+    "title": "Smart Agriculture and Climate Technology",
+    "focus": "AGRICULTURE",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Plan how to judge whether a proposed change helped.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "agri-v1-observe",
+        "title": "Observe conditions before making decisions",
+        "objective": "Choose useful measurements for a simple growing experiment.",
+        "example": "Water needs depend on the crop, soil, weather and stage of growth. A single sensor reading does not tell you everything a plant needs.",
+        "practice": [
+          "Create a labelled table of three invented daily observations for a potted plant.",
+          "Explain which values are measured and which are estimates.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Apply the idea to a different plant or growing condition. Record a prediction, one safe observation and a limitation. Do not use chemicals or powered tools unsupervised.",
+        "check": {
+          "question": "Which record is most useful?",
+          "options": [
+            "The garden looked fine",
+            "Pot A, 26 October, 100 mL added, surface condition recorded",
+            "Water always fixes every problem"
+          ],
+          "answer": 1,
+          "explanation": "A useful record identifies the item, date, amount and observation."
+        }
+      },
+      {
+        "key": "agri-v1-system",
+        "title": "Draw a simple monitoring system",
+        "objective": "Explain the roles of a sensor, decision rule and human check.",
+        "example": "A soil-moisture sensor measures a property related to moisture. Different sensors need calibration and can be affected by soil and placement.",
+        "practice": [
+          "Draw sensor \u2192 recorded reading \u2192 alert \u2192 human decision.",
+          "Add one failure condition and the safe response. Do not wire a live pump.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Apply the idea to a different plant or growing condition. Record a prediction, one safe observation and a limitation. Do not use chemicals or powered tools unsupervised.",
+        "check": {
+          "question": "A moisture threshold should be\u2026",
+          "options": [
+            "Assumed correct for every crop",
+            "Checked for the specific sensor and growing conditions",
+            "Copied without checking"
+          ],
+          "answer": 1,
+          "explanation": "Thresholds depend on equipment, crop and context and should be tested."
+        }
+      },
+      {
+        "key": "agri-v1-evaluate",
+        "title": "Compare an intervention fairly",
+        "objective": "Plan how to judge whether a proposed change helped.",
+        "example": "Choose an outcome such as plant growth over a period or water used under comparable conditions. Record the starting point before the change.",
+        "practice": [
+          "Propose a small supervised comparison using plants or clearly labelled fictional records.",
+          "Write an evidence-based conclusion that includes one limitation.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Apply the idea to a different plant or growing condition. Record a prediction, one safe observation and a limitation. Do not use chemicals or powered tools unsupervised.",
+        "check": {
+          "question": "Which claim fits a small classroom trial?",
+          "options": [
+            "This guarantees higher yield everywhere",
+            "In these recorded conditions, this outcome was observed",
+            "Climate no longer matters"
+          ],
+          "answer": 1,
+          "explanation": "A conclusion should stay within the conditions and evidence actually observed."
+        }
+      }
+    ],
+    "order": 0
+  },
+  {
+    "title": "Solar Energy Systems Foundations",
+    "focus": "TECHNICAL",
+    "minGrade": 7,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Identify information a qualified installer would need before installation.",
+    "studioRoute": null,
+    "lessons": [
+      {
+        "key": "solar-v1-components",
+        "title": "Follow energy through a solar system",
+        "objective": "Identify the panel, controller, battery, inverter and load.",
+        "example": "A photovoltaic panel produces electrical power when exposed to light. Its output varies with conditions; a rated number is not a promise of constant output.",
+        "practice": [
+          "Draw sunlight \u2192 panel \u2192 controller \u2192 battery \u2192 suitable load; show an inverter only when an AC load requires it.",
+          "Label what each component does without wiring any equipment.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Which component stores energy?",
+          "options": [
+            "Battery",
+            "Sunlight label",
+            "A wire by itself"
+          ],
+          "answer": 0,
+          "explanation": "A battery stores electrical energy through chemical processes; it must be selected and handled appropriately."
+        }
+      },
+      {
+        "key": "solar-v1-energy",
+        "title": "Estimate a small device\u2019s energy use",
+        "objective": "Distinguish power in watts from energy in watt-hours.",
+        "example": "10 W \u00d7 3 h = 30 Wh",
+        "practice": [
+          "Estimate the load energy for a fictional 5 W lamp used for 4 hours. Include units.",
+          "Explain one reason the system must provide more energy than the simple load estimate.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "A 5 W lamp used for 4 hours uses approximately\u2026",
+          "options": [
+            "20 Wh",
+            "20 W per hour",
+            "1.25 Wh"
+          ],
+          "answer": 0,
+          "explanation": "5 W \u00d7 4 h = 20 Wh, before losses in the rest of a system."
+        }
+      },
+      {
+        "key": "solar-v1-safety",
+        "title": "Review a proposal safely",
+        "objective": "Identify information a qualified installer would need before installation.",
+        "example": "List the devices, their power, operating hours and whether they need AC or DC. Note the conditions and limits of the estimate.",
+        "practice": [
+          "Prepare a paper checklist of information to give a qualified installer.",
+          "Identify two reasons not to test a system by directly connecting a panel and battery.",
+          "After a short break, explain your result without reopening the example."
+        ],
+        "transfer": "Change one design constraint and predict the effect. Test a safe paper or software model, record observations and explain the redesign. No mains electricity or unsupervised tools.",
+        "check": {
+          "question": "Who should verify the installation design and protective measures?",
+          "options": [
+            "A learner guessing from a single power calculation",
+            "A qualified installer following applicable requirements",
+            "Anyone with a spare cable"
+          ],
+          "answer": 1,
+          "explanation": "Safe system design and installation require appropriate expertise and applicable standards."
+        }
+      }
+    ],
+    "order": 2
+  },
+  {
+    "title": "Music Production Foundations",
+    "focus": "MUSIC",
+    "minGrade": 10,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Create and revise a 30\u201360 second original instrumental track.",
+    "studioRoute": "/student/labs/music",
+    "richLessons": [
+      {
+        "key": "music-v1-pulse",
+        "title": "Pulse, tempo and bars",
+        "type": "GUIDED",
+        "description": "Keep an even pulse and build a four-bar phrase.",
+        "minutes": 25,
+        "objective": "Keep an even pulse and build a four-bar phrase.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "A pulse is the regular beat you tap along to; rhythm is the pattern of sounds and silences over it. Tempo describes the pulse in beats per minute. In 4/4, count four beats per bar. Four bars contain sixteen beats, regardless of how many notes you add. Start slowly enough to hear uneven spacing."
+          },
+          {
+            "title": "Worked example",
+            "text": "At 80 BPM one beat lasts 0.75 seconds, so four bars of 4/4 last 12 seconds. Clap on beats 1 and 3, leaving beats 2 and 4 silent. Then clap on every beat. The pulse stays the same while the rhythm changes."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Open Drums, set 4/4 at 80 BPM and clap sixteen steady beats.",
+            "Create four bars with a clear first beat and some deliberate rests.",
+            "Listen twice. Count the bars without looking, then save your pattern."
+          ]
+        },
+        "check": {
+          "question": "What changes when tempo rises from 80 to 100 BPM?",
+          "options": [
+            "The number of beats in a 4/4 bar",
+            "The speed of the pulse",
+            "The pitch of every note",
+            "The number of tracks"
+          ],
+          "answer": 1,
+          "explanation": "Tempo changes the speed of the beat; the meter and note pitches can stay the same."
+        },
+        "transfer": "Without copying the pattern, rebuild it at 100 BPM and add a different rhythm. Explain what changed and what stayed constant.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "music-v1-groove",
+        "title": "Build a groove with space",
+        "type": "GUIDED",
+        "description": "Create contrasting drum patterns without filling every step.",
+        "minutes": 25,
+        "objective": "Create contrasting drum patterns without filling every step.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "A useful groove gives the listener both repetition and something to anticipate. Begin with a low drum on strong beats, add a contrasting response, then leave space. Syncopation can place an accent between strong beats. It does not mean randomly shifting every hit. Kenyan traditions have distinct histories; a classroom pattern is a technique study, not a claim to reproduce an authentic community performance."
+          },
+          {
+            "title": "Worked example",
+            "text": "On a sixteen-step 4/4 grid, quarter-note beats begin at steps 1, 5, 9 and 13. Place a low hit at 1 and 9 and a contrasting hit at 5 and 13. Add a quiet hit at 12. Compare the groove with that quiet hit muted."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Build the sparse pattern before adding extra hits.",
+            "Make a second version with one off-beat accent and different velocities.",
+            "Save both versions and explain which leaves more room for a melody."
+          ]
+        },
+        "check": {
+          "question": "What is the clearest way to test the effect of an extra drum hit?",
+          "options": [
+            "Change tempo, meter and instruments together",
+            "Turn up every track",
+            "Compare the same loop with that hit on and off",
+            "Remove all rests"
+          ],
+          "answer": 2,
+          "explanation": "Holding other settings constant lets you hear the contribution of the one change."
+        },
+        "transfer": "Create a new response rhythm using different steps. Ask a listener to tap the pulse; note any point where the pulse became unclear.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "music-v1-melody",
+        "title": "Write a memorable melody",
+        "type": "GUIDED",
+        "description": "Use repetition and small variations to create an original phrase.",
+        "minutes": 25,
+        "objective": "Use repetition and small variations to create an original phrase.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "Pitch is how high or low a note sounds. A motif is a short musical idea that can return in a phrase. Try a small note range and a clear rhythmic shape before adding more notes. A rest can help a phrase feel finished. Use your own melody or a public-domain study; do not assume a commercial song is free to copy or publish."
+          },
+          {
+            "title": "Worked example",
+            "text": "In C major, try your own four-note motif using C, D, E and G. Repeat its rhythm in bar two, changing just the last note. Leave a beat of silence before the next phrase. Compare a version ending on C with one ending on D."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Open Piano roll and write a two-bar original motif.",
+            "Repeat the motif in a second phrase, changing one ending.",
+            "Listen without the drums, then with the groove; save the melody."
+          ]
+        },
+        "check": {
+          "question": "Which is an example of developing a motif?",
+          "options": [
+            "Repeating its rhythm with one changed ending",
+            "Adding every note available",
+            "Only increasing volume",
+            "Removing all repeated ideas"
+          ],
+          "answer": 0,
+          "explanation": "A recognisable idea can develop through a small, intentional change."
+        },
+        "transfer": "Close your first pattern. Write a new four-bar melody with a different rhythm but the same note range. Describe why the new ending feels settled or unfinished.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "music-v1-harmony",
+        "title": "Match chords and melody",
+        "type": "GUIDED",
+        "description": "Hear how a chord supports a melody rather than competing with it.",
+        "minutes": 25,
+        "objective": "Hear how a chord supports a melody rather than competing with it.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "A chord combines pitches; a major triad contains a root, third and fifth. In C major, C\u2013E\u2013G forms a C major triad. Chord tones are useful stable points in a melody, although passing notes can move between them. First match the musical key and listen slowly. A note that clashes may be a deliberate tension, but you should be able to explain the choice."
+          },
+          {
+            "title": "Worked example",
+            "text": "Hold C\u2013E\u2013G under a melody that moves E\u2013D\u2013C. E and C are chord tones; D briefly passes between them. Now hold F\u2013A\u2013C and compare the same melody. Describe what your ear notices instead of judging by loudness."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Use Guitar or Piano to make a simple repeating chord part.",
+            "Compare the melody over two chord choices, keeping tempo unchanged.",
+            "Choose one combination and save a short note explaining the decision."
+          ]
+        },
+        "check": {
+          "question": "Which notes make a C major triad?",
+          "options": [
+            "C\u2013D\u2013E",
+            "C\u2013E\u2013G",
+            "C\u2013F\u2013B",
+            "D\u2013F\u2013A"
+          ],
+          "answer": 1,
+          "explanation": "The root, third and fifth in C major are C, E and G."
+        },
+        "transfer": "Make a new melody over your chosen chord part. Identify one stable note and one passing note in the new version.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "music-v1-arrangement",
+        "title": "Turn a loop into a track",
+        "type": "GUIDED",
+        "description": "Arrange an introduction, a main section and an ending.",
+        "minutes": 25,
+        "objective": "Arrange an introduction, a main section and an ending.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "An arrangement decides when musical parts enter, repeat, change and stop. A loop can sound flat if every instrument plays continuously. Create contrast through entrances, rests and instrument density, rather than just turning everything up. Start with a small, repeatable structure you can explain."
+          },
+          {
+            "title": "Worked example",
+            "text": "Try a twelve-bar sketch: four bars of introduction, four bars of full groove, then four bars with one part removed and a clear ending. Keep the same tempo. Listen for a difference in energy at the section boundaries."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Bring a saved drum, guitar and piano part into Master Beat.",
+            "Arrange at least three clearly labelled sections with a planned entrance or rest.",
+            "Listen from start to finish and save or back up the project."
+          ]
+        },
+        "check": {
+          "question": "What makes an arrangement different from a single repeated loop?",
+          "options": [
+            "A higher master volume",
+            "A longer file name",
+            "Intentional changes in entrances, sections and texture",
+            "A faster download"
+          ],
+          "answer": 2,
+          "explanation": "Arrangement shapes the listener\u2019s experience over time through musical structure."
+        },
+        "transfer": "Rearrange the same parts into a different order without changing the notes. Explain how the story or energy changed.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "music-v1-project",
+        "title": "Mix, export and explain",
+        "type": "GUIDED",
+        "description": "Produce an original short track and evaluate it against a brief.",
+        "minutes": 25,
+        "objective": "Produce an original short track and evaluate it against a brief.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "Mixing balances parts so important details remain audible. Mute tracks to find conflicts, lower a competing part and avoid clipping. Keep headphone levels comfortable. Export a version, listen away from the editor and keep the project backup. Completion means you can explain your decisions; it is not a professional production qualification."
+          },
+          {
+            "title": "Worked example",
+            "text": "Brief: create a 30\u201360 second original track with a clear pulse, a memorable motif and at least two contrasting sections. At the same listening volume, compare two mixes. Ask whether the melody stays audible and the ending feels intentional."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Make a track that meets the brief using drums, melody and a chord or bass part.",
+            "Export the track and keep your editable project or JSON backup.",
+            "Ask a listener for one specific comment, revise once and compare the two versions."
+          ]
+        },
+        "check": {
+          "question": "Which is the strongest evidence that you can transfer the skill?",
+          "options": [
+            "Playing a louder commercial recording",
+            "Creating a new track for a different brief and explaining your decisions",
+            "Clicking through each page",
+            "Renaming the original export"
+          ],
+          "answer": 1,
+          "explanation": "A new brief requires you to use what you learned beyond the worked example."
+        },
+        "transfer": "Return after at least one day. Make a second short track for a different mood without copying your first arrangement. Record two decisions that transferred to the new track.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      }
+    ],
+    "lessons": [
+      {
+        "key": "music-v1-pulse",
+        "title": "Pulse, tempo and bars",
+        "objective": "Keep an even pulse and build a four-bar phrase.",
+        "example": "At 80 BPM one beat lasts 0.75 seconds, so four bars of 4/4 last 12 seconds. Clap on beats 1 and 3, leaving beats 2 and 4 silent. Then clap on every beat. The pulse stays the same while the rhythm changes.",
+        "practice": [
+          "Open Drums, set 4/4 at 80 BPM and clap sixteen steady beats.",
+          "Create four bars with a clear first beat and some deliberate rests.",
+          "Listen twice. Count the bars without looking, then save your pattern."
+        ],
+        "transfer": "Without copying the pattern, rebuild it at 100 BPM and add a different rhythm. Explain what changed and what stayed constant.",
+        "check": {
+          "question": "What changes when tempo rises from 80 to 100 BPM?",
+          "options": [
+            "The number of beats in a 4/4 bar",
+            "The speed of the pulse",
+            "The pitch of every note",
+            "The number of tracks"
+          ],
+          "answer": 1,
+          "explanation": "Tempo changes the speed of the beat; the meter and note pitches can stay the same."
+        }
+      },
+      {
+        "key": "music-v1-groove",
+        "title": "Build a groove with space",
+        "objective": "Create contrasting drum patterns without filling every step.",
+        "example": "On a sixteen-step 4/4 grid, quarter-note beats begin at steps 1, 5, 9 and 13. Place a low hit at 1 and 9 and a contrasting hit at 5 and 13. Add a quiet hit at 12. Compare the groove with that quiet hit muted.",
+        "practice": [
+          "Build the sparse pattern before adding extra hits.",
+          "Make a second version with one off-beat accent and different velocities.",
+          "Save both versions and explain which leaves more room for a melody."
+        ],
+        "transfer": "Create a new response rhythm using different steps. Ask a listener to tap the pulse; note any point where the pulse became unclear.",
+        "check": {
+          "question": "What is the clearest way to test the effect of an extra drum hit?",
+          "options": [
+            "Change tempo, meter and instruments together",
+            "Turn up every track",
+            "Compare the same loop with that hit on and off",
+            "Remove all rests"
+          ],
+          "answer": 2,
+          "explanation": "Holding other settings constant lets you hear the contribution of the one change."
+        }
+      },
+      {
+        "key": "music-v1-melody",
+        "title": "Write a memorable melody",
+        "objective": "Use repetition and small variations to create an original phrase.",
+        "example": "In C major, try your own four-note motif using C, D, E and G. Repeat its rhythm in bar two, changing just the last note. Leave a beat of silence before the next phrase. Compare a version ending on C with one ending on D.",
+        "practice": [
+          "Open Piano roll and write a two-bar original motif.",
+          "Repeat the motif in a second phrase, changing one ending.",
+          "Listen without the drums, then with the groove; save the melody."
+        ],
+        "transfer": "Close your first pattern. Write a new four-bar melody with a different rhythm but the same note range. Describe why the new ending feels settled or unfinished.",
+        "check": {
+          "question": "Which is an example of developing a motif?",
+          "options": [
+            "Repeating its rhythm with one changed ending",
+            "Adding every note available",
+            "Only increasing volume",
+            "Removing all repeated ideas"
+          ],
+          "answer": 0,
+          "explanation": "A recognisable idea can develop through a small, intentional change."
+        }
+      },
+      {
+        "key": "music-v1-harmony",
+        "title": "Match chords and melody",
+        "objective": "Hear how a chord supports a melody rather than competing with it.",
+        "example": "Hold C\u2013E\u2013G under a melody that moves E\u2013D\u2013C. E and C are chord tones; D briefly passes between them. Now hold F\u2013A\u2013C and compare the same melody. Describe what your ear notices instead of judging by loudness.",
+        "practice": [
+          "Use Guitar or Piano to make a simple repeating chord part.",
+          "Compare the melody over two chord choices, keeping tempo unchanged.",
+          "Choose one combination and save a short note explaining the decision."
+        ],
+        "transfer": "Make a new melody over your chosen chord part. Identify one stable note and one passing note in the new version.",
+        "check": {
+          "question": "Which notes make a C major triad?",
+          "options": [
+            "C\u2013D\u2013E",
+            "C\u2013E\u2013G",
+            "C\u2013F\u2013B",
+            "D\u2013F\u2013A"
+          ],
+          "answer": 1,
+          "explanation": "The root, third and fifth in C major are C, E and G."
+        }
+      },
+      {
+        "key": "music-v1-arrangement",
+        "title": "Turn a loop into a track",
+        "objective": "Arrange an introduction, a main section and an ending.",
+        "example": "Try a twelve-bar sketch: four bars of introduction, four bars of full groove, then four bars with one part removed and a clear ending. Keep the same tempo. Listen for a difference in energy at the section boundaries.",
+        "practice": [
+          "Bring a saved drum, guitar and piano part into Master Beat.",
+          "Arrange at least three clearly labelled sections with a planned entrance or rest.",
+          "Listen from start to finish and save or back up the project."
+        ],
+        "transfer": "Rearrange the same parts into a different order without changing the notes. Explain how the story or energy changed.",
+        "check": {
+          "question": "What makes an arrangement different from a single repeated loop?",
+          "options": [
+            "A higher master volume",
+            "A longer file name",
+            "Intentional changes in entrances, sections and texture",
+            "A faster download"
+          ],
+          "answer": 2,
+          "explanation": "Arrangement shapes the listener\u2019s experience over time through musical structure."
+        }
+      },
+      {
+        "key": "music-v1-project",
+        "title": "Mix, export and explain",
+        "objective": "Produce an original short track and evaluate it against a brief.",
+        "example": "Brief: create a 30\u201360 second original track with a clear pulse, a memorable motif and at least two contrasting sections. At the same listening volume, compare two mixes. Ask whether the melody stays audible and the ending feels intentional.",
+        "practice": [
+          "Make a track that meets the brief using drums, melody and a chord or bass part.",
+          "Export the track and keep your editable project or JSON backup.",
+          "Ask a listener for one specific comment, revise once and compare the two versions."
+        ],
+        "transfer": "Return after at least one day. Make a second short track for a different mood without copying your first arrangement. Record two decisions that transferred to the new track.",
+        "check": {
+          "question": "Which is the strongest evidence that you can transfer the skill?",
+          "options": [
+            "Playing a louder commercial recording",
+            "Creating a new track for a different brief and explaining your decisions",
+            "Clicking through each page",
+            "Renaming the original export"
+          ],
+          "answer": 1,
+          "explanation": "A new brief requires you to use what you learned beyond the worked example."
+        }
+      }
+    ],
+    "order": 0
+  },
+  {
+    "title": "Songwriting & Arrangement",
+    "focus": "MUSIC",
+    "minGrade": 10,
+    "maxGrade": 12,
+    "version": "focused-v1",
+    "project": "Create and revise a 45\u201390 second original song or instrumental story.",
+    "studioRoute": "/student/labs/music",
+    "richLessons": [
+      {
+        "key": "song-v1-hook",
+        "title": "Find your hook",
+        "type": "GUIDED",
+        "description": "Create an original hook that fits a clear musical brief.",
+        "minutes": 25,
+        "objective": "Create an original hook that fits a clear musical brief.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "A hook is an idea a listener remembers. It can be rhythmic, melodic or lyrical. Start with one idea rather than a full song. A good brief names an audience, mood and approximate length. Use original words and notes, not a copied commercial chorus."
+          },
+          {
+            "title": "Worked example",
+            "text": "Brief: a short school-club theme that feels welcoming. Try a four-note melody, repeat its rhythm and leave room for a response. Ask a listener which fragment they remember after a minute."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Write a one-sentence audience and mood brief.",
+            "Create two short hooks in Piano roll and compare them at the same tempo.",
+            "Choose one and record why it suits the brief."
+          ]
+        },
+        "check": {
+          "question": "Which brief gives the most useful direction?",
+          "options": [
+            "Make anything popular",
+            "Copy a famous chorus",
+            "A welcoming 20-second school-club theme",
+            "Use the most notes"
+          ],
+          "answer": 2,
+          "explanation": "An audience, mood and length give decisions a purpose."
+        },
+        "transfer": "Write a new hook for a different audience using a different rhythm. Explain which decisions changed.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "song-v1-words",
+        "title": "Fit words to rhythm",
+        "type": "GUIDED",
+        "description": "Place natural word stresses over a steady musical pulse.",
+        "minutes": 25,
+        "objective": "Place natural word stresses over a steady musical pulse.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "Lyrics have spoken stresses and syllables. Say a short original line aloud before singing it. Fit important words to deliberate accents, while allowing space to breathe. A lyric can be in a language you know well; ask a fluent speaker for help if the phrasing is unfamiliar. Avoid publishing private stories or other people\u2019s words without permission."
+          },
+          {
+            "title": "Worked example",
+            "text": "Write an original line about a familiar place. Tap four beats and speak the line in two different rhythms. Listen for where the important word lands. Shorten a phrase if you need to rush it."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Write two original lines with a clear theme.",
+            "Speak each line over a slow beat and mark the stressed syllables.",
+            "Try two rhythmic placements and keep the one that feels natural."
+          ]
+        },
+        "check": {
+          "question": "What should you check before forcing a lyric into a beat?",
+          "options": [
+            "Natural syllable stress and room to breathe",
+            "How many plugins are open",
+            "The export file size",
+            "Whether every beat has a word"
+          ],
+          "answer": 0,
+          "explanation": "Natural stress and breathing space help words stay clear and singable."
+        },
+        "transfer": "Replace one line with new words while keeping the rhythm. Explain which syllables needed adjustment.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "song-v1-chords",
+        "title": "Choose supporting harmony",
+        "type": "GUIDED",
+        "description": "Compare two simple chord choices under the same hook.",
+        "minutes": 25,
+        "objective": "Compare two simple chord choices under the same hook.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "Harmony supports a song\u2019s direction. Use a small set of chords you understand, and keep the melody audible. A progression does not become effective just because it contains many chords. Use listening and a clear reason to choose between versions."
+          },
+          {
+            "title": "Worked example",
+            "text": "Try C major and F major under the same original hook. Keep tempo, instrument and volume unchanged. Describe which ending feels more settled. Note a place where the melody and chord tones align."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Build two chord versions in Guitar or Piano.",
+            "Compare the same hook over each version.",
+            "Save the chosen version and explain one stable note and one point of tension."
+          ]
+        },
+        "check": {
+          "question": "Why keep volume unchanged when comparing chords?",
+          "options": [
+            "It makes all chords identical",
+            "It helps you judge harmony without loudness bias",
+            "It changes the time signature",
+            "It removes the need to listen"
+          ],
+          "answer": 1,
+          "explanation": "Louder sound can feel preferable even when the harmony has not improved."
+        },
+        "transfer": "Write a different hook over the selected progression and test whether the same chord choice still works.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "song-v1-form",
+        "title": "Shape verse and chorus",
+        "type": "GUIDED",
+        "description": "Use contrast and repetition to organise a short song.",
+        "minutes": 25,
+        "objective": "Use contrast and repetition to organise a short song.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "A verse can develop an idea while a chorus returns to the central hook. These are useful structures, not rules for every tradition. Create a section map before recording. Contrast can come from rhythm, melody, lyrics or instrumentation. Do not label a random change as a new section without listening to the effect."
+          },
+          {
+            "title": "Worked example",
+            "text": "Plan introduction \u2192 verse \u2192 chorus \u2192 ending. Keep the chorus hook recognisable. Try removing the drums for part of the verse, then bring them back for the chorus. Compare the energy at the transition."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Draw a section map in your workbook.",
+            "Arrange the sections in Master Beat with a clear contrast.",
+            "Count the bars and revise one transition that feels abrupt."
+          ]
+        },
+        "check": {
+          "question": "What is a useful reason to repeat a chorus?",
+          "options": [
+            "To keep the central hook recognisable",
+            "To avoid making any decisions",
+            "To hide every other part",
+            "To increase the file size"
+          ],
+          "answer": 0,
+          "explanation": "Repetition can create recognition when it serves the song\u2019s central idea."
+        },
+        "transfer": "Rebuild the song with a different introduction and ending. Explain whether the central hook still feels recognisable.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "song-v1-record",
+        "title": "Record a clear vocal",
+        "type": "GUIDED",
+        "description": "Record and compare two intentional vocal takes.",
+        "minutes": 25,
+        "objective": "Record and compare two intentional vocal takes.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "A good take starts with a comfortable voice, a quiet space and a useful recording level. Use headphones to prevent backing-track bleed. Test a short phrase before recording a full take. Never strain your voice or record someone without permission. Recording features vary by browser; upload an owned recording if microphone capture is unavailable."
+          },
+          {
+            "title": "Worked example",
+            "text": "Record the same phrase twice at a consistent distance from the microphone. Compare clarity, timing and background noise. Choose by the brief, not by which waveform looks largest."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Open Master Beat \u2192 Vocals and record or upload your own short vocal.",
+            "Compare two takes using the same backing and listening volume.",
+            "Choose one take, align its start and save a local backup."
+          ]
+        },
+        "check": {
+          "question": "What reduces backing-track bleed into a microphone?",
+          "options": [
+            "Louder speakers",
+            "Headphones at a comfortable level",
+            "More microphone distance in every case",
+            "Maximum recording gain"
+          ],
+          "answer": 1,
+          "explanation": "Headphones keep most of the backing out of the microphone; safe listening levels still matter."
+        },
+        "transfer": "Record a different line on another day. Explain one change that improved clarity or timing.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      },
+      {
+        "key": "song-v1-project",
+        "title": "Finish your original song",
+        "type": "GUIDED",
+        "description": "Export a short song and explain how you improved it.",
+        "minutes": 25,
+        "objective": "Export a short song and explain how you improved it.",
+        "sections": [
+          {
+            "title": "Understand",
+            "text": "A finished classroom song needs a clear beginning, a recognisable idea and an intentional ending. Balance voice and instruments, check for clipping and listen to the export on another device if available. Keep your editable project and recordings. Only share work you own or have permission to use."
+          },
+          {
+            "title": "Worked example",
+            "text": "Brief: create a 45\u201390 second original song with a hook, contrasting sections and your own vocal or instrumental lead. Ask one listener whether the words or lead are clear. Revise a specific problem rather than adding effects at random."
+          },
+          {
+            "title": "Why this matters",
+            "text": "Listen before changing a setting. Predict what your change will do, test just that change, then compare the result. Write down what improved and what still needs work; a louder mix is not automatically a better one."
+          }
+        ],
+        "activity": {
+          "title": "Make it in Music Studio",
+          "steps": [
+            "Combine your own beat, hook and vocal or instrumental lead.",
+            "Export a first version, get one specific piece of feedback and revise.",
+            "Keep the export, project backup and a short explanation of three decisions."
+          ]
+        },
+        "check": {
+          "question": "Which is the most useful revision note?",
+          "options": [
+            "Make it professional",
+            "Fix everything",
+            "Lower the guitar in the verse so the words stay audible",
+            "Add more effects"
+          ],
+          "answer": 2,
+          "explanation": "A specific observation leads to a testable change and a clearer comparison."
+        },
+        "transfer": "After a day, create a new opening for a different audience. Explain what you reused as a principle, not as copied notes or words.",
+        "sources": [
+          {
+            "title": "Open Music Theory",
+            "url": "https://viva.pressbooks.pub/openmusictheory/"
+          }
+        ]
+      }
+    ],
+    "lessons": [
+      {
+        "key": "song-v1-hook",
+        "title": "Find your hook",
+        "objective": "Create an original hook that fits a clear musical brief.",
+        "example": "Brief: a short school-club theme that feels welcoming. Try a four-note melody, repeat its rhythm and leave room for a response. Ask a listener which fragment they remember after a minute.",
+        "practice": [
+          "Write a one-sentence audience and mood brief.",
+          "Create two short hooks in Piano roll and compare them at the same tempo.",
+          "Choose one and record why it suits the brief."
+        ],
+        "transfer": "Write a new hook for a different audience using a different rhythm. Explain which decisions changed.",
+        "check": {
+          "question": "Which brief gives the most useful direction?",
+          "options": [
+            "Make anything popular",
+            "Copy a famous chorus",
+            "A welcoming 20-second school-club theme",
+            "Use the most notes"
+          ],
+          "answer": 2,
+          "explanation": "An audience, mood and length give decisions a purpose."
+        }
+      },
+      {
+        "key": "song-v1-words",
+        "title": "Fit words to rhythm",
+        "objective": "Place natural word stresses over a steady musical pulse.",
+        "example": "Write an original line about a familiar place. Tap four beats and speak the line in two different rhythms. Listen for where the important word lands. Shorten a phrase if you need to rush it.",
+        "practice": [
+          "Write two original lines with a clear theme.",
+          "Speak each line over a slow beat and mark the stressed syllables.",
+          "Try two rhythmic placements and keep the one that feels natural."
+        ],
+        "transfer": "Replace one line with new words while keeping the rhythm. Explain which syllables needed adjustment.",
+        "check": {
+          "question": "What should you check before forcing a lyric into a beat?",
+          "options": [
+            "Natural syllable stress and room to breathe",
+            "How many plugins are open",
+            "The export file size",
+            "Whether every beat has a word"
+          ],
+          "answer": 0,
+          "explanation": "Natural stress and breathing space help words stay clear and singable."
+        }
+      },
+      {
+        "key": "song-v1-chords",
+        "title": "Choose supporting harmony",
+        "objective": "Compare two simple chord choices under the same hook.",
+        "example": "Try C major and F major under the same original hook. Keep tempo, instrument and volume unchanged. Describe which ending feels more settled. Note a place where the melody and chord tones align.",
+        "practice": [
+          "Build two chord versions in Guitar or Piano.",
+          "Compare the same hook over each version.",
+          "Save the chosen version and explain one stable note and one point of tension."
+        ],
+        "transfer": "Write a different hook over the selected progression and test whether the same chord choice still works.",
+        "check": {
+          "question": "Why keep volume unchanged when comparing chords?",
+          "options": [
+            "It makes all chords identical",
+            "It helps you judge harmony without loudness bias",
+            "It changes the time signature",
+            "It removes the need to listen"
+          ],
+          "answer": 1,
+          "explanation": "Louder sound can feel preferable even when the harmony has not improved."
+        }
+      },
+      {
+        "key": "song-v1-form",
+        "title": "Shape verse and chorus",
+        "objective": "Use contrast and repetition to organise a short song.",
+        "example": "Plan introduction \u2192 verse \u2192 chorus \u2192 ending. Keep the chorus hook recognisable. Try removing the drums for part of the verse, then bring them back for the chorus. Compare the energy at the transition.",
+        "practice": [
+          "Draw a section map in your workbook.",
+          "Arrange the sections in Master Beat with a clear contrast.",
+          "Count the bars and revise one transition that feels abrupt."
+        ],
+        "transfer": "Rebuild the song with a different introduction and ending. Explain whether the central hook still feels recognisable.",
+        "check": {
+          "question": "What is a useful reason to repeat a chorus?",
+          "options": [
+            "To keep the central hook recognisable",
+            "To avoid making any decisions",
+            "To hide every other part",
+            "To increase the file size"
+          ],
+          "answer": 0,
+          "explanation": "Repetition can create recognition when it serves the song\u2019s central idea."
+        }
+      },
+      {
+        "key": "song-v1-record",
+        "title": "Record a clear vocal",
+        "objective": "Record and compare two intentional vocal takes.",
+        "example": "Record the same phrase twice at a consistent distance from the microphone. Compare clarity, timing and background noise. Choose by the brief, not by which waveform looks largest.",
+        "practice": [
+          "Open Master Beat \u2192 Vocals and record or upload your own short vocal.",
+          "Compare two takes using the same backing and listening volume.",
+          "Choose one take, align its start and save a local backup."
+        ],
+        "transfer": "Record a different line on another day. Explain one change that improved clarity or timing.",
+        "check": {
+          "question": "What reduces backing-track bleed into a microphone?",
+          "options": [
+            "Louder speakers",
+            "Headphones at a comfortable level",
+            "More microphone distance in every case",
+            "Maximum recording gain"
+          ],
+          "answer": 1,
+          "explanation": "Headphones keep most of the backing out of the microphone; safe listening levels still matter."
+        }
+      },
+      {
+        "key": "song-v1-project",
+        "title": "Finish your original song",
+        "objective": "Export a short song and explain how you improved it.",
+        "example": "Brief: create a 45\u201390 second original song with a hook, contrasting sections and your own vocal or instrumental lead. Ask one listener whether the words or lead are clear. Revise a specific problem rather than adding effects at random.",
+        "practice": [
+          "Combine your own beat, hook and vocal or instrumental lead.",
+          "Export a first version, get one specific piece of feedback and revise.",
+          "Keep the export, project backup and a short explanation of three decisions."
+        ],
+        "transfer": "After a day, create a new opening for a different audience. Explain what you reused as a principle, not as copied notes or words.",
+        "check": {
+          "question": "Which is the most useful revision note?",
+          "options": [
+            "Make it professional",
+            "Fix everything",
+            "Lower the guitar in the verse so the words stay audible",
+            "Add more effects"
+          ],
+          "answer": 2,
+          "explanation": "A specific observation leads to a testable change and a clearer comparison."
+        }
+      }
+    ],
+    "order": 1
+  }
+]

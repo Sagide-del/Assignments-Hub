@@ -35,6 +35,7 @@ export function scopeRoute(c: string, h: string): string | null {
       courses: "skills",
       course: "skill",
       courseProgress: "skill",
+      workbook: "skill",
       completeLesson: "skill",
       enroll: "skill",
       studentEnrollments: "enrollments",

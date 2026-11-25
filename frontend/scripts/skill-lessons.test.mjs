@@ -7,8 +7,8 @@ const { learningPacks } = await loadTypeScript(new URL('../src/features/student/
 const { courseLessons, summarizeSkillProgress, workspaceModeForCourse } = await loadTypeScript(new URL('../src/features/student/skill-workspace/workspace-mode.ts', import.meta.url));
 const { checkPractice, applyRobotCommands, cleanOutput, draftKey, explainPythonError } = await loadTypeScript(new URL('../src/features/student/skill-workspace/workspace-tools.ts', import.meta.url));
 
-test('all ten programmes contain distinct lessons, activities and explained checks', () => {
- assert.equal(learningPacks.length, 10);
+test('all twelve programmes contain distinct lessons, activities and explained checks', () => {
+ assert.equal(learningPacks.length, 12);
  const keys = new Set();
  for (const pack of learningPacks) {
   assert.ok(pack.lessons.length >= 3);
@@ -22,7 +22,7 @@ test('all ten programmes contain distinct lessons, activities and explained chec
    if (lesson.image) assert.ok(existsSync(new URL('../public' + lesson.image.src, import.meta.url)));
   }
  }
- assert.equal(keys.size, 40);
+ assert.equal(keys.size, 52);
 });
 
 test('expanded paths do not reinterpret old outline completions as new lessons', () => {
