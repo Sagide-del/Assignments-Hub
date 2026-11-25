@@ -1,0 +1,35 @@
+{
+  "schoolCode": "REPORTDEMO",
+  "schoolName": "Assignment Hub Report Book Demo",
+  "provisionUntil": "2026-12-02T23:59:59Z",
+  "accounts": [
+    {
+      "key": "admin",
+      "name": "Report Book Demo Admin",
+      "email": "report.admin@demo.assignmenthub.co.ke",
+      "role": "SCHOOL_ADMIN",
+      "passwordHash": "$2b$12$46DLNOT8thETRMCeOZQtRuAdhBesog3usn3Ko.BkAOKMLwu3Hd1Ym"
+    },
+    {
+      "key": "math",
+      "name": "Ms Amina · Demo Class Teacher",
+      "email": "report.math@demo.assignmenthub.co.ke",
+      "role": "TEACHER",
+      "passwordHash": "$2b$12$mP8hXdE6rO9IMAwmbLjeq.tEBVjTmkngpjDllX8h/hs0zrvbeQ1dy"
+    },
+    {
+      "key": "science",
+      "name": "Mr Baraka · Demo Science Teacher",
+      "email": "report.science@demo.assignmenthub.co.ke",
+      "role": "TEACHER",
+      "passwordHash": "$2b$12$N4Qihs7u5pcHKdEINuo4kuCitmxN0lWcbC3ZadgPmTJkZOXIghcm6"
+    },
+    {
+      "key": "english",
+      "name": "Ms Zuri · Demo English Teacher",
+      "email": "report.english@demo.assignmenthub.co.ke",
+      "role": "TEACHER",
+      "passwordHash": "$2b$12$OylTRSDPXGTNtpjvEU2vg.o3jupvz9bDlCt2F9KfvHZrmj6AHPK/u"
+    }
+  ]
+}

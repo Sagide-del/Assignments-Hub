@@ -318,27 +318,33 @@ enum InstitutionType {
 }
 
 model School {
-  weeklyTimetables   Study_Timetable[]
-  studySchedules     Study_School_Schedule[]
-  cslLogbook         CSL_Logbook[]
-  externalMocks      ExternalMock_Record[]
-  sbaProjections     SBA_Projection[]
-  sbaRecords         SBA_Record[]
-  streams            Stream[]
-  paymentLedger      Payment[]
-  kjseaMockAttempts  KjseaMockAttempt[]
-  id                 Int                     @id @default(autoincrement())
-  name               String
-  code               String                  @unique // short code students use to log in, e.g. "GHSCH"
-  logoUrl            String? // NOT @map'd — matches the original unmapped "logoUrl" column from the initial migration.
-  address            String?
-  phone              String?
-  contactEmail       String?                 @map("contact_email")
-  subscriptionStatus SubscriptionStatus      @default(TRIAL)
-  type               SchoolType              @default(DAY) @map("school_type")
-  themeTemplate      SchoolThemeTemplate     @default(ACADEMIC_NAVY) @map("theme_template")
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
+  reportBookClassTeachers ClassTeacherAssignment[]
+  reportBookPolicies      ReportBookPolicy[]
+  reportBookPeriods       ReportBookPeriod[]
+  reportBookMarks         Assessment_Record[]
+  reportBookCards         Report_Card[]
+  reportBookChanges       ReportBookChange[]
+  weeklyTimetables        Study_Timetable[]
+  studySchedules          Study_School_Schedule[]
+  cslLogbook              CSL_Logbook[]
+  externalMocks           ExternalMock_Record[]
+  sbaProjections          SBA_Projection[]
+  sbaRecords              SBA_Record[]
+  streams                 Stream[]
+  paymentLedger           Payment[]
+  kjseaMockAttempts       KjseaMockAttempt[]
+  id                      Int                      @id @default(autoincrement())
+  name                    String
+  code                    String                   @unique // short code students use to log in, e.g. "GHSCH"
+  logoUrl                 String? // NOT @map'd — matches the original unmapped "logoUrl" column from the initial migration.
+  address                 String?
+  phone                   String?
+  contactEmail            String?                  @map("contact_email")
+  subscriptionStatus      SubscriptionStatus       @default(TRIAL)
+  type                    SchoolType               @default(DAY) @map("school_type")
+  themeTemplate           SchoolThemeTemplate      @default(ACADEMIC_NAVY) @map("theme_template")
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   users                     User[]
   assignments               Assignment[]
@@ -383,9 +389,12 @@ model School {
 }
 
 model User {
+  reportBookClasses       ClassTeacherAssignment[] @relation("ReportBookClassTeacher")
+  reportBookMarks         Assessment_Record[]      @relation("ReportBookStudentMarks")
+  reportBookCards         Report_Card[]            @relation("ReportBookStudentCards")
   sportsLabProgress       Sports_Lab_Progress[]
-  musicProductionProjects Music_Project[]        @relation("MusicComposer")
-  musicProductionReviews  Music_Project[]        @relation("MusicReviewer")
+  musicProductionProjects Music_Project[]          @relation("MusicComposer")
+  musicProductionReviews  Music_Project[]          @relation("MusicReviewer")
   musicProjects           Music_Studio_Project[]
   kjseaResult             Student_KJSEA_Result?
 
@@ -3003,12 +3012,14 @@ model MpesaRawCallbackEvent {
 }
 
 model Stream {
-  id          String              @id @default(uuid())
-  school_id   Int
-  school      School              @relation(fields: [school_id], references: [id], onDelete: Cascade)
-  grade       String
-  name        String
-  assignments TeacherAssignment[]
+  classTeachers ClassTeacherAssignment[]
+  reportPeriods ReportBookPeriod[]
+  id            String                   @id @default(uuid())
+  school_id     Int
+  school        School                   @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  grade         String
+  name          String
+  assignments   TeacherAssignment[]
 
   @@unique([id, school_id])
   @@unique([school_id, grade, name])
@@ -3303,4 +3314,132 @@ model IndependentIntasendPayment {
   @@index([studentId, status])
   @@index([status, updatedAt])
   @@map("independent_intasend_payments")
+}
+
+model ClassTeacherAssignment {
+  id         String @id @default(uuid())
+  teacher_id Int
+  school_id  Int
+  stream_id  String @unique
+  teacher    User   @relation("ReportBookClassTeacher", fields: [teacher_id, school_id], references: [id, schoolId], onDelete: Cascade)
+  school     School @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  stream     Stream @relation(fields: [stream_id, school_id], references: [id, school_id], onDelete: Cascade)
+
+  @@index([school_id, teacher_id])
+}
+
+model ReportBookPolicy {
+  id           String   @id @default(uuid())
+  school_id    Int
+  grade_level  Int
+  bands_json   Json
+  confirmed    Boolean  @default(false)
+  confirmed_by Int?
+  version      Int      @default(1)
+  updated_at   DateTime @updatedAt
+  school       School   @relation(fields: [school_id], references: [id], onDelete: Cascade)
+
+  @@unique([school_id, grade_level])
+}
+
+model ReportBookPeriod {
+  id          String                 @id @default(uuid())
+  school_id   Int
+  stream_id   String
+  term        String
+  year        Int
+  subjects    String[]
+  status      String                 @default("OPEN")
+  revision    Int                    @default(0)
+  created_at  DateTime               @default(now())
+  updated_at  DateTime               @updatedAt
+  school      School                 @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  stream      Stream                 @relation(fields: [stream_id, school_id], references: [id, school_id], onDelete: Restrict)
+  assessments ReportBookAssessment[]
+  cards       Report_Card[]
+  changes     ReportBookChange[]
+
+  @@unique([school_id, stream_id, term, year])
+  @@unique([id, school_id])
+}
+
+model ReportBookAssessment {
+  id              String              @id @default(uuid())
+  period_id       String
+  school_id       Int
+  subject         String
+  assessment_name String
+  max_score       Float               @default(100)
+  weight          Float               @default(1)
+  period          ReportBookPeriod    @relation(fields: [period_id, school_id], references: [id, school_id], onDelete: Cascade)
+  records         Assessment_Record[]
+
+  @@unique([period_id, subject, assessment_name])
+  @@unique([id, school_id])
+}
+
+model Assessment_Record {
+  id                String               @id @default(uuid())
+  student_id        Int
+  school_id         Int
+  assessment_id     String
+  score             Float?
+  grade             String
+  remark            String?
+  remark_suggestion String?
+  entered_by        Int
+  created_at        DateTime             @default(now())
+  updated_at        DateTime             @updatedAt
+  student           User                 @relation("ReportBookStudentMarks", fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school            School               @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  assessment        ReportBookAssessment @relation(fields: [assessment_id, school_id], references: [id, school_id], onDelete: Cascade)
+
+  @@unique([student_id, assessment_id])
+  @@index([school_id, student_id])
+}
+
+model Report_Card {
+  id                String           @id @default(uuid())
+  student_id        Int
+  school_id         Int
+  period_id         String
+  revision          Int
+  status            String           @default("DRAFT")
+  grade_level       Int
+  subjects_json     Json
+  student_json      Json
+  school_json       Json
+  policy_json       Json
+  total_score       Float?
+  average_score     Float?
+  class_position    Int?
+  cohort_size       Int?
+  complete          Boolean          @default(false)
+  teacher_comment   String?
+  principal_comment String?
+  generated_by      Int
+  generated_at      DateTime         @default(now())
+  published_by      Int?
+  published_at      DateTime?
+  student           User             @relation("ReportBookStudentCards", fields: [student_id, school_id], references: [id, schoolId], onDelete: Restrict)
+  school            School           @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  period            ReportBookPeriod @relation(fields: [period_id, school_id], references: [id, school_id], onDelete: Restrict)
+
+  @@unique([period_id, student_id, revision])
+  @@index([school_id, status])
+  @@index([student_id, status, published_at])
+}
+
+model ReportBookChange {
+  id         String            @id @default(uuid())
+  school_id  Int
+  period_id  String?
+  actor_id   Int
+  action     String
+  details    Json
+  created_at DateTime          @default(now())
+  school     School            @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  period     ReportBookPeriod? @relation(fields: [period_id, school_id], references: [id, school_id], onDelete: Restrict)
+
+  @@index([school_id, created_at])
 }

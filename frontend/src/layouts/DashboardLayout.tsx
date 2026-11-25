@@ -215,7 +215,8 @@ export function DashboardLayout({ nav }: { nav: NavItem[] }) {
     ? nav.filter((item) => {
         if (item.to === "/student/stem-labs") return !!labConfig;
         if (!studentToolAvailable(item.to, contentScope.data)) return false;
-        if (isEarlyYearsGrade(studentGrade)) return item.to === '/student';
+        if (item.to === "/student/reports" && independent) return false;
+        if (isEarlyYearsGrade(studentGrade)) return item.to === '/student' || item.to === '/student/reports';
         if (item.to === '/student/csl') return gradeTier(studentGrade) === 'senior';
         if (item.to === '/student/kjsea-mock-test') return isKjseaGrade(studentGrade);
         if (item.to === '/student/my-pathway') return isPathwayGuidanceGrade(studentGrade) || gradeTier(studentGrade) === 'senior';

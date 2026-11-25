@@ -1,3 +1,4 @@
+import { ReportBookModule } from "./report-book/report-book.module";
 import { CareerModule } from './career/career.module';
 import { StudentModule } from './student/student.module';
 import { StudentCurriculumGuard } from './student/student-curriculum.guard';
@@ -76,6 +77,7 @@ import { IndependentTrialGuard } from './common/guards/independent-trial.guard';
     ]),
 
     PrismaModule,
+    ReportBookModule,
     CareerModule,
     TeacherScopeModule,
     SbaModule,

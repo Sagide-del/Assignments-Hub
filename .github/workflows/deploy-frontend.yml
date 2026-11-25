@@ -143,6 +143,7 @@ jobs:
           RBAC_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/rbac_test
           CMS_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/cms_publish_test
           SEO_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/seo_attribution_test
+          REPORT_BOOK_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/report_book_test
           LEARNING_HUB_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/coach_loop_test
           SKILLS_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/focused_skills_test
           INTASEND_TEST_DATABASE_URL: postgresql://rbac_test:rbac_test_local_only@127.0.0.1:5432/intasend_test
@@ -160,6 +161,8 @@ jobs:
           DATABASE_URL="$SKILLS_TEST_DATABASE_URL" npx prisma migrate deploy
           docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE coach_loop_test'
           DATABASE_URL="$LEARNING_HUB_TEST_DATABASE_URL" npx prisma migrate deploy
+          docker exec "$TEST_POSTGRES_CONTAINER" psql -U rbac_test -d postgres -c 'CREATE DATABASE report_book_test'
+          DATABASE_URL="$REPORT_BOOK_TEST_DATABASE_URL" npx prisma migrate deploy
           npm test -- --runInBand
       - name: Wait for CMS distributions and migrated storage
         working-directory: frontend
@@ -215,6 +218,9 @@ jobs:
       - name: Verify learning recovery and report API readiness
         working-directory: frontend
         run: node scripts/check-learning-hub-api.mjs
+      - name: Verify school Report Book API and migration
+        working-directory: frontend
+        run: node scripts/check-report-book-api.mjs
       - name: Wait for central content library
         working-directory: frontend
         run: node scripts/check-content-api.mjs
@@ -259,6 +265,7 @@ jobs:
           node scripts/run-browser-check.mjs scripts/beat-maker.browser.cjs
           node scripts/run-browser-check.mjs scripts/vocals.browser.cjs
           node scripts/run-browser-check.mjs scripts/intasend-checkout.browser.cjs
+          node scripts/run-browser-check.mjs scripts/report-book.browser.cjs
           node scripts/run-browser-check.mjs scripts/learning-hub.browser.cjs
           node scripts/run-browser-check.mjs scripts/focused-skills.browser.cjs
           node scripts/run-browser-check.mjs scripts/sports-lab.browser.cjs

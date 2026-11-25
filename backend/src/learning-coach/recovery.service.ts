@@ -298,15 +298,19 @@ export class RecoveryService {
           subject: s.subject,
           score: s.percentage,
         });
-    for (const m of marks)
+    const seenMarks = new Set<string>();
+    for (const m of marks) {
+      const sk = subjectKey(m.subject);
+      if (seenMarks.has(sk)) continue;
+      seenMarks.add(sk);
       if (
-        !baseline.has(subjectKey(m.subject)) &&
-        allowedAssignmentSubject(scope, m.subject)
+        allowedAssignmentSubject(scope, m.subject) &&
+        (!baseline.has(sk) ||
+          !report?.analyzedAt ||
+          m.createdAt.getTime() > report.analyzedAt.getTime())
       )
-        baseline.set(subjectKey(m.subject), {
-          subject: m.subject,
-          score: m.percentage,
-        });
+        baseline.set(sk, { subject: m.subject, score: m.percentage });
+    }
     const subjects = [
       ...new Set(
         [...baseline.values()]

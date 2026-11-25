@@ -153,6 +153,26 @@ describe("Closed-loop learning priorities", () => {
       }),
     ).rejects.toThrow());
 });
+describe("School-approved report baseline updates", () => {
+  test("newer published school results replace an older uploaded-report baseline", async () => {
+    const db = dbFixture();
+    db.learningCoachReportCard.findFirst.mockResolvedValue({
+      analyzedAt: new Date("2026-01-01"),
+      diagnosis: { colorCodes: [{ subject: "Mathematics", percentage: 20 }] },
+    } as any);
+    db.studentAcademicResult.findMany.mockResolvedValue([
+      {
+        subject: "Mathematics",
+        percentage: 75,
+        createdAt: new Date("2026-11-25"),
+      },
+    ] as any);
+    const result = await new RecoveryService(db as any, scopes as any).load(
+      actor,
+    );
+    expect(result.queue[0].baseline).toBe(75);
+  });
+});
 describe("Private one-page engagement report", () => {
   test("rejects arbitrary student access and unsupported report periods", async () => {
     const service = new EngagementReportService({} as any, {} as any);

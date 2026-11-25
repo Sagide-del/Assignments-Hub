@@ -28,7 +28,8 @@ import { MyPathwayPage } from '../../features/student/my-pathway/MyPathwayPage';
 import { MessagesPage } from '../../features/student/Messages';
 import { StudentHome } from '../../features/student/StudentHome';
 import { SupportNeedsPage } from '../../features/student/SupportNeeds';
-import { StudentReports } from '../../features/student/Reports';
+const SchoolReportCards = lazy(() => import('../../features/report-book/ReportBook').then(m=>({default:m.SchoolReportCards})));
+const ReportBook = lazy(() => import('../../features/report-book/ReportBook'));
 import { MyResourcesPage } from '../../features/student/MyResources';
 import { TrialActivationPage } from '../../features/student/TrialActivation';
 import { LearningCoachPage } from '../../features/student/LearningCoach';
@@ -143,6 +144,7 @@ const studentNav = [
     label: 'My Pathway',
   },
   { to: '/student/csl', label: 'CSL Journey' },
+  { to: '/student/reports', label: 'School reports' },
   {
     to: '/student/resources',
     label: 'My Study Hub',
@@ -151,6 +153,7 @@ const studentNav = [
 
 
 const teacherNav = [
+  { to: "/teacher/report-book", label: "Report Book" },
   {to:"/teacher/music",label:"Music submissions"},
   { to: "/teacher/sba", label: "SBA scorebook" },
   {
@@ -201,6 +204,7 @@ const teacherNav = [
 
 
 const schoolAdminNav = [
+  { to: "/school-admin/report-book", label: "Report Book" },
   { to: "/school-admin/sba", label: "School assessments" },
   { to: "/school-admin/teaching-assignments", label: "Teaching assignments" },
   {
@@ -397,7 +401,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '/student/reports',
-            element: <StudentReports />,
+            element: <SchoolReportCards />,
           },
         ],
       },
@@ -411,6 +415,7 @@ export const router = createBrowserRouter([
       {
         element: <DashboardLayout nav={teacherNav} />,
         children: [
+          {path:'/teacher/report-book',element:<ReportBook/>},
           {path:'/teacher/music',element:<MusicAssessment/>},
           {
             path: '/teacher',
@@ -513,6 +518,10 @@ export const router = createBrowserRouter([
           {
             path: '/school-admin/billing',
             element: <SchoolAdminBilling />,
+          },
+          {
+            path: '/school-admin/report-book',
+            element: <ReportBook />,
           },
           {
             path: '/school-admin/reports',
