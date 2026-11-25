@@ -78,9 +78,16 @@ export function AssignmentHubWordmark({
   size = "sm",
   className = "",
 }: {
-  size?: keyof typeof WORDMARK_SIZES;
+  size?: keyof typeof WORDMARK_SIZES | "auth";
   className?: string;
 }) {
+  if (size === "auth") {
+    return (
+      <svg viewBox="64 380 1330 330" role="img" aria-label="Assignment Hub" className={`h-auto w-56 max-w-full mix-blend-multiply ${className}`}>
+        <image href="/logo.png" width="1448" height="1086" />
+      </svg>
+    );
+  }
   const dimensions = WORDMARK_SIZES[size];
 
   return (

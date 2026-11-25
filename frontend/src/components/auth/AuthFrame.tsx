@@ -18,13 +18,13 @@ export function AuthFrame({
   return (
     <main className="min-h-screen bg-[#f6f8f5] px-4 py-6 text-[#101820] sm:py-12">
       <div className="mx-auto max-w-md">
-        <div className="mb-8 flex items-center justify-between gap-3">
-          <Link to="/" aria-label="Assignment Hub home">
-            <AssignmentHubWordmark size="sm" />
+        <div className="relative mb-8 flex justify-center pt-10 sm:mb-9">
+          <Link to="/" aria-label="Assignment Hub home" className="block rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#647f42]">
+            <AssignmentHubWordmark size="auth" />
           </Link>
           <Link
             to="/"
-            className="inline-flex min-h-10 items-center gap-1 text-xs text-slate-500"
+            className="absolute left-0 top-0 inline-flex min-h-8 items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
           >
             <ArrowLeft size={14} />
             Home
