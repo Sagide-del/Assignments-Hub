@@ -1,3 +1,4 @@
+import { RecallRecord } from "./recall-history";
 export const DAYS = [
   "Monday",
   "Tuesday",
@@ -79,9 +80,10 @@ export interface WeeklyPlan {
   source: "AI" | "TEMPLATE";
   warnings: string[];
   completed_block_ids: string[];
+  recall_history?: RecallRecord[];
   quiz_results: Record<
     string,
-    { score: number; total: number; completed_at: string }
+    { score: number; total: number; completed_at: string; event_id?: string }
   >;
   review_schedule: ReviewDue[];
   next_week_reviews: ReviewDue[];

@@ -1,3 +1,6 @@
+import { RecoveryService } from "../learning-coach/recovery.service";
+import { Optional } from "@nestjs/common";
+import { subjectKey } from "../student/student-scope.policy";
 import { StudentScopeService } from "../student/student-scope.service";
 import {
   contentMatches,
@@ -43,6 +46,7 @@ export class TimetableContextService {
   constructor(
     private readonly db: PrismaService,
     private readonly cms: CmsService,
+    @Optional() private readonly recovery?: RecoveryService,
   ) {}
   async student(actor: AuthenticatedUser) {
     const user = await this.db.user.findFirst({
@@ -217,6 +221,9 @@ export class TimetableContextService {
     }
     if (grade >= 10 && !pathway)
       warnings.push("Set your pathway to improve elective subject coverage.");
+    const recoveryQueue = this.recovery
+      ? (await this.recovery.load(actor)).queue
+      : [];
     const source = new Map<string, Map<string, number[]>>();
     function add(subject: string, type: string, value: number) {
       if (!percent(value) || !names.has(normalize(subject))) return;
@@ -275,16 +282,20 @@ export class TimetableContextService {
           total += (values.reduce((a, b) => a + b, 0) / values.length) * w;
           weights += w;
         }
-        const percentage = weights
-            ? Math.round((total / weights) * 100) / 100
-            : null,
-          weak =
-            (percentage !== null && percentage < 60) ||
-            coach.some(
-              (c) =>
-                normalize(c.subject) === key &&
-                (c.lastDiagnosticScore ?? c.masteryScore) < 60,
-            );
+        const adaptive = recoveryQueue.find(
+          (s) => subjectKey(s.subject) === subjectKey(subject),
+        );
+        const percentage =
+            adaptive?.current ??
+            (weights ? Math.round((total / weights) * 100) / 100 : null),
+          weak = adaptive
+            ? (percentage !== null && percentage < 80) || adaptive.reviewDue
+            : (percentage !== null && percentage < 60) ||
+              coach.some(
+                (c) =>
+                  normalize(c.subject) === key &&
+                  (c.lastDiagnosticScore ?? c.masteryScore) < 60,
+              );
         const relevantCoach = coach
           .filter((c) => normalize(c.subject) === key)
           .sort((a, b) => a.masteryScore - b.masteryScore);
@@ -299,6 +310,7 @@ export class TimetableContextService {
         const topics = [
           ...new Set(
             [
+              ...(adaptive?.topics.map((t) => t.topic) ?? []),
               ...relevantCoach.map((c) => c.topic),
               ...moduleTopics.map((m) => m.topic),
               ...curriculum,
@@ -311,7 +323,10 @@ export class TimetableContextService {
           subject,
           percentage,
           weak,
-          sources: [...inputs.keys()],
+          sources: [
+            ...inputs.keys(),
+            ...(adaptive ? ["Adaptive practice loop"] : []),
+          ],
           topics: (topics.length ? topics : ["Core concepts"]).map((topic) => {
             const module = moduleTopics.find(
               (m) => normalize(m.topic) === normalize(topic),

@@ -1,3 +1,4 @@
+import { LearningCoachModule } from "../learning-coach/learning-coach.module";
 import { Module } from "@nestjs/common";
 import { AiModule } from "../ai/ai.module";
 import { CmsModule } from "../cms/cms.module";
@@ -8,7 +9,7 @@ import { TimetableService } from "./timetable.service";
 import { TimetableContextService } from "./timetable-context.service";
 import { TimetablePdfService } from "./timetable-pdf.service";
 @Module({
-  imports: [AiModule, CmsModule, UploadsModule],
+  imports: [LearningCoachModule, AiModule, CmsModule, UploadsModule],
   controllers: [TimetableController],
   providers: [
     TimetableService,

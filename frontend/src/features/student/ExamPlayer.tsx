@@ -1,3 +1,4 @@
+import { LearningRecovery } from "./LearningRecovery";
 import { NextModuleBatch } from "./NextModuleBatch";
 import { DiagramRenderer } from "../../components/ExamDiagrams/DiagramRenderer";
 import { MathText } from "../../components/ExamDiagrams/MathText";
@@ -545,6 +546,7 @@ function ExamWorkspace() {
               Answer review opens at 80% or after 3 attempts.
             </footer>
           </section>
+          <LearningRecovery />
         </div>
       );
     }
@@ -639,6 +641,8 @@ function ExamWorkspace() {
             </section>
           </>
         )}
+
+        {resultsReleased ? <LearningRecovery /> : null}
 
         {!resultsReleased ? (
           <>

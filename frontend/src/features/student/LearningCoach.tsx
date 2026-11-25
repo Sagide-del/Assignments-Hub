@@ -1,3 +1,4 @@
+import { LearningRecovery } from "./LearningRecovery";
 import { PageHeader } from "../../components/ui/Saas";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,16 +19,14 @@ import {
 import { apiErrorMessage } from "../../api/axios";
 import {
   learningCoachApi,
-  type LearningPlan,
   type LearningCoachReportCard,
   type LearningSession,
 } from "../../api/learning-coach.api";
 import { ReportCardPreview, type ReportScore } from "./ReportCardPreview";
 import { useAuthStore } from "../../store/auth.store";
 import { isCbcGrade } from "../../utils/gradeTier";
-import { useStudentContentScope } from "../../hooks/useStudentContentScope";
 import { timetableApi } from "../../api/timetable.api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const REPORT_SUBJECTS = [
   "English",
@@ -90,10 +89,15 @@ function resolveReportSubject(line: string) {
     const expected = normaliseReportText(subject);
     const distance = editDistance(candidate, expected);
     const isPrefix =
-      candidate.startsWith(expected.slice(0, Math.max(5, expected.length - 4))) ||
-      expected.startsWith(candidate.slice(0, Math.max(5, candidate.length - 4)));
+      candidate.startsWith(
+        expected.slice(0, Math.max(5, expected.length - 4)),
+      ) ||
+      expected.startsWith(
+        candidate.slice(0, Math.max(5, candidate.length - 4)),
+      );
     if (
-      (isPrefix || distance <= Math.max(2, Math.floor(expected.length * 0.2))) &&
+      (isPrefix ||
+        distance <= Math.max(2, Math.floor(expected.length * 0.2))) &&
       (!best || distance < best.distance)
     ) {
       best = { subject, distance };
@@ -115,7 +119,8 @@ async function cropReportTable(
     canvas.width = Math.min(2400, Math.max(640, sourceWidth * 5));
     canvas.height = Math.min(1800, Math.max(420, sourceHeight * 5));
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("Your browser could not prepare the report image.");
+    if (!context)
+      throw new Error("Your browser could not prepare the report image.");
     context.filter = "grayscale(1) contrast(1.45)";
     context.drawImage(
       image,
@@ -130,7 +135,10 @@ async function cropReportTable(
     );
     return await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error("Could not read the report image."))),
+        (blob) =>
+          blob
+            ? resolve(blob)
+            : reject(new Error("Could not read the report image.")),
         "image/png",
       ),
     );
@@ -139,7 +147,10 @@ async function cropReportTable(
   }
 }
 
-function parseTableScores(subjectText: string, scoreText: string): ReportScore[] {
+function parseTableScores(
+  subjectText: string,
+  scoreText: string,
+): ReportScore[] {
   const subjects = subjectText
     .split(/\r?\n/)
     .map(resolveReportSubject)
@@ -161,7 +172,12 @@ async function readReportImage(file: File): Promise<ReportScore[]> {
   // from being mixed into subject names.
   const [subjectsImage, scoresImage] = await Promise.all([
     cropReportTable(file, { left: 0, top: 0.4, width: 0.31, height: 0.17 }),
-    cropReportTable(file, { left: 0.285, top: 0.425, width: 0.14, height: 0.13 }),
+    cropReportTable(file, {
+      left: 0.285,
+      top: 0.425,
+      width: 0.14,
+      height: 0.13,
+    }),
   ]);
   const [subjectsResult, scoresResult] = await Promise.all([
     tesseract.default.recognize(subjectsImage, "eng"),
@@ -207,13 +223,18 @@ function ReportCardPanel({
       void client.invalidateQueries({
         queryKey: ["learning-coach-report-cards"],
       });
-      const initialScores =
-        report.extractedScores?.length
-          ? report.extractedScores
-          : [];
+      const initialScores = report.extractedScores?.length
+        ? report.extractedScores
+        : [];
       setActiveReport(report);
-      setScores(initialScores.length ? initialScores : [{ subject: "", percentage: Number.NaN }]);
-      setLocalPreviewUrl(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
+      setScores(
+        initialScores.length
+          ? initialScores
+          : [{ subject: "", percentage: Number.NaN }],
+      );
+      setLocalPreviewUrl(
+        file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+      );
 
       // Browser OCR is a privacy-preserving fallback for image reports when
       // server OCR is unavailable. It never uploads image bytes to an AI API.
@@ -361,72 +382,139 @@ function ReportCardPanel({
           event.currentTarget.value = "";
         }}
       />
-      {processing ? <div className="fixed inset-0 z-50 grid place-items-center bg-[#0b1727]/80 p-5 backdrop-blur-sm"><section className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#101f38] p-7 text-center text-white shadow-2xl"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-lime-300 text-[#101f38]"><BrainCircuit className="h-7 w-7 animate-pulse" /></span><h2 className="mt-5 text-2xl font-semibold">{confirm.isPending ? "Analyzing your strengths and weaknesses…" : "Reading your report card…"}</h2><p className="mt-3 text-sm leading-6 text-slate-300">{confirm.isPending ? "Creating your color-coded focus profile and study actions." : "Extracting subjects, scores, and KCBE grades…"}</p><div className="mt-6 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-lime-300 transition-all duration-500" style={{ width: `${progress}%` }} /></div><p className="mt-3 text-xs font-semibold text-lime-200">{confirm.isPending ? "Generating your personalized learning plan…" : `${progress}% complete`}</p></section></div> : null}
-      {!selected ? <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">
-            Learning profile
-          </p>
-          <h2 className="mt-1 text-lg font-semibold text-[#101820]">
-            Turn results into a practical study plan
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Upload a report card, confirm the subject scores, then receive a
-            private focus plan using retrieval practice, worked examples and
-            spaced review.
-          </p>
+      {processing ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[#0b1727]/80 p-5 backdrop-blur-sm">
+          <section className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#101f38] p-7 text-center text-white shadow-2xl">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-lime-300 text-[#101f38]">
+              <BrainCircuit className="h-7 w-7 animate-pulse" />
+            </span>
+            <h2 className="mt-5 text-2xl font-semibold">
+              {confirm.isPending
+                ? "Analyzing your strengths and weaknesses…"
+                : "Reading your report card…"}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              {confirm.isPending
+                ? "Creating your color-coded focus profile and study actions."
+                : "Extracting subjects, scores, and KCBE grades…"}
+            </p>
+            <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-lime-300 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="mt-3 text-xs font-semibold text-lime-200">
+              {confirm.isPending
+                ? "Generating your personalized learning plan…"
+                : `${progress}% complete`}
+            </p>
+          </section>
         </div>
-        <button type="button" onClick={chooseFile} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50"><Upload className="h-4 w-4" />Upload report</button>
-      </div>
-      {upload.isError ? (
-        <p className="mt-3 text-sm text-red-700">
-          {apiErrorMessage(
-            upload.error,
-            "The report card could not be uploaded.",
-          )}
-        </p>
       ) : null}
-      {reportHistory.length ? (
-        <div className="mt-5 space-y-3">
-          {reportHistory.map((report) => (
-            <article
-              key={report.id}
-              className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+      {!selected ? (
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#607D00]">
+                Learning profile
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-[#101820]">
+                Turn results into a practical study plan
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                Upload a report card, confirm the subject scores, then receive a
+                private focus plan using retrieval practice, worked examples and
+                spaced review.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={chooseFile}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#101820] px-4 text-sm font-semibold text-[#101820] hover:bg-slate-50"
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="truncate text-sm font-semibold text-[#101820]">
-                  {report.fileName}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    selectReport(report);
-                  }}
-                  className="shrink-0 text-sm font-semibold text-[#466000]"
-                >
-                  {report.status === "ANALYZED"
-                    ? "View plan"
-                    : "Confirm scores"}
-                </button>
-              </div>
-              {report.diagnosis?.message ? (
-                <p className="mt-2 text-sm leading-5 text-slate-600">
-                  {report.diagnosis.message}
-                </p>
-              ) : (
-                <p className="mt-1 text-xs text-slate-500">
-                  {report.status === "NEEDS_MANUAL_ENTRY"
-                    ? "Add your subject scores to build your plan."
-                    : "Scores ready for confirmation."}
-                </p>
+              <Upload className="h-4 w-4" />
+              Upload report
+            </button>
+          </div>
+          {upload.isError ? (
+            <p className="mt-3 text-sm text-red-700">
+              {apiErrorMessage(
+                upload.error,
+                "The report card could not be uploaded.",
               )}
-            </article>
-          ))}
-        </div>
+            </p>
+          ) : null}
+          {reportHistory.length ? (
+            <div className="mt-5 space-y-3">
+              {reportHistory.map((report) => (
+                <article
+                  key={report.id}
+                  className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="truncate text-sm font-semibold text-[#101820]">
+                      {report.fileName}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        selectReport(report);
+                      }}
+                      className="shrink-0 text-sm font-semibold text-[#466000]"
+                    >
+                      {report.status === "ANALYZED"
+                        ? "View plan"
+                        : "Confirm scores"}
+                    </button>
+                  </div>
+                  {report.diagnosis?.message ? (
+                    <p className="mt-2 text-sm leading-5 text-slate-600">
+                      {report.diagnosis.message}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500">
+                      {report.status === "NEEDS_MANUAL_ENTRY"
+                        ? "Add your subject scores to build your plan."
+                        : "Scores ready for confirmation."}
+                    </p>
+                  )}
+                </article>
+              ))}
+            </div>
+          ) : null}
+        </section>
       ) : null}
-      </section> : null}
-      {selected ? <><ReportCardPreview fileName={selected.fileName} previewUrl={localPreviewUrl ?? preview.data} scores={scores} onChange={setScores} onReupload={() => { discardActiveReport(); window.setTimeout(chooseFile, 50); }} onConfirm={() => confirm.mutate()} confirming={confirm.isPending} />{preview.isError ? <p className="text-sm text-slate-500">The report preview is unavailable, but you can still review and correct the extracted scores.</p> : null}{confirm.isError ? <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{apiErrorMessage(confirm.error, "Your learning plan could not be created.")}</p> : null}</> : null}
+      {selected ? (
+        <>
+          <ReportCardPreview
+            fileName={selected.fileName}
+            previewUrl={localPreviewUrl ?? preview.data}
+            scores={scores}
+            onChange={setScores}
+            onReupload={() => {
+              discardActiveReport();
+              window.setTimeout(chooseFile, 50);
+            }}
+            onConfirm={() => confirm.mutate()}
+            confirming={confirm.isPending}
+          />
+          {preview.isError ? (
+            <p className="text-sm text-slate-500">
+              The report preview is unavailable, but you can still review and
+              correct the extracted scores.
+            </p>
+          ) : null}
+          {confirm.isError ? (
+            <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {apiErrorMessage(
+                confirm.error,
+                "Your learning plan could not be created.",
+              )}
+            </p>
+          ) : null}
+        </>
+      ) : null}
     </>
   );
 }
@@ -437,20 +525,80 @@ function reportLevel(percentage: number) {
   return "BE · Priority";
 }
 
-function FocusTimer({ subject, topic, onClose }: { subject: string; topic: string; onClose: () => void }) {
+function FocusTimer({
+  subject,
+  topic,
+  onClose,
+}: {
+  subject: string;
+  topic: string;
+  onClose: () => void;
+}) {
   const [seconds, setSeconds] = useState(15 * 60);
   const [running, setRunning] = useState(true);
   useEffect(() => {
     if (!running || seconds <= 0) return;
-    const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
+    const timer = window.setInterval(
+      () => setSeconds((value) => Math.max(0, value - 1)),
+      1000,
+    );
     return () => window.clearInterval(timer);
   }, [running, seconds]);
   const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
   const remainder = String(seconds % 60).padStart(2, "0");
-  return <aside className="sticky bottom-3 z-20 rounded-2xl border border-[#293944] bg-[#101820] p-4 text-white shadow-[0_18px_44px_rgba(16,24,32,.28)] sm:flex sm:items-center sm:justify-between">
-    <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#b5e719] text-[#101820]"><Target className="h-5 w-5" /></span><div><p className="text-xs font-bold uppercase tracking-[.13em] text-lime-200">Focus session</p><p className="text-sm font-semibold">{subject}: {topic}</p></div></div>
-    <div className="mt-4 flex items-center gap-2 sm:mt-0"><span className="mr-auto font-mono text-2xl font-semibold tabular-nums">{minutes}:{remainder}</span><button type="button" onClick={() => setRunning((value) => !value)} className="grid h-10 w-10 place-items-center rounded-lg bg-white text-[#101820]" aria-label={running ? "Pause timer" : "Resume timer"}>{running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button><button type="button" onClick={() => { setSeconds(15 * 60); setRunning(false); }} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Reset timer"><TimerReset className="h-4 w-4" /></button><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Close timer"><X className="h-4 w-4" /></button></div>
-  </aside>;
+  return (
+    <aside className="sticky bottom-3 z-20 rounded-2xl border border-[#293944] bg-[#101820] p-4 text-white shadow-[0_18px_44px_rgba(16,24,32,.28)] sm:flex sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#b5e719] text-[#101820]">
+          <Target className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[.13em] text-lime-200">
+            Focus session
+          </p>
+          <p className="text-sm font-semibold">
+            {subject}: {topic}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-2 sm:mt-0">
+        <span className="mr-auto font-mono text-2xl font-semibold tabular-nums">
+          {minutes}:{remainder}
+        </span>
+        <button
+          type="button"
+          onClick={() => setRunning((value) => !value)}
+          className="grid h-10 w-10 place-items-center rounded-lg bg-white text-[#101820]"
+          aria-label={running ? "Pause timer" : "Resume timer"}
+        >
+          {running ? (
+            <Pause className="h-4 w-4" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSeconds(15 * 60);
+            setRunning(false);
+          }}
+          className="grid h-10 w-10 place-items-center rounded-lg border border-white/20"
+          aria-label="Reset timer"
+        >
+          <TimerReset className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="grid h-10 w-10 place-items-center rounded-lg border border-white/20"
+          aria-label="Close timer"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </aside>
+  );
 }
 
 function SessionPlayer({
@@ -476,8 +624,11 @@ function SessionPlayer({
       }),
     onSuccess: (result) => {
       setFeedback(result);
-      if (result.completed)
+      if (result.completed) {
         void client.invalidateQueries({ queryKey: ["learning-coach-plans"] });
+        void client.invalidateQueries({ queryKey: ["learning-recovery"] });
+        void client.invalidateQueries({ queryKey: ["learning-engagement"] });
+      }
     },
   });
   const next = () => {
@@ -712,10 +863,15 @@ function SessionPlayer({
 export function LearningCoachPage() {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const scope = useStudentContentScope();
+  const [focusParams] = useSearchParams();
+  const requestedFocus = focusParams.get("focus");
+  const requestedTopic = focusParams.get("topic");
   const [session, setSession] = useState<LearningSession | null>(null);
   const [reviewReport, setReviewReport] = useState(false);
-  const [focusTimer, setFocusTimer] = useState<{ subject: string; topic: string } | null>(null);
+  const [focusTimer, setFocusTimer] = useState<{
+    subject: string;
+    topic: string;
+  } | null>(null);
   const catalog = useQuery({
     queryKey: ["learning-coach-catalog"],
     queryFn: learningCoachApi.catalog,
@@ -724,7 +880,10 @@ export function LearningCoachPage() {
     queryKey: ["learning-coach-plans"],
     queryFn: learningCoachApi.plans,
   });
-  const reports = useQuery({ queryKey: ["learning-coach-report-cards"], queryFn: learningCoachApi.reportCards });
+  const reports = useQuery({
+    queryKey: ["learning-coach-report-cards"],
+    queryFn: learningCoachApi.reportCards,
+  });
   const start = useMutation({
     mutationFn: (input: {
       subject: string;
@@ -733,7 +892,10 @@ export function LearningCoachPage() {
     }) => learningCoachApi.start(input),
     onSuccess: setSession,
   });
-  const generatePlan = useMutation({ mutationFn: () => timetableApi.generate(false), onSuccess: () => navigate("/student/study-hub/timetable") });
+  const generatePlan = useMutation({
+    mutationFn: () => timetableApi.generate(true),
+    onSuccess: () => navigate("/student/study-hub/timetable"),
+  });
   if (!isCbcGrade(user?.grade))
     return (
       <div className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm leading-6 text-amber-950">
@@ -754,85 +916,151 @@ export function LearningCoachPage() {
     );
   const report = reports.data?.find((item) => item.status === "ANALYZED");
   const profile = report?.diagnosis?.colorCodes ?? [];
-  const allowed = new Set((scope.data?.assignment_subjects ?? scope.data?.subjects ?? []).map((subject) => subject.toLowerCase()));
-  const red = new Set(profile.filter((item) => item.color === "RED").map((item) => item.subject.toLowerCase()));
-  const paths = (plans.data ?? []).filter((plan) => red.has(plan.subject.toLowerCase()) && (!allowed.size || allowed.has(plan.subject.toLowerCase())));
-  const prioritySubjects = profile.filter((item) => item.color === "RED").sort((left, right) => left.percentage - right.percentage);
-  const diagnosticTopics = new Set((catalog.data ?? []).map((topic) => `${topic.subject.toLowerCase()}::${topic.topic.toLowerCase()}`));
-  const startPriority = (plan: LearningPlan) => {
-    const isReady = diagnosticTopics.has(`${plan.subject.toLowerCase()}::${plan.topic.toLowerCase()}`);
-    if (isReady) start.mutate({ subject: plan.subject, topic: plan.topic, mode: "DIAGNOSTIC" });
-    else setFocusTimer({ subject: plan.subject, topic: plan.topic });
-  };
-  if (!report || reviewReport) return <div className="mx-auto max-w-5xl space-y-6"><PageHeader title="Learning Coach" />{report ? <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-lime-200 bg-lime-50 p-5"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#607D00]">Report check</p><h2 className="mt-1 text-xl font-semibold text-[#101820]">Correct your results before continuing</h2><p className="mt-1 text-sm text-slate-600">Review each subject and score. Your updated confirmation replaces the earlier diagnosis.</p></div><button type="button" onClick={() => setReviewReport(false)} className="min-h-10 rounded-xl border border-[#101820] bg-white px-4 text-sm font-bold text-[#101820]">Back to Coach</button></div> : <div className="rounded-3xl border border-dashed border-lime-300 bg-lime-50 p-8 text-center"><BrainCircuit className="mx-auto h-10 w-10 text-[#607D00]"/><h2 className="mt-4 text-2xl font-semibold text-[#101820]">Unlock your personalized Learning Coach</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">Upload a report card, confirm the scores, then receive a private study plan built around your real results.</p></div>}<ReportCardPanel initialReport={reviewReport ? report : undefined} onAnalyzed={() => setReviewReport(false)} /></div>;
-  const nextPath = paths[0];
+  if (!report || reviewReport)
+    return (
+      <div className="mx-auto max-w-5xl space-y-6">
+        <PageHeader title="Learning Coach" />
+        <LearningRecovery onSession={setSession} />
+        {report ? (
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-lime-200 bg-lime-50 p-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#607D00]">
+                Report check
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-[#101820]">
+                Correct your results before continuing
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Review each subject and score. Your updated confirmation
+                replaces the earlier diagnosis.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReviewReport(false)}
+              className="min-h-10 rounded-xl border border-[#101820] bg-white px-4 text-sm font-bold text-[#101820]"
+            >
+              Back to Coach
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-lime-300 bg-lime-50 p-8 text-center">
+            <BrainCircuit className="mx-auto h-10 w-10 text-[#607D00]" />
+            <h2 className="mt-4 text-2xl font-semibold text-[#101820]">
+              Unlock your personalized Learning Coach
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
+              Upload a report card, confirm the scores, then receive a private
+              study plan built around your real results.
+            </p>
+          </div>
+        )}
+        <ReportCardPanel
+          initialReport={reviewReport ? report : undefined}
+          onAnalyzed={() => setReviewReport(false)}
+        />
+      </div>
+    );
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-16 sm:space-y-8">
       <PageHeader
         title="Learning Coach"
         actions={
-          <button type="button" onClick={() => setReviewReport(true)} className="min-h-10 text-sm font-semibold text-slate-600 hover:text-[#101820]">
+          <button
+            type="button"
+            onClick={() => setReviewReport(true)}
+            className="min-h-10 text-sm font-semibold text-slate-600 hover:text-[#101820]"
+          >
             Review results
           </button>
         }
       />
 
-      <section className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,.06)] lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="p-5 sm:p-8">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#101820] text-[#b7ec0b]"><Target className="h-4 w-4" /></span>
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-slate-500">Today&apos;s recovery session</p>
-          </div>
-          <div className="mt-6 max-w-2xl">
-            <p className="text-sm font-medium text-[#607D00]">{nextPath?.subject ?? "Your next focus"}</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#101820] sm:text-3xl">{nextPath?.topic ?? "Build a steady learning routine"}</h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">{nextPath?.recommendedTechnique ?? report.diagnosis?.message}</p>
-          </div>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => nextPath && startPriority(nextPath)} disabled={!nextPath || start.isPending} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#101820] px-5 text-sm font-bold text-white transition hover:bg-[#22313d] disabled:opacity-50">
-              {start.isPending ? "Opening session..." : diagnosticTopics.has(`${nextPath?.subject.toLowerCase()}::${nextPath?.topic.toLowerCase()}`) ? "Start diagnostic" : "Start 15-minute session"}
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <span className="text-xs font-medium text-slate-500">One focused session. No catch-up overload.</span>
-          </div>
-        </div>
-        <aside className="border-t border-slate-200 bg-slate-50 p-5 lg:border-l lg:border-t-0 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[.15em] text-slate-500">Plan status</p>
-          <div className="mt-5 space-y-4">
-            <div><p className="text-3xl font-semibold tracking-tight text-[#101820]">{prioritySubjects.length}</p><p className="mt-1 text-sm text-slate-600">priority subject{prioritySubjects.length === 1 ? "" : "s"}</p></div>
-            <div className="border-t border-slate-200 pt-4"><p className="text-3xl font-semibold tracking-tight text-[#101820]">{paths.length}</p><p className="mt-1 text-sm text-slate-600">guided topic{paths.length === 1 ? "" : "s"} ready</p></div>
-            <p className="border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">Your plan changes as your practice results improve. Start with one small session today.</p>
-          </div>
-        </aside>
-      </section>
-
-      <section aria-labelledby="recovery-queue-heading" className="rounded-2xl border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
-          <div><p className="text-xs font-bold uppercase tracking-[.15em] text-[#607D00]">Priority queue</p><h2 id="recovery-queue-heading" className="mt-1 text-xl font-semibold text-[#101820]">Work through one topic at a time</h2></div>
-          <p className="max-w-xs text-sm leading-5 text-slate-500">Each row includes the technique, activity and next diagnostic in one place.</p>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {paths.map((plan, index) => {
-            const score = prioritySubjects.find((item) => item.subject.toLowerCase() === plan.subject.toLowerCase())?.percentage;
-            const ready = diagnosticTopics.has(`${plan.subject.toLowerCase()}::${plan.topic.toLowerCase()}`);
-            return <article key={plan.id} className="grid gap-4 px-5 py-5 sm:px-7 lg:grid-cols-[42px_minmax(0,1fr)_minmax(230px,.8fr)_auto] lg:items-center">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-rose-50 text-sm font-bold text-rose-700">{index + 1}</span>
-              <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold text-[#101820]">{plan.subject} · {plan.topic}</p>{score != null ? <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700">{score}% priority</span> : null}</div><p className="mt-1 text-sm text-slate-500">Attempt {Math.min(3, Math.max(1, Math.ceil(plan.masteryScore / 34) || 1))} of 3 · EE unlocks the next topic.</p></div>
-              <p className="text-sm leading-6 text-slate-600">{plan.recommendedTechnique}</p>
-              <div className="flex flex-wrap gap-2 lg:justify-end"><button type="button" onClick={() => setFocusTimer({ subject: plan.subject, topic: plan.topic })} className="min-h-10 rounded-lg border border-slate-200 px-3 text-xs font-bold text-[#101820] hover:border-slate-400">15 min</button><button type="button" onClick={() => ready ? start.mutate({ subject: plan.subject, topic: plan.topic, mode: "DIAGNOSTIC" }) : setFocusTimer({ subject: plan.subject, topic: plan.topic })} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#101820] px-3 text-xs font-bold text-white">{ready ? "Diagnostic" : "Begin"}<ArrowRight className="h-3.5 w-3.5" /></button></div>
-            </article>;
-          })}
-        </div>
-      </section>
-
+      {requestedFocus && requestedTopic ? (
+        <button
+          type="button"
+          onClick={() =>
+            start.mutate({
+              subject: requestedFocus,
+              topic: requestedTopic,
+              mode: "PRACTICE",
+            })
+          }
+          disabled={start.isPending}
+          className="min-h-11 rounded-xl bg-[#143e32] px-5 py-3 text-sm font-semibold text-white"
+        >
+          Practise {requestedFocus} · {requestedTopic}
+        </button>
+      ) : null}
+      <LearningRecovery onSession={setSession} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
-        <details className="group rounded-2xl border border-slate-200 bg-white" open={false}>
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 sm:px-7"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-slate-500">Confirmed report</p><h2 className="mt-1 font-semibold text-[#101820]">See all subject results</h2></div><ChevronLeft className="h-5 w-5 -rotate-90 text-slate-400 transition group-open:rotate-90" /></summary>
-          <div className="border-t border-slate-100 px-5 py-4 sm:px-7"><div className="grid gap-2 sm:grid-cols-2">{profile.map((item) => <div key={item.subject} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-3"><span className="text-sm font-medium text-slate-700">{item.subject}</span><span className={item.color === "RED" ? "font-bold text-rose-700" : item.color === "GREEN" ? "font-bold text-emerald-700" : "font-bold text-amber-700"}>{item.percentage}% · {reportLevel(item.percentage)}</span></div>)}</div></div>
+        <details
+          className="group rounded-2xl border border-slate-200 bg-white"
+          open={false}
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 sm:px-7">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.15em] text-slate-500">
+                Confirmed report
+              </p>
+              <h2 className="mt-1 font-semibold text-[#101820]">
+                See all subject results
+              </h2>
+            </div>
+            <ChevronLeft className="h-5 w-5 -rotate-90 text-slate-400 transition group-open:rotate-90" />
+          </summary>
+          <div className="border-t border-slate-100 px-5 py-4 sm:px-7">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {profile.map((item) => (
+                <div
+                  key={item.subject}
+                  className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-3"
+                >
+                  <span className="text-sm font-medium text-slate-700">
+                    {item.subject}
+                  </span>
+                  <span
+                    className={
+                      item.color === "RED"
+                        ? "font-bold text-rose-700"
+                        : item.color === "GREEN"
+                          ? "font-bold text-emerald-700"
+                          : "font-bold text-amber-700"
+                    }
+                  >
+                    {item.percentage}% · {reportLevel(item.percentage)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </details>
-        <section className="rounded-2xl bg-[#e9f8b9] p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[.15em] text-[#607D00]">Weekly rhythm</p><h2 className="mt-2 text-lg font-semibold text-[#101820]">Put this plan on your timetable</h2><p className="mt-2 text-sm leading-6 text-slate-700">Your weak subjects receive more practice time, with recall and review built in.</p><button type="button" disabled={generatePlan.isPending} onClick={() => generatePlan.mutate()} className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-[#101820] disabled:opacity-60">{generatePlan.isPending ? "Preparing..." : "Generate timetable"}<ArrowRight className="h-4 w-4" /></button></section>
+        <section className="rounded-2xl bg-[#e9f8b9] p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-[.15em] text-[#607D00]">
+            Weekly rhythm
+          </p>
+          <h2 className="mt-2 text-lg font-semibold text-[#101820]">
+            Put this plan on your timetable
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Your weak subjects receive more practice time, with recall and
+            review built in.
+          </p>
+          <button
+            type="button"
+            disabled={generatePlan.isPending}
+            onClick={() => generatePlan.mutate()}
+            className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-[#101820] disabled:opacity-60"
+          >
+            {generatePlan.isPending ? "Preparing..." : "Update timetable"}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </section>
       </div>
-      {focusTimer ? <FocusTimer {...focusTimer} onClose={() => setFocusTimer(null)} /> : null}
+      {focusTimer ? (
+        <FocusTimer {...focusTimer} onClose={() => setFocusTimer(null)} />
+      ) : null}
       {start.isError ? (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {apiErrorMessage(

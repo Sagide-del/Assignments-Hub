@@ -1,3 +1,4 @@
+import { recallRecords } from "./recall-history";
 import {
   BadRequestException,
   ConflictException,
@@ -312,6 +313,7 @@ export class TimetableService {
           ]),
         ].filter((id) => validStudy.has(id));
         if (latest) {
+          plan.recall_history = recallRecords(latest);
           for (const [key, result] of Object.entries(latest.quiz_results)) {
             const oldBlock = latest.days
                 .flatMap((d) => d.blocks)
@@ -480,7 +482,9 @@ export class TimetableService {
         current = this.readPlan(latest.plan_json);
       if (!current || current.revision !== dto.revision)
         throw new ConflictException("This plan changed. Reload the quiz.");
+      current.recall_history = recallRecords(current);
       current.quiz_results[blockId] = {
+        event_id: randomUUID(),
         score,
         total: results.length,
         completed_at: this.now().toISOString(),
