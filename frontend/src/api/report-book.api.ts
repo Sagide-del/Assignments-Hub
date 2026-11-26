@@ -96,7 +96,19 @@ export interface ReportCard {
     stream: string;
     admissionNumber: string | null;
   };
-  school_json: { name: string; address: string | null };
+  school_json: {
+    name: string;
+    address: string | null;
+    logoUrl?: string | null;
+    phone?: string | null;
+    contactEmail?: string | null;
+    principalName?: string | null;
+    principalSignatureUrl?: string | null;
+    schoolClosesOn?: string | null;
+    schoolClosesTime?: string | null;
+    schoolOpensOn?: string | null;
+    schoolOpensTime?: string | null;
+  };
   policy_json: { bands: Band[]; confirmed: boolean };
   total_score: number | null;
   average_score: number | null;
@@ -108,8 +120,24 @@ export interface ReportCard {
   period?: { term: string; year: number };
   published_at: string | null;
 }
+export interface ReportBookSettings {
+  logoUrl: string | null;
+  address: string | null;
+  phone: string | null;
+  contactEmail: string | null;
+  principal_name: string | null;
+  principal_signature_url: string | null;
+  school_closes_on: string | null;
+  school_closes_time: string | null;
+  school_opens_on: string | null;
+  school_opens_time: string | null;
+}
 export const reportBookApi = {
   options: () => api.get<Options>("/report-book/options").then((r) => r.data),
+  settings: () =>
+    api.get<ReportBookSettings>("/report-book/settings").then((r) => r.data),
+  saveSettings: (data: ReportBookSettings) =>
+    api.post("/report-book/settings", data).then((r) => r.data),
   policy: (grade: number) =>
     api.get<Policy>(`/report-book/policy/${grade}`).then((r) => r.data),
   savePolicy: (grade_level: number, bands: Band[], confirmed: boolean) =>

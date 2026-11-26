@@ -31,6 +31,7 @@ import {
   PeriodSubjectsDto,
   PolicyDto,
   ReopenDto,
+  ReportBookSettingsDto,
   ReportCommentDto,
 } from "./report-book.dto";
 @Controller("report-book")
@@ -44,6 +45,20 @@ export class ReportBookController {
   @Roles(Role.TEACHER, Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
   options(@CurrentUser() a: AuthenticatedUser) {
     return this.service.options(a);
+  }
+  @Get("settings")
+  @Header("Cache-Control", "private, no-store")
+  @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
+  settings(@CurrentUser() a: AuthenticatedUser) {
+    return this.service.settings(a);
+  }
+  @Post("settings")
+  @Roles(Role.SCHOOL_ADMIN, Role.PLATFORM_ADMIN)
+  saveSettings(
+    @Body() d: ReportBookSettingsDto,
+    @CurrentUser() a: AuthenticatedUser,
+  ) {
+    return this.service.saveSettings(d, a);
   }
   @Get("policy/:grade")
   @Header("Cache-Control", "private, no-store")

@@ -93,3 +93,16 @@ export class PeriodSubjectsDto {
   @MaxLength(100, { each: true })
   subjects!: string[];
 }
+
+export class ReportBookSettingsDto {
+  @IsOptional() @IsString() @MaxLength(500) logoUrl?: string;
+  @IsOptional() @IsString() @MaxLength(300) address?: string;
+  @IsOptional() @IsString() @MaxLength(50) phone?: string;
+  @IsOptional() @IsString() @MaxLength(254) contactEmail?: string;
+  @IsOptional() @IsString() @MaxLength(160) principal_name?: string;
+  @IsOptional() @IsString() @MaxLength(500) principal_signature_url?: string;
+  @IsOptional() @IsDateString() school_closes_on?: string;
+  @IsOptional() @IsString() @MaxLength(12) school_closes_time?: string;
+  @IsOptional() @IsDateString() school_opens_on?: string;
+  @IsOptional() @IsString() @MaxLength(12) school_opens_time?: string;
+}

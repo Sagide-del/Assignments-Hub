@@ -7,15 +7,19 @@ export class ReportBookPdfService {
   constructor(private readonly branding: CslPhotoService) {}
   async render(card: any) {
     const school = card.school_json as any;
-    const logo = school.logoUrl
-      ? await this.branding.schoolLogo(school.logoUrl)
-      : null;
-    return renderReportCard(card, logo);
+    const [logo, principalSignature] = await Promise.all([
+      school.logoUrl ? this.branding.schoolLogo(school.logoUrl) : null,
+      school.principalSignatureUrl
+        ? this.branding.schoolLogo(school.principalSignatureUrl)
+        : null,
+    ]);
+    return renderReportCard(card, logo, principalSignature);
   }
 }
 export function renderReportCard(
   c: any,
   logo: string | null = null,
+  principalSignature: string | null = null,
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -61,6 +65,7 @@ export function renderReportCard(
       size = 10,
       bold = false,
       color = green,
+      align: "left" | "center" | "right" = "left",
     ) =>
       doc
         .font(bold ? "Strong" : "Body")
@@ -70,47 +75,50 @@ export function renderReportCard(
           width,
           height: size * 2.6,
           ellipsis: true,
+          align,
         });
     const title = () => {
       doc.rect(0, 0, 596, 8).fill(green);
       if (logo)
-        doc.image(Buffer.from(logo.split(",")[1], "base64"), 36, 26, {
-          fit: [56, 56],
+        doc.image(Buffer.from(logo.split(",")[1], "base64"), 270, 21, {
+          fit: [56, 48],
         });
-      const x = logo ? 104 : 36;
-      line(s.name, x, 28, 455 - (logo ? 60 : 0), 20, true);
-      line(s.address ?? "", x, 62, 455, 9, false, muted);
-      line("TERM REPORT CARD", 36, 103, 345, 11, true);
+      const contact = [s.address, s.phone, s.contactEmail]
+        .filter(Boolean)
+        .join("  |  ");
+      line(s.name, 36, logo ? 73 : 30, 523, 19, true, green, "center");
+      line(contact, 36, logo ? 97 : 56, 523, 8.5, false, muted, "center");
+      line("TERM REPORT CARD", 36, 120, 345, 11, true);
       line(
         `${c.status} · Revision ${c.revision}`,
         390,
-        104,
+        121,
         169,
         9,
         true,
         c.status === "PUBLISHED" ? green : "#a85b13",
       );
-      doc.moveTo(36, 128).lineTo(559, 128).strokeColor("#dce6df").stroke();
+      doc.moveTo(36, 145).lineTo(559, 145).strokeColor("#dce6df").stroke();
     };
     title();
-    line(student.name, 36, 143, 523, 18, true);
+    line(student.name, 36, 160, 523, 18, true);
     line(
       `Admission: ${student.admissionNumber ?? "—"}    ${student.grade} · Stream ${student.stream}`,
       36,
-      174,
+      191,
       523,
       10,
     );
     line(
       `${c.period.term} · ${c.period.year}    |    ${c.policy_json.confirmed ? "School-approved grading policy" : "Grading preset — school confirmation required"}`,
       36,
-      195,
+      212,
       523,
       9,
       false,
       muted,
     );
-    let y = 229;
+    let y = 246;
     const tableHead = () => {
       doc.roundedRect(36, y, 523, 27, 4).fill(green);
       line("SUBJECT", 46, y + 7, 156, 9, true, "#ffffff");
@@ -132,7 +140,7 @@ export function renderReportCard(
       if (y + h > 706) {
         doc.addPage();
         title();
-        y = 147;
+        y = 164;
         tableHead();
       }
       doc
@@ -162,7 +170,7 @@ export function renderReportCard(
     if (y + 190 > 757) {
       doc.addPage();
       title();
-      y = 150;
+      y = 164;
     }
     doc.roundedRect(36, y + 10, 523, 52, 6).fill("#eaf2e9");
     line(
@@ -201,7 +209,7 @@ export function renderReportCard(
       if (y + h > 760) {
         doc.addPage();
         titlePage();
-        y = 150;
+        y = 164;
       }
       line(title, 36, y, 523, 10, true);
       doc
@@ -214,13 +222,54 @@ export function renderReportCard(
     const titlePage = title;
     comment("CLASS TEACHER’S COMMENT", c.teacher_comment);
     comment("PRINCIPAL’S COMMENT", c.principal_comment);
-    if (y + 38 > 760) {
+    if (y + 90 > 760) {
       doc.addPage();
       title();
-      y = 150;
+      y = 164;
     }
-    line("Class Teacher: ____________________", 36, y + 5, 260, 9);
-    line("Principal: ____________________", 314, y + 5, 245, 9);
+    const formatDate = (value: unknown) => {
+      if (!value) return "________________";
+      const date = new Date(String(value));
+      return Number.isNaN(date.getTime())
+        ? "________________"
+        : date.toLocaleDateString("en-KE", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+    };
+    line(
+      `School closes: ${formatDate(s.schoolClosesOn)}${s.schoolClosesTime ? ` at ${s.schoolClosesTime}` : ""}`,
+      36,
+      y + 5,
+      260,
+      9,
+    );
+    line(
+      `School opens: ${formatDate(s.schoolOpensOn)}${s.schoolOpensTime ? ` at ${s.schoolOpensTime}` : ""}`,
+      314,
+      y + 5,
+      245,
+      9,
+    );
+    line("Class Teacher: ____________________", 36, y + 38, 260, 9);
+    if (principalSignature) {
+      doc.image(
+        Buffer.from(principalSignature.split(",")[1], "base64"),
+        390,
+        y + 22,
+        {
+          fit: [100, 30],
+        },
+      );
+    }
+    line(
+      `${s.principalName ? `${s.principalName} · ` : ""}Principal: ____________________`,
+      314,
+      y + 57,
+      245,
+      9,
+    );
     const range = doc.bufferedPageRange();
     for (let i = 0; i < range.count; i++) {
       doc.switchToPage(i);

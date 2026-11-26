@@ -87,6 +87,30 @@ export function subjectResult(
     assessments: entries,
   };
 }
+
+/**
+ * A consistent first-pass report comment for completed subjects. Teachers can
+ * always replace it in the gradebook; this prevents a formal report from
+ * showing an empty remark when marks have already been approved.
+ */
+export function reportRemark(result: {
+  score: number | null;
+  complete: boolean;
+  remark?: string | null;
+}) {
+  if (result.remark?.trim()) return result.remark.trim();
+  if (!result.complete || result.score === null)
+    return "Assessment evidence is pending.";
+  if (result.score >= 90)
+    return "Excellent mastery. Maintain the same focused and independent practice.";
+  if (result.score >= 75)
+    return "Strong progress. Continue applying concepts accurately and consistently.";
+  if (result.score >= 58)
+    return "Secure progress. Review missed ideas and practise them each week.";
+  if (result.score >= 41)
+    return "Developing steadily. Use short guided practice sessions and ask for support early.";
+  return "Needs focused support. Rebuild the foundations through regular guided practice.";
+}
 export function rankComparable(
   rows: { subjects: any[]; average: number | null }[],
 ) {

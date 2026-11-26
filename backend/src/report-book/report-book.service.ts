@@ -18,6 +18,7 @@ import {
   ClassTeacherDto,
   PeriodDto,
   PolicyDto,
+  ReportBookSettingsDto,
   ReportCommentDto,
 } from "./report-book.dto";
 import {
@@ -25,6 +26,7 @@ import {
   grade,
   PRESET_BANDS,
   rankComparable,
+  reportRemark,
   round,
   subjectResult,
 } from "./report-book.calculations";
@@ -197,6 +199,80 @@ export class ReportBookService {
       periods: periods.filter((p) => admin || allowed.has(p.stream_id)),
       teachers,
     };
+  }
+  async settings(a: AuthenticatedUser) {
+    this.admin(a);
+    const school = await this.db.school.findUniqueOrThrow({
+      where: { id: a.schoolId },
+      include: { reportBookSetting: true },
+    });
+    return {
+      logoUrl: school.logoUrl,
+      address: school.address,
+      phone: school.phone,
+      contactEmail: school.contactEmail,
+      principal_name: school.reportBookSetting?.principal_name ?? null,
+      principal_signature_url:
+        school.reportBookSetting?.principal_signature_url ?? null,
+      school_closes_on: school.reportBookSetting?.school_closes_on ?? null,
+      school_closes_time: school.reportBookSetting?.school_closes_time ?? null,
+      school_opens_on: school.reportBookSetting?.school_opens_on ?? null,
+      school_opens_time: school.reportBookSetting?.school_opens_time ?? null,
+    };
+  }
+  async saveSettings(d: ReportBookSettingsDto, a: AuthenticatedUser) {
+    this.admin(a);
+    const closes = d.school_closes_on ? new Date(d.school_closes_on) : null;
+    const opens = d.school_opens_on ? new Date(d.school_opens_on) : null;
+    if (closes && opens && opens.getTime() < closes.getTime())
+      throw new BadRequestException(
+        "School opening date must be on or after the closing date.",
+      );
+    const value = (v?: string) => (v?.trim() ? v.trim() : null);
+    return this.db.$transaction(async (tx) => {
+      await tx.school.update({
+        where: { id: a.schoolId },
+        data: {
+          logoUrl: value(d.logoUrl),
+          address: value(d.address),
+          phone: value(d.phone),
+          contactEmail: value(d.contactEmail),
+        },
+      });
+      const saved = await tx.reportBookSchoolSetting.upsert({
+        where: { school_id: a.schoolId },
+        create: {
+          school_id: a.schoolId,
+          principal_name: value(d.principal_name),
+          principal_signature_url: value(d.principal_signature_url),
+          school_closes_on: closes,
+          school_closes_time: value(d.school_closes_time),
+          school_opens_on: opens,
+          school_opens_time: value(d.school_opens_time),
+        },
+        update: {
+          principal_name: value(d.principal_name),
+          principal_signature_url: value(d.principal_signature_url),
+          school_closes_on: closes,
+          school_closes_time: value(d.school_closes_time),
+          school_opens_on: opens,
+          school_opens_time: value(d.school_opens_time),
+        },
+      });
+      await tx.reportBookChange.create({
+        data: {
+          school_id: a.schoolId,
+          actor_id: a.id,
+          action: "REPORT_BOOK_SETTINGS_UPDATED",
+          details: json({
+            hasLogo: !!value(d.logoUrl),
+            hasPrincipalSignature: !!value(d.principal_signature_url),
+            hasCalendar: !!(closes || opens),
+          }),
+        },
+      });
+      return saved;
+    });
   }
   async assignClass(dto: ClassTeacherDto, a: AuthenticatedUser) {
     this.admin(a);
@@ -636,6 +712,7 @@ export class ReportBookService {
         const positions = rank ? rankComparable(data.rows) : null;
         const school = await tx.school.findUniqueOrThrow({
           where: { id: a.schoolId },
+          include: { reportBookSetting: true },
         });
         const revision = p.revision + 1;
         await tx.report_Card.updateMany({
@@ -651,7 +728,12 @@ export class ReportBookService {
               period_id: id,
               revision,
               grade_level: gradeNumber(p.stream.grade)!,
-              subjects_json: json(row.subjects),
+              subjects_json: json(
+                row.subjects.map((subject: any) => ({
+                  ...subject,
+                  remark: reportRemark(subject),
+                })),
+              ),
               student_json: json({
                 name: row.student.name,
                 admissionNumber: row.student.admissionNumber,
@@ -663,6 +745,19 @@ export class ReportBookService {
                 address: school.address,
                 logoUrl: school.logoUrl,
                 code: school.code,
+                phone: school.phone,
+                contactEmail: school.contactEmail,
+                principalName: school.reportBookSetting?.principal_name ?? null,
+                principalSignatureUrl:
+                  school.reportBookSetting?.principal_signature_url ?? null,
+                schoolClosesOn:
+                  school.reportBookSetting?.school_closes_on ?? null,
+                schoolClosesTime:
+                  school.reportBookSetting?.school_closes_time ?? null,
+                schoolOpensOn:
+                  school.reportBookSetting?.school_opens_on ?? null,
+                schoolOpensTime:
+                  school.reportBookSetting?.school_opens_time ?? null,
               }),
               policy_json: json({
                 bands: data.policy.bands,

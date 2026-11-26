@@ -3,8 +3,11 @@ import { Link, useBlocker } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
+  CalendarDays,
   Download,
   FileCheck,
+  ImageUp,
+  PenLine,
   Plus,
   Save,
   Settings,
@@ -16,8 +19,10 @@ import {
   type Band,
   type Options,
   type Period,
+  type ReportBookSettings,
   type ReportCard,
 } from "../../api/report-book.api";
+import { uploadsApi } from "../../api/uploads.api";
 import { apiErrorMessage } from "../../api/axios";
 import { useAuthStore } from "../../store/auth.store";
 const input =
@@ -105,7 +110,9 @@ export default function ReportBook() {
           return (
             <button
               key={String(key)}
-              onClick={() => { if (tab !== String(key)) changeView(() => setTab(String(key))); }}
+              onClick={() => {
+                if (tab !== String(key)) changeView(() => setTab(String(key)));
+              }}
               className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-semibold ${tab === key ? "bg-[#143e32] text-white" : "text-slate-500"}`}
             >
               <I size={16} />
@@ -977,7 +984,9 @@ function ClassReports({
           card={preview}
           admin={admin}
           canEdit={
-            preview.revision === period.revision && preview.status !== "PUBLISHED" && (period.status === "DRAFT" || (admin && period.status === "REVIEW"))
+            preview.revision === period.revision &&
+            preview.status !== "PUBLISHED" &&
+            (period.status === "DRAFT" || (admin && period.status === "REVIEW"))
           }
           onClose={() => setPreview(null)}
           onSaved={async () => {
@@ -1064,6 +1073,7 @@ function Setup({
   });
   return (
     <section className="space-y-5">
+      <ReportIdentity onSaved={onSaved} />
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <h2 className="text-xl font-semibold">School setup</h2>
         <p className="mt-2 text-sm text-slate-500">
@@ -1294,6 +1304,231 @@ function Setup({
         </p>
       ) : null}
     </section>
+  );
+}
+function ReportIdentity({ onSaved }: { onSaved: () => Promise<void> }) {
+  const query = useQuery({
+    queryKey: ["report-book-settings"],
+    queryFn: reportBookApi.settings,
+  });
+  const [form, setForm] = useState<ReportBookSettings | null>(null);
+  const [uploading, setUploading] = useState<"logo" | "signature" | null>(null);
+  useEffect(() => {
+    if (query.data) setForm(query.data);
+  }, [query.data]);
+  const save = useMutation({
+    mutationFn: () => reportBookApi.saveSettings(form!),
+    onSuccess: async () => {
+      await Promise.all([query.refetch(), onSaved()]);
+    },
+  });
+  const patch = (values: Partial<ReportBookSettings>) =>
+    setForm((current) => (current ? { ...current, ...values } : current));
+  const upload = async (kind: "logo" | "signature", file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      window.alert("Use a PNG, JPG, or WEBP image for report branding.");
+      return;
+    }
+    setUploading(kind);
+    try {
+      const uploaded = await uploadsApi.uploadSingle(file);
+      patch(
+        kind === "logo"
+          ? { logoUrl: uploaded.url }
+          : { principal_signature_url: uploaded.url },
+      );
+    } catch (error) {
+      window.alert(apiErrorMessage(error, "The image could not be uploaded."));
+    } finally {
+      setUploading(null);
+    }
+  };
+  if (query.isPending || !form)
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
+        Loading report identity…
+      </div>
+    );
+  return (
+    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 bg-[#143e32] px-5 py-5 text-white">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c8f64d]">
+          Formal report identity
+        </p>
+        <h2 className="mt-1 text-xl font-semibold">
+          School letterhead and term calendar
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-200">
+          These details are centred on future PDFs and frozen into each new
+          report revision. Existing published reports are intentionally
+          unchanged.
+        </p>
+      </div>
+      <div className="grid gap-5 p-5 lg:grid-cols-2">
+        <section className="space-y-4">
+          <h3 className="font-semibold text-slate-900">School contacts</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-semibold text-slate-500">
+              School address
+              <input
+                className={`${input} mt-1 w-full`}
+                value={form.address ?? ""}
+                onChange={(e) => patch({ address: e.target.value })}
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
+              Phone
+              <input
+                className={`${input} mt-1 w-full`}
+                value={form.phone ?? ""}
+                onChange={(e) => patch({ phone: e.target.value })}
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-500 sm:col-span-2">
+              Official email
+              <input
+                type="email"
+                className={`${input} mt-1 w-full`}
+                value={form.contactEmail ?? ""}
+                onChange={(e) => patch({ contactEmail: e.target.value })}
+              />
+            </label>
+          </div>
+          <label className="block text-xs font-semibold text-slate-500">
+            School logo
+            <span className="mt-1 flex min-h-11 items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 text-sm font-medium text-slate-600">
+              <ImageUp size={17} />
+              <input
+                aria-label="School report logo"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="max-w-full text-xs"
+                onChange={(e) => void upload("logo", e.target.files?.[0])}
+              />
+              {uploading === "logo" ? "Uploading…" : null}
+            </span>
+          </label>
+          {form.logoUrl ? (
+            <img
+              src={form.logoUrl}
+              alt="School logo preview"
+              className="h-14 max-w-[180px] object-contain object-left"
+            />
+          ) : null}
+        </section>
+        <section className="space-y-4">
+          <h3 className="font-semibold text-slate-900">Principal approval</h3>
+          <label className="block text-xs font-semibold text-slate-500">
+            Principal’s full name
+            <input
+              className={`${input} mt-1 w-full`}
+              value={form.principal_name ?? ""}
+              onChange={(e) => patch({ principal_name: e.target.value })}
+              placeholder="e.g. Jane Wanjiku"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-slate-500">
+            Principal signature image
+            <span className="mt-1 flex min-h-11 items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 text-sm font-medium text-slate-600">
+              <PenLine size={17} />
+              <input
+                aria-label="Principal signature image"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="max-w-full text-xs"
+                onChange={(e) => void upload("signature", e.target.files?.[0])}
+              />
+              {uploading === "signature" ? "Uploading…" : null}
+            </span>
+          </label>
+          {form.principal_signature_url ? (
+            <img
+              src={form.principal_signature_url}
+              alt="Principal signature preview"
+              className="h-12 max-w-[180px] object-contain object-left"
+            />
+          ) : (
+            <p className="text-xs leading-5 text-slate-500">
+              Upload the approved signature sample once. It is placed
+              automatically above the principal line on new formal reports.
+            </p>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-semibold text-slate-500">
+              School closes on
+              <input
+                aria-label="School closes on"
+                type="date"
+                className={`${input} mt-1 w-full`}
+                value={form.school_closes_on?.slice(0, 10) ?? ""}
+                onChange={(e) =>
+                  patch({ school_closes_on: e.target.value || null })
+                }
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
+              Closing time
+              <input
+                aria-label="School closing time"
+                type="time"
+                className={`${input} mt-1 w-full`}
+                value={form.school_closes_time ?? ""}
+                onChange={(e) =>
+                  patch({ school_closes_time: e.target.value || null })
+                }
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
+              School opens on
+              <input
+                aria-label="School opens on"
+                type="date"
+                className={`${input} mt-1 w-full`}
+                value={form.school_opens_on?.slice(0, 10) ?? ""}
+                onChange={(e) =>
+                  patch({ school_opens_on: e.target.value || null })
+                }
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
+              Opening time
+              <input
+                aria-label="School opening time"
+                type="time"
+                className={`${input} mt-1 w-full`}
+                value={form.school_opens_time ?? ""}
+                onChange={(e) =>
+                  patch({ school_opens_time: e.target.value || null })
+                }
+              />
+            </label>
+          </div>
+        </section>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
+        <p className="inline-flex items-center gap-2 text-xs text-slate-500">
+          <CalendarDays size={15} /> Applied when the next report revision is
+          generated.
+        </p>
+        <button
+          type="button"
+          className={button}
+          disabled={save.isPending || !!uploading}
+          onClick={() => save.mutate()}
+        >
+          {save.isPending ? "Saving…" : "Save report identity"}
+        </button>
+      </div>
+      {save.isError || query.isError ? (
+        <p role="alert" className="px-5 pb-4 text-sm text-rose-700">
+          {apiErrorMessage(
+            save.error ?? query.error,
+            "Report identity could not be saved.",
+          )}
+        </p>
+      ) : null}
+    </article>
   );
 }
 export function CardPreview({

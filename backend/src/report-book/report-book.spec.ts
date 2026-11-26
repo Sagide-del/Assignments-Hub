@@ -4,6 +4,7 @@ import {
   grade,
   PRESET_BANDS,
   rankComparable,
+  reportRemark,
   subjectResult,
 } from "./report-book.calculations";
 import { renderReportCard } from "./report-book.pdf";
@@ -89,6 +90,20 @@ describe("School report-book calculations", () => {
         { subjects: [{ subject: "Biology" }], average: 90 },
       ]),
     ).toThrow("different");
+  });
+  test("drafts a useful subject remark when a teacher has not entered one", () => {
+    expect(reportRemark({ score: 92, complete: true })).toContain("Excellent");
+    expect(reportRemark({ score: 36, complete: true })).toContain(
+      "focused support",
+    );
+    expect(reportRemark({ score: null, complete: false })).toContain("pending");
+    expect(
+      reportRemark({
+        score: 36,
+        complete: true,
+        remark: "Use fractions practice.",
+      }),
+    ).toBe("Use fractions practice.");
   });
   test("report PDF contains every subject and labels drafts without claiming issue", async () => {
     const card = {

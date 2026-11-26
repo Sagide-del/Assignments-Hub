@@ -321,6 +321,7 @@ model School {
   reportBookClassTeachers ClassTeacherAssignment[]
   reportBookPolicies      ReportBookPolicy[]
   reportBookPeriods       ReportBookPeriod[]
+  reportBookSetting       ReportBookSchoolSetting?
   reportBookMarks         Assessment_Record[]
   reportBookCards         Report_Card[]
   reportBookChanges       ReportBookChange[]
@@ -3340,6 +3341,23 @@ model ReportBookPolicy {
   school       School   @relation(fields: [school_id], references: [id], onDelete: Cascade)
 
   @@unique([school_id, grade_level])
+}
+
+// School-controlled identity details used on formal report cards.  These are
+// copied into each generated card so later branding changes cannot rewrite an
+// already-issued academic record.
+model ReportBookSchoolSetting {
+  school_id               Int      @id
+  principal_name          String?
+  principal_signature_url String?
+  school_closes_on        DateTime?
+  school_closes_time      String?
+  school_opens_on         DateTime?
+  school_opens_time       String?
+  updated_at              DateTime @updatedAt
+  school                  School   @relation(fields: [school_id], references: [id], onDelete: Cascade)
+
+  @@map("report_book_school_settings")
 }
 
 model ReportBookPeriod {
