@@ -15,6 +15,7 @@ import {
   TimerReset,
   X,
   Target,
+  BookOpen,
 } from "lucide-react";
 import { apiErrorMessage } from "../../api/axios";
 import {
@@ -23,6 +24,7 @@ import {
   type LearningSession,
 } from "../../api/learning-coach.api";
 import { ReportCardPreview, type ReportScore } from "./ReportCardPreview";
+import { GuidedLessonPage } from "./learning/GuidedLesson";
 import { useAuthStore } from "../../store/auth.store";
 import { isCbcGrade } from "../../utils/gradeTier";
 import { timetableApi } from "../../api/timetable.api";
@@ -525,6 +527,67 @@ function reportLevel(percentage: number) {
   return "BE · Priority";
 }
 
+function CoachLessonLaunchpad({
+  topics,
+  onOpen,
+}: {
+  topics: Array<{ subject: string; topic: string; priority: boolean }>;
+  onOpen: (subject: string, topic: string) => void;
+}) {
+  const featured = [...topics]
+    .sort((left, right) => Number(right.priority) - Number(left.priority))
+    .slice(0, 3);
+  if (!featured.length) return null;
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 px-5 py-5 sm:px-7">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[.16em] text-[#607D00]">
+            Guided recovery
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-[#101820]">
+            Your next learning steps
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Start with one short explanation before you practise questions.
+          </p>
+        </div>
+        <span className="rounded-full bg-[#eef9cf] px-3 py-1.5 text-xs font-bold text-[#365100]">
+          Voice-guided lessons
+        </span>
+      </div>
+      <div className="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {featured.map((item) => (
+          <button
+            type="button"
+            key={`${item.subject}-${item.topic}`}
+            onClick={() => onOpen(item.subject, item.topic)}
+            className="group min-h-40 p-5 text-left transition hover:bg-slate-50"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#101820] text-lime-300">
+                <BookOpen className="h-5 w-5" />
+              </span>
+              {item.priority ? (
+                <span className="rounded-full bg-rose-50 px-2 py-1 text-[11px] font-bold text-rose-700">
+                  Priority
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[.14em] text-slate-500">
+              {item.subject}
+            </p>
+            <p className="mt-1 font-semibold text-[#101820]">{item.topic}</p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#466000]">
+              Start lesson <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function FocusTimer({
   subject,
   topic,
@@ -872,6 +935,10 @@ export function LearningCoachPage() {
     subject: string;
     topic: string;
   } | null>(null);
+  const [guidedLesson, setGuidedLesson] = useState<{
+    subject: string;
+    topic: string;
+  } | null>(null);
   const catalog = useQuery({
     queryKey: ["learning-coach-catalog"],
     queryFn: learningCoachApi.catalog,
@@ -883,6 +950,10 @@ export function LearningCoachPage() {
   const reports = useQuery({
     queryKey: ["learning-coach-report-cards"],
     queryFn: learningCoachApi.reportCards,
+  });
+  const lessonTopics = useQuery({
+    queryKey: ["learning-coach-guided-topics"],
+    queryFn: () => learningCoachApi.lessonTopics(),
   });
   const start = useMutation({
     mutationFn: (input: {
@@ -896,6 +967,14 @@ export function LearningCoachPage() {
     mutationFn: () => timetableApi.generate(true),
     onSuccess: () => navigate("/student/study-hub/timetable"),
   });
+  if (guidedLesson)
+    return (
+      <GuidedLessonPage
+        subject={guidedLesson.subject}
+        topic={guidedLesson.topic}
+        onBack={() => setGuidedLesson(null)}
+      />
+    );
   if (!isCbcGrade(user?.grade))
     return (
       <div className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm leading-6 text-amber-950">
@@ -916,6 +995,23 @@ export function LearningCoachPage() {
     );
   const report = reports.data?.find((item) => item.status === "ANALYZED");
   const profile = report?.diagnosis?.colorCodes ?? [];
+  const fallbackTopics = profile
+    .filter((item) => item.color === "RED")
+    .map((item) => {
+      const normalizedSubject = item.subject.trim().toLowerCase();
+      const topic = normalizedSubject.includes("math")
+        ? "Number foundations"
+        : normalizedSubject.includes("physics")
+          ? "Forces and motion"
+          : normalizedSubject.includes("chem")
+            ? "Atomic structure"
+            : "Core foundations";
+      return { subject: item.subject, topic, priority: true };
+    });
+  const launchpadTopics =
+    lessonTopics.data && lessonTopics.data.length > 0
+      ? lessonTopics.data
+      : fallbackTopics;
   if (!report || reviewReport)
     return (
       <div className="mx-auto max-w-5xl space-y-6">
@@ -967,22 +1063,13 @@ export function LearningCoachPage() {
       <PageHeader
         title="Learning Coach"
         actions={
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/student/learn")}
-              className="min-h-10 rounded-xl bg-[#101820] px-4 text-sm font-bold text-white"
-            >
-              Guided lessons
-            </button>
-            <button
-              type="button"
-              onClick={() => setReviewReport(true)}
-              className="min-h-10 text-sm font-semibold text-slate-600 hover:text-[#101820]"
-            >
-              Review results
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setReviewReport(true)}
+            className="min-h-10 text-sm font-semibold text-slate-600 hover:text-[#101820]"
+          >
+            Review results
+          </button>
         }
       />
 
@@ -1002,6 +1089,10 @@ export function LearningCoachPage() {
           Practise {requestedFocus} · {requestedTopic}
         </button>
       ) : null}
+      <CoachLessonLaunchpad
+        topics={launchpadTopics}
+        onOpen={(subject, topic) => setGuidedLesson({ subject, topic })}
+      />
       <LearningRecovery onSession={setSession} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <details
