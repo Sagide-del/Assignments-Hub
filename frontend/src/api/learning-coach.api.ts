@@ -186,8 +186,8 @@ export const learningCoachApi = {
     api
       .get<GuidedLesson>(`/learning-coach/lessons/${encodeURIComponent(subject)}/${encodeURIComponent(topic)}`)
       .then((response) => response.data),
-  completeLesson: (id: string, score?: number) =>
+  completeLesson: (id: string, answers?: string[]) =>
     api
-      .post(`/learning-coach/lessons/${id}/complete`, { score })
+      .post(`/learning-coach/lessons/${id}/complete`, { answers })
       .then((response) => response.data),
 };

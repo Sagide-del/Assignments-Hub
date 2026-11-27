@@ -196,6 +196,16 @@ describe("Private one-page engagement report", () => {
     };
     db.userPresenceSession = { findMany: jest.fn().mockResolvedValue([]) };
     db.skillLessonProgress = { findMany: jest.fn().mockResolvedValue([]) };
+    db.studentLessonProgress = {
+      findMany: jest
+        .fn()
+        .mockResolvedValue([
+          {
+            completedAt: new Date(),
+            lesson: { subject: "Mathematics", topic: "Surds" },
+          },
+        ]),
+    };
     db.music_Project = { findMany: jest.fn().mockResolvedValue([]) };
     db.music_Studio_Project = { findMany: jest.fn().mockResolvedValue([]) };
     db.sports_Lab_Progress = { findMany: jest.fn().mockResolvedValue([]) };
@@ -216,13 +226,18 @@ describe("Private one-page engagement report", () => {
     } as any).data(actor, 7);
     expect(r.summary).toMatchObject({
       logins: 1,
-      subjects: 1,
-      activities: 1,
+      subjects: 2,
+      activities: 2,
       average: null,
     });
     expect(r.events.find((e) => e.kind === "Assignment")?.score).toBeNull();
+    expect(r.events.find((e) => e.kind === "Guided lesson")).toMatchObject({
+      title: "Surds",
+      subject: "Mathematics",
+      score: null,
+    });
     expect(r.daily).toHaveLength(7);
-    expect(r.daily.at(-1)?.count).toBe(1);
+    expect(r.daily.at(-1)?.count).toBe(2);
     expect(db.auditLog.findMany.mock.calls[0][0].where).toMatchObject({
       userId: 1,
       schoolId: 8,

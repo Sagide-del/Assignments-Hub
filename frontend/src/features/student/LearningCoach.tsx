@@ -534,9 +534,17 @@ function CoachLessonLaunchpad({
   topics: Array<{ subject: string; topic: string; priority: boolean }>;
   onOpen: (subject: string, topic: string) => void;
 }) {
-  const featured = [...topics]
-    .sort((left, right) => Number(right.priority) - Number(left.priority))
-    .slice(0, 3);
+  const ordered = [...topics].sort(
+    (a, b) => Number(b.priority) - Number(a.priority),
+  );
+  const featured = [
+    ...new Map(
+      ordered.map((item) => [
+        item.subject,
+        ordered.find((t) => t.subject === item.subject)!,
+      ]),
+    ).values(),
+  ].slice(0, 3);
   if (!featured.length) return null;
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -579,7 +587,8 @@ function CoachLessonLaunchpad({
             </p>
             <p className="mt-1 font-semibold text-[#101820]">{item.topic}</p>
             <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#466000]">
-              Start lesson <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              Start lesson{" "}
+              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
             </span>
           </button>
         ))}
@@ -926,7 +935,7 @@ function SessionPlayer({
 export function LearningCoachPage() {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const [focusParams] = useSearchParams();
+  const [focusParams, setFocusParams] = useSearchParams();
   const requestedFocus = focusParams.get("focus");
   const requestedTopic = focusParams.get("topic");
   const [session, setSession] = useState<LearningSession | null>(null);
@@ -938,7 +947,11 @@ export function LearningCoachPage() {
   const [guidedLesson, setGuidedLesson] = useState<{
     subject: string;
     topic: string;
-  } | null>(null);
+  } | null>(() =>
+    focusParams.get("lesson") === "1" && requestedFocus && requestedTopic
+      ? { subject: requestedFocus, topic: requestedTopic }
+      : null,
+  );
   const catalog = useQuery({
     queryKey: ["learning-coach-catalog"],
     queryFn: learningCoachApi.catalog,
@@ -952,8 +965,9 @@ export function LearningCoachPage() {
     queryFn: learningCoachApi.reportCards,
   });
   const lessonTopics = useQuery({
-    queryKey: ["learning-coach-guided-topics"],
+    queryKey: ["learning-coach-guided-topics", user?.id],
     queryFn: () => learningCoachApi.lessonTopics(),
+    staleTime: 60000,
   });
   const start = useMutation({
     mutationFn: (input: {
@@ -972,7 +986,26 @@ export function LearningCoachPage() {
       <GuidedLessonPage
         subject={guidedLesson.subject}
         topic={guidedLesson.topic}
-        onBack={() => setGuidedLesson(null)}
+        onBack={() => {
+          setGuidedLesson(null);
+          if (focusParams.has("lesson")) {
+            const p = new URLSearchParams(focusParams);
+            p.delete("lesson");
+            setFocusParams(p, { replace: true });
+          }
+        }}
+        onPractice={
+          catalog.data?.some(
+            (t) =>
+              t.subject.toLowerCase() === guidedLesson.subject.toLowerCase() &&
+              t.topic.toLowerCase() === guidedLesson.topic.toLowerCase(),
+          )
+            ? async () => {
+                await start.mutateAsync({ ...guidedLesson, mode: "PRACTICE" });
+                setGuidedLesson(null);
+              }
+            : undefined
+        }
       />
     );
   if (!isCbcGrade(user?.grade))
@@ -995,28 +1028,44 @@ export function LearningCoachPage() {
     );
   const report = reports.data?.find((item) => item.status === "ANALYZED");
   const profile = report?.diagnosis?.colorCodes ?? [];
-  const fallbackTopics = profile
-    .filter((item) => item.color === "RED")
-    .map((item) => {
-      const normalizedSubject = item.subject.trim().toLowerCase();
-      const topic = normalizedSubject.includes("math")
-        ? "Number foundations"
-        : normalizedSubject.includes("physics")
-          ? "Forces and motion"
-          : normalizedSubject.includes("chem")
-            ? "Atomic structure"
-            : "Core foundations";
-      return { subject: item.subject, topic, priority: true };
-    });
-  const launchpadTopics =
-    lessonTopics.data && lessonTopics.data.length > 0
-      ? lessonTopics.data
-      : fallbackTopics;
+  const launchpadTopics = lessonTopics.data ?? [];
+  const launchpad = (
+    <>
+      {lessonTopics.isPending ? (
+        <p role="status" className="text-sm text-slate-500">
+          Finding your next guided lesson…
+        </p>
+      ) : lessonTopics.isError ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+          <p>
+            Guided lessons could not load. Your other recovery resources are
+            still available.
+          </p>
+          <button
+            type="button"
+            onClick={() => void lessonTopics.refetch()}
+            className="mt-2 min-h-11 font-semibold underline"
+          >
+            Retry guided lessons
+          </button>
+        </div>
+      ) : (
+        <CoachLessonLaunchpad
+          topics={launchpadTopics}
+          onOpen={(subject, topic) => setGuidedLesson({ subject, topic })}
+        />
+      )}
+    </>
+  );
   if (!report || reviewReport)
     return (
       <div className="mx-auto max-w-5xl space-y-6">
         <PageHeader title="Learning Coach" />
-        <LearningRecovery onSession={setSession} />
+        {launchpad}
+        <LearningRecovery
+          onSession={setSession}
+          onLesson={(subject, topic) => setGuidedLesson({ subject, topic })}
+        />
         {report ? (
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-lime-200 bg-lime-50 p-5">
             <div>
@@ -1089,11 +1138,11 @@ export function LearningCoachPage() {
           Practise {requestedFocus} · {requestedTopic}
         </button>
       ) : null}
-      <CoachLessonLaunchpad
-        topics={launchpadTopics}
-        onOpen={(subject, topic) => setGuidedLesson({ subject, topic })}
+      {launchpad}
+      <LearningRecovery
+        onSession={setSession}
+        onLesson={(subject, topic) => setGuidedLesson({ subject, topic })}
       />
-      <LearningRecovery onSession={setSession} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <details
           className="group rounded-2xl border border-slate-200 bg-white"

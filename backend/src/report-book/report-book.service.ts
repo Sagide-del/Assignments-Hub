@@ -914,7 +914,7 @@ export class ReportBookService {
                 !cards.some(
                   (c) =>
                     c.student_id === r.student.id &&
-                    same(c.subjects_json, r.subjects) &&
+                    same(c.subjects_json, r.subjects.map((subject:any)=>({...subject,remark:reportRemark(subject)}))) &&
                     same(c.student_json, {
                       name: r.student.name,
                       admissionNumber: r.student.admissionNumber,

@@ -11,8 +11,10 @@ import { useAuthStore } from "../../store/auth.store";
 import { apiErrorMessage } from "../../api/axios";
 export function LearningRecovery({
   onSession,
+  onLesson,
 }: {
   onSession?: (session: LearningSession) => void;
+  onLesson?: (subject: string, topic: string) => void;
 }) {
   const user = useAuthStore((s) => s.user),
     navigate = useNavigate();
@@ -126,6 +128,16 @@ export function LearningRecovery({
                         >
                           <p className="text-sm font-semibold">{t.topic}</p>
                           <div className="mt-2 flex flex-wrap gap-2">
+                            {onLesson ? (
+                              <button
+                                type="button"
+                                onClick={() => onLesson(s.subject, t.topic)}
+                                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-900"
+                              >
+                                <BookOpen size={14} />
+                                Guided lesson
+                              </button>
+                            ) : null}
                             {t.resources.map((r) => (
                               <Link
                                 key={r.id}

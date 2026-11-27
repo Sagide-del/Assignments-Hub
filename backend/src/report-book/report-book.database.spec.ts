@@ -376,6 +376,8 @@ run("Report Book: PostgreSQL scopes, publication and frozen revisions", () => {
     await service.generate(period.id, false, actor(math) as any);
     const cards = await service.cards(period.id, actor(math) as any);
     published = cards[0];
+    // School-generated remarks must not make a fresh draft appear stale.
+    expect((published.subjects_json as any[]).every(s=>typeof s.remark==='string' && s.remark.length>0)).toBe(true);
     await http("GET", `/report-book/reports/${published.id}`, "student", 403);
     await expect(
       service.comments(

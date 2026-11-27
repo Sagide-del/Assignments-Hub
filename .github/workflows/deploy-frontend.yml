@@ -267,6 +267,7 @@ jobs:
           node scripts/run-browser-check.mjs scripts/intasend-checkout.browser.cjs
           node scripts/run-browser-check.mjs scripts/report-book.browser.cjs
           node scripts/run-browser-check.mjs scripts/learning-hub.browser.cjs
+          node scripts/run-browser-check.mjs scripts/guided-coach.browser.cjs
           node scripts/run-browser-check.mjs scripts/focused-skills.browser.cjs
           node scripts/run-browser-check.mjs scripts/sports-lab.browser.cjs
           node scripts/run-browser-check.mjs scripts/music-studio.browser.cjs

@@ -70,14 +70,13 @@ export class LearningCoachController {
   }
 
   @Post("lessons/:id/complete")
-  @AuditAction("learning_coach.lesson_completed")
   @ApiOperation({ summary: "Mark a guided lesson complete for the current learner" })
   completeLesson(
     @Param("id") id: string,
     @Body() dto: CompleteLessonDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.lessons.complete(id, dto.score, actor);
+    return this.lessons.complete(id, dto.answers, actor);
   }
 
   @Get("report-cards")

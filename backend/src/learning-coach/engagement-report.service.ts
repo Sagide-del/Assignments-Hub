@@ -59,6 +59,7 @@ export class EngagementReportService {
       music,
       sports,
       arrangements,
+      lessons,
     ] = await Promise.all([
       this.db.user.findFirstOrThrow({
         where: { id: actor.id, schoolId: actor.schoolId, role: "STUDENT" },
@@ -183,6 +184,19 @@ export class EngagementReportService {
         },
         select: { title: true, updated_at: true },
       }),
+      this.db.studentLessonProgress.findMany({
+        where: {
+          studentId: actor.id,
+          student: { schoolId: actor.schoolId },
+          status: "COMPLETED",
+          completedAt: period,
+        },
+        select: {
+          completedAt: true,
+          lesson: { select: { subject: true, topic: true } },
+        },
+        take: 400,
+      }),
     ]);
     const events: EngagementEvent[] = [];
     const add = (
@@ -202,6 +216,9 @@ export class EngagementReportService {
             ? null
             : Math.round(score),
       });
+    lessons.forEach((l) =>
+      add(l.completedAt!, "Guided lesson", l.lesson.topic, l.lesson.subject),
+    );
     logins.forEach((l) => add(l.createdAt, "Login", "Signed in"));
     coach.forEach((s) =>
       add(s.completedAt!, "Coach quiz", s.plan.topic, s.plan.subject, s.score),

@@ -5,11 +5,12 @@ import SchoolSbaDashboard from "../../pages/admin/school/sba";
 import TeacherSba from "../../pages/teacher/sba";
 import { TeacherAssignments } from "../../features/school-admin/TeacherAssignments";
 import { lazy } from 'react';
+function LegacyLessonRedirect(){const {subject,topic}=useParams();const p=new URLSearchParams();if(subject)p.set('focus',subject);if(topic){p.set('topic',topic);p.set('lesson','1');}return <Navigate replace to={'/student/learning-coach'+(p.size?'?'+p:'')}/>;}
 const MusicAssessment = lazy(() => import("../../pages/teacher/MusicAssessment"));
 const StudentLabRouter = lazy(() => import("../../features/student/StudentLabRouter"));
 
 const StudentLibrary = lazy(() => import('../../pages/study-hub/library'));
-import { createBrowserRouter, Link, Navigate, useLocation } from 'react-router-dom';
+import { createBrowserRouter, Link, Navigate, useLocation, useParams } from 'react-router-dom';
 
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -33,8 +34,8 @@ const ReportBook = lazy(() => import('../../features/report-book/ReportBook'));
 import { MyResourcesPage } from '../../features/student/MyResources';
 import { TrialActivationPage } from '../../features/student/TrialActivation';
 import { LearningCoachPage } from '../../features/student/LearningCoach';
-import { LearningTopicsPage } from '../../features/student/learning/LearningTopics';
-import { GuidedLessonPage } from '../../features/student/learning/GuidedLesson';
+
+
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
@@ -317,15 +318,15 @@ export const router = createBrowserRouter([
           },
           {
             path: '/student/learn',
-            element: <LearningTopicsPage />,
+            element: <LegacyLessonRedirect />,
           },
           {
             path: '/student/learn/:subject',
-            element: <LearningTopicsPage />,
+            element: <LegacyLessonRedirect />,
           },
           {
             path: '/student/learn/:subject/:topic',
-            element: <GuidedLessonPage />,
+            element: <LegacyLessonRedirect />,
           },
           {
             path: '/student/assignments/:id',

@@ -65,7 +65,18 @@ export class LearningHubCapabilitiesController {
       this.db.learningCoachSession.count({ where: { id: -1 } }),
       this.db.userPresenceSession.count({ where: { id: -1 } }),
       this.db.skillLessonProgress.count({ where: { id: -1 } }),
+      this.db.lessonContent.count({
+        where: { id: "00000000-0000-0000-0000-000000000000" },
+      }),
+      this.db.studentLessonProgress.count({
+        where: { id: "00000000-0000-0000-0000-000000000000" },
+      }),
     ]);
-    return { recoveryLoopVersion: 1, engagementReportVersion: 1, pdfPages: 1 };
+    return {
+      recoveryLoopVersion: 1,
+      engagementReportVersion: 1,
+      pdfPages: 1,
+      guidedLessonsVersion: 2,
+    };
   }
 }
