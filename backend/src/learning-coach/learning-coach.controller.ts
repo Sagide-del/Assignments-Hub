@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   ParseIntPipe,
   Post,
@@ -54,12 +55,14 @@ export class LearningCoachController {
   }
 
   @Get("lessons/topics")
+  @Header("Cache-Control", "private, no-store")
   @ApiOperation({ summary: "List curriculum topics available for guided Socratic lessons" })
   lessonTopics(@CurrentUser() actor: AuthenticatedUser, @Query("subject") subject?: string) {
     return this.lessons.topics(actor, subject);
   }
 
   @Get("lessons/:subject/:topic")
+  @Header("Cache-Control", "private, no-store")
   @ApiOperation({ summary: "Open a guided topic lesson, generating a safe cached script if required" })
   lesson(
     @Param("subject") subject: string,
