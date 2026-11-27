@@ -95,6 +95,33 @@ export interface LearningCoachReportCard {
   };
 }
 
+export type GuidedLessonStep = {
+  step: number;
+  type: "GREETING" | "EXPLANATION" | "ILLUSTRATION" | "QUESTION" | "FEEDBACK";
+  text: string;
+  voiceoverText: string;
+  visualizationState?: string;
+  questionOptions?: string[];
+  correctAnswer?: string;
+};
+
+export interface GuidedLesson {
+  id: string;
+  subject: string;
+  topic: string;
+  gradeLevel: number;
+  script: GuidedLessonStep[];
+  visualizationType: "PERIODIC_TABLE" | "PUNNETT_SQUARE" | "CHROMOSOME_3D" | "TRIG_GRAPH" | "CIRCUIT_BUILDER" | "NONE";
+  visualizationData: Record<string, unknown> | null;
+  progress: { status: "IN_PROGRESS" | "COMPLETED"; score: number | null; completedAt: string | null };
+}
+
+export interface GuidedLessonTopic {
+  subject: string;
+  topic: string;
+  priority: boolean;
+}
+
 export const learningCoachApi = {
   // Report-card analysis deliberately requires learner score confirmation.
   // The browser never sends the uploaded document contents to an AI provider.
@@ -151,4 +178,16 @@ export const learningCoachApi = {
             timetable: unknown[];
           },
       ),
+  lessonTopics: (subject?: string) =>
+    api
+      .get<GuidedLessonTopic[]>("/learning-coach/lessons/topics", { params: subject ? { subject } : undefined })
+      .then((response) => response.data),
+  openLesson: (subject: string, topic: string) =>
+    api
+      .get<GuidedLesson>(`/learning-coach/lessons/${encodeURIComponent(subject)}/${encodeURIComponent(topic)}`)
+      .then((response) => response.data),
+  completeLesson: (id: string, score?: number) =>
+    api
+      .post(`/learning-coach/lessons/${id}/complete`, { score })
+      .then((response) => response.data),
 };

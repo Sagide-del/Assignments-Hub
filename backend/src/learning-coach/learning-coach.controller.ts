@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
@@ -23,6 +24,8 @@ import { SubmitLearningAnswerDto } from "./dto/submit-learning-answer.dto";
 import { LearningCoachService } from "./learning-coach.service";
 import { ReportCardService } from "./report-card.service";
 import { ConfirmReportCardDto } from "./dto/confirm-report-card.dto";
+import { CompleteLessonDto } from "./dto/complete-lesson.dto";
+import { LessonService } from "./lesson.service";
 
 @ApiTags("Learning Coach")
 @ApiBearerAuth()
@@ -32,6 +35,7 @@ export class LearningCoachController {
   constructor(
     private readonly learningCoach: LearningCoachService,
     private readonly reports: ReportCardService,
+    private readonly lessons: LessonService,
   ) {}
 
   @Get("catalog")
@@ -47,6 +51,33 @@ export class LearningCoachController {
   @ApiOperation({ summary: "List the learner’s saved topic mastery plans" })
   plans(@CurrentUser() actor: AuthenticatedUser) {
     return this.learningCoach.plans(actor);
+  }
+
+  @Get("lessons/topics")
+  @ApiOperation({ summary: "List curriculum topics available for guided Socratic lessons" })
+  lessonTopics(@CurrentUser() actor: AuthenticatedUser, @Query("subject") subject?: string) {
+    return this.lessons.topics(actor, subject);
+  }
+
+  @Get("lessons/:subject/:topic")
+  @ApiOperation({ summary: "Open a guided topic lesson, generating a safe cached script if required" })
+  lesson(
+    @Param("subject") subject: string,
+    @Param("topic") topic: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.lessons.open(subject, topic, actor);
+  }
+
+  @Post("lessons/:id/complete")
+  @AuditAction("learning_coach.lesson_completed")
+  @ApiOperation({ summary: "Mark a guided lesson complete for the current learner" })
+  completeLesson(
+    @Param("id") id: string,
+    @Body() dto: CompleteLessonDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.lessons.complete(id, dto.score, actor);
   }
 
   @Get("report-cards")

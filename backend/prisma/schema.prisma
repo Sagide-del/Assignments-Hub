@@ -528,6 +528,7 @@ model User {
   learningCoachSessions            LearningCoachSession[]       @relation("LearningCoachSessionStudent")
   learningCoachResponses           LearningCoachResponse[]      @relation("LearningCoachResponseStudent")
   learningCoachReportCards         LearningCoachReportCard[]
+  lessonProgress                   StudentLessonProgress[]     @relation("StudentLessonProgressStudent")
   sbaEvidence                      StudentSbaEvidence[]         @relation("SbaEvidenceStudent")
   reviewedSbaEvidence              StudentSbaEvidence[]         @relation("SbaEvidenceReviewer")
   presenceSessions                 UserPresenceSession[]
@@ -585,6 +586,46 @@ model LearningCoachReportCard {
 
   @@index([studentId, createdAt])
   @@map("learning_coach_report_cards")
+}
+
+// Reusable, curriculum-scoped Socratic lesson scripts. These contain no
+// learner data, so a verified lesson can be safely reused by many schools.
+model LessonContent {
+  id                String   @id @default(uuid())
+  subject           String
+  topic             String
+  gradeLevel        Int      @map("grade_level")
+  scriptJson        Json     @map("script_json")
+  visualizationType String   @default("NONE") @map("visualization_type")
+  visualizationData Json?    @map("visualization_data")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  progress StudentLessonProgress[]
+
+  @@unique([subject, topic, gradeLevel])
+  @@index([gradeLevel, subject])
+  @@map("lesson_content")
+}
+
+// Learner-owned lesson completion record. This stays school-scoped through
+// the student relation and never exposes another learner's progress.
+model StudentLessonProgress {
+  id          String   @id @default(uuid())
+  studentId   Int      @map("student_id")
+  lessonId    String   @map("lesson_id")
+  status      String   @default("IN_PROGRESS")
+  score       Int?
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  student User          @relation("StudentLessonProgressStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  LessonContent @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@index([studentId, status])
+  @@map("student_lesson_progress")
 }
 
 model SkillCategory {

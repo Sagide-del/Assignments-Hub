@@ -33,6 +33,8 @@ const ReportBook = lazy(() => import('../../features/report-book/ReportBook'));
 import { MyResourcesPage } from '../../features/student/MyResources';
 import { TrialActivationPage } from '../../features/student/TrialActivation';
 import { LearningCoachPage } from '../../features/student/LearningCoach';
+import { LearningTopicsPage } from '../../features/student/learning/LearningTopics';
+import { GuidedLessonPage } from '../../features/student/learning/GuidedLesson';
 
 import { TeacherDashboard } from '../../features/teacher/Dashboard';
 import QuestionBankBrowser from '../../features/teacher/QuestionBankBrowser';
@@ -312,6 +314,18 @@ export const router = createBrowserRouter([
           {
             path: '/student/learning-coach',
             element: <LearningCoachPage />,
+          },
+          {
+            path: '/student/learn',
+            element: <LearningTopicsPage />,
+          },
+          {
+            path: '/student/learn/:subject',
+            element: <LearningTopicsPage />,
+          },
+          {
+            path: '/student/learn/:subject/:topic',
+            element: <GuidedLessonPage />,
           },
           {
             path: '/student/assignments/:id',

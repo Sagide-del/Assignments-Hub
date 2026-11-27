@@ -967,13 +967,22 @@ export function LearningCoachPage() {
       <PageHeader
         title="Learning Coach"
         actions={
-          <button
-            type="button"
-            onClick={() => setReviewReport(true)}
-            className="min-h-10 text-sm font-semibold text-slate-600 hover:text-[#101820]"
-          >
-            Review results
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/student/learn")}
+              className="min-h-10 rounded-xl bg-[#101820] px-4 text-sm font-bold text-white"
+            >
+              Guided lessons
+            </button>
+            <button
+              type="button"
+              onClick={() => setReviewReport(true)}
+              className="min-h-10 text-sm font-semibold text-slate-600 hover:text-[#101820]"
+            >
+              Review results
+            </button>
+          </div>
         }
       />
 

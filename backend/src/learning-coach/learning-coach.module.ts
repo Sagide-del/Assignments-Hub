@@ -10,6 +10,8 @@ import { LearningCoachService } from "./learning-coach.service";
 import { UploadsModule } from "../uploads/uploads.module";
 import { ReportCardService } from "./report-card.service";
 import { DocumentOcrModule } from "../document-processing/document-ocr.module";
+import { AiModule } from "../ai/ai.module";
+import { LessonService } from "./lesson.service";
 
 @Module({
   controllers: [
@@ -22,8 +24,9 @@ import { DocumentOcrModule } from "../document-processing/document-ocr.module";
     ReportCardService,
     RecoveryService,
     EngagementReportService,
+    LessonService,
   ],
   exports: [RecoveryService],
-  imports: [UploadsModule, DocumentOcrModule],
+  imports: [UploadsModule, DocumentOcrModule, AiModule],
 })
 export class LearningCoachModule {}
