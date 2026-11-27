@@ -84,6 +84,11 @@ describe("Guided Coach lessons", () => {
       topics.length,
     );
   });
+  it('lets fresh recovery evidence override an old weak-subject flag', async()=>{
+    const {service,recovery}=fixture();
+    recovery.load.mockResolvedValue({queue:[{subject:'Core Mathematics',priority:0,topics:[{topic:'Surds'}]}]});
+    expect((await service.topics(actor)).find(t=>t.topic==='Surds')?.priority).toBe(false);
+  });
   it("keeps junior topics within the learner’s actual grade and enrolment", async () => {
     const { service, prisma } = fixture(8, [
       "Mathematics",

@@ -125,9 +125,9 @@ export class LessonService {
         unique.set(k, {
           subject: canonicalSubject,
           topic: row.topic.trim(),
-          priority:
-            weak.has(subjectKey(row.subject)) ||
-            (priorities.get(subjectKey(row.subject)) ?? 0) > 0,
+          priority: priorities.has(subjectKey(row.subject))
+            ? priorities.get(subjectKey(row.subject))! > 0
+            : weak.has(subjectKey(row.subject)),
         });
     }
     return [...unique.values()].sort(
