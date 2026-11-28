@@ -7,13 +7,16 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { Role } from "../common/enums/role.enum";
 import { AuthenticatedUser } from "../auth/interfaces/authenticated-user.interface";
 import { MatcherService } from "./matcher.service";
+import { CareerDecisionBriefService } from "./career-decision-brief.service";
 import {
   ImportCombinationsDto,
   MatchCombinationsDto,
@@ -22,7 +25,7 @@ import {
 } from "./matcher.dto";
 @Controller("career")
 export class MatcherController {
-  constructor(private readonly matcher: MatcherService) {}
+  constructor(private readonly matcher: MatcherService, private readonly decisionBrief: CareerDecisionBriefService) {}
   @Get("capabilities") @Public() capabilities() {
     return this.matcher.capabilities();
   }
@@ -46,6 +49,14 @@ export class MatcherController {
     @Body() dto: MatchCombinationsDto,
   ) {
     return this.matcher.recommend(actor, dto);
+  }
+  @Get("decision-brief.pdf")
+  @Roles(Role.STUDENT)
+  async downloadDecisionBrief(@CurrentUser() actor: AuthenticatedUser, @Res() response: Response) {
+    const [guide, student] = await Promise.all([this.matcher.recommend(actor, {}), this.matcher.assertStudent(actor)]);
+    const pdf = await this.decisionBrief.render({ student, guide });
+    response.set({ "Content-Type": "application/pdf", "Content-Disposition": "attachment; filename=assignment-hub-grade-10-decision-brief.pdf" });
+    response.send(pdf);
   }
   @Post("selection")
   @Roles(Role.STUDENT)

@@ -29,7 +29,7 @@ export class MatcherService {
   async assertStudent(actor: AuthenticatedUser) {
     const student = await this.prisma.user.findUnique({
       where: { id: actor.id },
-      select: { id: true, schoolId: true, grade: true },
+      select: { id: true, name: true, schoolId: true, grade: true },
     });
     if (
       actor.role !== "STUDENT" ||
