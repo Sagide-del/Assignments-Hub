@@ -45,6 +45,9 @@ export function TrialActivationPage() {
     queryKey: ["independent-public-payment-info"],
     queryFn: independentStudentsApi.getPublicPaymentInfo,
   });
+  useEffect(() => {
+    trackAcquisition("activation_opened");
+  }, []);
   const capabilities = useQuery({
     queryKey: ["individual-intasend-capabilities"],
     queryFn: independentStudentsApi.getIntasendCapabilities,
@@ -108,6 +111,7 @@ export function TrialActivationPage() {
   useEffect(() => {
     if (p?.status === "CONFIRMED" && handled.current !== p.reference) {
       handled.current = p.reference;
+      trackAcquisition("payment_confirmed");
       void refreshAccess();
     }
   }, [p?.status, p?.reference]);
@@ -366,7 +370,7 @@ export function TrialActivationPage() {
           )}
           <p className="flex items-start gap-2 text-xs leading-6 text-slate-500">
             <ShieldCheck size={17} className="mt-0.5 shrink-0" />
-            One-time payment. No automatic deductions.
+            One-time payment for the selected access period. We never auto-charge your M-Pesa; renew manually when access ends.
           </p>
         </div>
       </section>

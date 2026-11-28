@@ -29,9 +29,16 @@ export const authApi = {
     grade: string;
     pathway?: string;
     parentPhone?: string;
+    consent: true;
     landing_source?: string;
   }) =>
     api.post<IndependentRegistrationResult>('/auth/independent/register', dto).then((r) => r.data),
+
+  requestIndependentRecovery: (identifier: string) =>
+    api.post('/auth/independent/recovery/request', { identifier }).then((r) => r.data),
+
+  resetIndependentPassword: (dto: { identifier: string; code: string; password: string }) =>
+    api.post('/auth/independent/recovery/confirm', dto).then((r) => r.data),
 
   refresh: (refreshToken: string) =>
     api.post<TokenPair>('/auth/refresh', { refreshToken }).then((r) => r.data),

@@ -5,10 +5,12 @@ import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
     PassportModule,
+    SmsModule,
     // Access tokens are now deliberately short-lived (default 15 minutes) —
     // they're meant to be silently refreshed via POST /auth/refresh using
     // the long-lived refresh token (see AuthService), not to carry a whole

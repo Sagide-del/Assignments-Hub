@@ -21,6 +21,7 @@ import Login from '../../pages/Login';
 import Home from '../../pages/Home';
 import FreeRevision from '../../pages/FreeRevision';
 import IndependentRegister from '../../pages/IndependentRegister';
+import IndependentRecovery from '../../pages/IndependentRecovery';
 
 import { MyAssignmentsPage } from '../../features/student/MyAssignments';
 import { LearnSkillsPage } from '../../features/student/LearnSkills';
@@ -275,6 +276,10 @@ export const router = createBrowserRouter([
   {
     path: '/register',
     element: <IndependentRegister />,
+  },
+  {
+    path: '/recover-account',
+    element: <IndependentRecovery />,
   },
 
   {

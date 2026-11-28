@@ -38,6 +38,7 @@ export function IndependentRegistrationForm() {
     email: "",
     password: "",
     confirmPassword: "",
+    consent: false,
   });
   const [usernameEdited, setUsernameEdited] = useState(false),
     [showPassword, setShowPassword] = useState(false);
@@ -71,6 +72,7 @@ export function IndependentRegistrationForm() {
         parentPhone: phone,
         email: form.email.trim().toLowerCase() || undefined,
         password: form.password,
+        consent: true,
       });
       trackAcquisition("registration_complete");
       setAccount(result);
@@ -107,6 +109,10 @@ export function IndependentRegistrationForm() {
       setError(
         "Enter a Kenyan M-Pesa number, such as 0712345678 or +254712345678.",
       );
+      return;
+    }
+    if (!form.consent) {
+      setError("Confirm that you are the learner, parent/guardian, or have permission to create this account.");
       return;
     }
     if (
@@ -305,6 +311,15 @@ export function IndependentRegistrationForm() {
           />
         </div>
       </details>
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+        <input
+          type="checkbox"
+          checked={form.consent}
+          onChange={(event) => setForm((current) => ({ ...current, consent: event.target.checked }))}
+          className="mt-0.5 h-4 w-4 accent-[#6c8615]"
+        />
+        <span>I confirm that I am the learner, a parent/guardian, or have permission to create this account. Assignment Hub may use these details to provide learning access and payment support.</span>
+      </label>
       {error && (
         <p
           role="alert"
@@ -318,16 +333,13 @@ export function IndependentRegistrationForm() {
         type="submit"
         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#101820] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
       >
-        {busy ? "Creating account…" : "Create account & pay KES 300"}
+        {busy ? "Creating account…" : "Create account & continue"}
         <ArrowRight size={17} />
       </button>
       <p className="text-center text-xs leading-5 text-slate-500">
-        KES 300 per month. Next, confirm your M-Pesa request.
+        KES 300 gives 30 days of full access. Next, confirm your M-Pesa request.
         <br />
-        Payment activates access after confirmation.
-      </p>
-      <p className="text-center text-xs leading-5 text-slate-400">
-        Continue with permission from the learner or their parent/guardian.
+        Renew manually when the access period ends. Payment activates access after confirmation.
       </p>
     </form>
   );

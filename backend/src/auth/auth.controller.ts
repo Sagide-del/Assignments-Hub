@@ -7,6 +7,7 @@ import { StaffLoginDto } from './dto/staff-login.dto';
 import { StudentLoginDto } from './dto/student-login.dto';
 import { IndependentLoginDto } from './dto/independent-login.dto';
 import { RegisterIndependentStudentDto } from './dto/register-independent-student.dto';
+import { ConfirmIndependentPasswordRecoveryDto, RequestIndependentPasswordRecoveryDto } from './dto/independent-password-recovery.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -56,6 +57,20 @@ export class AuthController {
   @Post('independent/login')
   loginIndependentStudent(@Body() dto: IndependentLoginDto, @Req() req: Request) {
     return this.authService.loginIndependentStudent(dto, req.ip);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 900000 } })
+  @Post('independent/recovery/request')
+  requestIndependentRecovery(@Body() dto: RequestIndependentPasswordRecoveryDto, @Req() req: Request) {
+    return this.authService.requestIndependentPasswordRecovery(dto.identifier, req.ip);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 900000 } })
+  @Post('independent/recovery/confirm')
+  confirmIndependentRecovery(@Body() dto: ConfirmIndependentPasswordRecoveryDto, @Req() req: Request) {
+    return this.authService.confirmIndependentPasswordRecovery(dto, req.ip);
   }
 
   // Public: the access token is expired (that's the whole point of calling

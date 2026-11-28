@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { SubscriptionStatus } from '@prisma/client';
+import { SmsType, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StaffLoginDto } from './dto/staff-login.dto';
@@ -16,6 +16,8 @@ import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
 import { normalizeGrade } from '../common/utils/grade.util';
 import { generateIndependentStudentId } from '../common/utils/independent-student-id.util';
+import { SmsService } from '../sms/sms.service';
+import { ConfirmIndependentPasswordRecoveryDto } from './dto/independent-password-recovery.dto';
 
 // How long a refresh token is valid for if it's never used to refresh
 // (i.e. how long a "remember me" session can sit idle before the user has
@@ -31,6 +33,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly auditService: AuditService,
     private readonly configService: ConfigService,
+    private readonly smsService: SmsService,
   ) {}
 
   async loginUnified(dto: UnifiedLoginDto, ipAddress?: string) {
@@ -325,6 +328,14 @@ export class AuthService {
       resource: `User:${student.id}`,
       ipAddress,
     });
+    await this.auditService.record({
+      action: "auth.independent_student.consent",
+      userId: student.id,
+      schoolId: school.id,
+      resource: `User:${student.id}`,
+      metadata: { version: 1 },
+      ipAddress,
+    });
 
     return {
       studentId: student.id,
@@ -394,6 +405,68 @@ export class AuthService {
       },
       ipAddress,
     );
+  }
+
+  async requestIndependentPasswordRecovery(identifierRaw: string, ipAddress?: string) {
+    // The same response is returned whether the account exists, preventing
+    // this endpoint from becoming an account-enumeration oracle.
+    const accepted = { message: "If an eligible account and recovery phone exist, we have sent a six-digit code." };
+    const school = await this.prisma.school.findUnique({ where: { code: INDEPENDENT_SCHOOL_CODE } });
+    if (!school) return accepted;
+    const identifier = identifierRaw.trim();
+    const student = await this.prisma.user.findFirst({
+      where: { schoolId: school.id, role: Role.STUDENT, OR: [
+        { admissionNumber: identifier.toUpperCase() },
+        { email: identifier.toLowerCase() },
+      ] },
+      select: { id: true, name: true, parentPhone: true, schoolId: true, passwordHash: true },
+    });
+    if (!student?.passwordHash || !student.parentPhone) return accepted;
+
+    const code = crypto.randomInt(100000, 1000000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await this.prisma.independentPasswordReset.upsert({
+      where: { studentId: student.id },
+      create: { studentId: student.id, codeHash: this.hashRecoveryCode(student.id, code), expiresAt },
+      update: { codeHash: this.hashRecoveryCode(student.id, code), expiresAt, attempts: 0, usedAt: null },
+    });
+    await this.smsService.sendAndLog({
+      schoolId: student.schoolId,
+      type: SmsType.BROADCAST,
+      message: `Assignment Hub recovery code: ${code}. It expires in 10 minutes. Do not share this code.`,
+      loggedMessage: "Assignment Hub password recovery code sent.",
+      recipients: [{ phone: student.parentPhone, studentId: student.id }],
+    });
+    await this.auditService.record({ action: 'auth.independent_student.recovery_requested', userId: student.id, schoolId: student.schoolId, resource: `User:${student.id}`, ipAddress });
+    return accepted;
+  }
+
+  async confirmIndependentPasswordRecovery(dto: ConfirmIndependentPasswordRecoveryDto, ipAddress?: string) {
+    const invalid = () => new UnauthorizedException("This recovery code is invalid or has expired. Request a new code and try again.");
+    const school = await this.prisma.school.findUnique({ where: { code: INDEPENDENT_SCHOOL_CODE } });
+    if (!school) throw invalid();
+    const identifier = dto.identifier.trim();
+    const student = await this.prisma.user.findFirst({
+      where: { schoolId: school.id, role: Role.STUDENT, OR: [
+        { admissionNumber: identifier.toUpperCase() },
+        { email: identifier.toLowerCase() },
+      ] },
+      select: { id: true, schoolId: true, passwordHash: true },
+    });
+    if (!student?.passwordHash) throw invalid();
+    const challenge = await this.prisma.independentPasswordReset.findUnique({ where: { studentId: student.id } });
+    if (!challenge || challenge.usedAt || challenge.expiresAt < new Date() || challenge.attempts >= 5) throw invalid();
+    if (this.hashRecoveryCode(student.id, dto.code) !== challenge.codeHash) {
+      await this.prisma.independentPasswordReset.update({ where: { studentId: student.id }, data: { attempts: { increment: 1 } } });
+      throw invalid();
+    }
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: student.id }, data: { passwordHash: await bcrypt.hash(dto.password, 12) } }),
+      this.prisma.independentPasswordReset.update({ where: { studentId: student.id }, data: { usedAt: new Date() } }),
+      this.prisma.refreshToken.updateMany({ where: { userId: student.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+    ]);
+    await this.auditService.record({ action: 'auth.independent_student.password_reset', userId: student.id, schoolId: student.schoolId, resource: `User:${student.id}`, ipAddress });
+    return { message: "Password updated. You can now sign in." };
   }
 
   /**
@@ -474,6 +547,11 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private hashRecoveryCode(studentId: number, code: string): string {
+    const secret = this.configService.get<string>('JWT_SECRET') || 'assignment-hub-recovery';
+    return crypto.createHash('sha256').update(`${studentId}:${code}:${secret}`).digest('hex');
   }
 
   private async issueTokenPair(user: AuthenticatedUser, ipAddress?: string) {

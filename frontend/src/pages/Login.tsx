@@ -119,7 +119,7 @@ export default function Login() {
           <ArrowRight size={16} />
         </button>
         <p className="text-center text-xs text-slate-500">
-          Need help signing in? Contact your school or Assignment Hub support.
+          Individual learner? <a className="font-semibold text-[#536d00] underline" href="/recover-account">Reset your password</a>. School learner? Contact your school administrator.
         </p>
       </form>
     </AuthFrame>

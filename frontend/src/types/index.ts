@@ -1110,12 +1110,18 @@ export interface IndependentStudentInvoice {
 }
 
 export interface IndependentStudentPaymentInfo {
-  enabled: boolean;
-  tillNumber: string;
-  storeNumber: string;
+  provider?: "IntaSend";
   monthlyAmountKES: number;
   annualAmountKES: number;
-  instructions: string;
+  monthlyAccessDays?: number;
+  renewal?: "manual";
+  autoRenew?: boolean;
+  // Admin payment settings retain these optional legacy fields for historic
+  // invoice reconciliation; the public checkout never renders them.
+  enabled?: boolean;
+  tillNumber?: string;
+  storeNumber?: string;
+  instructions?: string;
 }
 
 export interface IndependentRegistrationResult {

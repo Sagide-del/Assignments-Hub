@@ -1,6 +1,6 @@
 // First-party journey counts only. Never include query strings, form values,
 // identity, answers, scores, payment references or credentials.
-const stages = new Set(['practice_start', 'practice_complete', 'registration_open', 'registration_complete', 'payment_attempt']);
+const stages = new Set(['practice_start', 'practice_complete', 'registration_open', 'registration_complete', 'payment_attempt', 'activation_opened', 'payment_confirmed']);
 const inFlight = new Set();
 export async function trackStage(stage) {
   if (!stages.has(stage) || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true) return;

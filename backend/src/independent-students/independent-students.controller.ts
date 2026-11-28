@@ -37,7 +37,7 @@ export class IndependentStudentsController {
   @Public()
   @Get("public/payment-info")
   getPublicPaymentInfo() {
-    return this.independentStudentsService.getPaymentInfo();
+    return this.independentStudentsService.getPublicSubscriptionOffer();
   }
 
   @Public()

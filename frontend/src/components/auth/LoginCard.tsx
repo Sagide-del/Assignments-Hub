@@ -284,6 +284,11 @@ export function LoginCard({
           <HelpCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
           <span>{helpText}</span>
         </div>
+        {loginType === "independent" ? (
+          <Link to="/recover-account" className="inline-flex text-xs font-semibold text-[#536D00] underline underline-offset-4">
+            Forgot your password?
+          </Link>
+        ) : null}
 
         {error ? (
           <p

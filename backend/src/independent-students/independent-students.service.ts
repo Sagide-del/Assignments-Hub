@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  GoneException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
@@ -85,6 +86,21 @@ export class IndependentStudentsService {
           .get<string>("INDEPENDENT_MPESA_INSTRUCTIONS")
           ?.trim() ||
         "Pay via M-Pesa Buy Goods, then submit the confirmation code for verification.",
+    };
+  }
+
+  /**
+   * The learner-facing offer deliberately does not expose the retired manual
+   * Buy-Goods workflow. Payments are initiated and confirmed by IntaSend.
+   */
+  getPublicSubscriptionOffer() {
+    return {
+      provider: "IntaSend",
+      monthlyAmountKES: INDIVIDUAL_MONTHLY_KES,
+      annualAmountKES: INDIVIDUAL_MONTHLY_KES * 12,
+      monthlyAccessDays: 30,
+      renewal: "manual" as const,
+      autoRenew: false,
     };
   }
 
@@ -580,6 +596,13 @@ export class IndependentStudentsService {
   }
 
   async submitPaymentClaim(dto: SubmitIndependentPaymentClaimDto) {
+    // Keep historic claims/admin reconciliation intact, but prevent a learner
+    // from bypassing the live, callback-verified IntaSend checkout.
+    if (this.configService.get<string>("INDEPENDENT_MANUAL_CLAIMS_ENABLED") !== "true") {
+      throw new GoneException(
+        "Manual payment confirmation has been retired. Sign in and use the secure IntaSend M-Pesa prompt instead.",
+      );
+    }
     const paymentInfo = this.getPaymentInfo();
     if (!paymentInfo.enabled) {
       throw new ServiceUnavailableException(

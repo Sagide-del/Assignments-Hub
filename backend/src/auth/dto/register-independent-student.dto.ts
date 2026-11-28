@@ -2,6 +2,7 @@ import { BLOG_LANDING_SOURCES } from "../../analytics/landing-source";
 import { Transform } from "class-transformer";
 import {
   IsEmail,
+  IsBoolean,
   IsIn,
   IsOptional,
   IsString,
@@ -58,4 +59,7 @@ export class RegisterIndependentStudentDto {
   @IsString()
   @MaxLength(30)
   parentPhone?: string;
+
+  @IsBoolean()
+  consent: boolean;
 }

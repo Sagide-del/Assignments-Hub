@@ -478,6 +478,7 @@ model User {
   reviewedCslSubmissions           CslSubmission[]              @relation("CslSubmissionReviewedBy")
   pathwaySelections                StudentPathwaySelection[]
   refreshTokens                    RefreshToken[]
+  independentPasswordReset         IndependentPasswordReset?
   supportAssessments               StudentSupportAssessment[]
   aiUsageLogs                      AiUsageLog[]
   verifiedPayments                 PaymentTransaction[]         @relation("PaymentVerifiedBy")
@@ -528,7 +529,7 @@ model User {
   learningCoachSessions            LearningCoachSession[]       @relation("LearningCoachSessionStudent")
   learningCoachResponses           LearningCoachResponse[]      @relation("LearningCoachResponseStudent")
   learningCoachReportCards         LearningCoachReportCard[]
-  lessonProgress                   StudentLessonProgress[]     @relation("StudentLessonProgressStudent")
+  lessonProgress                   StudentLessonProgress[]      @relation("StudentLessonProgressStudent")
   sbaEvidence                      StudentSbaEvidence[]         @relation("SbaEvidenceStudent")
   reviewedSbaEvidence              StudentSbaEvidence[]         @relation("SbaEvidenceReviewer")
   presenceSessions                 UserPresenceSession[]
@@ -540,6 +541,24 @@ model User {
   @@unique([schoolId, admissionNumber])
   @@index([schoolId])
   @@map("users")
+}
+
+// One short-lived, single-use challenge per self-registered learner. The
+// value stored here is a hash, never the code that was sent by SMS.
+model IndependentPasswordReset {
+  id        Int       @id @default(autoincrement())
+  studentId Int       @unique @map("student_id")
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  attempts  Int       @default(0)
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("independent_password_resets")
 }
 
 model StudentProfile {
@@ -611,14 +630,14 @@ model LessonContent {
 // Learner-owned lesson completion record. This stays school-scoped through
 // the student relation and never exposes another learner's progress.
 model StudentLessonProgress {
-  id          String   @id @default(uuid())
-  studentId   Int      @map("student_id")
-  lessonId    String   @map("lesson_id")
-  status      String   @default("IN_PROGRESS")
+  id          String    @id @default(uuid())
+  studentId   Int       @map("student_id")
+  lessonId    String    @map("lesson_id")
+  status      String    @default("IN_PROGRESS")
   score       Int?
   completedAt DateTime? @map("completed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   student User          @relation("StudentLessonProgressStudent", fields: [studentId], references: [id], onDelete: Cascade)
   lesson  LessonContent @relation(fields: [lessonId], references: [id], onDelete: Cascade)
@@ -3388,15 +3407,15 @@ model ReportBookPolicy {
 // copied into each generated card so later branding changes cannot rewrite an
 // already-issued academic record.
 model ReportBookSchoolSetting {
-  school_id               Int      @id
+  school_id               Int       @id
   principal_name          String?
   principal_signature_url String?
   school_closes_on        DateTime?
   school_closes_time      String?
   school_opens_on         DateTime?
   school_opens_time       String?
-  updated_at              DateTime @updatedAt
-  school                  School   @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  updated_at              DateTime  @updatedAt
+  school                  School    @relation(fields: [school_id], references: [id], onDelete: Cascade)
 
   @@map("report_book_school_settings")
 }

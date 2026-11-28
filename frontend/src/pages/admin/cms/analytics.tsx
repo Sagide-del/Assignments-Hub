@@ -4,7 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '../../../components/ui/Saas';
 import { api } from '../../../api/axios';
 type Summary = { since: string; stages: { stage: string; sessions: number }[]; confirmedPayingLearners: number; blogAttribution?: {landing_source:string|null;registrations:number;payingLearners:number;confirmedKES:number}[]; attributionModel?:string };
-const labels: Record<string,string> = { practice_start: 'Started free practice', practice_complete: 'Completed free practice', registration_open: 'Opened registration', registration_complete: 'Created an account', payment_attempt: 'Attempted payment' };
+const labels: Record<string,string> = { practice_start: 'Started free practice', practice_complete: 'Completed free practice', registration_open: 'Opened registration', registration_complete: 'Created an account', activation_opened: 'Opened payment activation', payment_attempt: 'Attempted payment', payment_confirmed: 'Payment confirmed' };
 export default function CmsAnalyticsPage() {
   const report = useQuery({ queryKey: ['acquisition-summary'], queryFn: () => api.get<Summary>('/analytics/acquisition').then(r=>r.data) });
   return <div className="mx-auto max-w-5xl space-y-5"><PageHeader title="Global Analytics" />
