@@ -1,3 +1,4 @@
+import { juniorDesign } from "../labs/junior-science";
 import { recallRecords } from "../study-hub/recall-history";
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
@@ -265,7 +266,9 @@ export class RecoveryService {
       if (m && l.score !== null)
         add(
           m.subject,
-          null,
+          juniorDesign(l.labKey)?.grade === scope.grade
+            ? juniorDesign(l.labKey)!.topic
+            : null,
           (100 * l.score) / l.maxScore!,
           l.quizCompletedAt!,
           "Lab quiz",

@@ -1,3 +1,4 @@
+import { juniorDesign } from "./junior-science";
 import { PRACTICAL_CATALOGUE } from "./practical-engine";
 import {
   ConflictException,
@@ -184,7 +185,7 @@ export class LabsService {
     });
   }
 
-  findAll(actor: AuthenticatedUser, grade?: string) {
+  async findAll(actor: AuthenticatedUser, grade?: string) {
     const isStudent = actor.role === Role.STUDENT;
     const isPlatformAdmin = actor.role === Role.PLATFORM_ADMIN;
 
@@ -201,11 +202,17 @@ export class LabsService {
           : {}),
     };
 
-    return this.prisma.lab.findMany({
+    const labs = await this.prisma.lab.findMany({
       where,
       include: { _count: { select: { questions: true } } },
       orderBy: [{ grade: "asc" }, { createdAt: "desc" }],
     });
+    return isStudent
+      ? labs.filter((lab) => {
+          const design = juniorDesign(lab.key);
+          return !design || lab.grade === `Grade ${design.grade}`;
+        })
+      : labs;
   }
 
   async findOne(id: number, actor?: AuthenticatedUser) {
@@ -218,7 +225,10 @@ export class LabsService {
       const studentGrade = actor.grade ?? "__none__";
       const isPublished = lab.isPublished === true;
       const hasPublishedStatus = lab.status === LabStatus.PUBLISHED;
-      const gradeMatches = lab.grade === studentGrade;
+      const design = juniorDesign(lab.key);
+      const gradeMatches =
+        lab.grade === studentGrade &&
+        (!design || studentGrade === `Grade ${design.grade}`);
 
       if (!isPublished || !hasPublishedStatus || !gradeMatches) {
         throw new NotFoundException("Lab not found");

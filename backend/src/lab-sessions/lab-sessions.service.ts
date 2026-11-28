@@ -1,3 +1,5 @@
+import { juniorDesign } from "../labs/junior-science";
+import { assessJunior } from "../labs/junior-assessor";
 import { studentScope } from "../teacher-scope/scope";
 import { assessStudio } from "../labs/studio-engine";
 import {
@@ -50,6 +52,17 @@ export class LabSessionsService {
         lab.grade !== actor.grade)
     )
       throw new NotFoundException("Lab not found");
+    const junior = lab ? juniorDesign(lab.key) : null;
+    if (
+      junior &&
+      (lab!.grade !== `Grade ${junior.grade}` ||
+        dto.studio?.version !== "junior-science-v1" ||
+        dto.workshop ||
+        dto.practical)
+    )
+      throw new BadRequestException(
+        "Use the grade-specific investigation and its evidence contract.",
+      );
     let completionSummary;
     if (dto.studio) {
       if (!lab) throw new NotFoundException("Lab not found");
@@ -57,7 +70,9 @@ export class LabSessionsService {
         throw new BadRequestException("Submit one practical report at a time.");
       try {
         completionSummary = {
-          ...assessStudio(practicalFor(lab).kind, dto.studio),
+          ...(junior
+            ? assessJunior(lab.key, dto.studio)
+            : assessStudio(practicalFor(lab).kind, dto.studio)),
           grade: lab.grade,
           activity: lab.title,
         };
@@ -159,6 +174,36 @@ export class LabSessionsService {
 
     // Preserve legacy ad-hoc completion keys. Real catalogue labs above require
     // practical evidence; labs without a quiz receive no fabricated quiz score.
+    if (junior && completionSummary && "knowledgeCheck" in completionSummary) {
+      const checked = completionSummary as ReturnType<typeof assessJunior> & {
+        activity: string;
+        grade: string;
+      };
+      return this.prisma.labSession.create({
+        data: {
+          schoolId: actor.schoolId,
+          studentId: actor.id,
+          labKey: dto.labKey,
+          competency: dto.competency ?? lab!.competency,
+          completedAt: new Date(),
+          score: checked.knowledgeCheck.score,
+          maxScore: checked.knowledgeCheck.maxScore,
+          quizCompletedAt: new Date(),
+          answers: (lab!.questions ?? []).map((q) => ({
+            questionId: q.id,
+            answer:
+              (dto.answers ?? []).find((a) => a.questionId === q.id)?.answer ??
+              "",
+            isCorrect: null,
+            pointsAwarded: 0,
+          })) as any,
+          completionSummary: {
+            ...checked,
+            teacherQuestionsPending: !!lab!.questions.length,
+          } as any,
+        },
+      });
+    }
     if (!lab || lab.questions.length === 0) {
       return this.prisma.labSession.create({
         data: {
@@ -236,7 +281,9 @@ export class LabSessionsService {
 
     return this.prisma.labSession.findMany({
       where: {
-        ...(actor.role === Role.TEACHER ? { student: { is: await studentScope(this.prisma, actor) } } : {}),
+        ...(actor.role === Role.TEACHER
+          ? { student: { is: await studentScope(this.prisma, actor) } }
+          : {}),
         schoolId: targetSchoolId,
         studentId: filters.studentId,
       },
