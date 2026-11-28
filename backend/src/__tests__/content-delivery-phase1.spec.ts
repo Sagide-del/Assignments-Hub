@@ -56,6 +56,17 @@ const generated = () => ({
   })),
 });
 describe("Phase 1 strict cheat-sheet generation", () => {
+  it("limits new generated prose without invalidating saved legacy sheets", () => {
+    const data = generated();
+    data.theory_cheatsheet.key_concepts[0] =
+      "Explain this concept carefully. ".repeat(12);
+    expect(() =>
+      validateTheoryCheatsheet(data.theory_cheatsheet),
+    ).not.toThrow();
+    expect(() => validateCheatsheetGeneration(data, 30)).toThrow(
+      "Condense the cheat sheet",
+    );
+  });
   it("validates the structured contract and keeps a readable legacy projection", () => {
     const result = validateCheatsheetGeneration(generated(), 30, {
       theoryWords: 300,
@@ -170,7 +181,7 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
         schoolId: school.id,
         name: "First Learner",
         grade: "Grade 11",
-        elective_subjects:["Biology","Chemistry","Physics"],
+        elective_subjects: ["Biology", "Chemistry", "Physics"],
         role: "STUDENT",
       },
     });
@@ -179,7 +190,7 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
         schoolId: school.id,
         name: "Second Learner",
         grade: "Grade 11",
-        elective_subjects:["Biology","Chemistry","Physics"],
+        elective_subjects: ["Biology", "Chemistry", "Physics"],
         role: "STUDENT",
       },
     });
@@ -202,8 +213,21 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
           grade,
           subject: "Mathematics",
           topic,
-          status: ["PUBLISHED_SCHOOL","PUBLISHED_STORE"].includes(status) ? "APPROVED" : status as any,
-          ...(["PUBLISHED_SCHOOL","PUBLISHED_STORE"].includes(status) ? {distributions:{create:{audience:status === "PUBLISHED_STORE" ? "PUBLIC_STORE" : "SCHOOL",school_id:status === "PUBLISHED_STORE" ? null : String(tenant)}}} : {}),
+          status: ["PUBLISHED_SCHOOL", "PUBLISHED_STORE"].includes(status)
+            ? "APPROVED"
+            : (status as any),
+          ...(["PUBLISHED_SCHOOL", "PUBLISHED_STORE"].includes(status)
+            ? {
+                distributions: {
+                  create: {
+                    audience:
+                      status === "PUBLISHED_STORE" ? "PUBLIC_STORE" : "SCHOOL",
+                    school_id:
+                      status === "PUBLISHED_STORE" ? null : String(tenant),
+                  },
+                },
+              }
+            : {}),
           tenant_id: String(tenant),
           theory_cheatsheet: phase1Sheet(),
           content_json: generated(),
@@ -399,7 +423,13 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
       expect(saved.generation_cost_tokens).toBe(77);
       await db.masterModule.update({
         where: { id: saved.id },
-        data: { status: "APPROVED", distributions:{create:{audience:"SCHOOL",school_id:String(school.id)}}, tenant_id: String(school.id) },
+        data: {
+          status: "APPROVED",
+          distributions: {
+            create: { audience: "SCHOOL", school_id: String(school.id) },
+          },
+          tenant_id: String(school.id),
+        },
       });
       const opened = await cms.startLearningModule(saved.id, {
         ...student,
@@ -423,6 +453,8 @@ integration("Phase 1 migrated PostgreSQL and authenticated rotation", () => {
     expect(await r.json()).toEqual({
       cheatsheetVersion: 1,
       rotationVersion: 1,
+      cheatsheetDesignVersion: 2,
+      automaticDiagramVersion: 1,
     });
   });
 });

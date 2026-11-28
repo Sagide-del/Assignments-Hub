@@ -1,4 +1,9 @@
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { cheatsheetDiagramSvg } from "../cms/cheatsheet-diagram";
+import {
+  Injectable,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
@@ -10,6 +15,7 @@ import {
   TheoryCheatsheet,
   validateTheoryCheatsheet,
 } from "../cms/theory-cheatsheet";
+import { resolveCheatsheetVisual } from "../cms/cheatsheet-visuals";
 const esc = (v: unknown) =>
   String(v ?? "").replace(
     /[&<>"']/g,
@@ -28,6 +34,7 @@ export function librarySheetHtml(
   value: unknown,
   brand: string,
   formulaCss: string,
+  illustration?: string,
 ) {
   const sheet: TheoryCheatsheet = validateTheoryCheatsheet(value);
   const map = parseConceptMap(sheet.concept_diagram.latex_code);
@@ -53,9 +60,17 @@ export function librarySheetHtml(
     .join(
       "",
     )}${nodes.map((n) => `<g><rect x="${n.x - 85}" y="${n.y - 33}" width="170" height="66" rx="10" fill="white" stroke="#9cba37"/><foreignObject x="${n.x - 79}" y="${n.y - 29}" width="158" height="58"><div xmlns="http://www.w3.org/1999/xhtml" style="height:58px;display:flex;align-items:center;justify-content:center;text-align:center;font:12px Arial;overflow-wrap:anywhere">${esc(n.label)}</div></foreignObject></g>`).join("")}</svg>`;
+  const visual = resolveCheatsheetVisual(module.topic);
+  const hero =
+    visual && illustration
+      ? `<figure class="visual"><img src="${esc(illustration)}" alt="${esc(visual.alt)}"/><div class="visual-labels">${visual.labels.map((label) => `<b>${esc(label)}</b>`).join("")}</div><figcaption>${esc(visual.caption)}</figcaption></figure>`
+      : sheet.visual_diagram
+        ? `<figure class="map generated-diagram"><h2>${esc(sheet.visual_diagram.title)}</h2>${cheatsheetDiagramSvg(sheet.visual_diagram)}<figcaption>${esc(sheet.visual_diagram.caption)}</figcaption></figure>`
+        : `<figure class="map">${diagram}<figcaption>Concept relationships · follow the arrows to connect the ideas.</figcaption></figure>`;
   const list = (values: string[]) =>
     `<ul>${values.map((v) => `<li>${esc(v)}</li>`).join("")}</ul>`;
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${formulaCss}\n@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font:12px Arial;color:#101820;line-height:1.65;margin:0}header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #BBD125;padding-bottom:12px}.brand-wrap{position:relative;width:165px;height:42px;overflow:hidden}.brand{position:absolute;width:165px;max-width:none;left:0;top:50%;transform:translateY(-50%)}small{color:#64748b}h1{font-size:24px;line-height:1.3;margin:22px 0 6px}h2{font-size:14px;margin:0 0 10px}.map{padding:10px;background:#f8fafc;border-radius:10px;margin:18px 0;break-inside:avoid}svg{display:block;width:100%;max-height:260px}section{margin:18px 0;break-inside:avoid}li{margin:6px 0}ul{padding-left:20px;margin:0}.formulas{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:10px;padding:16px}.mistakes{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:16px}.formula{margin:8px 0;overflow-wrap:anywhere}footer{margin-top:25px;border-top:1px solid #e2e8f0;padding-top:10px;font-size:10px;color:#64748b}</style></head><body><header><div class="brand-wrap"><img class="brand" alt="Assignment Hub" src="${brand}"/></div><small>Grade ${module.grade} · Batch ${module.batch_number}</small></header><h1>${esc(module.topic)}</h1><small>${esc(module.subject)} · Cheat sheet</small><div class="map">${diagram}</div><section><h2>Key concepts</h2>${list(sheet.key_concepts)}</section>${sheet.key_formulas.length ? `<section class="formulas"><h2>Key formulas</h2>${sheet.key_formulas.map((f) => `<div class="formula">${katex.renderToString(f, { throwOnError: false, trust: false, strict: "error", output: "htmlAndMathml", maxExpand: 100, maxSize: 20 })}</div>`).join("")}</section>` : ""}<section class="mistakes"><h2>Common mistakes</h2>${list(sheet.common_mistakes)}</section><footer>Assignment Hub · <a href="https://assignmenthub.co.ke">assignmenthub.co.ke</a></footer></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(module.topic)} · Assignment Hub</title><style>${formulaCss}
+@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font:13px Arial,sans-serif;color:#111;line-height:1.45;margin:0}article{width:186mm}header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px}.brand-wrap{width:145px;height:32px;overflow:hidden}.brand{width:145px;height:32px;object-fit:cover;object-position:center;filter:grayscale(1)}small{font-size:9px;color:#444}h1{font-size:27px;line-height:1.12;margin:12px 0 4px;overflow-wrap:anywhere}h2{font-size:12px;margin:0 0 7px;text-transform:uppercase;letter-spacing:.7px}.eyebrow{font-size:9px;font-weight:bold;letter-spacing:1.3px}.map,.visual{margin:12px 0;break-inside:avoid}.map{border:1px solid #aaa;padding:10px}.map svg{display:block;width:100%;height:155px;filter:grayscale(1)}.generated-diagram svg{height:auto;max-height:none}.visual>img{display:block;width:100%;height:220px;object-fit:contain;filter:grayscale(1) contrast(1.06)}.visual-labels{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;text-align:center;font-size:10px}.visual-labels b{border-top:2px solid #111;padding-top:5px}figcaption{font-size:9px;color:#444;text-align:center;margin-top:6px}section{margin:12px 0;break-inside:avoid}ul{padding-left:17px;margin:0}li{margin:4px 0;overflow-wrap:anywhere}.concepts ul{columns:2;column-gap:24px}.concepts li{break-inside:avoid}.reference{display:grid;grid-template-columns:1fr 1fr;gap:12px}.reference.single{grid-template-columns:1fr}.formulas,.mistakes{border:1px solid #777;padding:10px}.formula{margin:6px 0;overflow-wrap:anywhere}.katex{font-size:1.05em}.recall{border-top:2px solid #111;padding-top:7px;font-size:10px}footer{margin-top:12px;border-top:1px solid #111;padding-top:7px;display:flex;justify-content:space-between;font-size:9px}a{color:inherit;text-decoration:none}</style></head><body><article data-cheatsheet-document><header><div class="brand-wrap"><img class="brand" alt="Assignment Hub" src="${esc(brand)}"/></div><small>Grade ${esc(module.grade)} · ${esc(module.subject)} · Batch ${esc(module.batch_number)}</small></header><h1>${esc(module.topic)}</h1><div class="eyebrow">VISUAL REVISION GUIDE · UNDERSTAND / PRACTISE / RECALL</div>${hero}<section class="concepts"><h2>01 / Understand the essentials</h2>${list(sheet.key_concepts)}</section><div class="reference ${sheet.key_formulas.length ? "" : "single"}">${sheet.key_formulas.length ? `<section class="formulas"><h2>02 / Key formulas</h2>${sheet.key_formulas.map((f) => `<div class="formula">${katex.renderToString(f, { throwOnError: false, trust: false, strict: "error", output: "htmlAndMathml", maxExpand: 100, maxSize: 20 })}</div>`).join("")}</section>` : ""}<section class="mistakes"><h2>${sheet.key_formulas.length ? "03" : "02"} / Common mistakes</h2>${list(sheet.common_mistakes)}</section></div><div class="recall"><b>Check your understanding</b> · Cover the notes. Explain one key idea, give an example, then correct one common mistake.</div><footer><span>Assignment Hub · Learn with understanding.</span><a href="https://assignmenthub.co.ke">assignmenthub.co.ke</a></footer></article></body></html>`;
 }
 @Injectable()
 export class LibraryPdfService {
@@ -90,11 +105,27 @@ export class LibraryPdfService {
       const logo = await readFile(
         join(__dirname, "..", "study-hub", "assets", "assignment-hub.png"),
       );
+      const visual = resolveCheatsheetVisual(module.topic);
+      let illustration: string | undefined;
+      if (visual) {
+        const bytes = await readFile(
+          join(
+            __dirname,
+            "..",
+            "study-hub",
+            "assets",
+            "cheatsheet-illustrations",
+            visual.key + ".webp",
+          ),
+        );
+        illustration = "data:image/webp;base64," + bytes.toString("base64");
+      }
       const html = librarySheetHtml(
         module,
         module.theory_cheatsheet,
         "data:image/png;base64," + logo.toString("base64"),
         css,
+        illustration,
       );
       browser = await puppeteer.launch({
         executablePath:
@@ -111,6 +142,25 @@ export class LibraryPdfService {
         r.url().startsWith("data:") ? r.continue() : r.abort(),
       );
       await page.setContent(html, { waitUntil: "load", timeout: 30000 });
+      // Preserve every teaching point. Never clip content or silently add a page.
+      const fits = await page.evaluate(() => {
+        const document = window.document;
+        const article = document.querySelector<HTMLElement>("article")!;
+        const maxHeight = ((297 - 24) * 96) / 25.4;
+        for (const size of [13, 12.5, 12]) {
+          document.body.style.fontSize = `${size}px`;
+          if (
+            article.getBoundingClientRect().height <= maxHeight - 4 &&
+            article.scrollWidth <= article.clientWidth + 1
+          )
+            return true;
+        }
+        return false;
+      });
+      if (!fits)
+        throw new UnprocessableEntityException(
+          "This cheat sheet needs shorter teaching points before it can be printed legibly on one page. Ask the content editor to condense it; no content has been removed.",
+        );
       return Buffer.from(
         await page.pdf({ format: "A4", printBackground: true, timeout: 30000 }),
       );

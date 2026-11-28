@@ -27,7 +27,8 @@
     "test:mpesa": "ts-node scripts/test-mpesa.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "seed:teacher-demo": "ts-node src/scripts/seed-teacher-demo.ts"
+    "seed:teacher-demo": "ts-node src/scripts/seed-teacher-demo.ts",
+    "cms:backfill-cheatsheet-diagrams": "ts-node src/scripts/backfill-cheatsheet-diagrams.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.840.0",

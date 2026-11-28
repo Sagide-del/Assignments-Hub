@@ -1,3 +1,8 @@
+import {
+  CHEATSHEET_DIAGRAM_PROMPT,
+  CheatsheetDiagram,
+  validateCheatsheetDiagram,
+} from "./cheatsheet-diagram";
 /** A deliberately limited, inert TikZ concept-map dialect. No TeX is executed. */
 export interface ConceptNode {
   id: string;
@@ -10,12 +15,15 @@ export interface ConceptMap {
   edges: { from: string; to: string }[];
 }
 export interface TheoryCheatsheet {
+  visual_diagram?: CheatsheetDiagram;
   key_concepts: string[];
   key_formulas: string[];
   common_mistakes: string[];
   concept_diagram: { type: "TIKZ_CODE"; latex_code: string };
 }
-export const CHEATSHEET_PROMPT = `Replace theory_text with theory_cheatsheet: {"key_concepts":["3–8 concise teaching points"],"key_formulas":["JSON-escaped LaTeX; [] when unnecessary"],"common_mistakes":["3–6 specific mistakes and their corrections"],"concept_diagram":{"type":"TIKZ_CODE","latex_code":"..."}}. The concept diagram MUST use ONLY this inert TikZ dialect: \\begin{tikzpicture} then 2–8 nodes like \\node (n1) at (1,2) {Plain text label}; and 1–12 edges like \\draw[->] (n1) -- (n2); then \\end{tikzpicture}. Coordinates must be 0–10 horizontally and 0–6 vertically. Separate node centres by at least 3 horizontally or 1.5 vertically. Labels must be short plain text (at most 60 characters), without TeX macros, nested braces or HTML. No styles, packages, loops, URLs, file access or other commands. Use the map to explain relationships in this topic, not to decorate it. Do not output theory_text. This concept-map contract is separate from question illustration payloads.`;
+export const CHEATSHEET_PROMPT = `Design a concise one-page visual revision guide, not an essay. Keep total prose under 240 words. Each teaching point must explain one idea in at most 30 words; each mistake must include a short correction. Prefer 3–6 concepts, 0–4 formulas and 3–4 mistakes. Use concrete examples and accurate, grade-appropriate language. Do not invent illustration URLs: the application adds curated subject-specific artwork when available. The concept map remains a meaningful explanatory fallback. Replace theory_text with theory_cheatsheet: {"key_concepts":["3–8 concise teaching points"],"key_formulas":["JSON-escaped LaTeX; [] when unnecessary"],"common_mistakes":["3–6 specific mistakes and their corrections"],"concept_diagram":{"type":"TIKZ_CODE","latex_code":"..."}}. The concept diagram MUST use ONLY this inert TikZ dialect: \\begin{tikzpicture} then 2–8 nodes like \\node (n1) at (1,2) {Plain text label}; and 1–12 edges like \\draw[->] (n1) -- (n2); then \\end{tikzpicture}. Coordinates must be 0–10 horizontally and 0–6 vertically. Separate node centres by at least 3 horizontally or 1.5 vertically. Labels must be short plain text (at most 60 characters), without TeX macros, nested braces or HTML. No styles, packages, loops, URLs, file access or other commands. Use the map to explain relationships in this topic, not to decorate it. Do not output theory_text. This concept-map contract is separate from question illustration payloads.`;
+export const AUTOMATED_CHEATSHEET_PROMPT =
+  CHEATSHEET_PROMPT + "\n" + CHEATSHEET_DIAGRAM_PROMPT;
 const obj = (v: unknown): Record<string, any> => {
   if (!v || typeof v !== "object" || Array.isArray(v))
     throw Error("Expected a cheat-sheet object");
@@ -96,12 +104,18 @@ export function validateTheoryCheatsheet(value: unknown): TheoryCheatsheet {
     "key_formulas",
     "common_mistakes",
     "concept_diagram",
+    ...(Object.prototype.hasOwnProperty.call(v, "visual_diagram")
+      ? ["visual_diagram"]
+      : []),
   ]);
   const d = obj(v.concept_diagram);
   keys(d, ["type", "latex_code"]);
   if (d.type !== "TIKZ_CODE") throw Error("Expected TIKZ_CODE");
   parseConceptMap(d.latex_code);
   return {
+    ...(Object.prototype.hasOwnProperty.call(v, "visual_diagram")
+      ? { visual_diagram: validateCheatsheetDiagram(v.visual_diagram) }
+      : {}),
     key_concepts: list(v.key_concepts, 3, 8, 600),
     key_formulas: list(v.key_formulas, 0, 8, 1000),
     common_mistakes: list(v.common_mistakes, 3, 6, 600),

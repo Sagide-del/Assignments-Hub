@@ -18,6 +18,14 @@ export function validateCheatsheetGeneration(
     throw Error("Choose one theory format");
   const { theory_cheatsheet, ...rest } = raw as Record<string, unknown>;
   const sheet = validateTheoryCheatsheet(theory_cheatsheet);
+  const prose = [...sheet.key_concepts, ...sheet.common_mistakes];
+  if (
+    prose.join(" ").split(/\s+/).filter(Boolean).length > 240 ||
+    prose.some((point) => point.split(/\s+/).length > 35)
+  )
+    throw Error(
+      "Condense the cheat sheet: at most 240 prose words and 35 words per teaching point.",
+    );
   const theory_text = sheet.key_concepts.join("\n\n");
   const content = validateCmsGeneratedContent({ ...rest, theory_text }, count, {
     ...profile,

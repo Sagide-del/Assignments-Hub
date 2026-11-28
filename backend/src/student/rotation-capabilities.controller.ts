@@ -16,6 +16,11 @@ export class RotationCapabilitiesController {
       throw new ServiceUnavailableException(
         "Apply the cheat-sheet and batch rotation migration.",
       );
-    return { cheatsheetVersion: 1, rotationVersion: 1 };
+    return {
+      cheatsheetVersion: 1,
+      rotationVersion: 1,
+      cheatsheetDesignVersion: 2,
+      automaticDiagramVersion: 1,
+    };
   }
 }
