@@ -3,6 +3,7 @@ import { Transform } from "class-transformer";
 import {
   IsEmail,
   IsBoolean,
+  Equals,
   IsIn,
   IsOptional,
   IsString,
@@ -60,6 +61,10 @@ export class RegisterIndependentStudentDto {
   @MaxLength(30)
   parentPhone?: string;
 
+  // Accept both JSON `true` and the string form posted by older cached
+  // registration clients, but never treat an omitted checkbox as consent.
+  @Transform(({ value }) => value === true || value === "true")
   @IsBoolean()
+  @Equals(true, { message: "Please confirm you have permission to create this account." })
   consent: boolean;
 }
