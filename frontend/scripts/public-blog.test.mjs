@@ -29,3 +29,19 @@ test('generates eleven searchable branded blog articles', async () => {
   const sitemap = await readFile(join(root, 'sitemap.xml'), 'utf8');
   assert.match(sitemap, /cbc-grading-levels-explained/);
 });
+
+test('uses exact CBC and mathematics search language on high-intent guides', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'assignment-hub-search-intent-'));
+  await writeFile(join(root, 'sitemap.xml'), '<?xml version="1.0"?><urlset></urlset>');
+  await generateBlog(root);
+
+  const csl = await readFile(join(root, 'blog', 'csl-ideas-for-students', 'index.html'), 'utf8');
+  assert.match(csl, /<title>What Is CSL in CBC\? Meaning, Importance &amp; Project Ideas<\/title>/);
+  assert.match(csl, /What does CSL mean in CBC\?/);
+  assert.match(csl, /"@type":"FAQPage"/);
+
+  const mathematics = await readFile(join(root, 'blog', 'core-vs-essential-mathematics', 'index.html'), 'utf8');
+  assert.match(mathematics, /<title>Core Mathematics vs Essential Mathematics in Kenya<\/title>/);
+  assert.match(mathematics, /What is the difference between Core Mathematics and Essential Mathematics\?/);
+  assert.match(mathematics, /"dateModified":"2026-11-28"/);
+});

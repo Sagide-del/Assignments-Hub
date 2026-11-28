@@ -24,9 +24,19 @@ export function enhanceGuides(base,deep){
  csl.sections[4].paragraphs=csl.sections[4].paragraphs.slice(0,1);delete csl.sections[4].table;
  csl.sections[5].paragraphs=csl.sections[5].paragraphs.slice(0,1);
  csl.sections[5].paragraphs.push('If service reveals an interest in science, design or communication, use the [[senior-school pathways guide|/blog/senior-school-pathways-cbc/]] to explore subjects with the school. Keep the learner’s own contribution and feedback at the centre of that conversation.');
- csl.faqs[2].question='How many CSL hours do I need?';
+ csl.faqs=[
+  {question:'What does CSL mean in CBC?',answer:'CSL means Community Service Learning. It joins a supervised community activity with classroom learning and reflection on the learner’s real contribution.'},
+  {question:'What is the importance of CSL in the community?',answer:'A well-planned project responds to a genuine need while developing responsibility, teamwork and reflection. Ask the intended beneficiaries what would be useful rather than assuming that any activity will help.'},
+  {question:'What are the steps in Community Service Learning?',answer:'Identify a need, obtain approval, carry out the activity safely, record evidence and hours, and reflect on the experience. Follow the school’s supervision and assessment guidance.'},
+  {question:'How many CSL hours do I need?',answer:'Confirm the applicable requirement with the school. Assignment Hub uses a 135-hour platform goal, which is not itself evidence of a universal national rule.'},
+ ];
  const maths=deep['core-vs-essential-mathematics'];maths.sections[4].steps=['Name two possible courses.','Check current institutional prerequisites.','Compare the school’s actual combinations.','Discuss mathematical foundations with the teacher.','Agree on support and a review date.'];
- maths.faqs[2]={question:'Which pathway needs which Mathematics route?',answer:'Core Mathematics supports STEM depth, while Essential Mathematics serves other pathway needs. Confirm the current curriculum, school combination and intended course prerequisites; a broad label is not an admission guarantee.'};
+ maths.faqs=[
+  {question:'What is the difference between Core Mathematics and Essential Mathematics?',answer:'Core Mathematics usually provides greater depth for STEM study, while Essential Mathematics focuses on applied quantitative skills for other pathways. Confirm the current curriculum and your school’s approved combination.'},
+  {question:'What does Core Mathematics mean?',answer:'It is the senior-school mathematics route intended to support mathematical depth for STEM study. Check its current design and the school’s approved combination for the actual topics and requirements.'},
+  {question:'Is Core Maths hard?',answer:'It can be demanding when earlier foundations are insecure. Targeted examples, independent practice and teacher feedback can help identify and address a specific difficulty.'},
+  {question:'Which pathway needs which Mathematics route?',answer:'Core Mathematics supports STEM depth, while Essential Mathematics serves other pathway needs. Confirm the current curriculum, school combination and intended course prerequisites; a broad label is not an admission guarantee.'},
+ ];
  deep['senior-school-pathways-cbc'].sections[2].steps=['Review recent work and interests.','Compare current MoE subject combinations.','Check school facilities and provision.','Verify intended course prerequisites.','Discuss costs and keep an alternative route.'];
  const kj=deep['kjsea-past-papers-and-mocks'];
  kj.sections[1]={heading:'Five original Grade 9 practice questions',paragraphs:['Try these supplementary Mathematics examples before revealing the answers; they are not an official KNEC paper or a prediction of its structure.'],questions:[

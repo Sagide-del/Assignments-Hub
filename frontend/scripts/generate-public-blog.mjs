@@ -20,7 +20,7 @@ const modified = '2026-11-15';
 
 enhanceGuides(researchGuides,deepGuides);
 for(const guide of additionalGuides)deepGuides[guide.slug]=guide;
-export const posts = [...researchGuides,...additionalGuides].map(base=>{const guide=deepGuides[base.slug];if(!guide)throw Error('Missing chunked-depth content: '+base.slug);const post={...base,...guide,updatedAt:'2026-11-16',cta_config:base.cta,artwork:blogArtwork[base.slug]};if(post.takeaways.length!==3||post.faqs.length<3||post.faqs.length>5||post.sections.length<4||post.related.length!==4||new Set(post.related).size!==4||post.related.includes(post.slug))throw Error('Invalid chunked-depth structure: '+post.slug);return post;});
+export const posts = [...researchGuides,...additionalGuides].map(base=>{const guide=deepGuides[base.slug];if(!guide)throw Error('Missing chunked-depth content: '+base.slug);const post={...base,...guide,updatedAt:base.updatedAt??modified,cta_config:base.cta,artwork:blogArtwork[base.slug]};if(post.takeaways.length!==3||post.faqs.length<3||post.faqs.length>5||post.sections.length<4||post.related.length!==4||new Set(post.related).size!==4||post.related.includes(post.slug))throw Error('Invalid chunked-depth structure: '+post.slug);return post;});
 const validPaths=new Set([...posts.map(p=>`/blog/${p.slug}/`),'/guides/csl-project-planner/','/free-revision/','/student/career','/revision/','/student/coach','/labs/']);
 const escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' })[c]);
 const urlFor = (slug = '') => `${origin}/blog/${slug ? `${slug}/` : ''}`;
