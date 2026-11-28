@@ -1,4 +1,6 @@
-import { useStudentContentScope } from '../../hooks/useStudentContentScope';
+import { juniorDesign } from "../../../../backend/src/labs/junior-science";
+import { JuniorScienceCatalogue } from "./JuniorScienceCatalogue";
+import { useStudentContentScope } from "../../hooks/useStudentContentScope";
 import { PageHeader } from "../../components/ui/Saas";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -108,7 +110,9 @@ function presentation(lab: Lab) {
     image: "/stem/science-workspace.png",
   };
 }
-export function StemLabsPage({ embedded = false }: { embedded?: boolean } = {}) {
+export function StemLabsPage({
+  embedded = false,
+}: { embedded?: boolean } = {}) {
   const contentScope = useStudentContentScope();
   const user = useAuthStore((s) => s.user),
     [search, setSearch] = useState(""),
@@ -164,10 +168,45 @@ export function StemLabsPage({ embedded = false }: { embedded?: boolean } = {}) 
       (view !== "progress" || inProgress(l)) &&
       (view !== "completed" || complete.has(l.key)),
   );
+  const gradeNumber = Number(String(user?.grade ?? "").match(/\d+/)?.[0]);
+  if (
+    gradeNumber >= 7 &&
+    gradeNumber <= 9 &&
+    labs.some((lab) => juniorDesign(lab.key)?.grade === gradeNumber)
+  )
+    return (
+      <JuniorScienceCatalogue
+        grade={gradeNumber}
+        labs={labs}
+        sessions={sessions}
+        loading={isLoading}
+        error={isError}
+        retry={refetch}
+      />
+    );
   return (
     <div className="mx-auto max-w-6xl space-y-4 text-slate-800">
-      {!embedded && <PageHeader title="STEM Labs" actions={<span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">{contentScope.data?.grade ? `Grade ${contentScope.data.grade}` : user?.grade} aligned · {labs.length} practicals</span>} />}
-      {!embedded && <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#375000]">These investigations are filtered to your grade. Junior School labs build safe inquiry and measurement; Senior School labs deepen pathway and subject practice.</p>}
+      {!embedded && (
+        <PageHeader
+          title="STEM Labs"
+          actions={
+            <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+              {contentScope.data?.grade
+                ? `Grade ${contentScope.data.grade}`
+                : user?.grade}{" "}
+              {gradeNumber >= 7 && gradeNumber <= 9 ? " · " : " aligned · "}
+              {labs.length} practicals
+            </span>
+          }
+        />
+      )}
+      {!embedded && (
+        <p className="rounded-xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm leading-6 text-[#375000]">
+          These investigations are filtered to your grade. Junior School labs
+          build safe inquiry and measurement; Senior School labs deepen pathway
+          and subject practice.
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav
           className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1"
@@ -238,9 +277,13 @@ export function StemLabsPage({ embedded = false }: { embedded?: boolean } = {}) 
         </div>
       ) : !visible.length ? (
         <div className="rounded-xl border bg-white p-7">
-          <h2 className="font-semibold">{labs.length ? "No labs in this view" : "No labs published yet"}</h2>
+          <h2 className="font-semibold">
+            {labs.length ? "No labs in this view" : "No labs published yet"}
+          </h2>
           <p className="mt-2 text-sm text-slate-500">
-            {labs.length ? "Choose another subject or clear your search." : "Your teacher hasn’t published content for this yet. Check back soon."}
+            {labs.length
+              ? "Choose another subject or clear your search."
+              : "Your teacher hasn’t published content for this yet. Check back soon."}
           </p>
           <button
             onClick={() => {
@@ -290,7 +333,10 @@ export function StemLabsPage({ embedded = false }: { embedded?: boolean } = {}) 
                       <Icon className="h-4 w-4" />
                     </span>
                   </div>
-                  <h2 title={lab.title} className="mt-2 line-clamp-2 text-base font-semibold leading-6">
+                  <h2
+                    title={lab.title}
+                    className="mt-2 line-clamp-2 text-base font-semibold leading-6"
+                  >
                     {lab.title}
                   </h2>
                   <p className="mt-3 line-clamp-2 text-xs leading-6 text-slate-500">
@@ -325,7 +371,6 @@ export function StemLabsPage({ embedded = false }: { embedded?: boolean } = {}) 
           })}
         </section>
       )}
-
     </div>
   );
 }

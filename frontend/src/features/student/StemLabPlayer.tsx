@@ -1,3 +1,4 @@
+import { juniorDesign } from "../../../../backend/src/labs/junior-science";
 import { practicalFor } from "../../../../backend/src/labs/practical-engine";
 import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -5,6 +6,9 @@ import { Link, useParams } from "react-router-dom";
 import { labsApi } from "../../api/labs.api";
 import { useAuthStore } from "../../store/auth.store";
 import { isTitrationKey } from "./stem-workspace/three-d/titration-model";
+const JuniorScienceStudio = lazy(
+  () => import("./stem-workspace/studios/JuniorScienceStudio"),
+);
 const TitrationPractical = lazy(
   () => import("./stem-workspace/three-d/TitrationPractical"),
 );
@@ -56,6 +60,17 @@ export function StemLabPlayerPage() {
           Back to labs
         </Link>
       </div>
+    );
+  const junior = juniorDesign(lab.key);
+  if (junior && lab.grade === `Grade ${junior.grade}`)
+    return (
+      <Suspense fallback={<p>Preparing your investigation…</p>}>
+        <JuniorScienceStudio
+          key={`${userId}:${lab.id}`}
+          lab={lab}
+          userId={userId!}
+        />
+      </Suspense>
     );
   const kind = practicalFor(lab).kind;
   if (["starch", "organic", "molecule"].includes(kind)) {

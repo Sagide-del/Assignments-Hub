@@ -1,3 +1,4 @@
+import type { JuniorEvent } from "./junior-science";
 import { replayStarch, starchReady, type StarchEvent } from "./starch-engine";
 import {
   replayMolecular,
@@ -270,7 +271,12 @@ export function integratePendulum(
 export interface StudioEvidence {
   version: string;
   events: (
-    CyberEvent | PendulumEvent | RespiratoryEvent | StarchEvent | MolecularEvent
+    | CyberEvent
+    | PendulumEvent
+    | RespiratoryEvent
+    | StarchEvent
+    | MolecularEvent
+    | JuniorEvent
   )[];
   conclusion: string;
 }

@@ -1,3 +1,4 @@
+import { juniorDesign } from "../../../../../backend/src/labs/junior-science";
 import type { Assignment, Lab, SkillCourse } from '../../../types';
 import type { RichSkillLesson } from '../skill-workspace/content/types';
 import { investigationFor } from '../stem-workspace/investigations';
@@ -130,6 +131,30 @@ export function stemDesign(
     | 'communityLink'
   >,
 ): LearningDesign {
+  const junior = juniorDesign(lab.key);
+  if (junior)
+    return {
+      id: `stem:${lab.id}`,
+      title: junior.title,
+      area: "stem",
+      href: `/student/stem-labs/${lab.id}`,
+      outcomes: junior.outcomes.map((statement, index) => ({
+        id: `junior-${index}`,
+        statement,
+        evidence:
+          "A prediction, controlled comparison, measured results and explanation.",
+        criteria: [
+          "Record the changed variable and controls.",
+          "Use measurements to explain a result.",
+          "Answer the concept checks; keep reasoning evidence separate.",
+        ],
+        competencies: ["thinking", "learning"],
+      })),
+      connection: junior.question,
+      values: ["Honesty: record what you observed"],
+      access:
+        "Use the diagrams, written measurements and notebook alongside the 3D view.",
+    };
   const pack = investigationFor(lab);
   const specific = pack ? STEM_OUTCOMES[pack.model] : undefined;
   const statements = lab.learningOutcomes?.filter((s) => s.trim()) ?? [];

@@ -28,7 +28,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "seed:teacher-demo": "ts-node src/scripts/seed-teacher-demo.ts",
-    "cms:backfill-cheatsheet-diagrams": "ts-node src/scripts/backfill-cheatsheet-diagrams.ts"
+    "cms:backfill-cheatsheet-diagrams": "ts-node src/scripts/backfill-cheatsheet-diagrams.ts",
+    "labs:prepare-junior": "ts-node src/scripts/prepare-junior-science.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.840.0",

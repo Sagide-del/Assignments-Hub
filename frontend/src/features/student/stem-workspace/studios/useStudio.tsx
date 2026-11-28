@@ -1,3 +1,4 @@
+import type { JuniorEvent } from "../../../../../../backend/src/labs/junior-science";
 import type { StarchEvent } from "../../../../../../backend/src/labs/starch-engine";
 import type { MolecularEvent } from "../../../../../../backend/src/labs/molecular-engine";
 import type { RespiratoryEvent } from "../../../../../../backend/src/labs/respiratory-engine";
@@ -23,7 +24,8 @@ export function useStudio<
     | PendulumEvent
     | RespiratoryEvent
     | StarchEvent
-    | MolecularEvent,
+    | MolecularEvent
+    | JuniorEvent,
   S,
 >({
   lab,

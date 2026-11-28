@@ -1,3 +1,4 @@
+import type { JuniorEvent } from "../../labs/junior-science";
 import type { StarchEvent } from "../../labs/starch-engine";
 import type { MolecularEvent } from "../../labs/molecular-engine";
 import type { RespiratoryEvent } from "../../labs/respiratory-engine";
@@ -14,6 +15,7 @@ import {
 import type { CyberEvent, PendulumEvent } from "../../labs/studio-engine";
 export class StudioEvidenceDto {
   @IsIn([
+    "junior-science-v1",
     "cyber-studio-v1",
     "pendulum-studio-v1",
     "respiratory-studio-v1",
@@ -26,7 +28,12 @@ export class StudioEvidenceDto {
   @ArrayMaxSize(500)
   @IsObject({ each: true })
   events: (
-    CyberEvent | PendulumEvent | RespiratoryEvent | StarchEvent | MolecularEvent
+    | CyberEvent
+    | PendulumEvent
+    | RespiratoryEvent
+    | StarchEvent
+    | MolecularEvent
+    | JuniorEvent
   )[];
   @IsString() @MinLength(30) @MaxLength(5000) conclusion: string;
 }
