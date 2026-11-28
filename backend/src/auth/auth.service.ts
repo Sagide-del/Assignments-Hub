@@ -328,15 +328,6 @@ export class AuthService {
       resource: `User:${student.id}`,
       ipAddress,
     });
-    await this.auditService.record({
-      action: "auth.independent_student.consent",
-      userId: student.id,
-      schoolId: school.id,
-      resource: `User:${student.id}`,
-      metadata: { version: 1 },
-      ipAddress,
-    });
-
     return {
       studentId: student.id,
       username: dto.username ? student.admissionNumber?.toLowerCase() : null,
